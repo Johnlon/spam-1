@@ -120,7 +120,7 @@ So all good !!
 
 ## And is simulated in Logism Evolution 
 
-![Logisim-animated](docs/logisim-animated.gif)
+![Logisim-animated](docs/logisim-animation.gif)
 
 ## :thumbsup: I've built an assembly language for it and also an assembler.
 
