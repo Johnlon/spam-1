@@ -173,9 +173,9 @@ I understand this is the correct icon for such.
 See the downloads in guthub https://github.com/reds-heig/logisim-evolution/releases
   
   
-###Yes more Simulators
+### Yes more Simulators
 
-https://circuitverse.org/   
+[circuitverse](https://circuitverse.org/)   
 
 Can't recall why I was put off by this product.
  
@@ -186,7 +186,7 @@ CV's plot feature work (Logism's Cronogram was useful to me).
 So, might be worth considering.
 
    
-https://github.com/hneemann/Digital
+[Digital](https://github.com/hneemann/Digital)
 
 Seems like a cousin of Logism and is actively supported too. 
 The author responded very quickly to comments I made on an old closed ticket!.
