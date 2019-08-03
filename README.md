@@ -16,6 +16,35 @@ Having spent the last few weeks getting to know [Logisim Evolution](https://gith
 it's clear if I have attempted to build a CPU back in 1980 then I'd have fallen flat on my face the first time something didn't work.
 It's been a great learning experience, if frustrating at times.
 
+So I've decided to build an 8 bit CPU for myself, for the sheer joy and nostalgia.
+
+## Progress
+
+I've spent a couple of weeks building the sim for a CPU. It's 8 bit and based on ideas form various places but kind of grew by itself with a little planning.
+It's a fairly primitive one in that there is no opcode vs microcode, or to put it another way every instruction is microcode. Also, this approach meant I never
+got around to needing to add an instruction register.
+
+At present it has:
+- 8 bits data bus
+- 8 bits address
+- Separate RAM and ROM - for no particular reason
+- Control logic is trivial so unlike some other systems there is not EEPROM for control decoding
+- 8 bit ALU - add/subtract
+- Registers
+  - A and B general purpose registers - not symmetrical as I can only do "A+B" and "A-B"
+  - Memory address register
+  - Program counter
+  - Flags register
+  - Display register
+- Instructions for load, jump and branch, addition and subtraction - there's a surprising lot you can do with this and even without complex microcoded instructions
+
+The complete set of instruction and argument combinations at [here](docs/instructions.txt) 
+    
+ 
+    
+
+
+
 
 ## Further reading and links
 

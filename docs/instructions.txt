@@ -1,0 +1,112 @@
+Labels	Code		Addr	HiRom	LoRom	COMMENTS	
+:data1	DATA #99		00	18	99	Set the ROM low at this location to #99 - if executed then this would actually be a DISP function - we dont' expect these to be executed jump over them	
+:data2	DATA #:data3		01	18	00	Set the ROM low at this location to the address of :topLabel	
+							
+:data3	DATA :data1		02	18	00	Set the ROM low at this location to the ROM low at the address of :topLabel	
+:data4	DATA  :data3		03	18	02		
+							
+:topLabel	HALT		04	0d	00	Stop the program	Same as PC=PC
+	HALTC			05	0f	00	Stop if Carry Set	
+	HALTZ			06	0e	00	Stop if Zero Set	
+							
+	NOOP			07	01	00	Same as A=A	
+							
+	LD A, #24		08	19	24	A=#23	
+	LD A, A			09	01	00	A=A	Use as a NOOP?
+	LD A, B			0a	31	00	A=B	
+	LD A,RAM		0b	11	00	A = RAM[MAR]	
+	LD A,MAR		0c	29	00	A=MAR	
+	LD A,PC			0d	09	00	A=PC	
+	LD A, ALU		0e	21	00	A=ALU 	Use "ADD A" instead
+	LD A, ADD		0f	21	00	A=A+B	Use "ADD A" instead
+	LD A, SUB		10	61	00	A=A-B	Use "SUB A" instead
+	LD A, :topLabel		11	19	04		
+							
+	LD B,#23		12	1a	23	B=#23	
+	LD B, A			13	02	00	B=A	
+	LD B,B			14	32	00	B=B	Another NOOP
+	LD B,RAM		15	12	00	B = RAM[MAR]	
+	LD B,MAR		16	2a	00	B=MAR	
+	LD B,PC			17	0a	00	B=PC	
+	LD B, ALU		18	22	00	B=ALU 	Use "ADD B" instead
+	LD B, ADD		19	22	00	B=A+B	Use "ADD B" instead
+	LD B, SUB		1a	62	00	B=A-B	Use "SUB B" instead
+							
+	LD RAM, #23		1b	1c	23	RAM[MAR] = #23	
+	LD RAM, A		1c	04	00	RAM[MAR] = A	
+	LD RAM, B		1d	34	00	RAM[MAR] = B	
+	LD RAM, PC		1e	0c	00	RAM[MAR] = PC	PC OUT NOT SUPPORTED YET IN SIMULATION
+	LD RAM, ALU		1f	24	00	RAM[MAR] = ALU	
+	LD RAM, RAM		20	14	00	RAM[MAR] = RAM[MAR]	Another NOOP
+	LD RAM, MAR		21	2c	00	RAM[MAR] = MAR	
+	LD RAM, ADD		22	24	00	RAM[MAR] = A+B	
+	LD RAM, SUB		23	64	00	RAM[MAR] = A-B	
+							
+	LD MAR, #23		24	1b	23	MAR = #23	
+	LD MAR, A		25	03	00	MAR = A	
+	LD MAR, B		26	33	00	MAR = B	
+	LD MAR, PC		27	0b	00	MAR = PC	PC OUT NOT SUPPORTED YET IN SIMULATION
+	LD MAR, ALU		28	23	00	MAR = ALU	
+	LD MAR, RAM		29	13	00	MAR = RAM[MAR]	
+	LD MAR, MAR		2a	2b	00	MAR = MAR	NOOP
+	LD PC, ADD		2b	25	00	MAR=A+B	
+	LD PC, SUB		2c	65	00	MAR=A-B	
+							
+	LD PC, #23		2d	1d	23	Use JMP instead	
+	LD PC, A		2e	05	00	PC=A	
+	LD PC, B		2f	35	00	PC=B	
+	LD PC, PC		30	0d	00	PC=PC	PC feedback = stop
+	LD PC, ALU		31	25	00	PC=ALU	
+	LD PC, RAM		32	15	00	PC=RAM	
+	LD PC, MAR		33	2d	00	PC=MAR	
+	LD PC, ADD		34	25	00	PC=A+B	Same as PC=ALU
+	LD PC, SUB		35	65	00	PC=A-B	
+							
+	ADD A			36	21	00	A=A+B	
+	ADD B			37	22	00	B=A+B	
+							
+	SUB A			38	61	00	A=A-B	
+	SUB B			39	62	00	B=A-B	
+							
+	DISP #10		3a	18	10	Display #23	
+	DISP A			3b	00	00	Display A	
+	DISP B			3c	30	00	Display B	
+	DISP PC			3d	08	00	Display PC	
+	DISP ALU		3e	20	00	Display ALU	
+	DISP RAM		3f	10	00	Display RAM	
+	DISP MAR		40	28	00	Display MAR	
+	DISP ADD		41	20	00	Display the output of the ALU for A+B	
+	DISP SUB		42	60	00	Display the output of the ALU for A-B	
+							
+:anotherLabel	JMP #23		43	1d	23	Jump absolute	
+	JMP :jumpHere		44	1d	45	Jump absolute	
+:jumpHere	JMP A		45	05	00	Jump to A	
+	JMP B			46	35	00	Juimp to B	
+	JMP PC			47	0d	00	PC=PC	Same as HALT
+	JMP ALU			48	25	00	Jump to ALU output	
+	JMP RAM			49	15	00	Jump to Address from RAM	
+	JMP MAR			4a	2d	00	Jump to MAR 	
+	JMP ADD			4b	25	00	Jump to ALU output for A+B	
+	JMP SUB			4c	65	00	Jump to ALU output for A-B	
+							
+	BCS #23			4d	1f	23	Jump to #23 if carry set	
+	BCS :jumpHere		4e	1f	45	Jump to label	
+	BCS A			4f	07	00	Jump to A if carry set	
+	BCS B			50	37	00	Jump to B ...	
+	BCS PC			51	0f	00	PC=PC if carry set	HALT if Carry Set
+	BCS ALU			52	27	00	Jump to ALU ...	
+	BCS RAM			53	17	00	Jump to RAM ...	
+	BCS MAR			54	2f	00	Jump to MAR ...	
+	BCS ADD			55	27	00	Jump to ALU output for A+B	
+	BCS SUB			56	67	00	Jump to ALU output for A-B	
+							
+	BZS #23			57	1e	23	Jump to #23 if Zero set	
+	BZS :jumpHere		58	1e	45	Jump to label	
+	BZS A			59	06	00	Jump to A if Zero set	
+	BZS B			5a	36	00	Jump to B ...	
+	BZS PC			5b	0e	00	PC=PC if zero set	HALT if Zero Set
+	BZS ALU			5c	26	00	Jump to ALU ...	
+	BZS RAM			5d	16	00	Jump to RAM ...	
+	BZS MAR			5e	2e	00	Jump to MAR ...	
+	BZS ADD			5f	26	00	Jump to ALU output for A+B	
+	BZS SUB			60	66	00	Jump to ALU output for A-B	
