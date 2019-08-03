@@ -115,13 +115,12 @@ got around to needing to add an instruction register.
 
 So all good !!
 
-![Logisim-animated](docs/logisim-animated.gif)
 
 # Documentation
 
 ## And is simulated in Logism Evolution 
 
-![Logism CPU](docs/cpu.png)
+![Logisim-animated](docs/logisim-animated.gif)
 
 ## :thumbsup: I've built an assembly language for it and also an assembler.
 
