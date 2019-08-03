@@ -1,5 +1,6 @@
 # simplecpu
-Simple CPU simulation built using Logism Evolution and including and Assembler build using google sheets
+
+Simple CPU simulation built using Logism Evolution and including and Google Sheets based assembler
 
 ## Motivation
 
@@ -17,6 +18,18 @@ it's clear if I have attempted to build a CPU back in 1980 then I'd have fallen 
 It's been a great learning experience, if frustrating at times.
 
 So I've decided to build an 8 bit CPU for myself, for the sheer joy and nostalgia.
+
+## Objectives
+
+- I want to be able to run at least the typical demo programs like Fibonacci 
+- I would like to extend it to play some kind of basic game (tbd)
+- It will have an assembly langauge and assembler
+- I might port C to it
+- I want to simulate it first
+- I want to build it physically, or a more likelya  derivative
+
+:star: But I wanted to do things a little differently to some of the other efforts on the internet! I want the assembler and any other code I write to 
+to be more readily accessible and instantly usable to others (like you) without installing python or perl or whatever first, so I've written the assembler in google sheets! 
 
 ## Progress
 
@@ -38,10 +51,24 @@ At present it has:
   - Display register
 - Instructions for load, jump and branch, addition and subtraction - there's a surprising lot you can do with this and even without complex microcoded instructions
 
-The complete set of instruction and argument combinations at [here](docs/instructions.txt) 
+The complete set of instruction and argument combinations at [here](docs/instructions.txt)
+
+And, the CPU is working ... 
+
+![Logism CPU](docs/cpu.png)
+
+:thumbsup: I've built an assembly language for it and also an assembler.
+
+![Assembler](docs/sheets-assembler.png) 
     
+I will add the Logism artefacts to this repo asap and I will also provide links to the assembler in Google docs.
+
+You can then download the Logism jar plus my circuit files and the rom images and run it. You can play with the assembler and 
+put your own programs into the ROMs for a giggle.  
  
-    
+There is also an "instruction decoder" which will decode the assembly program and show you which control lines are enabled for each instruction in the program.
+
+![Decoder](docs/decoder.png)
 
 
 
