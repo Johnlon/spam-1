@@ -426,6 +426,11 @@ For comparison: Original vs Evolution ...
 
 ### Logism Libraries
 
+In the end I didn't use any libraries (yet) and used just the build in components, however I spent ages faffing about looking at them.
+When I come to moving to hardware I may go looking for libraries then, I don't know, at that point I might try one of the other simulators.   
+
+In any case my thought on libs follow ..
+ 
 I wasn't able to find a good resource listing the various libraries that exist out there in github and elsewhere. Whether a given library works in original or evolution 
 is uncertain until you actually try it. Many "original" circuit libs do work functionally in evolution but often the rendering of the component in evolution is utterly 
 different than in the original product. My guess is that evo often ignores the rendering info in libraries from original and just renders a big clunky default.
