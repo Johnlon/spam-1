@@ -47,8 +47,8 @@ I find the original rendering much more pleasing to the eye, however, there are 
 
 For comparison: Original vs Evolution ...
 
-![Original](logisim-original-sample.png)
-![Evolution](logisim-evolution-sample.png)
+![Original](docs/logisim-original-sample.png)
+![Evolution](docs/logisim-evolution-sample.png)
 
 Libraries
 ====
@@ -63,7 +63,7 @@ when the name in the library breaks one of evo's name rules. Evo substitutes a v
 In anycase if there is a library you like and want to use then you can always copy the file and edit it to remove offending characters like whitespace and hyphen.
 You will still get a chunky glyph however then names will be more sensible. For contrast below you can see the 74181 from the same library after I've fixed various naming issues. 
 
-![Original](logisim-evolution-7474-and-181.png)
+![Original](docs/logisim-evolution-7474-and-181.png)
 
 What worked for me where I didn't like the appearance of a component was that I imported it into Evo into a sub circuit and then I edited the appearance of the subcircuit in evo to make it
 smaller and more convenient. This approach doesn't of course work for the chunk ROM and RAM I mentioned earlier because they have interactive UI's that I'd end up hiding
@@ -73,11 +73,11 @@ Another, gripe with some libs is that they aren't accurate. In at least two case
 had been implemented with regular logic; the 74181 "A=B" output is an example. It's not that hard to fix this if you wrap the component with output 
 buffered as shown below
 
-![OpenCollectorBuf](open-collector.png)
+![OpenCollectorBuf](docs/open-collector.png)
 
 Here's an example of usage of open collector outputs connecting in a "wired and" configuration ...
  
-![OpenCollectorBuf](open-collector-181.png)
+![OpenCollectorBuf](docs/open-collector-181.png)
 
 I ended up putting the open collector buffer component into a subcircuit and then created an "appearance" for it in Evo's appearance editor that looks like a buffer with an asterisk next to it. 
 I understand this is the correct icon for such.
