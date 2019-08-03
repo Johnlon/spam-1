@@ -12,21 +12,22 @@ discrete electronics and then later on with integrated circuits and build many l
 Recently, like many other folk, I came across [Ben Eater's series of YT videos](https://www.youtube.com/watch?v=HyznrdDSSGM&list=PLowKtXNTBypGqImE405J2565dvjafglHU) and also those of quite a few others that inspired me to have a go at building my
 own CPU. Back in 1980 even the relatively few parts needed would probably have been beyond my means, but not anymore !!
 
-However, back in the 1980's  I would have been building more of less blind. I still don't have an oscilloscope but what I do have is a simulator.   
-Having spent the last few weeks getting to know [Logisim Evolution](https://github.com/reds-heig/logisim-evolution)  and having hours trying to figure out details of my simulated processor
-it's clear if I have attempted to build a CPU back in 1980 then I'd have fallen flat on my face the first time something didn't work.
+However, back in the 1980's  I would have been building more or less blind. I still don't have an oscilloscope but what I do have is a simulator.   
+Having spent the last few weeks getting to know [Logisim Evolution](https://github.com/reds-heig/logisim-evolution)  and having hours trying to figure out the fine details of my simulated processor
+it's clear that if I had attempted to build a CPU back in 1980 then I'd have fallen flat on my face.
 It's been a great learning experience, if frustrating at times.
 
-So I've decided to build an 8 bit CPU for myself, for the sheer joy and nostalgia.
+So I've decided to build an 8 bit CPU for myself, for the sheer joy and nostalgia, sweat and tears.
 
 # Objectives
 
 - I want to be able to run at least the typical demo programs like Fibonacci 
-- I would like to extend it to play some kind of basic game (tbd)
 - It will have an assembly langauge and assembler
-- I might port C to it
 - I want to simulate it first
-- I want to build it physically, or a more likelya  derivative
+- I want to build it physically, or a more likely a  derivative
+- Attach some output device - eg a UART / tty that respects VT codes   
+- I might port or other higher level language to it for curiosity (which one and where to start?)
+- I would like to extend it to play some kind of basic game (tbd)
 
 :star: But I wanted to do things a little differently to some of the other efforts on the internet! I want the assembler and any other code I write to 
 to be more readily accessible and instantly usable to others (like you) without installing python or perl or whatever first, so I've written the assembler in google sheets! 
@@ -118,7 +119,7 @@ So all good !!
 
 # Documentation
 
-## And is simulated in Logism Evolution 
+## Simulated in Logism Evolution 
 
 ![Logisim-animated](docs/logisim-animation.gif)
 
