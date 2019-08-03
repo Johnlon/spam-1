@@ -115,6 +115,8 @@ got around to needing to add an instruction register.
 
 So all good !!
 
+![Logisim-animated](docs/logisim-animated.gif)
+
 # Documentation
 
 ## And is simulated in Logism Evolution 
