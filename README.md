@@ -2,6 +2,8 @@
 
 Simple CPU simulation built using Logism Evolution and including and Google Sheets based assembler
 
+See also the [Assembler build using Google Sheets](https://docs.google.com/spreadsheets/d/1lYyPqYNF1dGDRP2n3ablaqkgZuxJ9x6T-ylut_nT1p4/edit?usp=sharing).
+
 ## Motivation
 
 A bit of fun!
