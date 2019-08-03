@@ -59,6 +59,37 @@ At present it has:
 
 So all good !!
 
+## Documentation
+
+### The CPU has this configuration ...
+
+![Block diagram](docs/blocks.png)
+
+### And is simulated in Logism Evolution 
+
+![Logism CPU](docs/cpu.png)
+
+### :thumbsup: I've built an assembly language for it and also an assembler.
+
+I've built the assembler in Google Sheets, which I think might be a pretty unique approach (let me know).
+
+![Assembler](docs/sheets-assembler.png) 
+    
+### Todo
+I will add the Logism artefacts to this repo asap and I will also provide links to the assembler in Google docs.
+
+### Try my CPU and Assembler for yourself
+
+You can then download the Logism jar plus my circuit files and the rom images and run it. You can play with the assembler and 
+put your own programs into the ROMs for a giggle.  
+ 
+There is also an "instruction decoder" page which will decode the assembly program and show you which control lines are enabled for each instruction in the program.
+
+![Decoder](docs/decoder.png)
+
+
+
+
 ## Improvements
 
 ### Better use of ROM
@@ -167,37 +198,6 @@ Alternatively I could do something like add an 8 bit register for the ALU config
 Or perhaps the variable length instruction idea could yield benefits by giving me another 8 bits for control logic.
 
 Obviously, being able to simulate all this before building is fantastic.
-
-## Documentation
-
-### The CPU has this configuration ...
-
-![Block diagram](docs/blocks.png)
-
-### And is simulated in Logism Evolution 
-
-![Logism CPU](docs/cpu.png)
-
-### :thumbsup: I've built an assembly language for it and also an assembler.
-
-I've built the assembler in Google Sheets, which I think might be a pretty unique approach (let me know).
-
-![Assembler](docs/sheets-assembler.png) 
-    
-### Todo
-I will add the Logism artefacts to this repo asap and I will also provide links to the assembler in Google docs.
-
-### Try my CPU and Assembler for yourself
-
-You can then download the Logism jar plus my circuit files and the rom images and run it. You can play with the assembler and 
-put your own programs into the ROMs for a giggle.  
- 
-There is also an "instruction decoder" page which will decode the assembly program and show you which control lines are enabled for each instruction in the program.
-
-![Decoder](docs/decoder.png)
-
-
-
 
 ## Further reading and links
 
