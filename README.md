@@ -40,7 +40,7 @@ got around to needing to add an instruction register.
 At present it has:
 - 8 bits data bus
 - 8 bits address
-- Separate RAM and ROM - for no particular reason
+- Separate RAM and ROM (for no particular reason - could have been all RAM) 
 - Control logic is trivial so unlike some other systems there is not EEPROM for control decoding
 - 8 bit ALU - add/subtract
 - Registers
@@ -59,24 +59,140 @@ At present it has:
 
 So all good !!
 
+## Improvements
+
+### Better use of ROM
+
+My use of a fixed 16 bit instruction word is quite wasteful. Unless I'm dealing with a constant then the second ROM is entirely unused.
+One solution is a variable width 8 bit instruction where most instructions are 8 bit, but when ROM_out is enabled in the first byte 
+then the control logic looks for the operand in the subsequent byte.
+
+### Immediate arithmetic
+
+At present I can only interact with the ALU via the A/B registers. This means I can't do arithmetic
+ on a value from the ROM or RAM without wiping one of those two registers. I can of course mux the data bus into the
+ ALU, however, a problem with getting a value from RAM into the ALU 
+  and capturing the result of the arithmetic is that I only have one bus and I can't have both the RAM active out on the BUS
+ whilst also having the ALU active out. A solution might be to put a register on the output of the ALU so that I can do the arithmetic in
+ one micro-instruction and then emit the result in the next micro-instruction. 
+ 
+### CALL and RET
+
+I'd like to demonstrate a call to a subroutine and a return from that call. 
+
+All my instructions are micro-instructions and doing a "CALL" requires at least two micro-instructions, one to push the PC into RAM then another to move the PC to 
+the new location. So I don't think I have the luxury of being able to introduce an "CALL" op code in the hardware. However the assembler could certainly expand a 
+"CALL :label" into something like this (note: typically one places a stack at the end of memory and works backwards through RAM as items are pushed to the sta ck- I've used that approach below.)
+ 
+```
+# store PC into the stack
+    MAR=RAM[#stackpointer_location]     #set the MAR to point at the current location of the SP
+    RAM=PC
+
+# decrement stack pointer
+    A=RAM[#stackpointer_location]
+    B=1
+    SUB A
+    RAM[#stackpointer_location]=A
+
+# Jump to subroutine
+    PC=#subroutine_location
+
+```
+
+And "RET" could be expanded to.  
+
+
+```
+# increment stack pointer
+    A=RAM[#stackpointer_location]
+    B=1
+    ADD A
+    RAM[#stackpointer_location]=A
+
+# retrieve stack pointer into the PC
+    MAR=RAM[#stackpointer_location]     #set the MAR to point at the current location of the SP
+    PC=RAM
+```
+
+If passing args to the subroutine then they would also need to go into RAM and I could add a "PUSH" instruction to the Assembler to support this.
+
+Where other processors have high level instruction built into the hardware and the control logic decodes this into micro-instructions,
+ in my case the high level instructions would be merely a feature of the assembler and the assembler would "compile" these into the 
+ micro-instructions that my CPU uses.
+ 
+On a more traditional CPU a binary program (eg ".exe" or ELF executable) could work on multiple CPU types with different underlying CPU hardware and micro-instructions
+as long as the CPU's all support the same set of "high level" Opcodes. The CPU's control logic takes care of translating the high level opcodes into the internal 
+ micro-instruction language of the CPU. However, in my case that translation is happening in the assembler and if there is a change to the hardware
+ then this renders all programs inoperable; there is no abstraction to save me.
+ Of course I can just recompile the assembler to resolve the issue, however, this goes to highlight the power of high level op codes and embedded micro-code where no 
+ recompilation is necessary (eg Intel vs AMD).  
+
+Using the assembler to compile high level opcodes I can add things like ..
+
+```
+CALL :subroutine
+RET 
+PUSH <some register>
+POP <some register>
+INC <come register>
+DEC <come register>
+```           
+
+### Save a control like by memory mapping the disp device
+
+The display register steals a control line. In principal this could just be mapped to a specific memory location which would free up the control line
+for something useful, for instance doubling the number if Input or Output devices on the bus. This might for instance allow me to implement Branch on Equals.
+Though to be fair I have two selector lines going into the ALU and use only one of them at present so I could co-opt that if I wanted.
+
+### Add more ALU operations
+
+- Add logical operations.
+- Add a shift left/right to the ALU (same as multiply by 2, div by 2)
+- Add BCD operations
+
+This is a biggie.
+
+Having no logical operations at all is far from ideal.
+
+But this would mean feeding at least three selector lines into it, which could give me 8 potential operations rather than the two I have currently implemented. 
+However, I am already short on control lines so this isn't too appealing. If I switched to variable length instructions or added a register to 
+the output of the ALU then perhaps I could get a lot more flexibility. Dunno.
+
+Alternatively I could do something like add an 8 bit register for the ALU config, eg giving me 256 possible ALU operations. Or I could organise the 8 bit register 
+ as 4 bits for multiplexing the inputs and output of the ALU, and 4 bits for the selection of the ALU operation. If I multiplex the inputs and outputs 
+ of the ALU then I could do something like having a 4x8bit register file rather than just A and B and I could multiplex the RAM or ROM or whatever into the 
+ ALU overcoming the register trashing  problem mentioned earlier.
+
+Or perhaps the variable length instruction idea could yield benefits by giving me another 8 bits for control logic.
+
+Obviously, being able to simulate all this before building is fantastic.
+
 ## Documentation
+
+### The CPU has this configuration ...
 
 ![Block diagram](docs/blocks.png)
 
-And, the CPU is working ... 
+### And is simulated in Logism Evolution 
 
 ![Logism CPU](docs/cpu.png)
 
-:thumbsup: I've built an assembly language for it and also an assembler.
+### :thumbsup: I've built an assembly language for it and also an assembler.
+
+I've built the assembler in Google Sheets, which I think might be a pretty unique approach (let me know).
 
 ![Assembler](docs/sheets-assembler.png) 
     
+### Todo
 I will add the Logism artefacts to this repo asap and I will also provide links to the assembler in Google docs.
+
+### Try my CPU and Assembler for yourself
 
 You can then download the Logism jar plus my circuit files and the rom images and run it. You can play with the assembler and 
 put your own programs into the ROMs for a giggle.  
  
-There is also an "instruction decoder" which will decode the assembly program and show you which control lines are enabled for each instruction in the program.
+There is also an "instruction decoder" page which will decode the assembly program and show you which control lines are enabled for each instruction in the program.
 
 ![Decoder](docs/decoder.png)
 
