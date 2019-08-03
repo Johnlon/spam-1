@@ -19,7 +19,7 @@ It's been a great learning experience, if frustrating at times.
 
 So I've decided to build an 8 bit CPU for myself, for the sheer joy and nostalgia.
 
-## Objectives
+# Objectives
 
 - I want to be able to run at least the typical demo programs like Fibonacci 
 - I would like to extend it to play some kind of basic game (tbd)
@@ -31,25 +31,81 @@ So I've decided to build an 8 bit CPU for myself, for the sheer joy and nostalgi
 :star: But I wanted to do things a little differently to some of the other efforts on the internet! I want the assembler and any other code I write to 
 to be more readily accessible and instantly usable to others (like you) without installing python or perl or whatever first, so I've written the assembler in google sheets! 
 
-## Progress
+# Architecture
+
+- Single bus
+- 8 bits data
+- 8 bits address
+- 16 bit instruction
+- 8 bit ALU - add/subtract
+- Separate RAM and ROM (for no particular reason - could have been all RAM)
+- One instruction per clock cycle (effectively "Fetch/Decode" on falling edge of clock and "Execute" on rising edge of clock)
+- Uses microcode instructions, not "microcoded" instructions, ie each instruction is at microcode level and directly enables the necessary control lines.
+ Therefore control logic is trivial so unlike some other systems there is not EEPROM for control decoding and there is no Instruction Register either.
+- Registers
+  - A and B general purpose registers - These are not symmetrical as "A" always comes first in arithmetic ie "A+B" and "A-B"
+  - Memory address register
+  - Program counter
+  - Flags register - Zero,  Carry, Equals (ie A=B)
+  - Display register
+- Instructions for load any register with any other register, jump and branch, addition and subtraction - there's a surprising lot you can do with this and even without complex microcoded instructions
+
+![Block diagram](docs/blocks.png)
+
+## Program Storage
+
+Program is stored in ROM and is, wastefully, a fixed 16 bit instruction, organised over a pair of ROMs, one each for for high and low byte of the instruction.
+The high byte defines the operation and the low byte is used only for constants (at present) which is why I said it's wasteful.
+ 
+### High ROM byte
+The high order bytes is organised into three parts, identifying the ALU operation and the input and output devices.
+
+![High Byte](docs/op-hi-byte.png)
+
+- 2 "ALU" bits configure the ALU operation - only add/subtract right now.
+- 3 "OUT" bits select one device (0-7) that will be enabled to output onto the bus.
+- 3 "IN" bits select the device who's input register will be enabled to latch the value on the bus.
+  
+Therefore with this design I can have at most 8 "input" devices and 8 "output" devices (some ideas on improving this are below).
+
+### Low ROM byte
+
+This low order ROM is used only for program constants at present; this is rather wasteful (see below). 
+
+### Example Program
+
+```
+:start	    LD A,#0
+            DISP A
+            LD B, #1
+            DISP B
+
+:loopUp     ADD A
+            BCS :backDown
+            DISP B
+            ADD B
+            BCS :backDown
+            DISP B
+            JMP :loopUp
+	
+:backDown   LD A,#e9
+            LD B,#90
+            LD MAR, #0
+            DISP B
+:loopDown   SUB A
+            BZS :start
+            DISP A
+            LD RAM, A
+            LD A, B
+            LD B, RAM
+            JMP :loopDown                                                                                                                                                                                                
+```
+
+# Progress
 
 I've spent a couple of weeks building the sim for a CPU. It's 8 bit and based on ideas form various places but kind of grew by itself with a little planning.
 It's a fairly primitive one in that there is no opcode vs microcode, or to put it another way every instruction is microcode. Also, this approach meant I never
 got around to needing to add an instruction register.
-
-At present it has:
-- 8 bits data bus
-- 8 bits address
-- Separate RAM and ROM (for no particular reason - could have been all RAM) 
-- Control logic is trivial so unlike some other systems there is not EEPROM for control decoding
-- 8 bit ALU - add/subtract
-- Registers
-  - A and B general purpose registers - not symmetrical as I can only do "A+B" and "A-B"
-  - Memory address register
-  - Program counter
-  - Flags register
-  - Display register
-- Instructions for load, jump and branch, addition and subtraction - there's a surprising lot you can do with this and even without complex microcoded instructions
 
 :star: The complete set of instruction and argument combinations at [here](docs/instructions.txt)
 
@@ -59,26 +115,24 @@ At present it has:
 
 So all good !!
 
-## Documentation
+![Logism-Video](docs/Video-Logisim-Fibo.mp4)
 
-### The CPU has this configuration ...
+# Documentation
 
-![Block diagram](docs/blocks.png)
-
-### And is simulated in Logism Evolution 
+## And is simulated in Logism Evolution 
 
 ![Logism CPU](docs/cpu.png)
 
-### :thumbsup: I've built an assembly language for it and also an assembler.
+## :thumbsup: I've built an assembly language for it and also an assembler.
 
 I've built the assembler in Google Sheets, which I think might be a pretty unique approach (let me know).
 
 ![Assembler](docs/sheets-assembler.png) 
     
-### Todo
+## Todo
 I will add the Logism artefacts to this repo asap and I will also provide links to the assembler in Google docs.
 
-### Try my CPU and Assembler for yourself
+## Try my CPU and Assembler for yourself
 
 You can then download the Logism jar plus my circuit files and the rom images and run it. You can play with the assembler and 
 put your own programs into the ROMs for a giggle.  
@@ -90,15 +144,15 @@ There is also an "instruction decoder" page which will decode the assembly progr
 
 
 
-## Improvements
+# Improvements
 
-### Better use of ROM
+## Better use of ROM
 
 My use of a fixed 16 bit instruction word is quite wasteful. Unless I'm dealing with a constant then the second ROM is entirely unused.
 One solution is a variable width 8 bit instruction where most instructions are 8 bit, but when ROM_out is enabled in the first byte 
 then the control logic looks for the operand in the subsequent byte.
 
-### Immediate arithmetic
+## Immediate arithmetic
 
 At present I can only interact with the ALU via the A/B registers. This means I can't do arithmetic
  on a value from the ROM or RAM without wiping one of those two registers. I can of course mux the data bus into the
@@ -107,7 +161,7 @@ At present I can only interact with the ALU via the A/B registers. This means I 
  whilst also having the ALU active out. A solution might be to put a register on the output of the ALU so that I can do the arithmetic in
  one micro-instruction and then emit the result in the next micro-instruction. 
  
-### CALL and RET
+## CALL and RET
 
 I'd like to demonstrate a call to a subroutine and a return from that call. 
 
@@ -170,13 +224,13 @@ INC <come register>
 DEC <come register>
 ```           
 
-### Save a control like by memory mapping the disp device
+## Save a control line by memory mapping the Display device
 
 The display register steals a control line. In principal this could just be mapped to a specific memory location which would free up the control line
 for something useful, for instance doubling the number if Input or Output devices on the bus. This might for instance allow me to implement Branch on Equals.
 Though to be fair I have two selector lines going into the ALU and use only one of them at present so I could co-opt that if I wanted.
 
-### Add more ALU operations
+## Add more ALU operations
 
 - Add logical operations.
 - Add a shift left/right to the ALU (same as multiply by 2, div by 2)
@@ -199,18 +253,65 @@ Or perhaps the variable length instruction idea could yield benefits by giving m
 
 Obviously, being able to simulate all this before building is fantastic.
 
-## Further reading and links
+Considering basing the future ALU on a similar set to that used by [CrazySmallCpu](https://minnie.tuhs.org/Programs/CrazySmallCPU/description.html) ...
+```
+The ALU can perform sixteen operations based on the A and B inputs:
+A + B decimal
+A - B decimal
+A & B
+A | B
+A ^ B
+A + 1
+Output 0, flags set to B's value
+Output 0
+A + B binary
+A - B binary
+Output A
+Output B
+A * B binary, high nibble
+A * B binary, low nibble
+A / B binary
+A % B binary
+```
+
+Might use a ROM for the ALU. But haven't figured out with a single 8 bit wide ROM how to get a carry bit which would be necessary for chaining arithmetic to achieve arbitrary length additions. 
+Perhaps this will require two 8 bit ROMS operating in 4 bit chained mode, or perhaps revert to using 4 bit arithmetic and chain operations in software? Not sure.
+
+On the other hand I have two reclaimed [74181](http://ee-classes.usc.edu/ee459/library/datasheets/DM74LS181.pdf) ALU's in my desk - I think I should use those for nostalgia reasons.
+I don't get BCD arithmetic with the 74181 but I do get to use the same type of chip that went went to the moon. Hooking it up fully would take 5 control lines plus the carry in. 
+Hmm, I don't think I have the "LS" version which only pulls 20-40mA. The SN74181N that I have pulls a horrible amount of current according to the datasheet; 88-150mA.
+
+  
+
+
+## Write a C compiler
+
+Yep - a C compile - others have done it.
+
+Hmm. Or perhaps [PL/0](https://www.youtube.com/watch?v=hF43WUd8jrg&list=PLgAD2y-6wgwoTnPfZWhMuXID14xnzkz2x)??
+
+
+## Hardware Components
+
+- [74HC161](https://assets.nexperia.com/documents/data-sheet/74HC161.pdf)  4-bit presettable synchronous binary counter; asynchronous reset
+- [74HC245](https://assets.nexperia.com/documents/data-sheet/74HC_HCT245.pdf) Octal transceiver - 3 state. Has convenient pinout than the [74244](https://assets.nexperia.com/documents/data-sheet/74HC_HCT244.pdf)
+- [74HC377](https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf) 8 bit reg - convenient bit out at sides 
+- [74HC670](https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf) 8 bit reg - convenient bit out at sides 
+- [74HC670](https://www.ti.com/lit/ds/symlink/cd74hc670.pdf) - 4x4 register file - not synchronous so probably need to add edge detect to it. Not common but [Mouser has it](https://www.mouser.co.uk/Search/Refine?Keyword=74ls670) in DIP package. 
+
+
+# Further reading and links
 
 I'd also encourage you to look at [James Bates' series](https://www.youtube.com/watch?v=gqYFT6iecHw&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvuVui) of  Ben Eater inspired videos. 
 I found James' discussion much more detailed in many cases and very useful. 
 
 And definitly the [Crazy Small CPU series](https://www.youtube.com/playlist?list=PL9YEAcq-5hHIJnflTcLA45sVxr900ziEy). 
 
-### Ben's links
+## Ben's links
 
 https://www.youtube.com/watch?v=X7rCxs1ppyY&t=4m29s Ben Eater comment on clock sync, the need for a separate ("inverted") clock for the enablement of registers, and also the need to do enablement of registers ahead of the synchronous clock - his solution is to buffer the clock line so that it is delayed by some nanoseconds compared to the clock used for register enablement.   
 
-### James Bates links
+## James Bates links
 
 https://www.youtube.com/watch?v=AALVh39X3xw&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvuVui&index=3#t=4m52s  Mentions "extensions to Bens video"
 
@@ -228,7 +329,7 @@ https://www.youtube.com/watch?v=tUXboOaisAY&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvu
 
 https://www.youtube.com/watch?v=DfuFNBJn1hk&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvuVui&index=6#t=6m48s Fixes one of the operands to reduce instruction space B is always second input   so can’t do A=C+D
 
-### Crazy Small Cpu
+## Crazy Small Cpu
 
 https://minnie.tuhs.org/Programs/CrazySmallCPU/ Home page
 
@@ -238,7 +339,7 @@ https://www.youtube.com/watch?v=zJw7WcikX9A RAM and flags
 
 https://minnie.tuhs.org/Programs/UcodeCPU/index.html Microcode Logism Sim
 
-### Simple CPU
+## Simple CPU
 
 http://www.simplecpudesign.com/ Home page
 
@@ -251,7 +352,7 @@ http://www.simplecpudesign.com/simple_cpu_v2/index.html   V3
  
 
 
-### Other links
+## Other links
 
 https://www.youtube.com/watch?v=Fq0MIJjlGsw Using the 74181
 
@@ -310,7 +411,11 @@ Upgrading wasn't trivial, buit wasn't too difficult either. Unfortunately, "orig
 without starting from scratch. It does mean editing the "circ" file in a text editor but the changes were pretty straightforward. Pity there isn't a better written guide to this.
 
 One gripe myself and [MrMcsoftware](https://mrmcsoftware.wordpress.com/author/mrmcsoftware/) have in common is our dislike of the clunk ROM and RAM figures used by Evo.
-The new images take up a lot more space needlessly. MrMcsoftware has a replacement library (ForEv.jar) but I decided just to accept the change.
+The new images take up a lot more space needlessly.
+I think they are some kind of ANSI rendition of the component - see the document [_"Texas Instruments paper Overview of IEEE Standard 91-1984 - 
+Explanation of Logic Symbols "_](http://www.ti.com/lit/ml/sdyz001a/sdyz001a.pdf) (also copied into the docs folder of this repo).
+
+MrMcsoftware has a replacement library (ForEv.jar) but I decided just to accept the change.
 Another, gripe is that the rendering in evo is much chunkier so less seems to fit in the same area.
 I find the original rendering much more pleasing to the eye, however, there are sufficient improvements in evo to persuade me to accept these changes.
 
@@ -396,4 +501,3 @@ Given Digital's connection back to Logism it's a pity there's no way to import a
 
  
 
-      
