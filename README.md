@@ -115,8 +115,6 @@ got around to needing to add an instruction register.
 
 So all good !!
 
-![Logism-Video](docs/Video-Logisim-Fibo.mp4)
-
 # Documentation
 
 ## And is simulated in Logism Evolution 
