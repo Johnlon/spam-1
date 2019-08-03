@@ -173,7 +173,7 @@ I understand this is the correct icon for such.
 See the downloads in guthub https://github.com/reds-heig/logisim-evolution/releases
   
   
-### Yes more Simulators
+### Yet more Simulators
 
 [circuitverse](https://circuitverse.org/)   
 
