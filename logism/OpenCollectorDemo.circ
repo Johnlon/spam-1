@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project source="2.15.0" version="1.0">
+This file is intended to be loaded by Logisim-evolution (https://github.com/reds-heig/logisim-evolution).
+<lib desc="#Wiring" name="0">
+    <tool name="Splitter">
+      <a name="facing" val="west"/>
+      <a name="fanout" val="4"/>
+      <a name="incoming" val="16"/>
+      <a name="appear" val="center"/>
+      <a name="bit1" val="0"/>
+      <a name="bit2" val="0"/>
+      <a name="bit3" val="0"/>
+      <a name="bit4" val="1"/>
+      <a name="bit5" val="1"/>
+      <a name="bit6" val="1"/>
+      <a name="bit7" val="1"/>
+      <a name="bit8" val="2"/>
+      <a name="bit9" val="2"/>
+      <a name="bit10" val="2"/>
+      <a name="bit11" val="2"/>
+      <a name="bit12" val="3"/>
+      <a name="bit13" val="3"/>
+      <a name="bit14" val="3"/>
+      <a name="bit15" val="3"/>
+    </tool>
+    <tool name="Pin">
+      <a name="facing" val="north"/>
+    </tool>
+    <tool name="Probe">
+      <a name="facing" val="north"/>
+    </tool>
+    <tool name="Tunnel">
+      <a name="facing" val="south"/>
+    </tool>
+    <tool name="Pull Resistor">
+      <a name="facing" val="north"/>
+    </tool>
+    <tool name="Clock">
+      <a name="facing" val="north"/>
+    </tool>
+    <tool name="Constant">
+      <a name="value" val="0x0"/>
+    </tool>
+  </lib>
+  <lib desc="#Gates" name="1">
+    <tool name="NOT Gate">
+      <a name="facing" val="north"/>
+      <a name="size" val="20"/>
+    </tool>
+    <tool name="AND Gate">
+      <a name="facing" val="north"/>
+      <a name="size" val="30"/>
+    </tool>
+    <tool name="OR Gate">
+      <a name="inputs" val="5"/>
+    </tool>
+    <tool name="NAND Gate">
+      <a name="facing" val="north"/>
+      <a name="size" val="30"/>
+    </tool>
+    <tool name="NOR Gate">
+      <a name="facing" val="north"/>
+      <a name="size" val="30"/>
+    </tool>
+    <tool name="XOR Gate">
+      <a name="facing" val="north"/>
+      <a name="size" val="30"/>
+    </tool>
+    <tool name="XNOR Gate">
+      <a name="inputs" val="5"/>
+    </tool>
+    <tool name="Odd Parity">
+      <a name="inputs" val="5"/>
+    </tool>
+    <tool name="Even Parity">
+      <a name="inputs" val="5"/>
+    </tool>
+  </lib>
+  <lib desc="#Plexers" name="2">
+    <tool name="Multiplexer">
+      <a name="facing" val="north"/>
+      <a name="select" val="2"/>
+      <a name="width" val="4"/>
+      <a name="enable" val="false"/>
+    </tool>
+    <tool name="Demultiplexer">
+      <a name="select" val="4"/>
+      <a name="width" val="4"/>
+      <a name="enable" val="false"/>
+    </tool>
+    <tool name="Decoder">
+      <a name="select" val="4"/>
+    </tool>
+  </lib>
+  <lib desc="#Arithmetic" name="3"/>
+  <lib desc="#Memory" name="4">
+    <tool name="D Flip-Flop">
+      <a name="labelfont" val="SansSerif plain 12"/>
+    </tool>
+    <tool name="T Flip-Flop">
+      <a name="labelfont" val="SansSerif plain 12"/>
+    </tool>
+    <tool name="J-K Flip-Flop">
+      <a name="labelfont" val="SansSerif plain 12"/>
+    </tool>
+    <tool name="S-R Flip-Flop">
+      <a name="labelfont" val="SansSerif plain 12"/>
+    </tool>
+    <tool name="Register">
+      <a name="width" val="4"/>
+    </tool>
+    <tool name="Counter">
+      <a name="labelfont" val="SansSerif plain 12"/>
+    </tool>
+    <tool name="Shift Register">
+      <a name="labelfont" val="SansSerif plain 12"/>
+    </tool>
+    <tool name="Random">
+      <a name="labelfont" val="SansSerif plain 12"/>
+    </tool>
+    <tool name="ROM">
+      <a name="contents">addr/data: 8 8
+0
+</a>
+    </tool>
+  </lib>
+  <lib desc="#I/O" name="5">
+    <tool name="Button">
+      <a name="labelloc" val="center"/>
+      <a name="labelfont" val="SansSerif plain 12"/>
+      <a name="labelcolor" val="#000000"/>
+    </tool>
+    <tool name="LED">
+      <a name="labelloc" val="center"/>
+      <a name="labelfont" val="SansSerif plain 12"/>
+      <a name="labelcolor" val="#000000"/>
+    </tool>
+  </lib>
+  <lib desc="#Base" name="6">
+    <tool name="Text Tool">
+      <a name="text" val=""/>
+      <a name="font" val="SansSerif plain 12"/>
+      <a name="halign" val="center"/>
+      <a name="valign" val="base"/>
+    </tool>
+    <tool name="Text">
+      <a name="font" val="SansSerif plain 12"/>
+    </tool>
+  </lib>
+  <lib desc="#TCL" name="7">
+    <tool name="TclGeneric">
+      <a name="content">library ieee;&#13;
+use ieee.std_logic_1164.all;&#13;
+&#13;
+entity TCL_Generic is&#13;
+  port(&#13;
+    --Insert input ports below&#13;
+    horloge_i  : in  std_logic;                    -- input bit example&#13;
+    val_i      : in  std_logic_vector(3 downto 0); -- input vector example&#13;
+&#13;
+	  --Insert output ports below&#13;
+    max_o      : out std_logic;                    -- output bit example&#13;
+    cpt_o      : out std_logic_Vector(3 downto 0)  -- output vector example&#13;
+  );&#13;
+end TCL_Generic;&#13;
+</a>
+    </tool>
+  </lib>
+  <lib desc="#BFH-Praktika" name="8"/>
+  <lib desc="#Logisim ITA components" name="9"/>
+  <main name="OpenCollectorDemo"/>
+  <options>
+    <a name="gateUndefined" val="ignore"/>
+    <a name="simlimit" val="1000"/>
+    <a name="simrand" val="0"/>
+    <a name="tickmain" val="half_period"/>
+  </options>
+  <mappings>
+    <tool lib="6" map="Button2" name="Menu Tool"/>
+    <tool lib="6" map="Button3" name="Menu Tool"/>
+    <tool lib="6" map="Ctrl Button1" name="Menu Tool"/>
+  </mappings>
+  <toolbar>
+    <tool lib="6" name="Poke Tool"/>
+    <tool lib="6" name="Edit Tool"/>
+    <tool lib="6" name="Text Tool">
+      <a name="text" val=""/>
+      <a name="font" val="SansSerif plain 12"/>
+      <a name="halign" val="center"/>
+      <a name="valign" val="base"/>
+    </tool>
+    <sep/>
+    <tool lib="0" name="Pin"/>
+    <tool lib="0" name="Pin">
+      <a name="facing" val="west"/>
+      <a name="output" val="true"/>
+    </tool>
+    <tool lib="1" name="NOT Gate"/>
+    <tool lib="1" name="AND Gate"/>
+    <tool lib="1" name="OR Gate"/>
+  </toolbar>
+  <circuit name="OpenCollectorDemo">
+    <a name="circuit" val="OpenCollectorDemo"/>
+    <a name="clabel" val=""/>
+    <a name="clabelup" val="east"/>
+    <a name="clabelfont" val="SansSerif bold 16"/>
+    <a name="circuitnamedbox" val="true"/>
+    <a name="circuitnamedboxfixedsize" val="true"/>
+    <a name="circuitvhdlpath" val=""/>
+    <wire from="(610,100)" to="(610,110)"/>
+    <wire from="(420,140)" to="(470,140)"/>
+    <wire from="(420,180)" to="(470,180)"/>
+    <wire from="(510,150)" to="(510,160)"/>
+    <wire from="(510,190)" to="(510,200)"/>
+    <wire from="(290,150)" to="(290,160)"/>
+    <wire from="(570,140)" to="(610,140)"/>
+    <wire from="(470,140)" to="(470,160)"/>
+    <wire from="(470,180)" to="(470,200)"/>
+    <wire from="(530,110)" to="(530,140)"/>
+    <wire from="(250,140)" to="(250,160)"/>
+    <wire from="(610,110)" to="(610,140)"/>
+    <wire from="(480,280)" to="(480,310)"/>
+    <wire from="(480,310)" to="(480,340)"/>
+    <wire from="(550,140)" to="(550,180)"/>
+    <wire from="(250,140)" to="(280,140)"/>
+    <wire from="(530,140)" to="(550,140)"/>
+    <wire from="(550,140)" to="(570,140)"/>
+    <wire from="(450,340)" to="(480,340)"/>
+    <wire from="(450,280)" to="(480,280)"/>
+    <wire from="(470,140)" to="(500,140)"/>
+    <wire from="(470,180)" to="(500,180)"/>
+    <wire from="(520,180)" to="(550,180)"/>
+    <wire from="(480,310)" to="(500,310)"/>
+    <wire from="(500,310)" to="(520,310)"/>
+    <wire from="(230,140)" to="(250,140)"/>
+    <wire from="(500,200)" to="(510,200)"/>
+    <wire from="(520,140)" to="(530,140)"/>
+    <wire from="(470,160)" to="(480,160)"/>
+    <wire from="(470,200)" to="(480,200)"/>
+    <wire from="(500,160)" to="(510,160)"/>
+    <wire from="(280,160)" to="(290,160)"/>
+    <wire from="(300,140)" to="(310,140)"/>
+    <wire from="(250,160)" to="(260,160)"/>
+    <comp lib="6" loc="(270,190)" name="Text">
+      <a name="text" val="&quot;open collector&quot;"/>
+      <a name="font" val="SansSerif plain 12"/>
+    </comp>
+    <comp lib="0" loc="(570,140)" name="Pull Resistor">
+      <a name="pull" val="1"/>
+    </comp>
+    <comp lib="1" loc="(280,160)" name="NOT Gate">
+      <a name="size" val="20"/>
+    </comp>
+    <comp lib="0" loc="(530,110)" name="Probe">
+      <a name="facing" val="south"/>
+    </comp>
+    <comp lib="1" loc="(500,160)" name="NOT Gate">
+      <a name="size" val="20"/>
+    </comp>
+    <comp lib="1" loc="(300,140)" name="Controlled Buffer"/>
+    <comp lib="6" loc="(318,126)" name="Text">
+      <a name="text" val="0 or X"/>
+      <a name="font" val="SansSerif plain 12"/>
+    </comp>
+    <comp lib="0" loc="(610,110)" name="Probe">
+      <a name="facing" val="south"/>
+    </comp>
+    <comp lib="0" loc="(420,180)" name="Pin"/>
+    <comp lib="6" loc="(238,123)" name="Text">
+      <a name="text" val="0 or 1"/>
+      <a name="font" val="SansSerif plain 12"/>
+    </comp>
+    <comp lib="1" loc="(500,200)" name="NOT Gate">
+      <a name="size" val="20"/>
+    </comp>
+    <comp lib="1" loc="(520,140)" name="Controlled Buffer"/>
+    <comp lib="1" loc="(520,180)" name="Controlled Buffer"/>
+    <comp lib="6" loc="(702,141)" name="Text">
+      <a name="text" val="0 or 1 if both are 1"/>
+      <a name="font" val="SansSerif plain 12"/>
+    </comp>
+    <comp lib="6" loc="(471,119)" name="Text">
+      <a name="text" val="&quot;wired AND&quot;"/>
+      <a name="font" val="SansSerif plain 12"/>
+    </comp>
+    <comp lib="6" loc="(498,53)" name="Text">
+      <a name="text" val="74181 A=B is meant to be open collector so they can be wired together but this impl has them as ordinary logic"/>
+      <a name="font" val="SansSerif plain 12"/>
+    </comp>
+    <comp lib="0" loc="(420,140)" name="Pin"/>
+    <comp loc="(390,280)" name="OpenCollector"/>
+    <comp lib="0" loc="(390,280)" name="Pin"/>
+    <comp loc="(390,340)" name="OpenCollector"/>
+    <comp lib="0" loc="(390,340)" name="Pin"/>
+    <comp lib="0" loc="(520,310)" name="Probe">
+      <a name="facing" val="west"/>
+    </comp>
+    <comp lib="6" loc="(498,81)" name="Text">
+      <a name="text" val="we can wrap the library component to fix this"/>
+      <a name="font" val="SansSerif plain 12"/>
+    </comp>
+    <comp lib="0" loc="(500,310)" name="Pull Resistor">
+      <a name="pull" val="1"/>
+    </comp>
+  </circuit>
+  <circuit name="OpenCollector">
+    <a name="circuit" val="OpenCollector"/>
+    <a name="clabel" val=""/>
+    <a name="clabelup" val="east"/>
+    <a name="clabelfont" val="SansSerif bold 16"/>
+    <a name="circuitnamedbox" val="true"/>
+    <a name="circuitnamedboxfixedsize" val="true"/>
+    <a name="circuitvhdlpath" val=""/>
+    <appear>
+      <rect height="3" stroke="none" width="10" x="50" y="59"/>
+      <rect height="3" stroke="none" width="9" x="101" y="59"/>
+      <text fill="#404040" font-family="Dialog" font-size="32" font-weight="bold" text-anchor="start" x="86" y="62">*</text>
+      <circ-port height="8" pin="220,100" width="8" x="46" y="56"/>
+      <circ-port height="10" pin="370,100" width="10" x="105" y="55"/>
+      <polygon fill="none" points="61,44 61,75 104,60" stroke="#000000" stroke-width="3"/>
+      <circ-anchor facing="east" height="6" width="6" x="47" y="57"/>
+    </appear>
+    <wire from="(240,100)" to="(270,100)"/>
+    <wire from="(270,120)" to="(280,120)"/>
+    <wire from="(240,120)" to="(250,120)"/>
+    <wire from="(240,100)" to="(240,120)"/>
+    <wire from="(330,100)" to="(330,150)"/>
+    <wire from="(290,100)" to="(330,100)"/>
+    <wire from="(330,100)" to="(370,100)"/>
+    <wire from="(280,110)" to="(280,120)"/>
+    <wire from="(220,100)" to="(240,100)"/>
+    <comp lib="1" loc="(270,120)" name="NOT Gate">
+      <a name="size" val="20"/>
+    </comp>
+    <comp lib="0" loc="(220,100)" name="Pin">
+      <a name="label" val="I"/>
+    </comp>
+    <comp lib="1" loc="(290,100)" name="Controlled Buffer"/>
+    <comp lib="0" loc="(370,100)" name="Pin">
+      <a name="facing" val="west"/>
+      <a name="output" val="true"/>
+      <a name="tristate" val="true"/>
+      <a name="label" val="O"/>
+    </comp>
+    <comp lib="0" loc="(330,150)" name="Probe">
+      <a name="facing" val="north"/>
+    </comp>
+  </circuit>
+</project>
