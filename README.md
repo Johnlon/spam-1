@@ -51,7 +51,17 @@ At present it has:
   - Display register
 - Instructions for load, jump and branch, addition and subtraction - there's a surprising lot you can do with this and even without complex microcoded instructions
 
-The complete set of instruction and argument combinations at [here](docs/instructions.txt)
+:star: The complete set of instruction and argument combinations at [here](docs/instructions.txt)
+
+- The simulator works
+- The assembler and decoder work (see below) and I'm happy with the way the software turned out
+- My Fib program counts up and down in a loop
+
+So all good !!
+
+## Documentation
+
+![Block diagram](docs/blocks.png)
 
 And, the CPU is working ... 
 
