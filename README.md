@@ -97,7 +97,7 @@ Therefore with this design I can have at most 8 "input" devices and 8 "output" d
 
 This low order ROM is used only for program constants at present; this is rather wasteful (see below). 
 
-### Example Program
+### Example Program - Fibonacci
 
 ```
 :start	    LD A,#0
@@ -107,7 +107,7 @@ This low order ROM is used only for program constants at present; this is rather
 
 :loopUp     ADD A
             BCS :backDown
-            DISP B
+            DISP A
             ADD B
             BCS :backDown
             DISP B
