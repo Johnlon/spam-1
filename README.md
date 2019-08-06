@@ -67,14 +67,15 @@ Works in Window 10 at least. I haven't tried running Logism yet on Linux but it'
 
 # Change the Assembly Program
 
-- Open the [Simple CPU Assembler](https://docs.google.com/spreadsheets/d/1lYyPqYNF1dGDRP2n3ablaqkgZuxJ9x6T-ylut_nT1p4/edit?usp=sharing) built using Google Sheets
-- Goto, or duplicate, the Assemble Demo Tab 
-- Make changes to the Assembler
-- Copy the ROM bytes from the cells on the right of that same page into your clipboard
+- Open the [Simple CPU Assembler](https://docs.google.com/spreadsheets/d/1lYyPqYNF1dGDRP2n3ablaqkgZuxJ9x6T-ylut_nT1p4/edit?usp=sharing) implemented in Google Sheets
+
+- Goto, or duplicate, the "Fibonacci Assembler Demo" tab 
+- Make some changes to the Assembler
+- Copy the ROM bytes from the pink cells on the right of that same page into your clipboard
 - Place the data into the files on disk and then load into the ROMS or paste direct into the ROM's in Logism
     - Unfortunately the clipboard will have quotes in it so edit the clipboard in a test editor to remove the two quote.
     - If you are not writing the clipboard into a "rom file" the remove the "v2.0 header" from the clipboard contents too
- - Start the simulator as above
+ - Start the Logism simulator as above
 
 ## Program Storage
 
