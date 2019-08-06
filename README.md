@@ -1,6 +1,6 @@
 # simplecpu
 
-Simple CPU simulation built using Logism Evolution and including and Google Sheets based assembler
+A Simple CPU simulation built using Logism Evolution with Google Sheets based assembler
 
 :thumbsup: See the [Simple CPU Assembler](https://docs.google.com/spreadsheets/d/1lYyPqYNF1dGDRP2n3ablaqkgZuxJ9x6T-ylut_nT1p4/edit?usp=sharing) implemented in Google Sheets.  
 
