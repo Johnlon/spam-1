@@ -132,7 +132,7 @@ I've spent a couple of weeks building the sim for a CPU. It's 8 bit and based on
 It's a fairly primitive one in that there is no opcode vs microcode, or to put it another way every instruction is microcode. Also, this approach meant I never
 got around to needing to add an instruction register.
 
-:star: The complete set of instruction and argument combinations at [here](docs/instructions.txt)
+:star: The complete set of instruction and argument combinations are [here](docs/instructions.txt)
 
 - The simulator works
 - The assembler and decoder work (see below) and I'm happy with the way the software turned out
