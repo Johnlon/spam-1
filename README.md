@@ -128,7 +128,7 @@ This low order ROM is used only for program constants at present; this is rather
 
 # Progress
 
-I've spent a couple of weeks building the sim for a CPU. It's 8 bit and based on ideas form various places but kind of grew by itself with a little planning.
+I've spent a couple of weeks building the sim for a CPU. It's 8 bit and based on ideas from various places but kind of grew by itself with a little planning.
 It's a fairly primitive one in that there is no opcode vs microcode, or to put it another way every instruction is microcode. Also, this approach meant I never
 got around to needing to add an instruction register.
 
