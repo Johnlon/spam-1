@@ -1,8 +1,12 @@
-# simplecpu
+# SPAM-1 CPU - Simple Programmable and Massive
 
-A Simple CPU simulation built using Logism Evolution with Google Sheets based assembler
+A Simple 8 bit home brew CPU built using 1970's logic chips.
 
-:thumbsup: See the [Simple CPU Assembler](https://docs.google.com/spreadsheets/d/1lYyPqYNF1dGDRP2n3ablaqkgZuxJ9x6T-ylut_nT1p4/edit?usp=sharing) implemented in Google Sheets.  
+Currently in simulation phase using Logism Evolution with Google Sheets based assembler.
+
+Will move to hardware once the tool chain is resolved.
+
+:thumbsup: See the [SPAM-1 Assembler](https://docs.google.com/spreadsheets/d/1lYyPqYNF1dGDRP2n3ablaqkgZuxJ9x6T-ylut_nT1p4/edit?usp=sharing) implemented in Google Sheets.  
 
 ## Motivation
 
@@ -27,7 +31,7 @@ So I've decided to build an 8 bit CPU for myself, for the sheer joy and nostalgi
 - It will have an assembly langauge and assembler
 - I want to simulate it first
 - I want to build it physically, or a more likely a  derivative
-- Attach some output device - eg a UART / tty that respects VT codes   
+- Attach some output device - eg a UART / tty that respects VT codes (or Graphics??)
 - I might port or other higher level language to it for curiosity (which one and where to start?)
 - I would like to extend it to play some kind of basic game (tbd)
 
