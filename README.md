@@ -498,9 +498,9 @@ Can't recall why I was put off by this product.
  
 It's online which is cool but for some reason when I was playing originally I got stuck and gave up.
 There does seem to be a community of project folk have worked that you can form and extend.
-Looking again just now after having spent two weeks with Evo I think CircuitVerse looks pretty decent; however I still can't work out how to make
-CV's plot feature work (Logism's Cronogram was useful to me).  
-So, might be worth considering.
+Loads of existing circuits to play with and learn from.
+Looking again just now after having spent two weeks with Evo I think CircuitVerse looks pretty decent; however I still can't work out how to make CircuitVerse's plot feature work (Logism's Cronogram was useful to me).  
+So, CircuitVerse might be worth considering.
 
    
 [Digital](https://github.com/hneemann/Digital)
@@ -529,5 +529,5 @@ Again probably worth a look.
 
 Given Digital's connection back to Logism it's a pity there's no way to import a Logism circuit :(
 
- 
+UPDATE: 11 Aug 2019 - went back and had a play with Digital. I found it difficult to work with. Specifically there is no convenient way to paste contents into the ROM component (unlike Logism Evo) so you have to edit each byte in turn or use a file. I was able to entry multibyte values despite it being an 8 bit wide EEPROM. Eventually the program errored with a null pointer exception (I have reported stack trace). So I don't think I'll be going back again for now. 
 
