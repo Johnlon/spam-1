@@ -50,11 +50,11 @@ to be more readily accessible and instantly usable to others (like you) without 
 - Uses microcode instructions, not "microcoded" instructions, ie each instruction is at microcode level and directly enables the necessary control lines.
  Therefore control logic is trivial so unlike some other systems there is not EEPROM for control decoding and there is no Instruction Register either.
 - Registers
-  - A and B general purpose registers - These are not symmetrical as "A" always comes first in arithmetic ie "A+B" and "A-B"
-  - Memory address register
-  - Program counter
-  - Flags register - Zero,  Carry, Equals (ie A=B)
-  - Display register
+  - A and B general purpose registers (GPR) - These are not symmetrical because "A" always comes first in arithmetic ie "=A+B" and "=A-B"
+  - Memory Address Register (MAR)
+  - Program Counter (PC)
+  - Status (flags) register - Zero,  Carry, Equals (ie A=B)
+  - Display register (also use for input?)
 - Instructions for load any register with any other register, jump and branch, addition and subtraction - there's a surprising lot you can do with this and even without complex microcoded instructions
 
 ![Block diagram](docs/blocks.png)
@@ -196,7 +196,10 @@ I'd like to demonstrate a call to a subroutine and a return from that call.
 
 All my instructions are micro-instructions and doing a "CALL" requires at least two micro-instructions, one to push the PC into RAM then another to move the PC to 
 the new location. So I don't think I have the luxury of being able to introduce an "CALL" op code in the hardware. However the assembler could certainly expand a 
-"CALL :label" into something like this (note: typically one places a stack at the end of memory and works backwards through RAM as items are pushed to the sta ck- I've used that approach below.)
+"CALL :label" into something like this (note: typically one places a stack at the end of memory and works backwards through RAM as items are pushed to the stack- I've used that approach below). Notice that both A and B registers get trashed in the Call and Ret so can't be used for passing arguments to the subroutine. Having an auto-incrementing SP (more like PC) and auto-decrementing SP would save a bunch of instructions and also avoid trashing the two registers.
+
+What call convention do I want???? Stack or Register?
+In this design there isn't a SP register just a defined location in RAM.
  
 
 ```
@@ -346,15 +349,32 @@ Hmm.
 
 ## Hardware Components
 
-- [74HC161](https://assets.nexperia.com/documents/data-sheet/74HC161.pdf)  4-bit presettable synchronous binary counter; asynchronous reset
-- [74HC245](https://assets.nexperia.com/documents/data-sheet/74HC_HCT245.pdf) Octal transceiver - 3 state. Has convenient pinout than the [74244](https://assets.nexperia.com/documents/data-sheet/74HC_HCT244.pdf)
+### Presettable Counters 
+
+  NB 74160/74162 seem hard to find
+
+- [74HCT161](http://www.ti.com/lit/ds/symlink/cd74hct161.pdf)  4-bit presettable synchronous binary counter; with Asynchronous reset (Error in data sheet - these are not decade counters)
+
+- [74HCT163](http://www.ti.com/lit/ds/symlink/cd74hct161.pdf)  4-bit presettable synchronous binary counter; with Synchronous reset (Error in data sheet - these are not decade counters)
+
+- [74HC160/74HC161/74HC162/74HC163](http://www.edutek.ltd.uk/Binaries/Datasheets/7400/74HC161.pdf) - 74LS160/74LS160 are BCD and 74LS161 and 74LS163 are binary 
+
+- [74LS160A/74LS161A/74LS162A/74LS163A](http://www.sycelectronica.com.ar/semiconductores/74LS161-3.pdf) - 74LS160/74LS162 are BCD and 74LS161/74LS163 are binary & the 'A' variant has fewer electrical restrictions
+
+### Registers
+
 - [74HC377](https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf) 8 bit reg - convenient bit out at sides 
+
 - [74HC670](https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf) 8 bit reg - convenient bit out at sides 
+
 - [74HC670](https://www.ti.com/lit/ds/symlink/cd74hc670.pdf) - 4x4 register file - not synchronous so probably need to add edge detect to it. Not common but [Mouser has it](https://www.mouser.co.uk/Search/Refine?Keyword=74ls670) in DIP package. 
+
+### Binary Counter / Register - Shared In/Out & Tristate - curiosity
+
 - [Understanding the 74LS593 - Warren Toomey](https://minnie.tuhs.org/Blog/2019_04_26_Understanding_74LS593.html)
  with referenences to his successor to CrazySmallCPU called [CSCvon8](https://github.com/DoctorWkt/CSCvon8)
 
-### shift registers
+### Shift registers
 
 - [74HC165 using the parallel in / serial out shift register](https://iamzxlee.wordpress.com/2014/05/13/74hc165-8-bit-parallel-inserial-out-shift-register/)
 
@@ -367,6 +387,10 @@ Hmm.
 - [74LS674](http://www.ti.com/lit/ds/symlink/sn74ls673.pdf) 16 bit parallel in, serial out shift register
 
 - [74LS673](http://www.ti.com/lit/ds/symlink/sn74ls673.pdf) 16 bit serial in, parallel out shift register
+
+### Buffers 
+
+- [74HCT245](https://assets.nexperia.com/documents/data-sheet/74HC_HCT245.pdf) Octal transceiver - 3 state. Has convenient pinout than the [74HCT244](https://assets.nexperia.com/documents/data-sheet/74HC_HCT244.pdf)
 
 ### ALU
 
