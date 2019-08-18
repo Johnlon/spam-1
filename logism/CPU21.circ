@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project source="2.15.0" version="1.0">
-This file is intended to be loaded by Logisim-evolution (https://github.com/reds-heig/logisim-evolution).
-<lib desc="#Wiring" name="0">
+  This file is intended to be loaded by Logisim-evolution (https://github.com/reds-heig/logisim-evolution).
+
+  <lib desc="#Wiring" name="0">
     <tool name="Splitter">
       <a name="facing" val="west"/>
       <a name="fanout" val="4"/>
@@ -1765,12 +1766,12 @@ b 0 4 e9 90 8*0 f ff
       <text fill="#404040" font-family="Dialog" font-size="12" text-anchor="end" x="125" y="124">N</text>
       <rect height="3" stroke="none" width="10" x="130" y="139"/>
       <circ-port height="10" pin="840,470" width="10" x="135" y="135"/>
-      <circ-port height="10" pin="860,340" width="10" x="135" y="115"/>
       <circ-port height="10" pin="860,300" width="10" x="135" y="95"/>
-      <circ-port height="10" pin="870,130" width="10" x="135" y="75"/>
       <circ-port height="10" pin="870,90" width="10" x="135" y="55"/>
-      <circ-port height="8" pin="140,440" width="8" x="46" y="116"/>
       <circ-port height="8" pin="150,370" width="8" x="46" y="96"/>
+      <circ-port height="8" pin="140,440" width="8" x="46" y="116"/>
+      <circ-port height="10" pin="870,130" width="10" x="135" y="75"/>
+      <circ-port height="10" pin="860,340" width="10" x="135" y="115"/>
       <circ-port height="8" pin="210,160" width="8" x="46" y="76"/>
       <circ-port height="8" pin="210,110" width="8" x="46" y="56"/>
       <text fill="#404040" font-family="Dialog" font-size="12" text-anchor="end" x="125" y="144">GT</text>

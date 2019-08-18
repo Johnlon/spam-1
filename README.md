@@ -317,7 +317,11 @@ Hmm, I don't think I have the "LS" version which only pulls 20-40mA. The SN74181
 
 Yep - a C compile - others have done it.
 
-Hmm. Or perhaps [PL/0](https://www.youtube.com/watch?v=hF43WUd8jrg&list=PLgAD2y-6wgwoTnPfZWhMuXID14xnzkz2x)??
+Hmm. 
+- Or perhaps [PL/0](https://www.youtube.com/watch?v=hF43WUd8jrg&list=PLgAD2y-6wgwoTnPfZWhMuXID14xnzkz2x)??
+
+- https://github.com/DoctorWkt/smallc
+- http://www.cpm.z80.de/small_c.html
 
 
 ## Hardware Components
@@ -327,18 +331,55 @@ Hmm. Or perhaps [PL/0](https://www.youtube.com/watch?v=hF43WUd8jrg&list=PLgAD2y-
 - [74HC377](https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf) 8 bit reg - convenient bit out at sides 
 - [74HC670](https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf) 8 bit reg - convenient bit out at sides 
 - [74HC670](https://www.ti.com/lit/ds/symlink/cd74hc670.pdf) - 4x4 register file - not synchronous so probably need to add edge detect to it. Not common but [Mouser has it](https://www.mouser.co.uk/Search/Refine?Keyword=74ls670) in DIP package. 
+- [Understanding the 74LS593 - Warren Toomey](https://minnie.tuhs.org/Blog/2019_04_26_Understanding_74LS593.html)
+ with referenences to his successor to CrazySmallCPU called [CSCvon8](https://github.com/DoctorWkt/CSCvon8)
+
+### shift registers
+
+- [74HC165 using the parallel in / serial out shift register](https://iamzxlee.wordpress.com/2014/05/13/74hc165-8-bit-parallel-inserial-out-shift-register/)
+
+- [74HC165](http://www.ti.com/lit/ds/symlink/sn74hc165.pdf) 8-Bit parallel in or serial in, with serial out Shift Registers
+
+- [74HC585](http://www.ti.com/lit/ds/symlink/sn74hc595.pdf) 8 bit serial in parallel out shift reg - 3 state - with built in D type output latch 
+
+- [74HCT4094](https://assets.nexperia.com/documents/data-sheet/74HC_HCT4094.pdf) 8 bit serial in with serial or parallel out
+
+- [74LS674](http://www.ti.com/lit/ds/symlink/sn74ls673.pdf) 16 bit parallel in, serial out shift register
+
+- [74LS673](http://www.ti.com/lit/ds/symlink/sn74ls673.pdf) 16 bit serial in, parallel out shift register
+
+### Misc 
+
+- [NovaVga](https://static1.squarespace.com/static/545510f7e4b034f1f6ee64b3/t/56396b06e4b0dbf1a09516d5/1446603526737/novavga_rm.pdf) VGA adapter with frame buffer
+
+- See also the "Propellor" range eg http://dangerousprototypes.com/blog/2012/06/09/parallax-propeller-retro-pocket-mini-computer/
+
+- [MicroVGA](http://microvga.com/) - text only I think
+
+- [VGATonic](https://hackaday.io/project/6309-vga-graphics-over-spi-and-serial-vgatonic)
 
 
 # Further reading and links
 
-I'd also encourage you to look at [James Bates' series](https://www.youtube.com/watch?v=gqYFT6iecHw&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvuVui) of  Ben Eater inspired videos. 
-I found James' discussion much more detailed in many cases and very useful. 
+I'd also encourage you to look at [Warren Toomey's CrzySmallCPU](https://www.youtube.com/playlist?list=PL9YEAcq-5hHIJnflTcLA45sVxr900ziEy) and [James Bates' series](https://www.youtube.com/watch?v=gqYFT6iecHw&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvuVui) of  Ben Eater inspired videos for his build.
 
-And definitly the [Crazy Small CPU series](https://www.youtube.com/playlist?list=PL9YEAcq-5hHIJnflTcLA45sVxr900ziEy). 
+I found these discussion much more detailed in many cases and very useful. 
 
-## Ben's links
+## Ben Eater's links
 
 https://www.youtube.com/watch?v=X7rCxs1ppyY&t=4m29s Ben Eater comment on clock sync, the need for a separate ("inverted") clock for the enablement of registers, and also the need to do enablement of registers ahead of the synchronous clock - his solution is to buffer the clock line so that it is delayed by some nanoseconds compared to the clock used for register enablement.   
+
+
+## Warren Toomey -  Crazy Small Cpu
+
+https://minnie.tuhs.org/Programs/CrazySmallCPU/ Home page
+
+https://www.youtube.com/playlist?list=PL9YEAcq-5hHIJnflTcLA45sVxr900ziEy Playlist for the Crazy Small CPU
+
+https://www.youtube.com/watch?v=zJw7WcikX9A RAM and flags
+
+https://minnie.tuhs.org/Programs/UcodeCPU/index.html Original Logism impl of the CSCv1
+
 
 ## James Bates links
 
@@ -358,16 +399,6 @@ https://www.youtube.com/watch?v=tUXboOaisAY&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvu
 
 https://www.youtube.com/watch?v=DfuFNBJn1hk&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvuVui&index=6#t=6m48s Fixes one of the operands to reduce instruction space B is always second input   so can’t do A=C+D
 
-## Crazy Small Cpu
-
-https://minnie.tuhs.org/Programs/CrazySmallCPU/ Home page
-
-https://www.youtube.com/playlist?list=PL9YEAcq-5hHIJnflTcLA45sVxr900ziEy Playlist for the Crazy Small CPU
-
-https://www.youtube.com/watch?v=zJw7WcikX9A RAM and flags
-
-https://minnie.tuhs.org/Programs/UcodeCPU/index.html Microcode Logism Sim
-
 ## Simple CPU
 
 http://www.simplecpudesign.com/ Home page
@@ -378,8 +409,43 @@ http://www.simplecpudesign.com/simple_cpu_v1a/index.html  V1a
 
 http://www.simplecpudesign.com/simple_cpu_v2/index.html   V3
 
- 
+## Gigatron
 
+https://hackaday.io/project/20781/logs?sort=oldest&page=2
+
+## CPU Architecture
+
+### Register vs Accumulator vs Stack based architectured
+
+- [YCombinator question](https://news.ycombinator.com/item?id=16900113)
+
+    But generally, things fall out this way:
+
+    1) register based
+
+    Has a pool of registers, and the registers are general purpose (meaning they can be used as source or destination for most any computation operation the CPU can perform).
+
+    2) accumulator based
+
+    Has a "dignified" register (the accumulator) and most computations only happen in/out of the accumulator. Other registers exist for more specialized purposes to facilitate feeding data into and out of the accumulator. Many DSP architectures are very highly "accumulator based". General purpose CPU's, less so unless you go back in time to late 70's or early 80's architectures.
+
+    3) stack based
+
+    Has no registers (or very few) other than a stack pointer. All temporary data is stored on the stack, and all computation instructions involve computing with data items at the top of the stack and returning the result to the top of the stack.
+
+- [Quora question refines the above](https://www.quora.com/What-is-the-difference-between-accumulator-based-cpu-and-register-based-cpu)
+
+    Within general purpose register machines, there are multiple varieties as well:  (This list is not exhaustive; also, some architectures blend these concepts.)
+
+    - Register-Memory:  One operand comes from a register, and one operand  comes from memory.
+    - Register-Register, 2-address:  Both operands come from registers, but the result must overwrites one of the inputs.
+    - Register-Register, 3-address:  Both operands come from registers, and the result can go to its own register.
+    
+    The x86 processor, for example, is a Register-Memory machine that also offers 2-address Register-Register instructions.  Most RISC machines are 3-address Register-Register machines, with separate load/store instructions.  Both are general-purpose register machines.
+
+    Compare those to the 6502, which is an accumulator machine.  Most arithmetic (addition, subtraction, rotates and shifts) operates on the A register.  The two other registers, X and Y, only support increment, decrement and compare; they're mainly used for indexing memory and loop counters.
+
+- [HP 3000 Stack based](https://en.wikipedia.org/wiki/HP_3000#Use_of_stack_instead_of_registers)
 
 ## Other links
 
