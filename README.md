@@ -349,7 +349,7 @@ Hmm.
 
 ## Hardware Components
 
-### Presettable Counters 
+### Presettable Counter Regsters
 
   NB 74160/74162 seem hard to find
 
