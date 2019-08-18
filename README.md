@@ -198,20 +198,40 @@ All my instructions are micro-instructions and doing a "CALL" requires at least 
 the new location. So I don't think I have the luxury of being able to introduce an "CALL" op code in the hardware. However the assembler could certainly expand a 
 "CALL :label" into something like this (note: typically one places a stack at the end of memory and works backwards through RAM as items are pushed to the sta ck- I've used that approach below.)
  
-```
-# store PC into the stack
-    MAR=RAM[#stackpointer_location]     #set the MAR to point at the current location of the SP
-    RAM=PC
 
-# decrement stack pointer
-    A=RAM[#stackpointer_location]
+```
+#### CALL
+#Assembler has to work out where the call will return to, i th address directly after the call code below, and '<PC RETPOINT>' signifies that address.
+
+# store "PC RETPOINT" into the stack
+    MAR=#SP_LOCATION   #set the MAR to point at the location of the SP
+    MAR=RAM            #move the MAR to point at the value of the SP - ie into the stack
+    RAM=<PC RETPOINT>  # stash the return location onto the stack
+
+# advance the stack pointer 
+    MAR=#SP_LOCATION
+    A=RAM              #a=the value of the SP
     B=1
-    SUB A
-    RAM[#stackpointer_location]=A
+    ADD A              #a now SP+1
+    RAM=A              #SP now incremented
 
 # Jump to subroutine
-    PC=#subroutine_location
+    PC=#SP_LOCATION
 
+#### RET
+
+# decrement stack pointer
+    MAR=#SP_LOCATION
+    A=RAM              #a=SP
+    B=1
+    SUB A
+    RAM=A              #SP now decremented
+
+# Return from subroutine
+    MAR=#SP_LOCATION
+    MAR=RAM            #move MAR to point at the value of the SP - ie into the stack
+    PC=RAM             # execution continues at new PC
+    
 ```
 
 And "RET" could be expanded to.  
@@ -348,7 +368,13 @@ Hmm.
 
 - [74LS673](http://www.ti.com/lit/ds/symlink/sn74ls673.pdf) 16 bit serial in, parallel out shift register
 
-### Misc 
+### ALU
+
+- [Using the 74181](https://www.youtube.com/watch?v=Fq0MIJjlGsw)
+
+- [74LS382](http://digsys.upc.es/ed/components/combinacionals/arithmetic/74LS381.pdf) 4 bit ALU with Cn+4 (74LS381 needs 74LS182)
+
+### VGA 
 
 - [NovaVga](https://static1.squarespace.com/static/545510f7e4b034f1f6ee64b3/t/56396b06e4b0dbf1a09516d5/1446603526737/novavga_rm.pdf) VGA adapter with frame buffer
 
@@ -405,9 +431,9 @@ http://www.simplecpudesign.com/ Home page
 
 http://www.simplecpudesign.com/simple_cpu_v1/index.html  V1
 
-http://www.simplecpudesign.com/simple_cpu_v1a/index.html  V1a
+http://www.simplecpudesign.com/simple_cpu_v1a/index.html V1a V1a
 
-http://www.simplecpudesign.com/simple_cpu_v2/index.html   V3
+http://www.simplecpudesign.com/simple_cpu_v2/index.html   V2
 
 ## Gigatron
 
@@ -415,7 +441,7 @@ https://hackaday.io/project/20781/logs?sort=oldest&page=2
 
 ## CPU Architecture
 
-### Register vs Accumulator vs Stack based architectured
+### Register vs Accumulator vs Stack based architectures
 
 - [YCombinator question](https://news.ycombinator.com/item?id=16900113)
 
@@ -447,14 +473,10 @@ https://hackaday.io/project/20781/logs?sort=oldest&page=2
 
 - [HP 3000 Stack based](https://en.wikipedia.org/wiki/HP_3000#Use_of_stack_instead_of_registers)
 
-## Other links
 
-https://www.youtube.com/watch?v=Fq0MIJjlGsw Using the 74181
+### [Doing binary arithmetic](https://www.youtube.com/watch?v=WN8i5cwjkSE)
 
-https://www.youtube.com/watch?v=WN8i5cwjkSE Doing binary arithmetic
-
-http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt What we mean by Carry and Overflow
-
+### [What we mean by Carry and Overflow](http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt)
 
 ## Other Computers
 
