@@ -363,16 +363,16 @@ Hmm.
 
 ### Registers
 
-- [74HC377](https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf) 8 bit reg - convenient bit out at sides 
+- [74HC377](https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf) 8 bit reg - convenient pin out at sides 
 
-- [74HC670](https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf) 8 bit reg - convenient bit out at sides 
+- [74HCT670](http://www.ti.com/lit/ds/symlink/cd74hct670.pdf) - 4x4 register file with simulataneous read/write - but not synchronous so probably need to add edge detect to it. Not common but [Mouser has 74HCT670](https://www.mouser.co.uk/ProductDetail/Texas-Instruments/CD74HCT670E?qs=sGAEpiMZZMutXGli8Ay4kCmqQhNNfHG%2FfP%252B1EEY4uvo%3D) in DIP package 
 
-- [74HC670](https://www.ti.com/lit/ds/symlink/cd74hc670.pdf) - 4x4 register file - not synchronous so probably need to add edge detect to it. Not common but [Mouser has it](https://www.mouser.co.uk/Search/Refine?Keyword=74ls670) in DIP package. 
+### Binary Counter / Register - Shared In/Out - curiosity
 
-### Binary Counter / Register - Shared In/Out & Tristate - curiosity
-
-- [Understanding the 74LS593 - Warren Toomey](https://minnie.tuhs.org/Blog/2019_04_26_Understanding_74LS593.html)
+- [Understanding the 8 bit 74LS593 - Warren Toomey](https://minnie.tuhs.org/Blog/2019_04_26_Understanding_74LS593.html)
  with referenences to his successor to CrazySmallCPU called [CSCvon8](https://github.com/DoctorWkt/CSCvon8)
+
+- [74LS592/74LS593](https://www.zpag.net/Electroniques/Datasheet/SN74LS592N.pdf) 8 bit binary counter, 74LS593 has shared In/Out and tristate 
 
 ### Shift registers
 
@@ -408,6 +408,16 @@ Hmm.
 
 - [VGATonic](https://hackaday.io/project/6309-vga-graphics-over-spi-and-serial-vgatonic)
 
+### Breadboard
+
+- [Bus Board Systems BB830](https://www.mouser.co.uk/ProductDetail/BusBoard-Prototype-Systems/BB830?qs=sGAEpiMZZMtgbBHFKsFQgkU9HqdjFsiq3piHUASHS%252BU%3D)
+
+[Ben Eater discusses this board](https://youtu.be/HtFro0UKqkk?t=810) and also fakes. There is also a great YT video by someone else that compares the various bread board brands. 
+
+Mine come from Mouser, a distributor for Bus Board.
+But mine look different to those Ben used. Mine have "_BusBoard.com_" in a small font at one end, as [shown on the manufacturer's website](https://www.busboard.com/BB830). Ben's do not have the URL but Ben's do seem to match the [image shown on Mouser](https://www.mouser.co.uk/images/busboardprototypesystems/lrg/bb830_SPL.jpg) and also on the [BB830 data sheet on Mouser](https://www.mouser.co.uk/datasheet/2/58/BPS-DAT-(BB830-KIT)-Datasheet-1282386.pdf). 
+
+Presumably the design of the board has changed slightly since 2016; lets hope the change is cosmetic and doesn't impact the quality of the boards. This diversity in appearance might make it more difficult to identify genuine parts. 
 
 # Further reading and links
 
@@ -417,7 +427,14 @@ I found these discussion much more detailed in many cases and very useful.
 
 ## Ben Eater's links
 
-https://www.youtube.com/watch?v=X7rCxs1ppyY&t=4m29s Ben Eater comment on clock sync, the need for a separate ("inverted") clock for the enablement of registers, and also the need to do enablement of registers ahead of the synchronous clock - his solution is to buffer the clock line so that it is delayed by some nanoseconds compared to the clock used for register enablement.   
+https://www.youtube.com/watch?v=AwUirxi9eBg&list=PLowKtXNTBypGqImE405J2565dvjafglHU&index=35 - Control signal overview
+
+https://youtu.be/dXdoim96v5A?list=PLowKtXNTBypGqImE405J2565dvjafglHU&t=463 - Control logic 1 - Step by step control logic
+
+https://www.youtube.com/watch?v=X7rCxs1ppyY&t=4m29s - Control logic 2 - Ben Eater comment on clock sync, the need for a separate ("inverted") clock for the enablement of registers, and also the need to do enablement of registers ahead of the synchronous clock - his solution is to buffer the clock line so that it is delayed by some nanoseconds compared to the clock used for register enablement.   
+
+https://www.youtube.com/watch?v=ObnosznZvHY&list=PLowKtXNTBypGqImE405J2565dvjafglHU&index=43 - CPU Flags
+
 
 
 ## Warren Toomey -  Crazy Small Cpu
