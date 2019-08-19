@@ -8,6 +8,11 @@ Will move to hardware once the tool chain is resolved.
 
 :thumbsup: See the [SPAM-1 Assembler](https://docs.google.com/spreadsheets/d/1lYyPqYNF1dGDRP2n3ablaqkgZuxJ9x6T-ylut_nT1p4/edit?usp=sharing) implemented in Google Sheets.  
 
+## Other Pages
+
+![Program Counter](docs/program-counter.md)
+
+
 ## Motivation
 
 A bit of fun!
@@ -57,7 +62,7 @@ to be more readily accessible and instantly usable to others (like you) without 
   - Display register (also use for input?)
 - Instructions for load any register with any other register, jump and branch, addition and subtraction - there's a surprising lot you can do with this and even without complex microcoded instructions
 
-![Block diagram](docs/blocks.png)
+![Block diagram](docs/blocks-orig.png)
 
 # Run the simulator
 
@@ -169,9 +174,6 @@ put your own programs into the ROMs for a giggle.
 There is also an "instruction decoder" page which will decode the assembly program and show you which control lines are enabled for each instruction in the program.
 
 ![Decoder](docs/decoder.png)
-
-
-
 
 # Improvements
 
@@ -334,8 +336,6 @@ I don't get BCD arithmetic with the 74181 but I do get to use the same type of c
 Hmm, I don't think I have the "LS" version which only pulls 20-40mA. The SN74181N that I have pulls a horrible amount of current according to the datasheet; 88-150mA.
 
   
-
-
 ## Write a C compiler
 
 Yep - a C compile - others have done it.
@@ -435,6 +435,9 @@ https://www.youtube.com/watch?v=X7rCxs1ppyY&t=4m29s - Control logic 2 - Ben Eate
 
 https://www.youtube.com/watch?v=ObnosznZvHY&list=PLowKtXNTBypGqImE405J2565dvjafglHU&index=43 - CPU Flags
 
+https://youtu.be/ObnosznZvHY?t=709 - Ben discusses problem where the subsequent Jump instruction needs the Carry but the previous microinstruction wiped it out. Needs flags register to fix.
+
+https://youtu.be/ObnosznZvHY?t=1164 - Copy flags from ALU to reg whenever doing a "Sum out" ie whenever the ALU is being outputted.
 
 
 ## Warren Toomey -  Crazy Small Cpu
