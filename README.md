@@ -10,7 +10,7 @@ Will move to hardware once the tool chain is resolved.
 
 ## Other Pages
 
-![Program Counter](docs/program-counter.md)
+- [Program Counter](docs/program-counter.md)
 
 
 ## Motivation
