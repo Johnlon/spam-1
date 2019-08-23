@@ -104,9 +104,18 @@ Most of the time I figure you can work it out roughly like I have above and then
 
 One significant improvement to the 150ns ROM example given above might be have the ROM contain a simple boot program that copies the program code from ROM into a much faster SRAM chip at power-on and then run the program entirely from the SRAM. For example, it is easy to find [32Kx8 SRAM chips with 20ns read cycle time](https://www.mouser.co.uk/datasheet/2/464/IDT_71256SA_DST_2014113-1485479.pdf) instead of the 150ns EEPROM and this might get the CPU clock up to speeds closer to 10MHz. I've not tested that yet of course, but you get the idea.
 
-
 More info on propagation delays can be found in the [MIT Computational Structures](https://computationstructures.org/lectures/cmos/cmos.html#14) lecture notes which are quite detailed.
 And, of course, don't forget to look in your data sheets.
+
+### Clock Domain Crossing
+
+If interested in clocks and timing then you should also take a look at [Warren Toomey's answer](https://minnie.tuhs.org/Blog/2019_07_17_CSCon8_timing_notes.html) to a question I posed him on clock timing where he goes into a lot of useful and interesting details (thanks). 
+
+However, Warren also pointed me to a page about ["Clock Domain Crossing"](https://zipcpu.com/blog/2017/10/20/cdc.html) which I think bit me a while back when I was doing something "clever" with dividing my clock. I did it badly and started experiencing an issue where I got two clock pulses when expecting only one. I figured out on my own that my stupid divider wasn't reliable but didn't have any clue what the technical term for my stupid problem was. I am now wiser thanks to Warren and I advise you to visit that link also.
+
+I know that the comments section in one of Ben Eater's vids contains a bunch of folk talking about why he didn't just "gate the clock" or something like that as it would have been easier.  
+
+I will now paraphrase the whole thing as **"don't mess with the clock!"**.
 
 # Run the simulator
 
