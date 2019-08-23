@@ -357,7 +357,77 @@ Hmm.
 - http://www.cpm.z80.de/small_c.html
 
 
+## CPU Architecture Research
+
+### Register vs Accumulator vs Stack based architectures
+
+- [YCombinator question](https://news.ycombinator.com/item?id=16900113)
+
+    But generally, things fall out this way:
+
+    1) register based
+
+    Has a pool of registers, and the registers are general purpose (meaning they can be used as source or destination for most any computation operation the CPU can perform).
+
+    2) accumulator based
+
+    Has a "dignified" register (the accumulator) and most computations only happen in/out of the accumulator. Other registers exist for more specialized purposes to facilitate feeding data into and out of the accumulator. Many DSP architectures are very highly "accumulator based". General purpose CPU's, less so unless you go back in time to late 70's or early 80's architectures.
+
+    3) stack based
+
+    Has no registers (or very few) other than a stack pointer. All temporary data is stored on the stack, and all computation instructions involve computing with data items at the top of the stack and returning the result to the top of the stack.
+
+- [Quora question refines the above](https://www.quora.com/What-is-the-difference-between-accumulator-based-cpu-and-register-based-cpu)
+
+    Within general purpose register machines, there are multiple varieties as well:  (This list is not exhaustive; also, some architectures blend these concepts.)
+
+    - Register-Memory:  One operand comes from a register, and one operand  comes from memory.
+    - Register-Register, 2-address:  Both operands come from registers, but the result must overwrites one of the inputs.
+    - Register-Register, 3-address:  Both operands come from registers, and the result can go to its own register.
+    
+    The x86 processor, for example, is a Register-Memory machine that also offers 2-address Register-Register instructions.  Most RISC machines are 3-address Register-Register machines, with separate load/store instructions.  Both are general-purpose register machines.
+
+    Compare those to the 6502, which is an accumulator machine.  Most arithmetic (addition, subtraction, rotates and shifts) operates on the A register.  The two other registers, X and Y, only support increment, decrement and compare; they're mainly used for indexing memory and loop counters.
+
+- [HP 3000 Stack based](https://en.wikipedia.org/wiki/HP_3000#Use_of_stack_instead_of_registers)
+
+
+### Binary Arithmetic
+
+[Doing binary arithmetic YT vided](https://www.youtube.com/watch?v=WN8i5cwjkSE)
+
+[Arbitrary-precision_arithmetic](Also : )https://en.wikipedia.org/wiki/Arbitrary-precision_arithmetic)
+
+https://retrocomputing.stackexchange.com/questions/6640/how-did-8-bit-processors-perform-16-bit-arithmetic
+
+
+### Status Flags
+
+[What we mean by Carry and Overflow](http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt)
+
+
+### Instruction Set Architecture
+
+The original design for SPAM1 used Horizonal Microcoding with a separate control line for each device with no multiplexing. This design had three ROM's for the program giving 3x8 potential individual control lines, or 2x8 control lines plus 8 bits immediate, or 8 bits control and 16 bits immediate.
+
+At the time I didn't know the name for such an architecture but have since found this ...
+
+    _[Horizontal microcoding](http://wiki.c2.com/?MicroCode) means that the underlying CPU presents many fields per instruction, which each individually control some part of the ALU directly. So one 1-bit field might enable output from register 12 while another 1-bit field enabled input to the AND operation. This approach gives very precise control over the workings of the ALU, with the ability to specify quite a few things in parallel, but consumes a large number of bits per micro-instruction, since the control fields, in extreme cases, are all just on-off rather than multiplexed._
+
+#### Thoughts on microcoded instructions
+
+My current thoughts (Aug 2019) on microcoded instructions is that they offer a few benefits
+- Higher level functions can be achieved by combining a sequence of discrete microcoded instructions - this is the approach Ben Eater used.
+- Program size can be smaller. One can think of the microcode for each instruction as a subroutine. In a horizonally microcoded CPU the same sequences of microcode will appear many times over in the program. 
+
+
+, is that I ought to be able to achieve the same functionality with  
+
+
+
 ## Hardware Components
+
+[Texas Instruments classic data books as PDF](https://www.rsp-italy.it/Electronics/Databooks/Texas%20Instruments/index.htm)
 
 ### Presettable Counter Regsters
 
@@ -418,6 +488,19 @@ Hmm.
 
 - [VGATonic](https://hackaday.io/project/6309-vga-graphics-over-spi-and-serial-vgatonic)
 
+#### RAM / ROM
+
+64kx16 MRAM - £11.38 - https://www.mouser.co.uk/datasheet/2/144/MR0A16A_Datasheet-1511324.pdf - non volatile 35ns - less hassle than EEPROM and faster but needs an adapter to DIP - use in place of 32k RAM / 32k ROM - and more expensive too though. Because of separate 2x8 bit tristate output enable it can work as 64kx16 or 128kx8. ??? Data sheet says 4v
+
+
+##### Adapters 
+
+44 pin TSOP II to 44 pin DIP - https://www.digikey.com/product-detail/en/chip-quik-inc/PA0217/PA0217-ND/5014801
+
+Pay more ad get free soldering - https://www.epboard.com/eproducts/protoadapter1.htm#TSOPI_TSOPIItoPGAAdapter
+
+
+
 ### Breadboard
 
 - [Bus Board Systems BB830](https://www.mouser.co.uk/ProductDetail/BusBoard-Prototype-Systems/BB830?qs=sGAEpiMZZMtgbBHFKsFQgkU9HqdjFsiq3piHUASHS%252BU%3D)
@@ -429,11 +512,15 @@ But mine look different to those Ben used. Mine have "_BusBoard.com_" in a small
 
 Presumably the design of the board has changed slightly since 2016; lets hope the change is cosmetic and doesn't impact the quality of the boards. This diversity in appearance might make it more difficult to identify genuine parts. 
 
-# Further reading and links
+# Recommended reading, watchng and time specific bookmarks
 
-I'd also encourage you to look at [Warren Toomey's CrzySmallCPU](https://www.youtube.com/playlist?list=PL9YEAcq-5hHIJnflTcLA45sVxr900ziEy) and [James Bates' series](https://www.youtube.com/watch?v=gqYFT6iecHw&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvuVui) of  Ben Eater inspired videos for his build.
+This section contains a list content I found useful and also bok marks at specific points in videos about specific topic.
 
-I found these discussion much more detailed in many cases and very useful. 
+I'd also encourage you to look at [Warren Toomey's CrazySmallCPU](https://www.youtube.com/playlist?list=PL9YEAcq-5hHIJnflTcLA45sVxr900ziEy) 
+
+Also, [James Bates' series](https://www.youtube.com/watch?v=gqYFT6iecHw&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvuVui) of  Ben Eater inspired videos for his build. I found the discussion much more detailed in many cases and very useful. 
+
+[MIT Computational Structures lectures](https://computationstructures.org/index.html)
 
 ## Ben Eater's links
 
@@ -493,45 +580,6 @@ http://www.simplecpudesign.com/simple_cpu_v2/index.html   V2
 
 https://hackaday.io/project/20781/logs?sort=oldest&page=2
 
-## CPU Architecture
-
-### Register vs Accumulator vs Stack based architectures
-
-- [YCombinator question](https://news.ycombinator.com/item?id=16900113)
-
-    But generally, things fall out this way:
-
-    1) register based
-
-    Has a pool of registers, and the registers are general purpose (meaning they can be used as source or destination for most any computation operation the CPU can perform).
-
-    2) accumulator based
-
-    Has a "dignified" register (the accumulator) and most computations only happen in/out of the accumulator. Other registers exist for more specialized purposes to facilitate feeding data into and out of the accumulator. Many DSP architectures are very highly "accumulator based". General purpose CPU's, less so unless you go back in time to late 70's or early 80's architectures.
-
-    3) stack based
-
-    Has no registers (or very few) other than a stack pointer. All temporary data is stored on the stack, and all computation instructions involve computing with data items at the top of the stack and returning the result to the top of the stack.
-
-- [Quora question refines the above](https://www.quora.com/What-is-the-difference-between-accumulator-based-cpu-and-register-based-cpu)
-
-    Within general purpose register machines, there are multiple varieties as well:  (This list is not exhaustive; also, some architectures blend these concepts.)
-
-    - Register-Memory:  One operand comes from a register, and one operand  comes from memory.
-    - Register-Register, 2-address:  Both operands come from registers, but the result must overwrites one of the inputs.
-    - Register-Register, 3-address:  Both operands come from registers, and the result can go to its own register.
-    
-    The x86 processor, for example, is a Register-Memory machine that also offers 2-address Register-Register instructions.  Most RISC machines are 3-address Register-Register machines, with separate load/store instructions.  Both are general-purpose register machines.
-
-    Compare those to the 6502, which is an accumulator machine.  Most arithmetic (addition, subtraction, rotates and shifts) operates on the A register.  The two other registers, X and Y, only support increment, decrement and compare; they're mainly used for indexing memory and loop counters.
-
-- [HP 3000 Stack based](https://en.wikipedia.org/wiki/HP_3000#Use_of_stack_instead_of_registers)
-
-
-### [Doing binary arithmetic](https://www.youtube.com/watch?v=WN8i5cwjkSE)
-
-### [What we mean by Carry and Overflow](http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt)
-
 ## Other Computers
 
 https://github.com/DoctorWkt/CSCvon8/blob/master/Docs/CSCvon8_design.md
@@ -541,14 +589,8 @@ https://hackaday.io/project/24511-jaca-1-2-homebrew-computer
 https://minnie.tuhs.org/Programs/CrazySmallCPU/description.html
 
 
- 
 
-
-
-
-
-
-## Simulators
+# Simulators
 
 [Logisim (original)](http://www.cburch.com/logisim/) is no longer supported however there seems to be a lot of reusable circuits out there for it (eg github). 
 I started building in Logisim "original" and got a long way. However, at one point I was having difficulty with something and
