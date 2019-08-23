@@ -60,6 +60,49 @@ to be more readily accessible and instantly usable to others (like you) without 
 
 ![Block diagram](docs/blocks-orig.png)
 
+
+## CPU Phases
+
+The CPU has three phases,  _fetch_, _decode_ and an _execute_. However, this CPU does not have an instruction register so the fetch and decode phases aren't as obvious as there is no latching involved an and whole sequence occurs in a single clock cycle.   
+
+![Timing diagram - phases](docs/timing1.png)
+
+The first phase is to load the PC with the instruction address so that the program bytes made available to the decode logic. The PC is set on the rising edge of the clock. Because there is no instruction register this is the closest we get to a conventional "fetch". 
+
+The second phase, decoding the program bytes into control lines, occurs during the high level of the clock. These control lines are fed to the various components of the CPU and determine what happens to those components during the execute phase.
+
+The third phase, execute, occurs on the falling edge of the clock and this is where registers latch their value from the data bus.
+
+
+### Propagation Delays
+
+One might at this point ask a question "what limits the speed of a CPU". In most circuits the speed limit probably comes down to the documented timing limitations, including propagation delays, of the components you've used, but might also also depend on concerns such as capacitance (or even inductance) damping out or creating higher frequency signals. I haven't the experience to say the extent of the role that capacitance and inductance play in limiting home brew CPU speeds; CPU's that run 10MHz or less. 
+My instincts tell me that capacitance and inductance are unlikely to be a huge concern unless attempting to run at higher frequencies and in any case these factors will probably by highly dependent on the specific layout of ones CPU.
+
+We know that running a home brew CPU in the 1MHz-5MHz range is entirely feasible and it's easy to find folk doing this, such as Warren Toomey and his [CSCvon8](https://github.com/DoctorWkt/CSCvon8/blob/master/Docs/CSCvon8_design.md). 
+
+Why not faster?
+
+State changes in electronics are fast but not instantaneous.  All electronic components have delays around the time needed to setup the inputs of the component and/or delays between an input changing and the output of the component reacting to that change. During these intervals the outputs of the component cannot be relied on to be have a stable and deterministic value and these kinds of delays put a hard limit on how fast one can run a given component.
+
+![Timing diagram - propagation delay](docs/timing-propdelay.png)
+
+In additon edge triggered components will often state how long the inputs of the device (eg the data in of an latch) must be  
+
+
+When we put several components together in a circuit then these individual component delays sum up on the critical processing path of the larger circuit to further reduce the maximum operating frequency of the circuit as a whole.   
+
+For example, consider the logic around an instruction that latches a constant from the program memory into a register. The program memory, eg a ROM, will have associated control logic around it and the output of the ROM will loaded into a register and all those components will have their own delays. If the control logic eg a [74HCHCT151](https://assets.nexperia.com/documents/data-sheet/74HC_HCT151.pdf) multiplexer takes 25ns to stabilise the output enable flag on the ROM, the ROM, eg a [AT28C256-15](https://www.mouser.co.uk/datasheet/2/268/doc0006-1108095.pdf) takes 150ns to display the new data value and the register, eg a [74HCT374](https://www.ti.com/lit/ds/symlink/cd74hc574.pdf) takes 12ns to latch the ROM output, then the critical path through those components is 187ns. In this case then the fastest one could operate this path would be of the order of 5.3Mhz ( = 1 divided by 0.000,000,187). 
+
+And depending on the choice of components this max clock rate could be considerably reduced. For example if instead we choose the slower [AT28C256-35](https://www.mouser.co.uk/datasheet/2/268/doc0006-1108095.pdf) ROM then we are looking at a t<sub>ACC</sub> (time from address to data output stabilisation) or t<sub>CE</sub>  (time from chip enable to data output stabilisation) of 350ns, which would mean a max frequency of no more than 1/(25+350+12) = 2.5Mhz approx.
+
+Matters potentially get more complicated because some components will state how long inputs must be stable before the clock if the data is to be latched successfully, not just how long it takes for the outputs to become stable after it is latched. 
+
+![edge timing pre and post](docs/timing-prop-edge.png)
+
+All the calcs above are approximations from the data sheets (which I may have misread) but the principal stands that longer delays in the individual components translate to lower operating frequencies for the CPU. 
+
+
 # Run the simulator
 
 Works in Window 10 at least. I haven't tried running Logism yet on Linux but it's all Java. 
