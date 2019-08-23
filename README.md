@@ -117,6 +117,15 @@ I know that the comments section in one of Ben Eater's vids contains a bunch of 
 
 I will now paraphrase the whole thing as **"don't mess with the clock!"**.
 
+### Advice on clocks for newbies
+
+This is a must read - even if you then go on and violate the rule !
+
+Please go and read the zipcpu.com page ["Rules for new FPGA designers"](
+https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html) regardless of whether you are planning an FPGA or discrete IC based design. This page is linked off the [Clock Domain Crossing](https://zipcpu.com/blog/2017/10/20/cdc.html) page that I mentioned earlier.
+
+You'll see immediately that I (also Ben Eater and others) violate rule 2 by having the PC advance on one edge and the execution firing on the other edge. In fact that same page says that this setup  _"acts like separate clocks"_, which I agree with. They act like inverse clocks and [Ben Eater even says we need inverse clocks](https://www.youtube.com/watch?v=X7rCxs1ppyY&t=4m29s) in one of his vid's. The important point is knowing what the options are and the pro's and con's then making an informed decision (and simulating first !!!).
+
 # Run the simulator
 
 Works in Window 10 at least. I haven't tried running Logism yet on Linux but it's all Java. 
