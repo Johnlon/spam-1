@@ -76,10 +76,9 @@ The third phase, execute, occurs on the falling edge of the clock and this is wh
 
 ### Propagation Delays
 
-One might at this point ask a question "what limits the speed of a CPU". In most circuits the speed limit probably comes down to the documented timing limitations, including propagation delays, of the components you've used, but might also also depend on concerns such as capacitance (or even inductance) damping out or creating higher frequency signals. I haven't the experience to say the extent of the role that capacitance and inductance play in limiting home brew CPU speeds; CPU's that run 10MHz or less. 
-My instincts tell me that capacitance and inductance are unlikely to be a huge concern unless attempting to run at higher frequencies and in any case these factors will probably by highly dependent on the specific layout of ones CPU.
+One might at this point ask a question "what limits the speed of a CPU?". In most circuits the speed limit probably comes down to the well documented timing limitations of the components you've chosen to use. To be fair factors such as capacitance, or even inductance, damping out or creating higher frequency signals might complicate tbings but I haven't the experience to say the extent of the role that capacitance and inductance play in limiting home brew CPU speeds; CPU's that run 10MHz or less. My instincts tell me that capacitance and inductance are unlikely to be a huge concern unless attempting to run at higher frequencies and in any case these factors would probably by highly dependent on the specific layout of ones CPU.
 
-We know that running a home brew CPU in the 1MHz-5MHz range is entirely feasible and it's easy to find folk doing this, such as Warren Toomey and his [CSCvon8](https://github.com/DoctorWkt/CSCvon8/blob/master/Docs/CSCvon8_design.md). 
+In any case we know that running a home brew CPU in the 1MHz-5MHz range is entirely feasible and it's easy to find folk doing this, such as Warren Toomey and his [CSCvon8](https://github.com/DoctorWkt/CSCvon8/blob/master/Docs/CSCvon8_design.md). 
 
 Why not faster?
 
@@ -87,21 +86,27 @@ State changes in electronics are fast but not instantaneous.  All electronic com
 
 ![Timing diagram - propagation delay](docs/timing-propdelay.png)
 
-In additon edge triggered components will often state how long the inputs of the device (eg the data in of an latch) must be  
+In additon, many components will state how long the inputs of the device (eg the data in of an latch) must be held stable prior to a trigger or enable signal. If the inputs are not held stable sufficiently long prior to the trigger then the data seen by the device is unpredictable; ie potentially random behaviour.  
 
+![edge timing pre and post](docs/timing-prop-edge.png)
 
-When we put several components together in a circuit then these individual component delays sum up on the critical processing path of the larger circuit to further reduce the maximum operating frequency of the circuit as a whole.   
+When we put several components together in a circuit then the individual delays of the component sum up on the _critical path_ of the larger circuit to further reduce the maximum operating frequency of the circuit as a whole.   
 
 For example, consider the logic around an instruction that latches a constant from the program memory into a register. The program memory, eg a ROM, will have associated control logic around it and the output of the ROM will loaded into a register and all those components will have their own delays. If the control logic eg a [74HCHCT151](https://assets.nexperia.com/documents/data-sheet/74HC_HCT151.pdf) multiplexer takes 25ns to stabilise the output enable flag on the ROM, the ROM, eg a [AT28C256-15](https://www.mouser.co.uk/datasheet/2/268/doc0006-1108095.pdf) takes 150ns to display the new data value and the register, eg a [74HCT374](https://www.ti.com/lit/ds/symlink/cd74hc574.pdf) takes 12ns to latch the ROM output, then the critical path through those components is 187ns. In this case then the fastest one could operate this path would be of the order of 5.3Mhz ( = 1 divided by 0.000,000,187). 
 
 And depending on the choice of components this max clock rate could be considerably reduced. For example if instead we choose the slower [AT28C256-35](https://www.mouser.co.uk/datasheet/2/268/doc0006-1108095.pdf) ROM then we are looking at a t<sub>ACC</sub> (time from address to data output stabilisation) or t<sub>CE</sub>  (time from chip enable to data output stabilisation) of 350ns, which would mean a max frequency of no more than 1/(25+350+12) = 2.5Mhz approx.
 
-Matters potentially get more complicated because some components will state how long inputs must be stable before the clock if the data is to be latched successfully, not just how long it takes for the outputs to become stable after it is latched. 
-
-![edge timing pre and post](docs/timing-prop-edge.png)
-
 All the calcs above are approximations from the data sheets (which I may have misread) but the principal stands that longer delays in the individual components translate to lower operating frequencies for the CPU. 
 
+If one uses a more sophisticated simulation or modelling tool than I am (Logisim) then the tool will probably calculate your critical path for you and tell you the timings. The critical path is the slowest path and thus the path likely with the greatest impact on speed.
+
+Most of the time I figure you can work it out roughly like I have above and then decided if you want to make adjustments to your design. 
+
+One significant improvement to the 150ns ROM example given above might be have the ROM contain a simple boot program that copies the program code from ROM into a much faster SRAM chip at power-on and then run the program entirely from the SRAM. For example, it is easy to find [32Kx8 SRAM chips with 20ns read cycle time](https://www.mouser.co.uk/datasheet/2/464/IDT_71256SA_DST_2014113-1485479.pdf) instead of the 150ns EEPROM and this might get the CPU clock up to speeds closer to 10MHz. I've not tested that yet of course, but you get the idea.
+
+
+More info on propagation delays can be found in the [MIT Computational Structures](https://computationstructures.org/lectures/cmos/cmos.html#14) lecture notes which are quite detailed.
+And, of course, don't forget to look in your data sheets.
 
 # Run the simulator
 
