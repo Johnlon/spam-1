@@ -13,13 +13,13 @@ Will move to hardware once the tool chain is resolved.
 
 A bit of fun!
 
-I started working life in 1986 as a hardware engineer but quickly switched to software. As a teenager I'dbeen fascinated with
+I started working life in 1986 as a hardware engineer but quickly switched to software. As a teenager I'd been fascinated with
 discrete electronics and then later on with integrated circuits and build many little home projects; nothing too exciting as we didn't have the resources (ie ££) back then.
 
 Recently, like many other folk, I came across [Ben Eater's series of YT videos](https://www.youtube.com/watch?v=HyznrdDSSGM&list=PLowKtXNTBypGqImE405J2565dvjafglHU) and also those of quite a few others that inspired me to have a go at building my
 own CPU. Back in 1980 even the relatively few parts needed would probably have been beyond my means, but not anymore !!
 
-However, back in the 1980's  I would have been building more or less blind. I still don't have an oscilloscope but what I do have is a simulator.   
+However, back in the 1980's I would have been building more or less blind. I still don't have an oscilloscope but what I do have is a simulator.   
 Having spent the last few weeks getting to know [Logisim Evolution](https://github.com/reds-heig/logisim-evolution)  and having hours trying to figure out the fine details of my simulated processor
 it's clear that if I had attempted to build a CPU back in 1980 then I'd have fallen flat on my face.
 It's been a great learning experience, if frustrating at times.
@@ -29,7 +29,7 @@ So I've decided to build an 8 bit CPU for myself, for the sheer joy and nostalgi
 # Objectives
 
 - I want to be able to run at least the typical demo programs like Fibonacci 
-- It will have an assembly langauge and assembler
+- It will have an assembly language and assembler
 - I want to simulate it first
 - I want to build it physically, or a more likely a  derivative
 - Attach some output device - eg a UART / tty that respects VT codes (or Graphics??)
@@ -45,18 +45,18 @@ to be more readily accessible and instantly usable to others (like you) without 
 - 8 bits data
 - 8 bits address
 - 16 bit instruction
-- 8 bit ALU - add/subtract
-- Separate RAM and ROM (for no particular reason - could have been all RAM)
-- One instruction per clock cycle (effectively "Fetch/Decode" on falling edge of clock and "Execute" on rising edge of clock)
-- Uses microcode instructions, not "microcoded" instructions, ie each instruction is at microcode level and directly enables the necessary control lines.
- Therefore control logic is trivial so unlike some other systems there is not EEPROM for control decoding and there is no Instruction Register either.
+- 8 bit ALU - right now just add/subtract with and without carry (and eventally other arithmetic and logical operations)
+- Separate RAM and ROM (for no particular reason - could have been all RAM or a single address space)
+- One instruction per clock cycle (effectively "Fetch/Decode" on one edge of clock and "Execute" on the other edge of the clock)
+- Uses horizontal microcode style instructions, not "microcoded" instructions, ie each instruction is at microcode level and directly enables the necessary control lines.
+ Therefore control logic is trivial so unlike some other systems there is no PROM for control decoding and there is no Instruction Register (yet) either.
 - Registers
   - A and B general purpose registers (GPR) - These are not symmetrical because "A" always comes first in arithmetic ie "=A+B" and "=A-B"
   - Memory Address Register (MAR)
   - Program Counter (PC)
-  - Status (flags) register - Zero,  Carry, Equals (ie A=B)
+  - Status (flags) register - Zero,  Carry, Equals
   - Display register (also use for input?)
-- Instructions for load any register with any other register, jump and branch, addition and subtraction - there's a surprising lot you can do with this and even without complex microcoded instructions
+- Instructions for load most registers from most other registers, jump and branch, addition and subtraction - there's a surprising lot you can do with this and even without complex microcoded instructions
 
 ![Block diagram](docs/blocks-orig.png)
 
@@ -76,9 +76,9 @@ The third phase, execute, occurs on the falling edge of the clock and this is wh
 
 ### Propagation Delays
 
-One might at this point ask a question "what limits the speed of a CPU?". In most circuits the speed limit probably comes down to the well documented timing limitations of the components you've chosen to use. To be fair factors such as capacitance, or even inductance, damping out or creating higher frequency signals might complicate tbings but I haven't the experience to say the extent of the role that capacitance and inductance play in limiting home brew CPU speeds; CPU's that run 10MHz or less. My instincts tell me that capacitance and inductance are unlikely to be a huge concern unless attempting to run at higher frequencies and in any case these factors would probably by highly dependent on the specific layout of ones CPU.
+One might at this point ask a question "what limits the speed of a CPU?". In most circuits the speed limit probably comes down to the well documented timing limitations of the components you've chosen to use. To be fair factors such as capacitance, or even inductance, damping out or creating higher frequency signals might complicate things but I haven't the experience to say the extent of the role that capacitance and inductance play in limiting home brew CPU speeds; CPU's that run 10MHz or less. My instincts tell me that capacitance and inductance are unlikely to be a huge concern unless attempting to run at higher frequencies and in any case these factors would probably by highly dependent on the specific layout of one's CPU.
 
-In any case we know that running a home brew CPU in the 1MHz-5MHz range is entirely feasible and it's easy to find folk doing this, such as Warren Toomey and his [CSCvon8](https://github.com/DoctorWkt/CSCvon8/blob/master/Docs/CSCvon8_design.md). 
+We know that running a home brew CPU in the 1MHz-5MHz range is entirely feasible and it's easy to find folk doing this, such as Warren Toomey and his [CSCvon8](https://github.com/DoctorWkt/CSCvon8/blob/master/Docs/CSCvon8_design.md). 
 
 Why not faster?
 
@@ -86,21 +86,23 @@ State changes in electronics are fast but not instantaneous.  All electronic com
 
 ![Timing diagram - propagation delay](docs/timing-propdelay.png)
 
-In additon, many components will state how long the inputs of the device (eg the data in of an latch) must be held stable prior to a trigger or enable signal. If the inputs are not held stable sufficiently long prior to the trigger then the data seen by the device is unpredictable; ie potentially random behaviour.  
+In addition, many components will state how long the inputs of the device (eg the data in of an latch) must be held stable prior to a trigger or enable signal. If the inputs are not held stable sufficiently long prior to the trigger then the data seen by the device is unpredictable; ie potentially random behaviour.  
 
 ![edge timing pre and post](docs/timing-prop-edge.png)
 
 When we put several components together in a circuit then the individual delays of the component sum up on the _critical path_ of the larger circuit to further reduce the maximum operating frequency of the circuit as a whole.   
 
-For example, consider the logic around an instruction that latches a constant from the program memory into a register. The program memory, eg a ROM, will have associated control logic around it and the output of the ROM will loaded into a register and all those components will have their own delays. If the control logic eg a [74HCHCT151](https://assets.nexperia.com/documents/data-sheet/74HC_HCT151.pdf) multiplexer takes 25ns to stabilise the output enable flag on the ROM, the ROM, eg a [AT28C256-15](https://www.mouser.co.uk/datasheet/2/268/doc0006-1108095.pdf) takes 150ns to display the new data value and the register, eg a [74HCT374](https://www.ti.com/lit/ds/symlink/cd74hc574.pdf) takes 12ns to latch the ROM output, then the critical path through those components is 187ns. In this case then the fastest one could operate this path would be of the order of 5.3Mhz ( = 1 divided by 0.000,000,187). 
+For example, consider the logic around an instruction that latches a constant from the program memory into a register. The program memory, eg a ROM, will have associated control logic around it and the output of the ROM will loaded into a register and all those components will have their own delays. 
 
-And depending on the choice of components this max clock rate could be considerably reduced. For example if instead we choose the slower [AT28C256-35](https://www.mouser.co.uk/datasheet/2/268/doc0006-1108095.pdf) ROM then we are looking at a t<sub>ACC</sub> (time from address to data output stabilisation) or t<sub>CE</sub>  (time from chip enable to data output stabilisation) of 350ns, which would mean a max frequency of no more than 1/(25+350+12) = 2.5Mhz approx.
+For example, lets say the control logic, a [74HCHCT151](https://assets.nexperia.com/documents/data-sheet/74HC_HCT151.pdf) multiplexer, takes 25ns to stabilise the output enable flag on the ROM, the ROM, a [AT28C256-15](https://www.mouser.co.uk/datasheet/2/268/doc0006-1108095.pdf), takes 150ns to display the new data value and finally the register, a [74HCT374](https://www.ti.com/lit/ds/symlink/cd74hc574.pdf), takes 12ns to latch the ROM output, then the critical path through those components is 187ns. In this case then the fastest one could expect to operate this path would be of the order of 5.3Mhz ( = 1 divided by 0.000,000,187). 
+
+And depending on the choice of components this max clock rate could be considerably less. For example, if instead we choose the slower [AT28C256-35](https://www.mouser.co.uk/datasheet/2/268/doc0006-1108095.pdf) ROM then we are looking at a t<sub>ACC</sub> (time from address to data output stabilisation) or t<sub>CE</sub>  (time from chip enable to data output stabilisation) of 350ns, which would mean a max frequency of no more than 1/(25+350+12) = 2.5Mhz approx.
 
 All the calcs above are approximations from the data sheets (which I may have misread) but the principal stands that longer delays in the individual components translate to lower operating frequencies for the CPU. 
 
-If one uses a more sophisticated simulation or modelling tool than I am (Logisim) then the tool will probably calculate your critical path for you and tell you the timings. The critical path is the slowest path and thus the path likely with the greatest impact on speed.
+If one uses a more sophisticated simulation or modelling tool than Logisim then the tool will probably calculate your critical path for you and tell you the timings. The critical path is the slowest path and thus the path likely with the greatest impact on speed.
 
-Most of the time I figure you can work it out roughly like I have above and then decided if you want to make adjustments to your design. 
+Most of the time I figure you can work it out roughly like I have above and then decide if you want to make adjustments to your design. 
 
 One significant improvement to the 150ns ROM example given above might be have the ROM contain a simple boot program that copies the program code from ROM into a much faster SRAM chip at power-on and then run the program entirely from the SRAM. For example, it is easy to find [32Kx8 SRAM chips with 20ns read cycle time](https://www.mouser.co.uk/datasheet/2/464/IDT_71256SA_DST_2014113-1485479.pdf) instead of the 150ns EEPROM and this might get the CPU clock up to speeds closer to 10MHz. I've not tested that yet of course, but you get the idea.
 
@@ -119,12 +121,12 @@ I will now paraphrase the whole thing as **"don't mess with the clock!"**.
 
 ### Advice on clocks for newbies
 
-This is a must read - even if you then go on and violate the rule !
-
-Please go and read the zipcpu.com page ["Rules for new FPGA designers"](
-https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html) regardless of whether you are planning an FPGA or discrete IC based design. This page is linked off the [Clock Domain Crossing](https://zipcpu.com/blog/2017/10/20/cdc.html) page that I mentioned earlier.
+Please also go and read the ["Rules for new FPGA designers"](
+https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html) page regardless of whether you are planning an FPGA or discrete IC based design. This page is linked off the [Clock Domain Crossing](https://zipcpu.com/blog/2017/10/20/cdc.html) page that I mentioned earlier.
 
 You'll see immediately that I (also Ben Eater and others) violate rule 2 by having the PC advance on one edge and the execution firing on the other edge. In fact that same page says that this setup  _"acts like separate clocks"_, which I agree with. They act like inverse clocks and [Ben Eater even says we need inverse clocks](https://www.youtube.com/watch?v=X7rCxs1ppyY&t=4m29s) in one of his vid's. The important point is knowing what the options are and the pro's and con's then making an informed decision (and simulating first !!!).
+
+The same newbie advice page gives useful guidance on synchronising buttons and other external inputs with the system clock. Coincidentally the need to synchronise a button press with the system clock came up recently where I had to synchronise the system reset button with the program counter logic and I needed to achieve this by use of a SR latch.
 
 # Run the simulator
 
@@ -150,7 +152,7 @@ Works in Window 10 at least. I haven't tried running Logism yet on Linux but it'
 
 ## Program Storage
 
-Program is stored in ROM and is, wastefully, a fixed 16 bit instruction, organised over a pair of ROMs, one each for for high and low byte of the instruction.
+Program is stored in ROM and is, wastefully, a fixed 16 bit instruction, organised over a pair of ROMs, one each for high and low byte of the instruction.
 The high byte defines the operation and the low byte is used only for constants (at present) which is why I said it's wasteful.
  
 ### High ROM byte
@@ -200,8 +202,9 @@ This low order ROM is used only for program constants at present; this is rather
 # Progress
 
 I've spent a couple of weeks building the sim for a CPU. It's 8 bit and based on ideas from various places but kind of grew by itself with a little planning.
-It's a fairly primitive one in that there is no opcode vs microcode, or to put it another way every instruction is microcode. Also, this approach meant I never
-got around to needing to add an instruction register.
+It's a fairly primitive one in that there is no microcoding of higher level instructions, or to put it another way every instruction is microcode. 
+
+It turns out that this approach means SPAM1 doesn't need an instruction register. This might change if I modify the design to include variable length instructions.
 
 :star: The complete set of instruction and argument combinations are [here](docs/instructions.txt)
 
