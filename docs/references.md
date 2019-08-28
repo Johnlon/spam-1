@@ -84,6 +84,7 @@ https://minnie.tuhs.org/Programs/UcodeCPU/index.html Original Logism impl of the
 
 https://youtu.be/nLo7Kt6sGmM?list=PL9YEAcq-5hHIJnflTcLA45sVxr900ziEy&t=223 ROM as ALU (8+8+4 control)
 
+https://youtu.be/Tx9Ote9fMEI?list=PL9YEAcq-5hHIJnflTcLA45sVxr900ziEy&t=126 Glitch solved by bringing in the clock
 
 ## James Bates links
 

@@ -52,5 +52,7 @@ https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html) page regardless of wh
 
 You'll see immediately that I (also Ben Eater and others) violate rule 2 by having the PC advance on one edge and the execution firing on the other edge. In fact that same page says that this setup  _"acts like separate clocks"_, which I agree with. They act like inverse clocks and [Ben Eater even says we need inverse clocks](https://www.youtube.com/watch?v=X7rCxs1ppyY&t=4m29s) in one of his vid's. The important point is knowing what the options are and the pro's and con's then making an informed decision (and simulating first !!!).
 
+Like myself, Warren Toomey also had a signal glitch problem in the Crazy Small CPU build that was resolved by bringing the clock signal into the logic. He discusses the problem in [Crazy Small CPU #13 at about 2m27s](https://youtu.be/Tx9Ote9fMEI?list=PL9YEAcq-5hHIJnflTcLA45sVxr900ziEy&t=126). The approach of brining in the system clock is also cited on the newbie advice page as a potential solution to such problems.
+
 The same newbie advice page gives useful guidance on synchronising buttons and other external inputs with the system clock. Coincidentally the need to synchronise a button press with the system clock came up recently where I had to synchronise the system reset button with the program counter logic and I needed to achieve this by use of a SR latch.
 

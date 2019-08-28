@@ -29,7 +29,7 @@ These components may or may mot be useful.
 - [Understanding the 8 bit 74LS593 - Warren Toomey](https://minnie.tuhs.org/Blog/2019_04_26_Understanding_74LS593.html)
  with referenences to his successor to CrazySmallCPU called [CSCvon8](https://github.com/DoctorWkt/CSCvon8)
 
-- [74LS592/74LS593](https://www.zpag.net/Electroniques/Datasheet/SN74LS592N.pdf) 8 bit binary counter, 74LS593 has shared In/Out and tristate 
+- [74LS592/74LS593](https://www.zpag.net/Electroniques/Datasheet/SN74LS592N.pdf) 8 bit binary counter, interestingly the 74LS593 is single port with shared In/Out and tristate 
 
 ## Shift registers
 
