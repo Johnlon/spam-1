@@ -9,6 +9,7 @@ Will move to hardware once the tool chain is resolved.
 :thumbsup: See the [SPAM-1 Assembler](https://docs.google.com/spreadsheets/d/1lYyPqYNF1dGDRP2n3ablaqkgZuxJ9x6T-ylut_nT1p4/edit?usp=sharing) implemented in Google Sheets.  
 
 See also:
+ - [ALU Design](docs/alu_with_carry_in.md)
  - [Timing Considerations](docs/timing-considerations.md)
  - [Thoughts on Microcode](docs/thoughts-on-microcode.md)
  - [Research and References](docs/references.md)

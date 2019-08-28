@@ -102,7 +102,12 @@ https://www.youtube.com/watch?v=hRJO97PbPlw&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvu
 
 https://www.youtube.com/watch?v=tUXboOaisAY&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvuVui&index=5#t=27m59s Good discussion on instruction encoding (compression) in 8 bits
 
-https://www.youtube.com/watch?v=DfuFNBJn1hk&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvuVui&index=6#t=6m48s Fixes one of the operands to reduce instruction space B is always second input   so can’t do A=C+D
+https://www.youtube.com/watch?v=DfuFNBJn1hk&list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvuVui&index=6#t=6m48s Fixes one of the operands to reduce instruction space B is always second input so can’t do A=C+D
+
+https://youtu.be/knR-GzQOUXY?list=PL_i7PfWMNYobSPpg1_voiDe6qBcjvuVui&t=2007 Uses some hardwiring on the ALU inputs to extend ALU operations to include NOT, but does this with a subtraction rather than "XOR 0xFF" because taking the 
+constent 0xFF is more complex than doing the minus with 
+the existing 0 constant.
+
 
 ## Simple CPU
 

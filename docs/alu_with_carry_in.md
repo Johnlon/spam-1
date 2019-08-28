@@ -1,32 +1,35 @@
-# ALU 
+# ALU Design 
 
-This ALU design is based on [Warren Toomey's CSCvon8 ALU](https://github.com/DoctorWkt/CSCvon8/blob/master/Docs/CSCvon8_design.md) but with a few small changes to incorporate a carry-in for a few of the ops.
+This ALU design is based on [Warren Toomey's CSCvon8 ALU](https://github.com/DoctorWkt/CSCvon8/blob/master/Docs/CSCvon8_design.md) but with a few small changes to incorporate a carry-in for a few of the ops. CSCvon8n does this switch in software/microcode. 
 
-In the second column the three A+B+Cin functions appear twice and also I've substituted function 12 for the constant 1 because the original CSCvon8 function in that slot . 
+Like CSCvon8 the design relies on the [M27C322 2Mx16 EPROM](http://pdf.datasheetcatalog.com/datasheet/stmicroelectronics/6184.pdf). This 2M x 16bit device is great for an 8 bit ALU as it allows 21 bits of addressing which is enough for 2 lots of 8 bits of data-in, plus 5 bits for ALU function selection. The 16 bits out allows for a full 8 bit result, with the remaining 8 bits of data output providing a full complement of status flags. More details can be found in the [CSCvon8 documentation](https://github.com/DoctorWkt/CSCvon8/blob/master/Docs/CSCvon8_design.md) 
 
-| 0-7 ALU Ops | 8-15 ALU Ops  | 16-23 ALU Ops     | 24-31 ALU Ops |
-|-------------|---------------|-------------------|---------------|
-| 0           | B-1           | A*B (high bits)   | A ROR B       |
-| A           | A+B+Cin (0)   | A*B (low bits)    | A AND B       |
-| B           | A-B-Cin (0)   | A/B               | A OR B        |
-| -A          | B-A-Cin (0)   | A%B               | A XOR B       |
-| -B          | A-B (special) | A << B            | NOT A         |
-| A+1         | A+B+Cin (1)   | A >> B arithmetic | NOT B         |
-| B+1         | A-B-Cin (1)   | A >> B logical    | A+B (BCD)     |
-| A-1         | B-A-Cin (1)   | A ROL B           | A-B (BCD)     |
-|             |               |                   |               |
+The SPAM-1 ALU  ROM functions are ...
 
-I wanted a set of add operations that could take the carry flag into account. But carry applies only to a few of the functions so it would be wasteful to have one of the 5 control lines hard-wired to the carry flag. 
+| 0-7 ALU Ops | 8-15 ALU Ops      | 16-23 ALU Ops     | 24-31 ALU Ops |
+|-------------|-------------------|-------------------|---------------|
+| 0           | B-1               | A*B (high bits)   | A ROR B       |
+| A           | __A+B+Cin (0)__   | A*B (low bits)    | A AND B       |
+| B           | __A-B-Cin (0)__   | A/B               | A OR B        |
+| -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
+| -B          | A-B (special)     | A << B            | NOT A         |
+| A+1         | __A+B+Cin (1)__   | A >> B arithmetic | NOT B         |
+| B+1         | __A-B-Cin (1)__   | A >> B logical    | A+B (BCD)     |
+| A-1         | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
 
-In this design bit 4 of the select lines into the ALU will be multiplexed across bit 4 from the control logic and the carry line.
-So in most cases alu select line 4 is determined by the control line but for 5 of the operations the multiplexer will swap the 4th select line for the carry flag value. 
+Where this ALU differs to CSCvon8 is that I wanted the SPAM-1 arithmetic for A and B to take the carry bit into account in the hardware. So in column 2 where I have 3 such operations at 9/10/11 and at 13/14/15.
 
-In order to make the external logic easier I've made these 5 carry-in sensitive operations the last 5 ops in cols 3 and 4. So I've moved what was originally in cols 3 and 4 in CSCvon8 to sit at cols 1 and 2 instead.
+For these 6 addition/subtraction functions the value of the second address line into the ROM will be derived from the carry bit rather from the raw bit 2 coming from the control logic. To achieve this there will be an additional bit of multplexing logic external to the ROM. (If we could find a 4Mx8 DIP EPROM, with an additional address line then this external logic could have been avoided). In any case the additional logic selected either the carry-flag or the original address line and looks like this ...
 
-If I had merely reworked column two then the control http://www.32x8.com/sop5_____A-B-C-D-E_____m_9-10-11-13-14-15___________option-0_____889788875878823595647
+![alu external logic](alu_external_logic.png)
 
-http://www.32x8.com/sop5_____A-B-C-D-E_____m_25-26-27-29-30-31___________option-0_____889788975578823595647
+With this setup then when accessing operations 9/10/11 then they will be promoted to the "+/-1" variants 13/14/15 respectively when carry is set.
 
-With this setup then when accessing operation 19 "A+B+Cin" then select line 4 will actually be the carry flag.
-However, for those last 5 ops the hardware decides whether to use the variant of the op from column 3 or from column 4 based on the status of the CFlag. The column 3 variants are appropriate for where CFlag=0, and column 4 where CFlag=1.
 
+# Links
+
+Tools I found useful..
+
+- [Logic simplification](http://www.32x8.com/index.html) helped me work out [the external logic](http://www.32x8.com/sop5_____A-B-C-D-E_____m_9-10-11-13-14-15___________option-0_____889788875878823595647)
+
+- [Boolean Expressions Calculator](https://www.dcode.fr/boolean-expressions-calculator) for converting the external logic to a NOR representation for the hardware build.
