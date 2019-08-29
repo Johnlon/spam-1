@@ -28,8 +28,8 @@ With this setup then when accessing operations 9/10/11 then they will be promote
 
 # Links
 
-Tools I found useful..
+Tools I found useful working things out:
 
 - [Logic simplification](http://www.32x8.com/index.html) helped me work out [the external logic](http://www.32x8.com/sop5_____A-B-C-D-E_____m_9-10-11-13-14-15___________option-0_____889788875878823595647)
 
-- [Boolean Expressions Calculator](https://www.dcode.fr/boolean-expressions-calculator) for converting the external logic to a NOR representation for the hardware build.
+- [Boolean Expressions Calculator](https://www.dcode.fr/boolean-expressions-calculator) for converting the simplified external logic into a NOR-only representation for the hardware build.

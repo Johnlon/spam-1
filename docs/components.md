@@ -20,7 +20,10 @@ These components may or may mot be useful.
 
 ## Registers
 
-- [74HC377](https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf) 8 bit reg - convenient pin out at sides 
+- [74HC273](https://assets.nexperia.com/documents/data-sheet/74HC_HCT273.pdf) 8 bit reg - convenient pin out at sides 
+
+
+- [74HC377](https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf) 8 bit reg - convenient pin out at sides - includes write enable 
 
 - [74HCT670](http://www.ti.com/lit/ds/symlink/cd74hct670.pdf) - 4x4 register file with simulataneous read/write - but not synchronous so probably need to add edge detect to it. Not common but [Mouser has 74HCT670](https://www.mouser.co.uk/ProductDetail/Texas-Instruments/CD74HCT670E?qs=sGAEpiMZZMutXGli8Ay4kCmqQhNNfHG%2FfP%252B1EEY4uvo%3D) in DIP package 
 

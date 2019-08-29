@@ -111,7 +111,7 @@ The third phase, execute, occurs on the falling edge of the clock and this is wh
 
 Except ... that's not honestly how it works.
 
-It's really more like the illustration below in my mind; when reading the diagram imagine that this diagram is of the clock immediatly following a CPU reset or power on.
+It's really more like the illustration below in my mind; when reading the diagram imagine that this diagram starts immediatly following a CPU reset or power on.
 
 ![Timing diagram - honest](docs/timing-honest.png)
 
@@ -120,6 +120,8 @@ When the CPU is reset then the clock is low, PC is already at address 0 and the 
 Phase 2) is at the rising edge of the clock where the instruction is executed.
 
 Phase 3) is at the falling edge of the clock where the instruction counter is advanced and the cycle begins again at the new address.  
+
+(BTW - note that I say in the diagram that nothing much happens on the high or low levels, but a hugely significant thing that happens on the levels is [settling of the combinatorial logic](docs/timing-considerations.md) which must be respected if the CPU is to be stable.)
 
 A significant consequence of this setup is that the PC is not advanced until after the complete execution of the instruction. This is significant because it means that if we were to stash the PC onto the stack at this point, in order to make a call to a subroutine, then on return from the subroutine we would end up loading the PC with the same address that it hard before the jump. This might put the CPU into an endless loop.
 
