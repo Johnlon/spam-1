@@ -16,3 +16,8 @@ My thoughts (Aug 2019) on microcoded instructions such as those used by Ben Eate
 However, my thinking is that I ought to be able to achieve similar high level operations in SPAM1 but without microcoded instructions. I can achieve this by having the assembler expand high level opcodes, rather like C macros, into what would have otherwise been their component microinstructions. 
 
 If I'm able to work with 32k or more of program space then this approach should be tolerable. We'll see in any case.
+
+# Links
+
+- [Microprogramming slides - University of Virginia](http://www.cs.virginia.edu/~cs333/notes/microprogramming.pdf)
+- [Microprogramming - MIT](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-823-computer-system-architecture-fall-2005/lecture-notes/l04_microprog.pdf)

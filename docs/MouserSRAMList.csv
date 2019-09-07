@@ -1,0 +1,31 @@
+﻿Item,,Desc,Access,VCC,V other ,Signals IL/IH/OL/OH,Address,Case,Link,
+S29GL128S90TFI010,,"128 Mbit, 8M x 16bit, Parallel",100ns,3.6v abs max 4v,Vcc+0.5 (4.5?),<.3Vcc/>.7Vcc/.15Vcc/.85Vcc,"26 = 1Gb = 128MB, also 64/32/16MB options",TSOP 56,https://uk.farnell.com/cypress-semiconductor/s29gl128s90tfi010/memory-flash-128mbit-56tsop/dp/2136248,
+MT28EW01GABA,,x8 or x16,95ns,3.6 abs max 5.6 (Vcc+2 BUT ONLY for 20ns!!),less than/eq VCC,<0.8/>0.7/.15Vccq/>.85Vccq,"26, for 1Gb, als o availabe as 512/256Mb",TSOP 56,https://www.mouser.co.uk/datasheet/2/671/MT28EW_QLLP_01G_ABA_0SIT-1287008.pdf,
+IS29GL128-70SLET,,256Mbit/128Mb x16,70ns,4v,Vcc+0.5 (4.5?),<.3Vcc/>.7Vcc/.15Vcc/.85Vcc,24 for 256Mb,TSOP 56,https://www.mouser.co.uk/datasheet/2/198/IS29GL256_128-1315789.pdf,
+S29JL064J,,4mx16bit,55-70,4v,Vcc+0.5 (4.5?),<.3Vcc/>.7Vcc/.15Vcc/.85Vcc,22 at 4m,TSOP 48,https://www.cypress.com/file/215146/download,55NS https://www.mouser.co.uk/ProductDetail/Cypress-Semiconductor/S29JL064J55TFI000?qs=yUGSM8KWSaMhV7m49Y6Qqw==
+SST39VF6401B,,4mx16bit,70,3.6v,3.6v,.8/.7Vdd/.2/Vdd-.2,22 at 4m,TSOP 48,https://www.mouser.co.uk/datasheet/2/268/SST39VF6401B-SST39VF6402B-64-Mbit-x16-Multi-Purpos-709070.pdf,
+SST38VF6401B,,4mx16bit,70,3.6,3.6+.5,.8/.7Vdd/.2/Vdd-.2,22 at 4m,TSOP 48,https://www.mouser.co.uk/ProductDetail/Microchip-Technology/SST38VF6402B-70I-TV?qs=sGAEpiMZZMtI%252BQ06EiAoG3dwNlh%2Fmx1Qi1WJD%2Fi%2FhPk%3D,
+CY14E116X,nvSRA = £79 !!!,1mx16,<45ns,5.5,,,,,,
+,,,,,,,,,,
+MX29LV640E,,x8/16,70,4v,4.5v,.8/.7Vdd/.45/Vdd-.4,22 at 4m,,,
+JS28F512P33EFA,,"32Mx16 has separate ""output voltage""",105ns,3.6 BUT 5.6VMAX,5.6V,@3.6v IL=.6v/Vccq+0.5/0.2/Vccq-0.2,,NO LONGER MANUFATURED!!,,
+,,,,,,,,,,
+,S29JL064J,S29JL064J,,SST38VF6401B,,,74LS00,74HCT00,74HC00,74HC00
+Vcc,4,3.6,,,,,4.75v (min),4.5v,2v,4.5v
+IL <,1.2,1.08,,,,,<.8,<1.2,0.8,2.1
+IH >,2.8,2.52,,,,,> 2,>1.6,1.2,2.4
+OL <,0.6,0.54,,,,,<.35,0,0,0
+OH >,3.4,3.06,,,,,>3.4 (min  2),Vcc,Vcc,Vcc
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,S29JL064J,,74HCT00,,,,,,
+,,3.6,,4.5-5.5,,,,,,
+,,,,,,,,,,
+,OH >,3.06,,VCC,OH,,<1.2,IL <,,
+,IH >,2.52,,1.6,IH,,>1.6,IH >,,
+,IL <,1.08,,1.2,IL,,0,OL <,,
+,OL <,0.54,,0,OL,,Vcc,OH >,,

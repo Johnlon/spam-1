@@ -54,9 +54,31 @@ However, Warren also pointed me to a page about ["Clock Domain Crossing"](https:
 
 The comments section in one of Ben Eater's vids contains a bunch of folk talking about why he didn't just "gate the clock" or something like that, as it would have been easier.  
 
-I will now paraphrase the whole thing as **"don't mess with the clock!"**.
+I paraphrase the whole thing as **"don't mess with the clock!"**.
 
-### Advice on clocks for newbies
+## Clock Gating
+
+I'd prefer not to mess with the clock. If I'm using a chip like the 8 bit register [74HC377](https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf) which has a LE (latch enable) and clock then I can bring LE high to disable the input to the latch. 
+
+But what if I'm using [74HC574](https://assets.nexperia.com/documents/data-sheet/74HC_HCT574.pdf) which is also an 8 bit register which is similar to the 74574 but swaps the LE for OE (output enable). If I need control over whether data is clocked into this chip then the only option left to me is to gate the clock.
+
+One of the main things to avoid with clock gating is the problem of creating spurious clock signal. Whether there is a risk of this depends on the method taken for the gating and the relative timing of the raw clock versus the other signals with which you are gating the raw clock.
+
+Whilst a spurious clock may or may not be a problem when latching it is more likely to cause an issue with a counter, such as in the program counter or within a microcode circuit's timing. Having the counter advance unexpectedly and with an extremely short duty cycle would likely cause a malfunction including violating timing constraints of other components within the overal circuit. 
+
+A common case is where the clock is ANDed with some other control signal - I need to do exactly this in a register file I'm designing because I'm using 74HC574 which doesn't have a LE input. I need the 74HC574 for it's tristate output which means I need to compromise on the clock gating. It a question of reducing the complexity. But now I'm worried about gating effects. A spurious clock might make me latch the wrong value. Surely AND won't cause a problem? 
+
+The paper 
+[A Review of Clock Gating Techniques](ijetmas.com/admin/resources/project/paper/f201503041425478178.pdf
+) covers a few of the approaches and the first option discussed is a "simple" AND gated approach. The paper demonstrates how the relative timing aspect can cause spurious triggers.
+
+Even with this paper I wondered whether this figure was correct, whether a hazard had been missed. Below I've highlighted the transition I'm concerned about in this extract. 
+
+![glitch possible?](glitch-possible.png) _(taken from [A Review of Clock Gating Techniques](ijetmas.com/admin/resources/project/paper/f201503041425478178.pdf))_
+
+It seems to me that there is a risk that this transition might cause a spurious clock on _Gclk_. This might happen if the _en_ went high moments before the fall of the raw _clk_. Whether or not this potential glitch occurs in practice depends on the derivation of the _en_. In a CPU the _en_ signal might be generated from some combinatorial logic and is likely to lag the _clk_ due to propagation delays, in which case the problem I'm concerned about wouldn't happen. Timing matters.
+
+# Advice on clocks for newbies
 
 Please also go and read the ["Rules for new FPGA designers"](
 https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html) page regardless of whether you are planning an FPGA or discrete IC based design. This page is linked off the [Clock Domain Crossing](https://zipcpu.com/blog/2017/10/20/cdc.html) page that I mentioned earlier.
