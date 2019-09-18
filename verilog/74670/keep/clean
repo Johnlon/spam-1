@@ -1,0 +1,2 @@
+rm dumpfile.vcd
+rm test_74670.vvp

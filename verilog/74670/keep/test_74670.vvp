@@ -1,0 +1,179 @@
+#! /usr/local/bin/vvp
+:ivl_version "10.3 (stable)" "(s20150603-657-g9e106457)";
+:ivl_delay_selection "TYPICAL";
+:vpi_time_precision - 10;
+:vpi_module "system";
+:vpi_module "vhdl_sys";
+:vpi_module "v2005_math";
+:vpi_module "va_math";
+:vpi_module "v2009";
+S_0x7fffde6e1640 .scope module, "icarus_tb" "icarus_tb" 2 7;
+ .timescale -9 -10;
+v0x7fffde711570_0 .var "rd_addr", 1 0;
+v0x7fffde711650_0 .net "rd_data", 3 0, V_0x7fffde710f00/m;  1 drivers
+v0x7fffde711720_0 .var "rd_en", 0 0;
+v0x7fffde711820_0 .var "wr_addr", 1 0;
+v0x7fffde7118f0_0 .var "wr_data", 3 0;
+v0x7fffde711990_0 .var "wr_en", 0 0;
+S_0x7fffde6ed700 .scope begin, "$unm_blk_4" "$unm_blk_4" 2 34, 2 34 0, S_0x7fffde6e1640;
+ .timescale -9 -10;
+P_0x7fffde6d9bc0 .param/l "disabled" 0 2 38, C4<1>;
+P_0x7fffde6d9c00 .param/l "enabled" 0 2 37, C4<0>;
+P_0x7fffde6d9c40 .param/l "high" 0 2 36, C4<1>;
+P_0x7fffde6d9c80 .param/l "low" 0 2 35, C4<0>;
+P_0x7fffde6d9cc0 .param/l "undefined_data" 0 2 40, C4<xxxx>;
+P_0x7fffde6d9d00 .param/l "zed_data" 0 2 41, C4<zzzz>;
+S_0x7fffde6e9f40 .scope module, "regfile" "hct74670" 2 14, 3 5 0, S_0x7fffde6e1640;
+ .timescale -9 -10;
+    .port_info 0 /INPUT 1 "wr_en"
+    .port_info 1 /INPUT 2 "wr_addr"
+    .port_info 2 /INPUT 4 "wr_data"
+    .port_info 3 /INPUT 1 "rd_en"
+    .port_info 4 /INPUT 2 "rd_addr"
+    .port_info 5 /OUTPUT 4 "rd_data"
+o0x7fe0918f0018 .functor BUFZ 8, C4<zzzzzzzz>; HiZ drive
+; Elide local net with no drivers, v0x7fffde6ea160_0 name=_s0
+v0x7fffde710c80_0 .net *"_s2", 7 0, L_0x7fffde711a60;  1 drivers
+v0x7fffde710d60_0 .var "out_val", 7 0;
+v0x7fffde710e20_0 .net "rd_addr", 1 0, v0x7fffde711570_0;  1 drivers
+v0x7fffde710f00_0 .net "rd_data", 3 0, V_0x7fffde710f00/m;  alias, 1 drivers
+v0x7fffde711030_0 .net "rd_en", 0 0, v0x7fffde711720_0;  1 drivers
+v0x7fffde7110f0 .array "registers", 0 3, 3 0;
+v0x7fffde711230_0 .net "wr_addr", 1 0, v0x7fffde711820_0;  1 drivers
+v0x7fffde711310_0 .net "wr_data", 3 0, v0x7fffde7118f0_0;  1 drivers
+v0x7fffde7113f0_0 .net "wr_en", 0 0, v0x7fffde711990_0;  1 drivers
+E_0x7fffde6ea560/0 .event edge, v0x7fffde7113f0_0, v0x7fffde711310_0, v0x7fffde711230_0, v0x7fffde710e20_0;
+v0x7fffde7110f0_0 .array/port v0x7fffde7110f0, 0;
+v0x7fffde7110f0_1 .array/port v0x7fffde7110f0, 1;
+v0x7fffde7110f0_2 .array/port v0x7fffde7110f0, 2;
+v0x7fffde7110f0_3 .array/port v0x7fffde7110f0, 3;
+E_0x7fffde6ea560/1 .event edge, v0x7fffde7110f0_0, v0x7fffde7110f0_1, v0x7fffde7110f0_2, v0x7fffde7110f0_3;
+E_0x7fffde6ea560 .event/or E_0x7fffde6ea560/0, E_0x7fffde6ea560/1;
+L_0x7fffde711a60 .functor MUXZ 8, v0x7fffde710d60_0, o0x7fe0918f0018, v0x7fffde711720_0, C4<>;
+L_0x7fffde711bb0 .delay 4 (50,50,50) L_0x7fffde711bb0/d;
+L_0x7fffde711bb0/d .part L_0x7fffde711a60, 0, 4;
+  .scope S_0x7fffde6e9f40;
+V_0x7fffde710f00/m .modpath 4 L_0x7fffde711bb0 v0x7fffde710f00_0,
+   v0x7fffde711720_0 (180,180,180, 180,180,180, 180,180,180, 180,180,180) v0x7fffde711030_0,
+   v0x7fffde711990_0 (280,280,280, 280,280,280, 280,280,280, 280,280,280) v0x7fffde7113f0_0,
+   v0x7fffde711570_0 (210,210,210, 210,210,210, 210,210,210, 210,210,210) v0x7fffde710e20_0,
+   v0x7fffde7118f0_0 (270,270,270, 270,270,270, 270,270,270, 270,270,270) v0x7fffde711310_0;
+    .scope S_0x7fffde6e9f40;
+T_0 ;
+    %wait E_0x7fffde6ea560;
+    %load/vec4 v0x7fffde7113f0_0;
+    %nor/r;
+    %flag_set/vec4 8;
+    %jmp/0xz  T_0.0, 8;
+    %load/vec4 v0x7fffde711310_0;
+    %load/vec4 v0x7fffde711230_0;
+    %pad/u 4;
+    %ix/vec4 3;
+    %ix/load 4, 0, 0; Constant delay
+    %assign/vec4/a/d v0x7fffde7110f0, 0, 4;
+T_0.0 ;
+    %load/vec4 v0x7fffde710e20_0;
+    %pad/u 4;
+    %ix/vec4 4;
+    %load/vec4a v0x7fffde7110f0, 4;
+    %pad/u 8;
+    %assign/vec4 v0x7fffde710d60_0, 0;
+    %jmp T_0;
+    .thread T_0, $push;
+    .scope S_0x7fffde6e1640;
+T_1 ;
+    %vpi_call/w 2 21 "$dumpfile", "dumpfile.vcd" {0 0 0};
+    %vpi_call/w 2 22 "$dumpvars", 32'sb00000000000000000000000000000000, v0x7fffde711990_0, v0x7fffde711720_0, v0x7fffde711820_0, v0x7fffde711570_0, v0x7fffde7118f0_0, v0x7fffde711650_0 {0 0 0};
+    %vpi_call/w 2 24 "$display", "\000" {0 0 0};
+    %vpi_call/w 2 25 "$display", $time, "   %s   %s %s <= %s  out %s => %s", "wr_en", "rd_en", "wr_addr", "wr_data", "rd_addr", "rd_data" {0 0 0};
+    %vpi_call/w 2 26 "$monitor", $time, "   %5b   %5b %7b <= %7b  out %7b => %7b", v0x7fffde711990_0, v0x7fffde711720_0, v0x7fffde711820_0, v0x7fffde7118f0_0, v0x7fffde711570_0, v0x7fffde711650_0 {0 0 0};
+    %end;
+    .thread T_1;
+    .scope S_0x7fffde6e1640;
+T_2 ;
+    %fork t_1, S_0x7fffde6ed700;
+    %jmp t_0;
+    .scope S_0x7fffde6ed700;
+t_1 ;
+    %pushi/vec4 0, 0, 1;
+    %store/vec4 v0x7fffde711720_0, 0, 1;
+    %pushi/vec4 0, 0, 2;
+    %store/vec4 v0x7fffde711820_0, 0, 2;
+    %pushi/vec4 10, 0, 4;
+    %store/vec4 v0x7fffde7118f0_0, 0, 4;
+    %pushi/vec4 0, 0, 2;
+    %store/vec4 v0x7fffde711570_0, 0, 2;
+    %delay 100, 0;
+    %load/vec4 v0x7fffde711650_0;
+    %cmpi/e 15, 15, 4;
+    %jmp/0xz  T_2.0, 6;
+    %jmp T_2.1;
+T_2.0 ;
+    %vpi_call/w 2 54 "$display", "failed : got '%d' when expecting '%d' : %s", v0x7fffde711650_0, P_0x7fffde6d9cc0, "nothing written so all data should be x" {0 0 0};
+T_2.1 ;
+    %pushi/vec4 0, 0, 1;
+    %store/vec4 v0x7fffde711990_0, 0, 1;
+    %delay 50, 0;
+    %load/vec4 v0x7fffde711650_0;
+    %cmpi/e 15, 15, 4;
+    %jmp/0xz  T_2.2, 6;
+    %jmp T_2.3;
+T_2.2 ;
+    %vpi_call/w 2 58 "$display", "failed : got '%d' when expecting '%d' : %s", v0x7fffde711650_0, P_0x7fffde6d9cc0, "nothing written so all data should be x" {0 0 0};
+T_2.3 ;
+    %delay 240, 0;
+    %load/vec4 v0x7fffde711650_0;
+    %pad/u 32;
+    %cmpi/e 10, 0, 32;
+    %jmp/0xz  T_2.4, 6;
+    %jmp T_2.5;
+T_2.4 ;
+    %vpi_call/w 2 60 "$display", "failed : got '%d' when expecting '%d' : %s", v0x7fffde711650_0, 32'sb00000000000000000000000000001010, "write enabled" {0 0 0};
+T_2.5 ;
+    %pushi/vec4 15, 0, 4;
+    %store/vec4 v0x7fffde7118f0_0, 0, 4;
+    %pushi/vec4 1, 0, 1;
+    %store/vec4 v0x7fffde711990_0, 0, 1;
+    %delay 290, 0;
+    %load/vec4 v0x7fffde711650_0;
+    %pad/u 32;
+    %cmpi/e 10, 0, 32;
+    %jmp/0xz  T_2.6, 6;
+    %jmp T_2.7;
+T_2.6 ;
+    %vpi_call/w 2 66 "$display", "failed : got '%d' when expecting '%d' : %s", v0x7fffde711650_0, 32'sb00000000000000000000000000001010, "write disabled - retains value" {0 0 0};
+T_2.7 ;
+    %pushi/vec4 0, 0, 1;
+    %store/vec4 v0x7fffde711990_0, 0, 1;
+    %delay 290, 0;
+    %load/vec4 v0x7fffde711650_0;
+    %pad/u 32;
+    %cmpi/e 15, 0, 32;
+    %jmp/0xz  T_2.8, 6;
+    %jmp T_2.9;
+T_2.8 ;
+    %vpi_call/w 2 70 "$display", "failed : got '%d' when expecting '%d' : %s", v0x7fffde711650_0, 32'sb00000000000000000000000000001111, "write enabled location 2" {0 0 0};
+T_2.9 ;
+    %pushi/vec4 1, 0, 1;
+    %store/vec4 v0x7fffde711720_0, 0, 1;
+    %delay 290, 0;
+    %load/vec4 v0x7fffde711650_0;
+    %cmpi/e 0, 15, 4;
+    %jmp/0xz  T_2.10, 6;
+    %jmp T_2.11;
+T_2.10 ;
+    %vpi_call/w 2 74 "$display", "failed : got '%d' when expecting '%d' : %s", v0x7fffde711650_0, P_0x7fffde6d9d00, "read disabled" {0 0 0};
+T_2.11 ;
+    %delay 290, 0;
+    %vpi_call/w 2 71 "$finish" {0 0 0};
+    %end;
+    .scope S_0x7fffde6e1640;
+t_0 %join;
+    %end;
+    .thread T_2;
+# The file index is used to find the file name in the following table.
+:file_names 4;
+    "N/A";
+    "<interactive>";
+    "test_74670.v";
+    "./hct74670.v";

@@ -1,0 +1,57 @@
+$date
+	Wed Sep 18 23:29:41 2019
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	100ps
+$end
+$scope module icarus_tb $end
+$var reg 1 ! wr_en $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 1 " rd_en $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 2 # wr_addr [1:0] $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 2 $ rd_addr [1:0] $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 4 % wr_data [3:0] $end
+$upscope $end
+$scope module icarus_tb $end
+$var wire 4 & rd_data [3:0] $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+bx &
+b1010 %
+b0 $
+b0 #
+0"
+x!
+$end
+#100
+0!
+#380
+b1010 &
+#390
+b1 %
+#660
+b1 &
+#730
+1!
+b1111 %
+#1020
+0!
+#1300
+b1111 &
+#1310
+1"
+#1490
+bz &
+#1890
