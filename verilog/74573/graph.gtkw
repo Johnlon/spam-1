@@ -1,0 +1,37 @@
+[*]
+[*] GTKWave Analyzer v3.3.86 (w)1999-2017 BSI
+[*] Thu Sep 19 02:15:26 2019
+[*]
+[dumpfile] "/mnt/c/Users/johnl/OneDrive/simplecpu/verilog/74573/dumpfile.vcd"
+[dumpfile_mtime] "Thu Sep 19 02:10:45 2019"
+[dumpfile_size] 1512
+[savefile] "/mnt/c/Users/johnl/OneDrive/simplecpu/verilog/74573/graph.gtkw"
+[timestart] 0
+[size] 1536 801
+[pos] -1 -1
+*-15.000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 213
+[signals_width] 126
+[sst_expanded] 1
+[sst_vpaned_height] 222
+@28
+icarus_tb.D0
+icarus_tb.D1
+icarus_tb.D2
+icarus_tb.D3
+icarus_tb.D4
+icarus_tb.D5
+icarus_tb.D6
+icarus_tb.D7
+icarus_tb.LE
+icarus_tb.OE_N
+icarus_tb.Q0
+icarus_tb.Q1
+icarus_tb.Q2
+icarus_tb.Q3
+icarus_tb.Q4
+icarus_tb.Q5
+icarus_tb.Q6
+icarus_tb.Q7
+[pattern_trace] 1
+[pattern_trace] 0

@@ -1,0 +1,131 @@
+$date
+	Thu Sep 19 03:10:45 2019
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	100ps
+$end
+$scope module icarus_tb $end
+$var reg 1 ! D0 $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 1 " D1 $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 1 # D2 $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 1 $ D3 $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 1 % D4 $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 1 & D5 $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 1 ' D6 $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 1 ( D7 $end
+$upscope $end
+$scope module icarus_tb $end
+$var wire 1 ) Q0 $end
+$upscope $end
+$scope module icarus_tb $end
+$var wire 1 * Q1 $end
+$upscope $end
+$scope module icarus_tb $end
+$var wire 1 + Q2 $end
+$upscope $end
+$scope module icarus_tb $end
+$var wire 1 , Q3 $end
+$upscope $end
+$scope module icarus_tb $end
+$var wire 1 - Q4 $end
+$upscope $end
+$scope module icarus_tb $end
+$var wire 1 . Q5 $end
+$upscope $end
+$scope module icarus_tb $end
+$var wire 1 / Q6 $end
+$upscope $end
+$scope module icarus_tb $end
+$var wire 1 0 Q7 $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 1 1 LE $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 1 2 OE_N $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+x2
+x1
+x0
+x/
+x.
+x-
+x,
+x+
+x*
+x)
+x(
+x'
+x&
+x%
+x$
+x#
+x"
+0!
+$end
+#300
+11
+12
+#450
+z)
+z*
+z+
+z,
+z-
+z.
+z/
+z0
+#460
+02
+#640
+0)
+x*
+x+
+x,
+x-
+x.
+x/
+x0
+#650
+1!
+#820
+1)
+#830
+0!
+01
+#1330
+11
+#1480
+0)
+#1490
+12
+#1670
+z)
+z*
+z+
+z,
+z-
+z.
+z/
+z0
+#1680

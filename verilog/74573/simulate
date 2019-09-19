@@ -1,0 +1,3 @@
+
+# simulate using typica timings
+iverilog -Ttyp -Wall -g2012 -gspecify -o test_74573.vvp  test_74573.v && vvp -i test_74573.vvp

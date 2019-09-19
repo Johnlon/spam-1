@@ -1,0 +1,32 @@
+RAM addressing modes
+
+		HI	LO
+Zero page	0	ROM	Zero by pull down 
+Zero page	0	ANYREG	
+Zero page	0	ALUOUT	??
+
+Reg paged	REG	ROM	ANY REG or specific gp reg OR sp reg ??
+Reg paged	REG	ANYREG	
+Reg paged	REG	ALUOUT	??
+
+Counter registers - specific one or two??
+
+
+ROM
+
+
+LD PCTEMP, IMMED      SPECIAL PURPOSE REG?? OR USE GP REG?
+LD PCTEMP, REG
+LD PCTEMP, ALU
+LD PCTEMP, ROM
+
+LD PCLO, IMMED
+LD PCLO, REG
+LD PCLO, ALU
+LD PCLO, ROM
+
+
+LD [ #ZEROPAGERAM | RAM[MAR] | REG | OUT | MARHI | MARLO | PCHI | PCLO ], ALUOP [ REG | RAM ] [ REG | IMMED]
+
+
+
