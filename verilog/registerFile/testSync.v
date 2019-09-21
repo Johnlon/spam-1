@@ -37,7 +37,7 @@ module icarus_tb();
     
     
     initial begin
-        $dumpfile("dumpfile.vcd");
+        $dumpfile("dumpfileSync.vcd");
         $dumpvars(0, clk, wr_en, wr_addr, wr_data, rdL_en, rdL_addr, rdL_data, rdR_en, rdR_addr, rdR_data);
         
         $display ("");
