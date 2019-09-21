@@ -1,5 +1,5 @@
 $date
-	Thu Sep 19 05:05:24 2019
+	Sat Sep 21 18:21:19 2019
 $end
 $version
 	Icarus Verilog
@@ -8,77 +8,75 @@ $timescale
 	100ps
 $end
 $scope module icarus_tb $end
-$var reg 1 ! clk $end
+$var reg 1 ! wr_en $end
 $upscope $end
 $scope module icarus_tb $end
-$var wire 1 " pulse $end
+$var reg 2 " wr_addr [1:0] $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 8 # wr_data [7:0] $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 1 $ rdL_en $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 2 % rdL_addr [1:0] $end
+$upscope $end
+$scope module icarus_tb $end
+$var wire 8 & rdL_data [7:0] $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 1 ' rdR_en $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 2 ( rdR_addr [1:0] $end
+$upscope $end
+$scope module icarus_tb $end
+$var wire 8 ) rdR_data [7:0] $end
 $upscope $end
 $enddefinitions $end
 #0
 $dumpvars
-x"
-x!
+bx )
+b0 (
+1'
+bx &
+b0 %
+1$
+b11111111 #
+b0 "
+0!
 $end
-#10
-0!
-#210
-0"
-#1010
+#100
+b1 #
+0'
+#180
+bz &
+b1 )
+#1100
+0$
+b10 %
+b10 "
+b10 #
+#1280
+b10 &
+#2100
+b11111111 #
+b1 "
+#3100
+1'
+#3280
+bz )
+#4100
+b10 (
+0'
+#4280
+b10 )
+#5100
+b1 #
 1!
-#2010
-0!
-#3010
-1!
-#4010
-0!
-#5010
-1!
-#6010
-0!
-#7010
-1!
-#8010
-0!
-#9010
-1!
-#10010
-0!
-#11010
-1!
-#12010
-0!
-#13010
-1!
-#14010
-0!
-#15010
-1!
-#16010
-0!
-#17010
-1!
-#18010
-0!
-#19010
-1!
-#20010
-0!
-#21010
-1!
-#22010
-0!
-#23010
-1!
-#24010
-0!
-#25010
-1!
-#26010
-0!
-#27010
-1!
-#28010
-0!
-#29010
-1!
-#30000
+#6100
+b1 %
+#6310
+b11111111 &
+#8100

@@ -22,8 +22,8 @@ module icarus_tb();
         $dumpvars(0,  wr_en, rd_en,   wr_addr, rd_addr, wr_data, rd_data);
         
         $display ("");
-        $display ($time,"   %s   %s %s <    = %s  out %s    = > %s", "wr_en", "rd_en",   "wr_addr", "wr_data", "rd_addr", "rd_data");
-        $monitor ($time,"   %5b   %5b %7b < = %7b  out %7b = > %7b", wr_en, rd_en,   wr_addr, wr_data, rd_addr, rd_data);
+        $display ($time,"   %s   %s | %s <= %s  | %s => %s", "wr_en", "rd_en",   "wr_addr", "wr_data", "rd_addr", "rd_data");
+        $monitor ($time,"   %5b   %5b | %7b <= %7b  | %7b => %7b", wr_en, rd_en,   wr_addr, wr_data, rd_addr, rd_data);
     end
     
     

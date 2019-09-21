@@ -1,5 +1,5 @@
 $date
-	Sat Sep 21 20:22:00 2019
+	Sat Sep 21 20:19:32 2019
 $end
 $version
 	Icarus Verilog
@@ -14,7 +14,7 @@ $scope module icarus_tb $end
 $var wire 8 " Q [7:0] $end
 $upscope $end
 $scope module icarus_tb $end
-$var reg 1 # LE $end
+$var reg 1 # CLK $end
 $upscope $end
 $scope module icarus_tb $end
 $var reg 1 $ OE_N $end
@@ -23,32 +23,38 @@ $enddefinitions $end
 #0
 $dumpvars
 x$
-x#
+0#
 bx "
 b0 !
 $end
-#300
-1#
+#200
 1$
-#450
+#390
 bz "
-#460
+#400
 0$
-#640
-b0 "
-#650
-b10101010 !
-#820
-b10101010 "
-#830
-b0 !
-0#
-#1330
+#590
+bx "
+#600
 1#
-#1480
-b0 "
-#1490
+b10101010 !
+#700
+b1 !
+#790
+b10101010 "
+#900
+b11111111 !
+#1100
+0#
+b0 !
+#1300
 1$
-#1670
+1#
+b11111111 !
+#1490
 bz "
-#1680
+#1500
+0$
+#1690
+b11111111 "
+#1700

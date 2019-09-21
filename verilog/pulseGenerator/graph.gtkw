@@ -1,0 +1,25 @@
+[*]
+[*] GTKWave Analyzer v3.3.86 (w)1999-2017 BSI
+[*] Sat Sep 21 18:37:28 2019
+[*]
+[dumpfile] "/mnt/c/Users/johnl/OneDrive/simplecpu/verilog/pulseGenerator/dumpfile.vcd"
+[dumpfile_mtime] "Sat Sep 21 01:59:06 2019"
+[dumpfile_size] 475
+[savefile] "/mnt/c/Users/johnl/OneDrive/simplecpu/verilog/pulseGenerator/graph.gtkw"
+[timestart] 0
+[size] 1000 600
+[pos] -1 -1
+*-18.000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 213
+[signals_width] 126
+[sst_expanded] 1
+[sst_vpaned_height] 222
+@28
+icarus_tb.clk
+icarus_tb.pulse
+icarus_tb.clk
+icarus_tb.clk_en
+icarus_tb.np
+icarus_tb.pulse
+[pattern_trace] 1
+[pattern_trace] 0

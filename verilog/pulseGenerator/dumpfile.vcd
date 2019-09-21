@@ -1,0 +1,39 @@
+$date
+	Sat Sep 21 20:31:04 2019
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	100ps
+$end
+$scope module icarus_tb $end
+$var reg 1 ! clk $end
+$upscope $end
+$scope module icarus_tb $end
+$var reg 1 " clk_en $end
+$upscope $end
+$scope module icarus_tb $end
+$var wire 1 # pulse $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+x#
+1"
+0!
+$end
+#100
+1#
+#300
+1!
+#400
+0#
+#700
+1#
+#710
+0"
+0!
+#810
+1!
+#5220

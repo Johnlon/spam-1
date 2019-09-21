@@ -1,28 +1,33 @@
 [*]
 [*] GTKWave Analyzer v3.3.86 (w)1999-2017 BSI
-[*] Wed Sep 18 21:50:00 2019
+[*] Sat Sep 21 17:16:52 2019
 [*]
-[dumpfile] "/mnt/c/Users/johnl/OneDrive/simplecpu/verilog/dumpfile.vcd"
-[dumpfile_mtime] "Wed Sep 18 21:48:37 2019"
-[dumpfile_size] 676
-[savefile] "/mnt/c/Users/johnl/OneDrive/simplecpu/verilog/graph.gtkw"
+[dumpfile] "/mnt/c/Users/johnl/OneDrive/simplecpu/verilog/register-file/dumpfile.vcd"
+[dumpfile_mtime] "Sat Sep 21 17:16:09 2019"
+[dumpfile_size] 977
+[savefile] "/mnt/c/Users/johnl/OneDrive/simplecpu/verilog/register-file/graph.gtkw"
 [timestart] 0
 [size] 1536 801
-[pos] -35 -35
+[pos] -9 -33
 *-15.000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [sst_width] 213
-[signals_width] 126
+[signals_width] 134
 [sst_expanded] 1
 [sst_vpaned_height] 222
 @28
-icarus_tb.rd_addr[1:0]
+icarus_tb.rdL_addr[1:0]
 @22
-icarus_tb.rd_data[3:0]
+icarus_tb.rdL_data[7:0]
 @28
-icarus_tb.rd_en
+icarus_tb.rdL_en
+icarus_tb.rdR_addr[1:0]
+@22
+icarus_tb.rdR_data[7:0]
+@28
+icarus_tb.rdR_en
 icarus_tb.wr_addr[1:0]
 @22
-icarus_tb.wr_data[3:0]
+icarus_tb.wr_data[7:0]
 @28
 icarus_tb.wr_en
 [pattern_trace] 1

@@ -19,18 +19,22 @@ module hct74670 (input wr_en,
     (wr_data => rd_data) = (27:27:50);
     endspecify
     
-    // Read and write from register file
+    // write to register file
     always @(*) begin
         if (!wr_en) begin
             registers[wr_addr] <= wr_data;
+	    //$display(" writing @ " , wr_addr , "  <= ",wr_data);
         end
+    end
         
+    // reading from register file
+    always @(*) begin
         out_val <= registers[rd_addr];
     end
     
     
     reg [7:0] out_val;
     
-    assign #(5:5:12, 5:5:12) rd_data = rd_en ? 4'bz : out_val;
+    assign rd_data = rd_en ? 4'bz : out_val;
     
 endmodule
