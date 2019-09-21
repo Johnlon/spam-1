@@ -40,7 +40,7 @@ module icarus_tb();
         $dumpvars(0, wr_en, wr_addr, wr_data, rdL_en, rdL_addr, rdL_data, rdR_en, rdR_addr, rdR_data);
         
         $display ("");
-        $display ($time, "           _____                          ______                         ______");
+        $display ($time, "   _____                       ______                           ______");
         $display ($time, "   wr_en wr_addr   wr_data  |  rdL_en   rdL_addr  rdL_data  |   rdR_en  rdR_addr  rdR_data");
         $monitor ($time, "   %1b          %2b  %8b  |       %1b         %2b  %8b  |        %1b        %2b  %8b",
         wr_en, wr_addr, wr_data, rdL_en, rdL_addr, rdL_data, rdR_en, rdR_addr, rdR_data
