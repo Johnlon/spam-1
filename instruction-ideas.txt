@@ -1,0 +1,45 @@
+
+
+<-        		indicates a clock cycle 
+=			indicates the setting of a control signal lasting only for the next clock cycle
+
+hXX			indicates that the ROM low byte operand is asserted to the BUS and that byte is programmed as hXX			
+
+RAMADDR[0-7]=XX    	indicates low address byte of RAM is set to the ROM low byte operand, direct path not via the bus to avoid bus contention, and that ROM location XX << NEEDS DIRECT ROUTE FOR OPERAND TO RAM ADDRESS LINES
+
+<X>_EN      		indicates control signal <X> asserted for the next (only) clock cycle
+eg
+ZP_EN			indicates that zero page addressing is enabled, meaning hard wire RAMADDR[8-15] as h00 (ie page 0)
+REG_W_EN		indicates that the bus will be written to a register on the next +ve clock, where that registed is identified by the value of control lines REG_W_ADDR
+MARL_W_EN		indicates that the bus will be written to MARL on the next +ve clock
+MARH_W_EN		indicates that the bus will be written to MARH on the next +ve clock
+
+REG<-X    		implies    REG_W_EN, REG_W_ADDR=REG, ASSERT X ON BUS FOR ENTIRETY OF CLOCK CYCLE
+MARL<-X   		implies    MARL_W_EN, ASSERT X ON BUS FOR ENTIRETY OF CLOCK CYCLE
+MARH<-X   		implies    MARH_W_EN, ASSERT X ON BUS FOR ENTIRETY OF CLOCK CYCLE
+
+
+CLK#	REG = REG ALUOP REG
+
+1	LOAD REG, #44         composed: REG<-h44   			
+
+2	LOAD REG, $44         composed: ZP_EN, MARL<-h00, REG<-RAM   		<< IF NO DIRECT ROUTE TO MARL THEN MICROCODES
+1	LOAD REG, $44         composed: ZP_EN, RAMADDR[0-7]=h00, REG<-RAM     	<< ONLY IF DIRECT ROUTE TO RAMADDR[0-7] CAN WE DO 1 CLOCK CYCLE ACCESS
+ 
+3	LOAD REG, $4400       composed: MARL<-h00, MARH<-h44, REG<-RAM 
+7	LOAD REG, ($44)       composed: ZP_EN, MARL<-h44, REGL<-RAM, MARL<-h45, REGH<-RAM, MARL<-REGL, MARH<-REGH, ZPOFF, REG<-RAM 
+9	LOAD REG, ($44,REGX)  composed: ZP_EN, REGL<-h44, MARL<-REGL+REGX, REGL<-RAM, REGL<-h45, MARL<-REGL+REGX, REGH<-RAM, MARL<-REGL, MARH<-REGH, ZPOFF, REG<-RAM 
+
+?? 9	LOAD REG, ($44),REGX  composed: ZP_EN, REGL<-h44, MARL<-REGL+REGX, REGL<-RAM, REGL<-h45, MARL<-REGL+REGX, REGH<-RAM, MARL<-REGL, MARH<-REGH, ZPOFF, REG<-RAM 
+
+
+2	STORE REG, $44         composed: ZP_EN, MARL<-h00, ALUOP=PASSL, ALULADDR=REG, RAM<-ALU			<< IF NO DIRECT ROUTE TO MARL THEN MICROCODES
+1	STORE REG, $44         composed: ZP_EN, RAMADDR[0-7]=h00, ALUOP=PASSL, ALULADDR=REG, RAM<-ALU     	<< ONLY IF DIRECT ROUTE TO RAMADDR[0-7] CAN WE DO 1 CLOCK CYCLE ACCESS
+ 
+3	STORE REG, $4400       composed: MARL<-h00, MARH<-h44, REG<-RAM 
+7	STORE REG, ($44)       composed: ZP_EN, MARL<-h44, REGL<-RAM, MARL<-h45, REGH<-RAM, MARL<-REGL, MARH<-REGH, ZPOFF, REG<-RAM 
+9	STORE REG, ($44,REGX)  composed: ZP_EN, REGL<-h44, MARL<-REGL+REGX, REGL<-RAM, REGL<-h45, MARL<-REGL+REGX, REGH<-RAM, MARL<-REGL, MARH<-REGH, ZPOFF, REG<-RAM 
+
+
+
+	RAM TO REG

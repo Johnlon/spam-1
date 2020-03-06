@@ -1,0 +1,3 @@
+goto cpu
+run simulateSync.sh
+
