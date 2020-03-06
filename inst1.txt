@@ -1,0 +1,121 @@
+RAMVAL is one of 
+	[00,#KK]
+	[00,LO]
+	[HI,#KK]
+	[HI, LO]
+
+
+Load Register
+=============
+
+Assembler needs logic per ALU op to determine valid syntax
+Some ALU ops only have one postfix arg of either Left or Right eg ++/+1 or --/-1 or "NOT" 
+What apbout prefix ops like -R0 does alu support?
+
+
+Do I want the right side of infix ops to allow RAM or ROM?
+My guess is RAM would be on left to as shft size or add/minus would be a constant?
+ALU and its bus wiring will probably force is to be one way or the other.
+
+Destinations = OUTPUT|R0|MARLO|MARHI|PCLO|PCTEMPHI|PCLO+PCHI => 7 therefore 3 bits
+Bus Access = INPUT|ALU|MARHI|MARLO << 1 bit vs 2 so perhaps better to dedicate second bit to more GP registers eg 8 instead of 4?
+
+RAMVAL is one of 
+	[00,#KK]	Immediate Zero page 
+	[00,LO]		Registered Zero page
+	[HI,#KK]	Immediate paged
+	[HI, LO]	Registered
+
+AddrMode = 2 bits as above
+
+
+Direct ...
+
+SET [R0|LO|HI|PCLO|PCTEMPHI] = INPUT
+
+Via ALU to Reg ...
+
+SET [OUTPUT|R0|MARLO|MARHI|PCLO|PCTEMPHI|PCLO+PCHI] = [R1|RAMVAL] INFIX_OP [R2|#KK]     
+SET [OUTPUT|R0|MARLO|MARHI|PCLO|PCTEMPHI|PCLO+PCHI] = [R1|#KK] {optional POSTFIX_OP eg "R1 + 1" if alu supports that, or prefix op "NOT R1" }
+SET [OUTPUT|R0|MARLO|MARHI|PCLO|PCTEMPHI|PCLO+PCHI] = [R1|RAMVAL] {optional POSTFIX_OP eg "R1 + 1" if alu supports that, or prefix op "NOT R1" }
+
+SET [OUTPUT|R0|MARLO|MARHI|PCLO|PCTEMPHI|PCLO+PCHI] = INPUT     // OUTPUT is illegal target spotted by assembler
+
+ALU does not need +/-1 ops as it can do R+/-#KK from assembler
+
+
+Can't use Immediate Ram addressing and Immediate Rom Operand at same time if #KK differs.
+Assembler just bans multiple appearances of #KK unless same const
+But being able to do 
+	"R$ = RAM[OO,LO] + #KK" is useful
+	"R$ = RAM[OO,#KK]" is useful
+	"RAM[HI,#KK] = R$" is useful
+	"RAM[HI,LO] = #KK" is useful
+
+
+R1|RAMVAL 	= 0-6 + 1RAM = 3 bits     7 addressable registers + RAM immediate
+R2|KK		= 0-6 + 1ROM = 3 bits
+
+
+
+SET=b=1     OP=4bit          TARG=3       L=3BITS 	R=3BITS    K=8bits      TOTAL=15+8=23  3x8
+            OP=0 special     TARG=3       SOURCE=INPUT IMPLIED                  TOTAL=8
+
+
+SET [OUTPUT|R0|PCLO|PCTEMPHI|PCLO+PCHI] = [MARHI|MARLO]   // ?????
+
+
+
+Load UART ...
+
+SET [R0|MARLO|MARHI|PCLO|PCTEMPHI|PCLO+PCHI] = INPUT
+
+
+Via ALU to RAM
+
+SET RAMVAL = [R1|#KK] INFIX_OP R2  	
+SET RAMVAL = [R1|#KK] {optional POSTFIX_OP eg +1}
+
+
+
+Direct to RAM
+
+SET RAMVAL = INPUT		
+
+
+
+
+==== JUMPS ====
+
+Do we let jumps to labels only and let assembler work out if its a local or long jump?
+What about return from call?
+
+I think gigatron allows only constants in jump/branch instructions - this would seem necessary for the local jump to avoid illegal values that would wrap around the ROM page
+
+JMP 		XX		same as SET PCLO=XX above - jumps absolute within current ROM page, PCHITEMP is NOT loaded into PCHI 
+				- assembler should ideally prevent jump off page but we can't do that if we allow a variable (RAM/REG) as the jump address??
+				- so presumably jumps with vars will always be 16bit including RET statements (RETURN is synthesised by assembler as is CALL)
+LONGJMP 	XX		jumps absolute by triggering PCHI=PCHITEMP as well as PCLO=XX
+
+Assembler macros:
+
+LONGJMP #KK, #kk	assembler shortcut for :
+	SET PCHITEMP=#KK
+	LONGJMP #kk		
+
+LONGJMP #KKKK	assembler shortcut for :
+	SET PCHITEMP=high(#KKKK)
+	LONGJMP low(#KKKK)		
+
+LONGJMP :label	assembler shortcut for :
+	SET PCHITEMP=high(:label)
+	LONGJMP low(:label)		
+
+Assembler can also provide macros like 	high(:label) and low(:label) for example if wanting to somewhat usefully mess with label addresses for storing in RAM or jumps etc
+
+CALL	same as JMP/LONGJMP but puts current PC onto the stack in RAM first
+
+PUSH 	[R0|#KK|INPUT]     	copy source to stack and then decrement SP (ram locn) - synthesised by assembler
+POP 	[R0|#KK|OUTPUT] 	increment SP (ram locn) and copy from stack to target - synthesised by assembler
+
+RETURN - this needs to be able to load PCHI and PCLO from RAM on stack - load PCHITEMP first then load using PCLO+PCHI

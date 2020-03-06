@@ -346,7 +346,7 @@ DEC <come register>
 
 ## Save a control line 
 
-? Memory map the Display device?
+?Memory map the Display device?
 
 The display register steals a control line. In principal this could just be mapped to a specific memory location which would free up the control line
 for something useful, for instance doubling the number if Input or Output devices on the bus. This might for instance allow me to implement Branch on Equals.
@@ -359,6 +359,8 @@ Though to be fair I have two selector lines going into the ALU and use only one 
 - Add BCD operations
 
 This is a biggie.
+
+See also the ongoing [design of the ALU](docs/alu_with_carry_in.md).
 
 Having no logical operations at all is far from ideal.
 
@@ -375,10 +377,10 @@ Or perhaps the variable length instruction idea could yield benefits by giving m
 
 Obviously, being able to simulate all this before building is fantastic.
 
-Considering basing the future ALU on a similar set to that used by [CrazySmallCpu](https://minnie.tuhs.org/Programs/CrazySmallCPU/description.html) ...
+I am considering basing the future ALU on a similar set to that used by [CrazySmallCpu](https://minnie.tuhs.org/Programs/CrazySmallCPU/description.html) ...
 
 ```
-The ALU can perform sixteen operations based on the A and B inputs:
+Currently the ALU can perform sixteen operations based on the A and B inputs:
 A + B decimal
 A - B decimal
 A & B

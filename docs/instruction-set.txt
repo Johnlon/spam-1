@@ -1,24 +1,19 @@
 RAM addressing modes
 
 		HI	LO
-Zero page	0	ROM	Zero by pull down 
+Zero page	0	ROM		H/W uses Zero by pull down 
 Zero page	0	ANYREG	
-Zero page	0	ALUOUT	??
 
-Reg paged	REG	ROM	ANY REG or specific gp reg OR sp reg ??
-Reg paged	REG	ANYREG	
-Reg paged	REG	ALUOUT	??
+Reg paged	ANYREG	ROM	
+Reg paged	ANYREG	ANYREG	
+Reg paged	RAMVAUE	ANYREG	
+Reg paged	RAMVAUE	ROM	
 
 Counter registers - specific one or two??
 
 
-ROM
 
-
-LD PCTEMP, IMMED      SPECIAL PURPOSE REG?? OR USE GP REG?
-LD PCTEMP, REG
-LD PCTEMP, ALU
-LD PCTEMP, ROM
+LD PCTEMP, ALU 		
 
 LD PCLO, IMMED
 LD PCLO, REG

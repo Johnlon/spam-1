@@ -123,7 +123,7 @@ I particularly like the claimed 80% test coverage. I understand Logism also lack
 
 Again probably worth a look.
 
-Given Digital's connection back to Logism it's a pity there's no way to import a Logism circuit :(
+Given Digital's connection back to Logism it's a pity ther/e's no way to import a Logism circuit :(
 
 UPDATE: 11 Aug 2019 - went back and had a play with Digital. I found it difficult to work with. Specifically there is no convenient way to paste contents into the ROM component (unlike Logism Evo) so you have to edit each byte in turn or use a file. I was able to entry multibyte values despite it being an 8 bit wide EEPROM. Eventually the program errored with a null pointer exception (I have reported stack trace). So I don't think I'll be going back again for now. 
 

@@ -10,10 +10,12 @@
  */
 
 `timescale 1ns/100ps
-module hct74573 (input [7:0] D,
-                 output [7:0] Q,
-                 input LE,
-                 input OE_N);
+module hct74573 (
+    input LE,
+    input OE_N,
+	input [7:0] D,
+    output [7:0] Q
+);
     
     reg [7:0] data;
     

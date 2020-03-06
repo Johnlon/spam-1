@@ -2,7 +2,7 @@
 * latches write data on postive edge, all other inputs remain async.
  */
 
-`include "registerFile.v"
+`include "../registerFile/registerFile.v"
 `include "../74574/hct74574.v"
 `timescale 1ns/100ps
 module syncRegisterFile(

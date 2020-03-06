@@ -7,7 +7,6 @@ input OE_N,        // negative enable
 input [7:0] D,
 output [7:0] Q
 );
-    
     reg [8:0] data;
     
     specify

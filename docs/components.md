@@ -33,14 +33,18 @@ Also https://youtu.be/lO_9Zz5jzAA?t=3841
 
 Quest: Where is the 8 bit register with +ve edge, /WE and tristate!! The 4 bit [74LS173](http://www.ti.com/lit/ds/symlink/sn54173.pdf), has clock, OE, WE = but only 4 bits (16 pin package)  
 
-
 |Chip|Org|Trig|Input Enable|Tristate|Pinout|Other|Desc|
 |--|----|--|--|--|--|--|--|
 |[74HC574](https://assets.nexperia.com/documents/data-sheet/74HC_HCT574.pdf)|8|+ve||/OE|bus||8 bit reg - edge triggered - tristate|
 |[74HC273](https://assets.nexperia.com/documents/data-sheet/74HC_HCT273.pdf)|8|+ve|||bus|/RESET|8 bit reg - convenient pin out at sides 
 |[74HC377](https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf)|8|+ve|/E||pairs|| 8 bit reg - convenient pin out at sides - includes write enable 
-|[74HC646](https://assets.nexperia.com/documents/data-sheet/74HC_HCT646_CNV.pdf)|8 bi-dir|+ve|no - see note|/OE|wrap|direction|interestng chip but this [other datasheet](http://noel.feld.cvut.cz/hw/motorola/books/dl129/pdf/mc74hc646rev6.pdf) carries an important caveat.. "_The user should note that because the clocks are not gated with the Direction and Output Enable pins, data at the A and B ports may be clocked into the storage flip–flops at any time"_ - so no Write enable facility.|
-|[74HC652](http://www.ti.com/lit/ds/symlink/sn74hc652.pdf)|8|+ve multifunction bi-dir||yes|bus|latching/reflecting|high feature but no way to disable clocking in of data
+
+**Other 8 Bit Curiosities**
+
+|Chip|Org|Trig|Input Enable|Tristate|Pinout|Other|Desc|
+|--|----|--|--|--|--|--|--|
+|[74HC646](https://assets.nexperia.com/documents/data-sheet/74HC_HCT646_CNV.pdf)|8 bi-dir|+ve|no - see note|/OE|wrap|direction|same internals as 74HC652 but fewer input options as uses a "direction" pattern on pins - interestng chip but this [other datasheet](http://noel.feld.cvut.cz/hw/motorola/books/dl129/pdf/mc74hc646rev6.pdf) carries an important caveat.. "_The user should note that because the clocks are not gated with the Direction and Output Enable pins, data at the A and B ports may be clocked into the storage flip–flops at any time"_ - so no Write enable facility.|
+|[74HC652](http://www.ti.com/lit/ds/symlink/sn74hc652.pdf)|8|+ve multifunction bi-dir||yes|bus|latching/reflecting|same internals as 74HC647 but more flexible input options - but high feature but no way to disable clocking in of data
 
 **4BIT** 
 
@@ -63,7 +67,7 @@ Quest: Where is the 8 bit register with +ve edge, /WE and tristate!! The 4 bit [
 
 Also ...
 
-- [74fct2573](https://www.ti.com/lit/ds/symlink/cy74fct2573t.pdf) - fast version (10ns slowest transition) of 74HCT573 (30ns slowest transition)
+- [74FCT2573](https://www.ti.com/lit/ds/symlink/cy74fct2573t.pdf) - fast version (10ns slowest transition) of 74HCT573 (30ns slowest transition)
 
 Read back latch ...
 
