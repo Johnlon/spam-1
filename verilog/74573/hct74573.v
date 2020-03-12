@@ -16,7 +16,7 @@ module hct74573 (
 	input [7:0] D,
     output [7:0] Q
 );
-    
+
     reg [7:0] data;
     
     specify
@@ -27,7 +27,7 @@ module hct74573 (
     
     always @(D or LE)
         if (LE)
-        begin
+        begin 
             data <= D;
         end
     

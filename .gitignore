@@ -3,3 +3,4 @@
 **/*.vvp
 
 /verilog/_old/
+/venv*/

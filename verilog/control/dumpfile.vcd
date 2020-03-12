@@ -1,0 +1,280 @@
+$date
+	Thu Mar 12 01:29:50 2020
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	100ps
+$end
+$scope module test $end
+$var reg 8 ! hiRom [7:0] $end
+$upscope $end
+$scope module test $end
+$var reg 8 " loRom [7:0] $end
+$upscope $end
+$scope module test $end
+$var wire 1 # rom_out_n $end
+$upscope $end
+$scope module test $end
+$var wire 1 $ ram_out_n $end
+$upscope $end
+$scope module test $end
+$var wire 1 % alu_out_n $end
+$upscope $end
+$scope module test $end
+$var wire 1 & uart_out_n $end
+$upscope $end
+$scope module test $end
+$var wire 1 ' ram_in_n $end
+$upscope $end
+$scope module test $end
+$var wire 1 ( marlo_in_n $end
+$upscope $end
+$scope module test $end
+$var wire 1 ) marhi_in_n $end
+$upscope $end
+$scope module test $end
+$var wire 1 * uart_in_n $end
+$upscope $end
+$scope module test $end
+$var wire 1 + pchitmp_in_n $end
+$upscope $end
+$scope module test $end
+$var wire 1 , pclo_in_n $end
+$upscope $end
+$scope module test $end
+$var wire 1 - jmp_in_n $end
+$upscope $end
+$scope module test $end
+$var wire 1 . jmpo_in_n $end
+$upscope $end
+$scope module test $end
+$var wire 4 / reg_x_addr [3:0] $end
+$upscope $end
+$scope module test $end
+$var wire 4 0 reg_y_addr [3:0] $end
+$upscope $end
+$scope module test $end
+$var wire 4 1 alu_op [3:0] $end
+$upscope $end
+$scope module test $end
+$var wire 1 2 force_x_zero_n $end
+$upscope $end
+$scope module test $end
+$var wire 1 3 ram_zp_n $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+x3
+x2
+b1111 1
+b1111 0
+bx /
+x.
+x-
+x,
+x+
+x*
+x)
+x(
+x'
+x&
+x%
+x$
+x#
+bx "
+bx !
+$end
+#100
+12
+#120
+1'
+1.
+1-
+1,
+1+
+1*
+1)
+1(
+#300
+03
+b0 /
+b0 !
+bz "
+#420
+0'
+#440
+1&
+1%
+1$
+0#
+#1310
+b1000000 !
+#1450
+0$
+1#
+#2320
+b10000000 !
+#2460
+0%
+1$
+#3330
+b11000000 !
+#3470
+0&
+1%
+#4340
+13
+b100000 !
+#4480
+1&
+0#
+#5350
+03
+b0 !
+#6360
+13
+b100000 !
+#7370
+b1 /
+b100001 !
+#7490
+1'
+0(
+#8380
+b10 /
+b100010 !
+#8500
+0)
+1(
+#9390
+b11 /
+b100011 !
+#9510
+0*
+1)
+#10400
+b100 /
+b100100 !
+#10520
+0+
+1*
+#11410
+b101 /
+b100101 !
+#11530
+0,
+1+
+#12420
+b110 /
+b100110 !
+#12540
+0-
+1,
+#13430
+b0 /
+b110000 !
+#13550
+1-
+#14440
+b1111 /
+b111111 !
+#15450
+b0 /
+b1100000 !
+#15570
+0'
+#15590
+0$
+1#
+#16460
+b1 /
+b1100001 !
+#16580
+1'
+0(
+#17470
+b10 /
+b1100010 !
+#17590
+0)
+1(
+#18480
+b11 /
+b1100011 !
+#18600
+0*
+1)
+#19490
+b100 /
+b1100100 !
+#19610
+0+
+1*
+#20500
+b101 /
+b1100101 !
+#20620
+0,
+1+
+#21510
+b0 /
+b1110000 !
+#21630
+1,
+#22520
+b1111 /
+b1111111 !
+#23530
+b0 /
+b10100000 !
+#23650
+0'
+#23670
+0%
+1$
+#23770
+02
+#24540
+b1 /
+b10100001 !
+#24660
+1'
+0(
+#25550
+b10 /
+b10100010 !
+#25670
+0)
+1(
+#26560
+b11 /
+b10100011 !
+#26680
+0*
+1)
+#27570
+b100 /
+b10100100 !
+#27690
+0+
+1*
+#28580
+b101 /
+b10100101 !
+#28700
+0,
+1+
+#29590
+b0 /
+b10110000 !
+#29710
+1,
+#29730
+12
+#30600
+b1111 /
+b10111111 !
+#31610
