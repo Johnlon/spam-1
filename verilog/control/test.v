@@ -373,5 +373,31 @@ module test();
     hiRom = {bus_ALU_sel,zp_off_sel,dev_REGP_IN_sel};
     `TEST_STATE(35'b11011111111111111111011111111111111, "regp");
 
+    $display("=== UART OUT");
+
+    hiRom = {bus_UART_sel,zp_off_sel,dev_RAM_IN_sel};
+    `TEST_STATE(35'b11100111111111111111100001111111101, "ram");
+
+    hiRom = {bus_UART_sel,zp_off_sel,dev_MARLO_IN_sel};
+    `TEST_STATE(35'b11101011111111111111100011111111101, "marlo");
+
+    hiRom = {bus_UART_sel,zp_off_sel,dev_MARHI_IN_sel};
+    `TEST_STATE(35'b11101101111111111111100101111111101, "marhi");
+
+    hiRom = {bus_UART_sel,zp_off_sel,dev_UART_IN_sel};
+    `TEST_STATE(35'b11101110111111111111100111111111101, "marhi");
+
+    hiRom = {bus_UART_sel,zp_off_sel,dev_PCHITMP_IN_sel};
+    `TEST_STATE(35'b11101111011111111111101001111111101, "pctmphi");
+
+    hiRom = {bus_UART_sel,zp_off_sel,dev_PCLO_IN_sel};
+    `TEST_STATE(35'b11101111101111111111101011111111101, "pclo");
+
+    hiRom = {bus_UART_sel,zp_off_sel,dev_REGA_IN_sel};
+    `TEST_STATE(35'b11101111111111111111000001111111111, "rega");
+
+    hiRom = {bus_UART_sel,zp_off_sel,dev_REGP_IN_sel};
+    `TEST_STATE(35'b11101111111111111111011111111111111, "regp");
+
 	end
 endmodule : test

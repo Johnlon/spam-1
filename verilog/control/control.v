@@ -83,6 +83,7 @@ module control (
     
     // !!!! IF ZP IS ENABLED THEN FORCE ALUOP TO 1 
     wire force_ram_write_n = decodeAlu[0] && decodeAlu[1]; // ? diode logic to pull down a 10k resistor
+    //wire force_alu_op_to_passX = decodeAlu[0] && decodeAlu[1]; // ? diode logic to pull down a 10k resistor
 
     wire [7:0] decodeLoDev;
     hct74138 decoderLoDev(.Enable3(1'b1), .Enable2_bar(device_is_reg), .Enable1_bar(device[3]), .A(device[2:0]), .Y(decodeLoDev));
