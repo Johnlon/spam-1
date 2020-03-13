@@ -44,9 +44,9 @@ The SPAM-1 ALU ROM functions are ...
 
 | 0-7 ALU Ops | 8-15 ALU Ops      | 16-23 ALU Ops     | 24-31 ALU Ops |
 |-------------|-------------------|-------------------|---------------|
-| 0           | B-1               | A*B (high bits)   | A ROR B       |
-| A           | __A+B+Cin (0)__   | A*B (low bits)    | A AND B       |
-| B           | __A-B-Cin (0)__   | A/B               | A OR B        |
+| A           | B-1               | A*B (high bits)   | A ROR B       |
+| B           | __A+B+Cin (0)__   | A*B (low bits)    | A AND B       |
+| 0           | __A-B-Cin (0)__   | A/B               | A OR B        |
 | -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
 | -B          | A-B (special)     | A << B            | NOT A         |
 | A+1         | __A+B+Cin (1)__   | A >> B arithmetic | NOT B         |
@@ -55,7 +55,9 @@ The SPAM-1 ALU ROM functions are ...
 
 Re "A-B (special)" above, see [CSCVon8 ALU design](https://github.com/DoctorWkt/CSCvon8/blob/2b362a9e793238ebd150855a6dd6c5987674c7c6/Docs/CSCvon8_design.md) for an explanation of "Special"
 
-Where this ALU differs to CSCvon8 is that I wanted the SPAM-1 arithmetic for A and B to take the carry bit into account in the hardware. So in column 2 where I have 3 such operations at 9/10/11 and at 13/14/15.
+This ALU differs in two respects to CSCvon8.
+
+Firstly, I wanted the SPAM-1 arithmetic for A and B to take the carry bit into account in the hardware. So in column 2 where I have 3 such operations at 9/10/11 and at 13/14/15.
 
 For these 6 addition/subtraction functions the value of the second address line into the ROM will be derived from the carry bit rather from the raw bit 2 coming from the control logic. To achieve this there will be an additional bit of multplexing logic external to the ROM. (If we could find a 4Mx8 DIP EPROM, with an additional address line then this external logic could have been avoided). In any case the additional logic selected either the carry-flag or the original address line and looks like this ...
 
@@ -63,6 +65,7 @@ For these 6 addition/subtraction functions the value of the second address line 
 
 With this setup then when accessing operations 9/10/11 then they will be promoted to the "+/-1" variants 13/14/15 respectively when carry is set.
 
+Secondly, the order of operations 0,1,2 have been shifted so that operation 0 is 'A'. By sending the ALU operation selection to the ALU via a tristate buffer (eg 74245) I can switch on the 'A' operation by tristating the buffer and applying a pull down; this approach is easier than introducing a 5 way 2-1 multiplexer (such as I could obtain via the 74ALS857). This makes it possible for the control logic to select "PASS A" in the ALU using a single control wire, which is the op used when transfering register values to other devices or registers. 
 
 # Links
 
