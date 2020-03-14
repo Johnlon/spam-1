@@ -1,6 +1,8 @@
 
 `timescale 1ns/100ps
-//module hct74245( A , B , dir , nOE );
+
+/* verilator lint_off ASSIGNDLY */
+/* verilator lint_off UNOPTFLAT */
 
 // I don't know how to make this birectional
 module hct74245( 
@@ -9,6 +11,16 @@ module hct74245(
     inout [7:0] A,
     inout [7:0] B
 );
+
+    // HCT typical @ 5v according to https://assets.nexperia.com/documents/data-sheet/74HC_HCT245.pdf
+    specify
+    (A *> B) = (10);
+    (B *> A) = (10);
+    (dir *> A) = (16);
+    (dir *> B) = (16);
+    (nOE *> A) = (16);
+    (nOE *> B) = (16);
+    endspecify
 
     // always @(*) 
     //     $display("74245 dir ", dir, " nOE ", nOE, " A  %8b ", A, " B  %8b ", B);
