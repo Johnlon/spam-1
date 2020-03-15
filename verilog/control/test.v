@@ -92,12 +92,13 @@ endfunction
 
     logic reg_in_n;
     logic [3:0] reg_x_addr;
-    logic [3:0] reg_y_addr;
     logic [4:0] alu_op;
     logic force_x_val_to_zero_n;
 	logic ram_zp_n;
 
 
+    // recode this to 
+    // buscontrol[2], write_sp_reg, sp_reg[4], write_gp_reg, alu_op[5], force_X_to_0, ram_zp  
     wire [34:0] state = {
         rom_out_n,
         ram_out_n,
@@ -124,7 +125,6 @@ endfunction
 
         reg_in_n,
         reg_x_addr,
-        reg_y_addr,
         alu_op,
         force_x_val_to_zero_n,
 
@@ -158,15 +158,16 @@ endfunction
     .jmplt_in_n,
 
     .reg_in_n,
-    .reg_x_addr,
-    .reg_y_addr,
+    //.reg_x_addr,
     .alu_op,
     .force_x_val_to_zero_n,
 
     .ram_zp_n
 	);
     
-    
+
+    assign reg_x_addr = hi_rom[4:1];
+
     initial begin
         `ifndef verilator
 
@@ -186,7 +187,6 @@ endfunction
                         jmpo_in_n,
                        
                         reg_x_addr,
-                        reg_y_addr,
                         alu_op,
                         force_x_val_to_zero_n,
                         ram_zp_n);
@@ -214,7 +214,6 @@ endfunction
                                 pclo_in_n,
                                 jmp_in_n,
                                 reg_x_addr,
-                                reg_y_addr,
                                 alu_op,
                                 force_x_val_to_zero_n,
                                 ram_zp_n);
@@ -276,7 +275,7 @@ endfunction
         
 
 	lo_rom=bZedByte;
-
+    
     // ===========================================================================
 	hi_rom={op_DEV_eq_ROM_sel, dev_RAM_sel};
 	#101

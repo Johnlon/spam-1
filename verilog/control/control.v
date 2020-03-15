@@ -47,8 +47,7 @@ module control (
     output jmplt_in_n,
 
     output reg_in_n,
-    output [3:0] reg_x_addr,
-    output [3:0] reg_y_addr,
+    //output [3:0] reg_x_addr,
     output [4:0] alu_op,
     output force_x_val_to_zero_n,
 
@@ -64,8 +63,8 @@ module control (
     assign  alu_out_n = _decodedOp[3] && _decodedOp[4] && _decodedOp[5];
     assign  uart_out_n = _decodedOp[6] && _decodedOp[7];
 
-
-    wire [4:0] device_sel = {hi_rom[0] && _decodedOp[4] , hi_rom[4:1]};
+    wire is_non_reg_n = _decodedOp[4];
+    wire [4:0] device_sel = {hi_rom[0] && is_non_reg_n, hi_rom[4:1]}; // pull down top bit if this instruction applies to non-reg as that bit is used by ALU
     wire [4:0] alu_op_sel = {hi_rom[0], lo_rom[7:4]};
 
 
@@ -76,18 +75,12 @@ module control (
     wire force_alu_op_to_passx_n = _decodedOp[3];
     wire device_is_reg = device_sel[4];
 
-    /* verilator lint_off PINMISSING */
-    // decode device bits when ALU is active - high when ALU inactive
-    // hct74139 aluCtrlDecoder(._Ea(alu_out_n), .Aa({ram_zp_n, device_is_reg}), ._Ya(decodeAlu), .Ab(2'b0), ._Eb(1'b0)); 
-    /* verilator lint_on PINMISSING */
-
     wire [7:0] _decodedDevLo;
     hct74138 decoderLoDev(.Enable3(1'b1), .Enable2_bar(device_is_reg), .Enable1_bar(device_sel[3]), .A(device_sel[2:0]), .Y(_decodedDevLo));
     
     wire [7:0] _decodedDevHi;
     hct74138 decoderHiDev(.Enable3(device_sel[3]), .Enable2_bar(device_is_reg), .Enable1_bar(1'b0), .A(device_sel[2:0]), .Y(_decodedDevHi));
     
-    // assign reg_in_n = ! ((!rom_out_n && device_is_reg) || (!ram_out_n && device_is_reg) || (!alu_out_n && ram_zp_n && device_is_reg));
     assign reg_in_n = ! (
         (!rom_out_n && device_is_reg) || 
         (!ram_out_n && device_is_reg) ||
@@ -96,7 +89,7 @@ module control (
         (!_decodedOp[6] && device_is_reg)
     );
     
-    assign  ram_in_n = (_decodedDevLo[0] && _decodedOp[3] && _decodedOp[7]) || ! ram_out_n ;  // prevents ram_in and doing ram_out
+    assign  ram_in_n = (_decodedDevLo[0] && _decodedOp[3] && _decodedOp[7]) || ! ram_out_n ;  // combine with ram_out_n prevents ram_in and doing ram_out
     assign  marlo_in_n = _decodedDevLo[1];
     assign  marhi_in_n= _decodedDevLo[2];
     assign  uart_in_n= _decodedDevLo[3];
@@ -117,8 +110,7 @@ module control (
     // need to be able to mux the device[3:0] with 74HC243 quad bus tranceiver has OE & /OE for outputs control and 
     // use a sip5 10k resistor pull down to get 0. 
     // else use mux use 74241 (2x4 with hi or low en) or 74244 (2x4 with low en) 
-    assign reg_x_addr = device_sel[3:0]; // top bit of device sel ignored
-    assign reg_y_addr = 4'bx; // NOT NEEDED
+    //assign reg_x_addr = device_sel[3:0]; // top bit of device sel ignored
     
     
     wire [7:0] aluop_buf_in = {3'bx, alu_op_sel};
@@ -136,7 +128,7 @@ module control (
             " op_sel %03b ", operation_sel, " dev_sel %05b ", device_sel, " alu_op_sel %05b", alu_op_sel,  
             " => devHi %08b" , _decodedDevHi," devLo %08b" , _decodedDevLo,
             " aluop %05b" , alu_op,
-            " regx_addr %04b" , reg_x_addr,
+            //" regx_addr %04b" , reg_x_addr,
             " force_x_to_zero %1b", force_x_val_to_zero_n, 
             " force_alu_op_to_passx_n %1b", force_alu_op_to_passx_n, 
             " aluop_buf_out %8b", aluop_buf_out, 
