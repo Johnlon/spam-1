@@ -23,7 +23,7 @@ module hct74245(
     endspecify
 
     // always @(*) 
-    //     $display("74245 dir ", dir, " nOE ", nOE, " A  %8b ", A, " B  %8b ", B);
+    //     $display("74245 dir=%1b", dir, " nOE=%1b", nOE, " A= %-8b ", A, " B =%-8b ", B);
 
     assign #5 A=nOE?8'bzzzzzzzz:dir?8'bzzzzzzzz:B;
     assign #5 B=nOE?8'bzzzzzzzz:dir?A:8'bzzzzzzzz;
