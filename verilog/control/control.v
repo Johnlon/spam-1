@@ -1,6 +1,7 @@
 
 `include "../74138/hct74138.v"
 `include "../74139/hct74139.v"
+`include "../74245/hct74245.v"
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
@@ -53,8 +54,6 @@ module control (
 
     output ram_zp_n
 );
-
-    localparam ALU_PASSX = 5'b00001; // TODO - DO THE PULL DOWN !!!!!!!!!!!!
 
     wire [2:0] operation_sel = hi_rom[7:5];
     wire [7:0] _decodedOp;
@@ -121,7 +120,14 @@ module control (
     assign reg_x_addr = device_sel[3:0]; // top bit of device sel ignored
     assign reg_y_addr = 4'bx; // NOT NEEDED
     
-    assign alu_op = force_alu_op_to_passx_n? alu_op_sel: ALU_PASSX;  /// TODO: TURN INTO LOGIC
+    
+    wire [7:0] aluop_buf_in = {3'bx, alu_op_sel};
+    wire [7:0] aluop_buf_out;
+    wire force_alu_op_to_passx = !force_alu_op_to_passx_n; // EXTRA GATE
+
+    hct74245 bufAlu(.A(aluop_buf_in), .B(aluop_buf_out), .dir(1'b1), .nOE(force_alu_op_to_passx)); 
+    pulldown aluOpPullDown[8](aluop_buf_out);
+    assign alu_op = aluop_buf_out[4:0];
 
     // logging 
     always @ *  //(hi_rom, lo_rom, operation_sel, device_sel, alu_op_sel, _decodedDevHi,_decodedDevLo, ram_zp_n, device_is_reg, alu_op, reg_x_addr, reg_y_addr)
@@ -133,6 +139,7 @@ module control (
             " regx_addr %04b" , reg_x_addr,
             " force_x_to_zero %1b", force_x_val_to_zero_n, 
             " force_alu_op_to_passx_n %1b", force_alu_op_to_passx_n, 
+            " aluop_buf_out %8b", aluop_buf_out, 
             " zp %1b", ram_zp_n, " isreg %1b", device_is_reg);
 
 endmodule : control

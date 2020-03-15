@@ -269,7 +269,7 @@ endfunction
         
         
         parameter [4:0] ALU_ZERO_VAL     = 0;
-        parameter [4:0] ALU_PASSX        = 1;
+        parameter [4:0] ALU_PASSX        = 0;
         
         parameter zp_off_sel = 1'b1;
         parameter zp_on_sel = 1'b0;
