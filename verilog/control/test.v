@@ -16,115 +16,37 @@ function [4:0] rol(input [4:0] x);
     rol = {x[3:0], x[4]};
 endfunction
 
-`define EXPECT_STATE_BIT(bitno, name, expected, msg) \
-        begin \
-            localparam tmpwire = expected; \
-            if (1==2) $display("expected %d got %d  => %d ", tmpwire[bitno], state[bitno], tmpwire[bitno] !== state[bitno]);  \
-            if (tmpwire[bitno] !== state[bitno]) begin \
-                $display("%4d failed: '%b'\n      is not '%b' @ [bitno] %s = %1b but wanted %b - %s", \
-                    `__LINE__ ,state, expected, name, state[bitno], tmpwire[bitno], msg); \
-            end \
-        end
-
-`define EXPECT_STATE(expected, msg) \
-        if (expected === state) begin \
-            if (1==2) $display("ok"); \
-        end \
-        else \
-        begin \
-            `EXPECT_STATE_BIT(34, "rom_out_en", expected, msg); \
-            `EXPECT_STATE_BIT(32, "ram_out_en", expected, msg); \
-            `EXPECT_STATE_BIT(33, "alu_out_en", expected, msg); \
-            `EXPECT_STATE_BIT(31, "uart_out_en", expected, msg); \
-            \
-            `EXPECT_STATE_BIT(30, "ram_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(29, "marlo_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(28, "marhi_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(27, "uart_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(26, "pchitmp_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(25, "pclo_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(24, "jmp_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(23, "jmpo_in_n", expected, msg); \
-            \
-            `EXPECT_STATE_BIT(22, "jmpz_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(21, "jmpc_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(20, "jmpdi_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(19, "jmpdo_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(18, "jmpeq_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(17, "jmpne_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(16, "jmpgt_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(15, "jmplt_in_n", expected, msg); \
-            \
-            `EXPECT_STATE_BIT(14, "reg_in_n", expected, msg); \
-            `EXPECT_STATE_BIT(4:2, "force_alu_op_to_passx", expected, msg); \
-            `EXPECT_STATE_BIT(1, "force_x_val_to_zero_n", expected, msg); \
-            `EXPECT_STATE_BIT(0, "ram_zp_n", expected, msg); \
-        end
-
-`define TEST_STATE(expected, msg) \
-        begin \
-            #101  \
-            `EXPECT_STATE(expected, msg); \
-        end
-
 	logic [7:0] hi_rom;
-	
+	logic flag_z_n, flag_c_n, flag_o_n, flag_eq_n, flag_ne_n, flag_gt_n, flag_lt_n;
+    logic uart_in_ready_n, uart_out_ready_n;
+
     logic rom_out_n, ram_out_n, alu_out_n, uart_out_n;
 	
     logic ram_in_n;
     logic marlo_in_n;
     logic marhi_in_n;
     logic uart_in_n;
-    logic pchitmp_in_n;
-    logic pclo_in_n;
-    logic jmp_in_n;
-    logic jmpo_in_n;
 
-    logic jmpz_in_n;
-    logic jmpc_in_n;
-    logic jmpdi_in_n;
-    logic jmpdo_in_n;
-    logic jmpeq_in_n;
-    logic jmpne_in_n;
-    logic jmpgt_in_n;
-    logic jmplt_in_n;
-
+    logic pchitmp_in_n; // load hi tno
+    logic pclo_in_n; // load lo only (local jmp)
+    logic pc_in_n; // load hi
+    
     logic reg_in_n;
     logic force_alu_op_to_passx;
     logic force_x_val_to_zero_n;
 	logic ram_zp_n;
 
 
-    // recode this to 
-    // buscontrol[2], write_sp_reg, sp_reg[4], write_gp_reg, alu_op[5], force_X_to_0, ram_zp  
-
 	control ctrl(
-	.hi_rom(hi_rom), 
-   
-    .rom_out_n,
-	.ram_out_n,
-	.alu_out_n,
-	.uart_out_n,
-    
-    .ram_in_n,
-    .marlo_in_n,
-    .marhi_in_n,
-    .uart_in_n,
-    .pchitmp_in_n,
-    .pclo_in_n,
-    .jmp_in_n,
-    .jmpo_in_n,
-    .jmpz_in_n,
-    .jmpc_in_n,
-    .jmpdi_in_n,
-    .jmpdo_in_n,
-    .jmpeq_in_n,
-    .jmpne_in_n,
-    .jmpgt_in_n,
-    .jmplt_in_n,
+	.hi_rom, 
+    .flag_z_n, .flag_c_n, .flag_o_n, .flag_eq_n, .flag_ne_n, .flag_gt_n, .flag_lt_n,
+    .uart_in_ready_n, .uart_out_ready_n,
+
+    .rom_out_n, .ram_out_n,	.alu_out_n, .uart_out_n,
+    .ram_in_n, .marlo_in_n, .marhi_in_n, .uart_in_n,
+    .pchitmp_in_n, .pclo_in_n, .pc_in_n,
 
     .reg_in_n,
-    
     .force_alu_op_to_passx,
     .force_x_val_to_zero_n,
 
@@ -136,51 +58,52 @@ endfunction
         `ifndef verilator
 
         $dumpfile("dumpfile.vcd");
-        $dumpvars(0,  hi_rom, 
-                        rom_out_n,
-                        ram_out_n,
-                        alu_out_n,
-                        uart_out_n,
-                        ram_in_n,
-                        marlo_in_n,
-                        marhi_in_n,
-                        uart_in_n,
-                        pchitmp_in_n,
-                        pclo_in_n,
-                        jmp_in_n,
-                        jmpo_in_n,
-                       
-                        reg_in_n,
-                        force_x_val_to_zero_n,
-                        force_alu_op_to_passx,
-                        ram_zp_n);
-        `endif
+        $dumpvars(0,  
+            hi_rom, 
+            flag_z_n, flag_c_n, flag_o_n, flag_eq_n, flag_ne_n, flag_gt_n, flag_lt_n,
+            uart_in_ready_n, uart_out_ready_n,
+
+            rom_out_n, ram_out_n, alu_out_n, uart_out_n,
+            ram_in_n, marlo_in_n, marhi_in_n, uart_in_n,
+            pchitmp_in_n, pclo_in_n, pc_in_n,
+            
+            reg_in_n,
+            force_x_val_to_zero_n,
+            force_alu_op_to_passx,
+            
+            ram_zp_n
+        );
 
         $display ("");
-        $display ($time, "   %8s %8s %3s %3s %3s %4s %3s %5s %5s %4s %7s %4s %4s %4s %4s %7s %7s %3s", 
-                                                "hi", "lo","rom","ram","alu","uart",
-                                                "ram", "marlo", "marhi", "uart", "pchitmp", "pclo", "jmp",
-                                                "reg","reg","alu", "force_x", "ram");
+        $display ($time, "  %8s  %3s %3s %3s %3s %3s %3s %3s  %3s %3s  %5s %5s %5s %5s   %5s %5s %5s %5s  %8s %6s %5s  %5s %14s %12s %7s", 
+                                                "hi",
+                                                "nZ", "nC", "nO", "nEQ", "nNE", "nGT", "nLT",
+                                                "nDI", "nDO", 
+                                                "nRom","nRam","nAlu","nUart",
+                                                "nRam", "nMarlo", "nMarhi", "nUart", 
+                                                "nPchitmp", "nPclo", "nPc",
+                                                "nRegin",
+                                                "nForceXvalTo0", 
+                                                "forceAluToA", 
+                                                "nRamZp");
         
-        $display ($time, "   %8s %8s %3s %3s %3s %4s %3s %5s %5s %4s %7s %4s %4s %4s %4s %4s %7s %3s", 
-                                                "rom", "rom","out","out","out","out",
-                                                "in", "in", "in", "in", "in", "in", 
-                                                "in","x","y","op","zero", "zp");
-        //$monitor
-        $display ($time, "   %8b %3b %3b %3b %4b %3b %5b %5b %4b %7b %4b %4b %4b %4b %4b %3b", 
-                                hi_rom, 
-                                rom_out_n, ram_out_n, alu_out_n, uart_out_n,
-                                ram_in_n,
-                                marlo_in_n,
-                                marhi_in_n,
-                                uart_in_n,
-                                pchitmp_in_n,
-                                pclo_in_n,
-                                jmp_in_n,
-                                reg_in_n,
-                                force_x_val_to_zero_n,
-                                force_alu_op_to_passx,
-                                ram_zp_n);
+        $monitor ($time, "  %08b  %3b %3b %3b %3b %3b %3b %3b  %3b %3b  %5b %5b %5b %5b   %5b %5b %5b %5b  %8b %6b %5b  %5b %14b %12b %7b", 
+            hi_rom, 
+            flag_z_n, flag_c_n, flag_o_n, flag_eq_n, flag_ne_n, flag_gt_n, flag_lt_n,
+            uart_in_ready_n, uart_out_ready_n,
+
+            rom_out_n, ram_out_n, alu_out_n, uart_out_n,
+            ram_in_n, marlo_in_n, marhi_in_n, uart_in_n,
+            pchitmp_in_n, pclo_in_n, pc_in_n,
+            
+            reg_in_n,
+            force_x_val_to_zero_n,
+            force_alu_op_to_passx,
+            
+            ram_zp_n
+        );
+        
+        `endif
     end
 
     initial begin
@@ -196,7 +119,7 @@ endfunction
         parameter pad4      = 4'b0000;
         
 
-        // all routes to select
+        // all routeb to belect
         parameter [2:0] op_DEV_eq_ROM_sel = 0;
         parameter [2:0] op_DEV_eq_RAM_sel = 1;
         parameter [2:0] op_DEV_eq_RAMZP_sel = 2;
@@ -215,7 +138,7 @@ endfunction
         parameter [4:0] dev_UART_sel     = rol(3);
         parameter [4:0] dev_PCHITMP_sel  = rol(4);
         parameter [4:0] dev_PCLO_sel     = rol(5);
-        parameter [4:0] dev_JMP_sel      = rol(6);
+        parameter [4:0] dev_PC_sel       = rol(6);
         parameter [4:0] dev_JMPO_sel     = rol(7);
 
         parameter [4:0] dev_JMPZ_sel     = rol(8);
@@ -496,5 +419,198 @@ endfunction
         `equals(ram_zp_n, F, "ram_zp_n sel");
         `equals(reg_in_n, T, "reg_in_n not sel");
         
+    // JUMP TESTS ===========================================================================
+	
+    hi_rom={op_DEV_eq_ROM_sel, dev_REGA_sel};  // just to see PC flags not set
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, T);
+        
+
+    hi_rom={op_DEV_eq_ROM_sel, dev_PCHITMP_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, F);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, T);
+        
+    hi_rom={op_DEV_eq_ROM_sel, dev_PCLO_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, F);
+        `Equals(pc_in_n, T);
+
+    hi_rom={op_DEV_eq_ROM_sel, dev_PC_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, F);
+
+    //---------------------------
+
+    flag_o_n=F;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPO_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, F);
+        
+    flag_o_n=T;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPO_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, T);
+        
+    //---------------------------
+    
+    flag_z_n=F;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPZ_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, F);
+    
+    flag_z_n=T;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPZ_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, T);
+
+    //---------------------------
+    
+    flag_c_n=F;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPC_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, F);
+    
+    flag_c_n=T;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPC_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, T);
+    
+    //---------------------------
+    
+    uart_in_ready_n=F;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPDI_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, F);
+    
+    uart_in_ready_n=T;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPDI_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, T);
+    
+    //---------------------------
+    
+    uart_out_ready_n=F;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPDO_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, F);
+    
+    uart_out_ready_n=T;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPDO_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, T);
+
+    //---------------------------
+    
+    flag_eq_n=F;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPEQ_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, F);
+    
+    flag_eq_n=T;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPEQ_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, T);
+     
+    //---------------------------
+    
+    flag_ne_n=F;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPNE_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, F);
+    
+    flag_ne_n=T;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPNE_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, T);
+            
+    //---------------------------
+    
+    flag_gt_n=F;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPGT_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, F);
+    
+    flag_gt_n=T;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPGT_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, T);
+            
+    //---------------------------
+    
+    flag_lt_n=F;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPLT_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, F);
+    
+    flag_lt_n=T;
+    hi_rom={op_DEV_eq_ROM_sel, dev_JMPLT_sel};
+	#101
+        `Equals(rom_out_n, F);
+        `Equals(pchitmp_in_n, T);
+        `Equals(pclo_in_n, T);
+        `Equals(pc_in_n, T);
+            
 	end
 endmodule : test
