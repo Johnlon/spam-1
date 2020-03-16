@@ -1,8 +1,6 @@
 `include "../lib/assertion.v"
-
-`include "hct74245.v"
+`include "./hct74245.v"
 `timescale 1ns/100ps
-//`default_nettype none
 
 module tb();
 
@@ -19,8 +17,9 @@ module tb();
       assign A=Va;
 
       hct74245 buf245(.A, .B, .dir, .nOE);
+
     always @*
-        $display($time, "=> dir ", dir, " nOE ", nOE, " A stim %8b ", Va, " B stim %8b ", Vb, " A %8b ", A," B %8b ", B);
+        $display($time, " => dir=%1b", dir, " nOE=%1b", nOE, " Astim=%8b", Va, " Bstim=%8b ", Vb, " A=%8b ", A," B=%8b ", B);
      
     initial begin
       
@@ -31,11 +30,11 @@ module tb();
       #30
       `equals(A , 8'bxxxxxxxx, "OE disable");
       `equals(B , 8'bxxxxxxxx, "OE disable");
-
       ////////////////////////////////
 
       Va=8'bzzzzzzzz;
       Vb=8'bzzzzzzzz;
+
       dir <= 1; // a->b
       nOE <= 1;
       #30
