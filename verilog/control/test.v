@@ -74,6 +74,7 @@ endfunction
             ram_zp_n
         );
 
+/*
         $display ("");
         $display ($time, "  %8s  %3s %3s %3s %3s %3s %3s %3s  %3s %3s  %5s %5s %5s %5s   %5s %5s %5s %5s  %8s %6s %5s  %5s %14s %12s %7s", 
                                                 "hi",
@@ -86,7 +87,6 @@ endfunction
                                                 "nForceXvalTo0", 
                                                 "forceAluToA", 
                                                 "nRamZp");
-        
         $monitor ($time, "  %08b  %3b %3b %3b %3b %3b %3b %3b  %3b %3b  %5b %5b %5b %5b   %5b %5b %5b %5b  %8b %6b %5b  %5b %14b %12b %7b", 
             hi_rom, 
             flag_z_n, flag_c_n, flag_o_n, flag_eq_n, flag_ne_n, flag_gt_n, flag_lt_n,
@@ -102,6 +102,7 @@ endfunction
             
             ram_zp_n
         );
+  */      
         
         `endif
     end
