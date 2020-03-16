@@ -7,8 +7,8 @@ end \
 else \
 begin  \
   $display("%d failed: '%b' is not '%b' - %s", `__LINE__,actual, expected, msg); 	\
+  $finish;  \
 end
-  //$finish; 
 
 
 `define assertEquals(actual, expected_value) \
@@ -19,8 +19,8 @@ else \
 begin  \
   $display("Failed @ %-4d : expected '%b'", `__LINE__, expected_value); 	\
   $display("              : but got  '%b'", actual); 	\
+  $finish; \
 end
-  //$finish; 
 
 
 `define Equals(ACTUAL, expected) \
@@ -30,6 +30,6 @@ end \
 else \
 begin  \
   $display("%d failed: '%b' is not '%b' - ACTUAL", `__LINE__, ACTUAL, expected); 	\
+  $finish;  \
 end
   
-  //$finish; 
