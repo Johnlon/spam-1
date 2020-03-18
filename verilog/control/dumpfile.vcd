@@ -1,5 +1,5 @@
 $date
-	Mon Mar 16 01:40:19 2020
+	Mon Mar 16 22:18:41 2020
 $end
 $version
 	Icarus Verilog
@@ -74,7 +74,7 @@ $scope module test $end
 $var wire 1 6 reg_in_n $end
 $upscope $end
 $scope module test $end
-$var wire 1 7 force_x_val_to_zero_n $end
+$var wire 1 7 force_x_val_to_zero $end
 $upscope $end
 $scope module test $end
 $var wire 1 8 force_alu_op_to_passx $end
@@ -120,7 +120,7 @@ $end
 1-
 1,
 08
-17
+07
 0+
 14
 13
@@ -196,7 +196,7 @@ b10000011 !
 1/
 19
 08
-07
+17
 #16420
 00
 #17170
@@ -205,7 +205,7 @@ b10100001 !
 0/
 06
 10
-17
+07
 #17430
 1/
 #18180

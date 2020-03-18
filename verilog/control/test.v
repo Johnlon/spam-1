@@ -11,10 +11,10 @@
 
 module test();
 
-function [4:0] rol(input [4:0] x);
-    logic [4:0] rol;
-    rol = {x[3:0], x[4]};
-endfunction
+    function [4:0] rol(input [4:0] x);
+        logic [4:0] rol;
+        rol = {x[3:0], x[4]};
+    endfunction
 
 	logic [7:0] hi_rom;
 	logic flag_z_n, flag_c_n, flag_o_n, flag_eq_n, flag_ne_n, flag_gt_n, flag_lt_n;
@@ -33,24 +33,24 @@ endfunction
     
     logic reg_in_n;
     logic force_alu_op_to_passx;
-    logic force_x_val_to_zero_n;
+    logic force_x_val_to_zero;
 	logic ram_zp_n;
 
 
 	control ctrl(
-	.hi_rom, 
-    .flag_z_n, .flag_c_n, .flag_o_n, .flag_eq_n, .flag_ne_n, .flag_gt_n, .flag_lt_n,
-    .uart_in_ready_n, .uart_out_ready_n,
+        .hi_rom, 
+        .flag_z_n, .flag_c_n, .flag_o_n, .flag_eq_n, .flag_ne_n, .flag_gt_n, .flag_lt_n,
+        .uart_in_ready_n, .uart_out_ready_n,
 
-    .rom_out_n, .ram_out_n,	.alu_out_n, .uart_out_n,
-    .ram_in_n, .marlo_in_n, .marhi_in_n, .uart_in_n,
-    .pchitmp_in_n, .pclo_in_n, .pc_in_n,
+        .rom_out_n, .ram_out_n,	.alu_out_n, .uart_out_n,
+        .ram_in_n, .marlo_in_n, .marhi_in_n, .uart_in_n,
+        .pchitmp_in_n, .pclo_in_n, .pc_in_n,
 
-    .reg_in_n,
-    .force_alu_op_to_passx,
-    .force_x_val_to_zero_n,
+        .reg_in_n,
+        .force_alu_op_to_passx,
+        .force_x_val_to_zero,
 
-    .ram_zp_n
+        .ram_zp_n
 	);
     
 
@@ -68,7 +68,7 @@ endfunction
             pchitmp_in_n, pclo_in_n, pc_in_n,
             
             reg_in_n,
-            force_x_val_to_zero_n,
+            force_x_val_to_zero,
             force_alu_op_to_passx,
             
             ram_zp_n
@@ -97,7 +97,7 @@ endfunction
             pchitmp_in_n, pclo_in_n, pc_in_n,
             
             reg_in_n,
-            force_x_val_to_zero_n,
+            force_x_val_to_zero,
             force_alu_op_to_passx,
             
             ram_zp_n
@@ -303,7 +303,7 @@ endfunction
         `equals(reg_in_n, T, "reg_in_n not sel");
         `equals(ram_zp_n, F, "ram_zp_n sel");
         `equals(force_alu_op_to_passx, T, "force_alu_op_to_passx sel");
-        `equals(force_x_val_to_zero_n, T, "force_x_val_to_zero_n not sel");
+        `equals(force_x_val_to_zero, F, "force_x_val_to_zero not sel");
     
     hi_rom={op_RAMZP_eq_REG_sel, dev_MARLO_sel};
 	#101
@@ -316,7 +316,7 @@ endfunction
         `equals(reg_in_n, T, "reg_in_n not sel");
         `equals(ram_zp_n, F, "ram_zp_n sel");
         `equals(force_alu_op_to_passx, T, "force_alu_op_to_passx sel");
-        `equals(force_x_val_to_zero_n, T, "force_x_val_to_zero_n not sel");
+        `equals(force_x_val_to_zero, F, "force_x_val_to_zero not sel");
         
     hi_rom={op_RAMZP_eq_REG_sel, dev_REGA_sel};
 	#101
@@ -328,7 +328,7 @@ endfunction
         `equals(reg_in_n, T, "reg_in_n not sel");
         `equals(ram_zp_n, F, "ram_zp_n sel");
         `equals(force_alu_op_to_passx, T, "force_alu_op_to_passx sel");
-        `equals(force_x_val_to_zero_n, T, "force_x_val_to_zero_n not sel");
+        `equals(force_x_val_to_zero, F, "force_x_val_to_zero not sel");
         
     hi_rom={op_RAMZP_eq_REG_sel, dev_REGP_sel};
 	#101
@@ -340,7 +340,7 @@ endfunction
         `equals(reg_in_n, T, "reg_in_n not sel");
         `equals(ram_zp_n, F, "ram_zp_n sel");
         `equals(force_alu_op_to_passx, T, "force_alu_op_to_passx sel");
-        `equals(force_x_val_to_zero_n, T, "force_x_val_to_zero_n not sel");
+        `equals(force_x_val_to_zero, F, "force_x_val_to_zero not sel");
         
     // ===========================================================================
     
@@ -355,7 +355,7 @@ endfunction
         `equals(reg_in_n, T, "reg_in_n not sel");
         `equals(ram_zp_n, T, "ram_zp_n not sel");
         `equals(force_alu_op_to_passx, F, "force_alu_op_to_passx not sel");
-        `equals(force_x_val_to_zero_n, F, "force_x_val_to_zero_n sel");
+        `equals(force_x_val_to_zero, T, "force_x_val_to_zero sel");
 
     // ===========================================================================
     
@@ -364,14 +364,14 @@ endfunction
         `equals(alu_out_n, F, "alu_out_n sel");
         `equals(reg_in_n, F, "reg_in_n sel");
         `equals(force_alu_op_to_passx, F, "force_alu_op_to_passx not sel");
-        `equals(force_x_val_to_zero_n, T, "force_x_val_to_zero_n sel");
+        `equals(force_x_val_to_zero, F, "force_x_val_to_zero sel");
  
     hi_rom={op_REGX_eq_ALU_sel, dev_REGP_sel[4:1], 1'b1};
 	#101
         `equals(alu_out_n, F, "alu_out_n sel");
         `equals(reg_in_n, F, "reg_in_n sel");
         `equals(force_alu_op_to_passx, F, "force_alu_op_to_passx not sel");
-        `equals(force_x_val_to_zero_n, T, "force_x_val_to_zero_n sel");
+        `equals(force_x_val_to_zero, F, "force_x_val_to_zero sel");
  
     // ===========================================================================
 	

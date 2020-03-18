@@ -1,10 +1,6 @@
 
 `timescale 1ns/100ps
 
-/* verilator lint_off ASSIGNDLY */
-/* verilator lint_off UNOPTFLAT */
-
-// I don't know how to make this birectional
 module hct74245( 
     input dir,
     input nOE,
@@ -23,10 +19,11 @@ module hct74245(
     endspecify
 
     // always @(*) 
-    //     $display("74245 dir=%1b", dir, " nOE=%1b", nOE, " A= %-8b ", A, " B =%-8b ", B);
+    //     $display("74245: A=%8b ", A, "B=%-8b ", B, "dir=%1b", dir, " nOE=%1b", nOE);
 
-    assign #5 A=nOE? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
-    assign #5 B=nOE? 8'bzzzzzzzz :dir?A:8'bzzzzzzzz;
+    assign A=nOE? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
+    assign B=nOE? 8'bzzzzzzzz :dir?A: 8'bzzzzzzzz;
+
+    // assign B=nOE? 8'bzzzzzzzz :A;
 
 endmodule: hct74245
-

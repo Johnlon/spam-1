@@ -6,8 +6,8 @@
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
 
-
 `timescale 1ns/100ps
+
 module control (
     input [7:0] hi_rom,
 
@@ -24,7 +24,7 @@ module control (
     output reg_in_n,
 
     output force_alu_op_to_passx,
-    output force_x_val_to_zero_n,
+    output force_x_val_to_zero,
 
     output ram_zp_n
 );
@@ -41,8 +41,8 @@ module control (
     // ram_zp_n will turn off the ram address buffers letting HiAddr pull down to 0 and will turn on ROM->MARLO for the lo addr
     assign ram_zp_n = _decodedOp[2] && _decodedOp[3] && _decodedOp[7];
     
-    assign force_x_val_to_zero_n = _decodedOp[4];  
-    assign force_alu_op_to_passx = !_decodedOp[3]; // +vs logic needed - EXTRA GATE
+    assign force_x_val_to_zero = !_decodedOp[4];  // +ve logic needed - EXTRA GATE
+    assign force_alu_op_to_passx = !_decodedOp[3]; // +ve logic needed - EXTRA GATE
     
     wire is_non_reg_n = _decodedOp[4];
     wire [4:0] device_sel = {hi_rom[0] && is_non_reg_n, hi_rom[4:1]}; // pull down top bit if this instruction applies to non-reg as that bit is used by ALU
@@ -91,7 +91,7 @@ module control (
     //      " hi=%08b", hi_rom, 
     //         " op_sel=%03b ", operation_sel, " dev_sel=%05b ", device_sel, 
     //         " => devHi=%08b" , _decodedDevHi," devLo=%08b" , _decodedDevLo,
-    //         " force_x_to_zero_n=%1b", force_x_val_to_zero_n, 
+    //         " force_x_to_zero_n=%1b", force_x_val_to_zero, 
     //         " force_alu_op_to_passx=%1b", force_alu_op_to_passx, 
     //         " zp=%1b", ram_zp_n, " isreg=%1b", device_is_reg);
 
