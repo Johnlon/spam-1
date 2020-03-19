@@ -1,3 +1,5 @@
+// verilator lint_off STMTDLY
+
 `include "ram.v"
 
 module test();
