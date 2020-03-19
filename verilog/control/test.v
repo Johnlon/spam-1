@@ -109,9 +109,6 @@ module test();
 
     initial begin
         
-        logic [7:0] bZedByte       = 8'bz;
-        logic undefined      = 1'bx;
-
         parameter T      = 1'b1;
         parameter F      = 1'b0;
 

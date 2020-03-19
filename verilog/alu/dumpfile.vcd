@@ -1,0 +1,56 @@
+$date
+	Thu Mar 19 23:28:33 2020
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	100ps
+$end
+$scope module test $end
+$var wire 8 ! o [7:0] $end
+$upscope $end
+$scope module test $end
+$var reg 8 " x [7:0] $end
+$upscope $end
+$scope module test $end
+$var reg 8 # y [7:0] $end
+$upscope $end
+$scope module test $end
+$var reg 5 $ alu_op [4:0] $end
+$upscope $end
+$scope module test $end
+$var reg 1 % force_alu_op_to_passx $end
+$upscope $end
+$scope module test $end
+$var reg 1 & force_x_val_to_zero $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+0&
+0%
+b1001 $
+b10000001 #
+b10101010 "
+b101011 !
+$end
+#1000
+b10000000 !
+b11001 $
+#2000
+b10101010 !
+b0 $
+#4000
+b10 !
+b1001 $
+b1 #
+b1 "
+#5000
+b11 !
+#6000
+b0 !
+b1010 $
+#7000
+b11111111 !
+#9000
