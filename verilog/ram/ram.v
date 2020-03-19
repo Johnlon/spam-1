@@ -3,12 +3,13 @@
 // verilator lint_off UNOPTFLAT
 module ram(_OE, _WE, addr, d);
 
-parameter DWIDTH=8,AWIDTH=8,WORDS=256;
+parameter DWIDTH=8,AWIDTH=16, DEPTH= 1 << AWIDTH;
+
 input _OE, _WE;
 input [AWIDTH-1:0] addr;
 inout [DWIDTH-1:0] d;
  
-reg [DWIDTH-1:0] mem [WORDS-1:0];
+reg [DWIDTH-1:0] mem [DEPTH-1:0];
 logic [7:0] dout;
 
 assign d = dout;
@@ -32,7 +33,7 @@ assign d = dout;
 
   integer i;
   initial begin
-    for(i=0;i<WORDS;i=i+1)
+    for(i=0;i<DEPTH;i=i+1)
        mem[i]={DWIDTH{1'bx}};
   end
 

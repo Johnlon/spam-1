@@ -11,7 +11,7 @@ module test();
  logic [7:0] Vd;
  assign d=Vd;
 
-  ram r1(._OE, ._WE, .addr, .d);
+ram #(.AWIDTH(8)) r1(._OE, ._WE, .addr, .d);
 
  initial begin
     assign addr=8'b00000001;
