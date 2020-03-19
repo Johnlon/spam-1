@@ -53,6 +53,14 @@ ram #(.AWIDTH(8)) r1(._OE, ._WE, .addr, .d);
     #100
     $display("TEST: _OE=%1b, _WE=%1b, addr=%8b, d=%8b - read back 0 ",_OE, _WE, addr, d);
     `Equals(d, 8'bxxxxxxxx);
+ 
+    // this will trip an exception trap in the RAM - but I can't test that - uncomment 
+    // _OE=1'b0;
+    // _WE=1'b0;
+    // #100
+    // $display("TEST: _OE=%1b, _WE=%1b, addr=%8b, d=%8b - cannot enable write and output at same time",_OE, _WE, addr, d);
+    // `Equals(d, 8'bzzzzzzzz);
+ 
  end
 
 endmodule
