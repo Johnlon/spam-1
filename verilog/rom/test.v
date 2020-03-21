@@ -3,6 +3,8 @@
 `include "rom.v"
 `include "../lib/assertion.v"
 
+`timescale 1ns/100ps
+
 module test();
 
  logic _OE, _CS;

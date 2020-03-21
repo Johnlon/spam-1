@@ -1,3 +1,4 @@
+`timescale 1ns/100ps
 
 // verilator lint_off UNOPTFLAT
 module ram(_OE, _WE, addr, d);

@@ -1,5 +1,3 @@
-
-
 // 3-line to 8-line decoder/demultiplexer (inverted outputs)
 // (c) Tim Rudy, GPL3
 

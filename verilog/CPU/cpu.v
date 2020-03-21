@@ -1,2 +1,5 @@
-`include ""exernal/ice-chips-verilog/Source-7400/74163.v"
+`include "../rom/rom.v"
+`include "../ram/ram.v"
+`include "../control/control.v"
+`include "../alu/alu.v"
 

@@ -1,3 +1,5 @@
+`ifndef hct74245
+`define hct74245
 
 `timescale 1ns/100ps
 
@@ -24,6 +26,6 @@ module hct74245(
     assign A=nOE? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
     assign B=nOE? 8'bzzzzzzzz :dir?A: 8'bzzzzzzzz;
 
-    // assign B=nOE? 8'bzzzzzzzz :A;
-
 endmodule: hct74245
+
+`endif
