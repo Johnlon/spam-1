@@ -1,27 +1,21 @@
-
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
 
 `include "../lib/assertion.v"
-`include "hct74163.v"
+`include "pc.v"
 
 module test();
-logic CP;
-logic _MR;
-logic CEP1;
-logic CEP2;
-logic CET1;
-logic CET2;
-logic _PE;
-logic [3:0] D1;
-logic [3:0] D2;
-logic [3:0] Q1;
-logic [3:0] Q2;
+input CP;
+input _MR;
+input CONTen;
+input _PCLOin;
+input _PCHIin;
+input _PCHITMPin;
 
-wire TC1;
-wire TC2;
+input [7:0] D;
+wire [7:0] PCHI;
+wire [7:0] PCLO;
 
-// naming from https://www.ti.com/lit/ds/symlink/sn74f163a.pdf
 hct74163 LO
 (
   .CP(CP),

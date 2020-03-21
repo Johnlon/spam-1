@@ -1,3 +1,6 @@
+`ifndef V_CONTROL
+`define V_CONTROL
+
 
 `include "../74138/hct74138.v"
 `include "../74139/hct74139.v"
@@ -97,3 +100,5 @@ module control (
 
 endmodule : control
 // verilator lint_on ASSIGNDLY
+
+`endif

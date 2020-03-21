@@ -1,3 +1,6 @@
+`ifndef V_74138
+`define V_74138
+
 // 3-line to 8-line decoder/demultiplexer (inverted outputs)
 // (c) Tim Rudy, GPL3
 
@@ -46,3 +49,5 @@ assign Y = computed;
 
 endmodule
 /* verilator lint_on DECLFILENAME */
+
+`endif

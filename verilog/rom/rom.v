@@ -1,3 +1,7 @@
+
+`ifndef ROM_V
+`define  ROM_V
+
 `timescale 1ns/100ps
 
 // https://raw.githubusercontent.com/DoctorWkt/CSCvon8/master/rom.v
@@ -29,3 +33,5 @@ module rom (Address, Data, _CS, _OE);
 /* verilator lint_on ASSIGNDLY */
 
 endmodule
+
+`endif

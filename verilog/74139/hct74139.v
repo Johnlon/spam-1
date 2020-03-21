@@ -1,3 +1,6 @@
+`ifndef V_74139
+`define V_74139
+
 // from 
 // https://books.google.co.uk/books?id=pkW5DwAAQBAJ&pg=PA362&lpg=PA362&dq=verilog+%2274139%22&source=bl&ots=p5Lb0vS6Gc&sig=ACfU3U39tOIUbv0jCeofuICsNqxWo7PJJA&hl=en&sa=X&ved=2ahUKEwjVp6ecno3oAhXEoFwKHdR-BX0Q6AEwAXoECDIQAQ#v=onepage&q=verilog%20%2274139%22&f=false
 
@@ -45,3 +48,5 @@ assign _Ya = f74139(Aa,_Ea);
 assign _Yb = f74139(Ab,_Eb);
 
 endmodule
+
+`endif

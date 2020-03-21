@@ -17,7 +17,6 @@ logic [3:0] D1;
 logic [3:0] D2;
 logic [3:0] Q1;
 logic [3:0] Q2;
-
 wire TC1;
 wire TC2;
 

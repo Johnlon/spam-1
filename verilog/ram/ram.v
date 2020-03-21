@@ -1,3 +1,6 @@
+`ifndef RAM_V
+`define RAM_V
+
 `timescale 1ns/100ps
 
 // verilator lint_off UNOPTFLAT
@@ -47,3 +50,5 @@ assign d = dout;
   end
 
 endmodule
+
+`endif

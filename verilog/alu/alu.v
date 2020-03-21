@@ -1,3 +1,7 @@
+`ifndef  V_ALU
+`define  V_ALU
+
+
 `include "../74245/hct74245.v"
 `timescale 1ns/100ps
 
@@ -103,3 +107,5 @@ module alu(
     end
 
 endmodule: alu
+
+`endif
