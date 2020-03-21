@@ -1,4 +1,11 @@
 // assertion macro used in tests - is there a built for this??
+`ifndef verilator
+`define FAIL $finish_and_return(1); 
+`else
+`define FAIL $finish; 
+`endif
+
+
 
 `define equals(actual, expected, msg) \
 if (actual === expected) begin \
@@ -6,8 +13,8 @@ if (actual === expected) begin \
 end \
 else \
 begin  \
-  $display("%d failed: '%b' is not '%b' - %s", `__LINE__,actual, expected, msg); 	\
-  $finish;  \
+  $display("%d FAILED: '%b' is not '%b' - %s", `__LINE__,actual, expected, msg); 	\
+  `FAIL \
 end
 
 
@@ -17,9 +24,9 @@ if (actual === expected_value) begin \
 end \
 else \
 begin  \
-  $display("Failed @ %-4d : expected '%b'", `__LINE__, expected_value); 	\
+  $display("FAILED @ %-4d : expected '%b'", `__LINE__, expected_value); 	\
   $display("              : but got  '%b'", actual); 	\
-  $finish; \
+  `FAIL \
 end
 
 
@@ -29,7 +36,7 @@ if (ACTUAL === expected) begin \
 end \
 else \
 begin  \
-  $display("%d failed: '%b' is not '%b' - ACTUAL", `__LINE__, ACTUAL, expected); 	\
-  $finish;  \
+  $display("%d FAILED: '%b' is not '%b' - ACTUAL", `__LINE__, ACTUAL, expected); 	\
+  `FAIL \
 end
   

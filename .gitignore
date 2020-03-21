@@ -1,6 +1,7 @@
 .idea
 **/*~
 **/*.vvp
+**/*.swp
 
 /verilog/_old/
 /venv*/

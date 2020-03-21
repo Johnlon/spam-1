@@ -77,8 +77,7 @@ initial begin
   `Equals(Q, 4'b1010);
 
   //////////
-  // Test inhibition (both CEP and CET have to be Higb to continue counting)
-  $display("[%t]: Inhibition started", $time);
+  // both CEP and CET have to be High to count
   CEP = 1'b0;
   CET = 1'b1;
   #50;
@@ -92,7 +91,7 @@ initial begin
   `Equals(Q, 4'b1010);
 
   //////////
-  // Test inhibition (both CEP and CET have to be Higb to continue counting)
+  // both CEP and CET have to be High to count
   CEP = 1'b1;
   CET = 1'b0; // other way round
   #50;
@@ -169,6 +168,7 @@ initial begin
   CET=1'b0;
   #300
   `Equals(TC, 1'b0); // now no carry
+  `Equals(Q, 4'b1111); // now loads
   `Equals(Q, 4'b1111); // now loads
   
 end
