@@ -1,3 +1,6 @@
+`ifndef  V_74163
+`define  V_74163
+
 // Hate the TI docs, so changed naming to... https://assets.nexperia.com/documents/data-sheet/74HC_HCT163.pdf
 // 4 bit fully synchronous binary counter, parallel loadable
 // HCT timings
@@ -45,3 +48,5 @@ assign Q = count;
 assign TC = (count == 4'b1111) & CET;
 
 endmodule
+
+`endif

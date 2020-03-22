@@ -1,3 +1,5 @@
+`ifndef  V_COUNTER_REG
+`define  V_COUNTER_REG
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
@@ -71,3 +73,5 @@ hct74163 HI
 
 
 endmodule
+
+`endif

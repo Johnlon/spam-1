@@ -1,6 +1,9 @@
 
 T=$1
-[ -n $T ] || T=test
+if [ "$T" == "" ]
+then
+    T=test
+fi 
 
 cd $(dirname $(readlink -f $T.v))
 iverilog -Ttyp -Wall -g2012 -gspecify -o $T.vvp  $T.v 

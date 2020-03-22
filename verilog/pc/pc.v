@@ -1,3 +1,5 @@
+`ifndef  V_PC
+`define  V_PC
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
@@ -59,3 +61,5 @@ counterReg HI
 
   
 endmodule
+
+`endif

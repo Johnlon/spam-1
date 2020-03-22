@@ -1,3 +1,5 @@
+`ifndef  V_74573
+`define  V_74573
 /* octal d-type transparent latch.
  Same model as 74373 but with timings from HCT573
  
@@ -34,3 +36,5 @@ module hct74573 (
     assign Q = OE_N ? 8'bz : data;
     
 endmodule
+
+`endif
