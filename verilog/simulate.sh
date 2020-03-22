@@ -7,7 +7,13 @@ fi
 
 cd $(dirname $(readlink -f $T.v))
 iverilog -Ttyp -Wall -g2012 -gspecify -o $T.vvp  $T.v 
-[ $? == 0 ] || (echo ERROR && exit 1)
+if [ $? != 0 ] ; then
+    echo ERROR 
+    exit 1
+fi
 vvp -i $T.vvp
-[ $? == 0 ] || (echo ERROR && exit 1)
+if [ $? != 0 ] ; then
+    echo ERROR 
+    exit 1
+fi
 

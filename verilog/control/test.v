@@ -11,46 +11,46 @@
 
 module test();
 
-    function [4:0] rol(input [4:0] x);
-        logic [4:0] rol;
-        rol = {x[3:0], x[4]};
-    endfunction
+        function [4:0] rol(input [4:0] x);
+            logic [4:0] rol;
+            rol = {x[3:0], x[4]};
+        endfunction
 
 	logic [7:0] hi_rom;
-	logic flag_z_n, flag_c_n, flag_o_n, flag_eq_n, flag_ne_n, flag_gt_n, flag_lt_n;
-    logic uart_in_ready_n, uart_out_ready_n;
+	logic _flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt;
+        logic _uart_in_ready, _uart_out_ready;
 
-    logic rom_out_n, ram_out_n, alu_out_n, uart_out_n;
-	
-    logic ram_in_n;
-    logic marlo_in_n;
-    logic marhi_in_n;
-    logic uart_in_n;
+        logic _rom_out, _ram_out, _alu_out, _uart_out;
+            
+        logic _ram_in;
+        logic _marlo_in;
+        logic _marhi_in;
+        logic _uart_in;
 
-    logic pchitmp_in_n; // load hi tno
-    logic pclo_in_n; // load lo only (local jmp)
-    logic pc_in_n; // load hi
-    
-    logic reg_in_n;
-    logic force_alu_op_to_passx;
-    logic force_x_val_to_zero;
-	logic ram_zp_n;
+        logic _pchitmp_in; // load hi tno
+        logic _pclo_in; // load lo only (local jmp)
+        logic _pc_in; // load hi
+
+        logic _reg_in;
+        logic force_alu_op_to_passx;
+        logic force_x_val_to_zero;
+	logic _ram_zp;
 
 
 	control ctrl(
-        .hi_rom, 
-        .flag_z_n, .flag_c_n, .flag_o_n, .flag_eq_n, .flag_ne_n, .flag_gt_n, .flag_lt_n,
-        .uart_in_ready_n, .uart_out_ready_n,
+            .hi_rom, 
+            ._flag_z, ._flag_c, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt,
+            ._uart_in_ready, ._uart_out_ready,
 
-        .rom_out_n, .ram_out_n,	.alu_out_n, .uart_out_n,
-        .ram_in_n, .marlo_in_n, .marhi_in_n, .uart_in_n,
-        .pchitmp_in_n, .pclo_in_n, .pc_in_n,
+            ._rom_out, ._ram_out,	._alu_out, ._uart_out,
+            ._ram_in, ._marlo_in, ._marhi_in, ._uart_in,
+            ._pchitmp_in, ._pclo_in, ._pc_in,
 
-        .reg_in_n,
-        .force_alu_op_to_passx,
-        .force_x_val_to_zero,
+            ._reg_in,
+            .force_alu_op_to_passx,
+            .force_x_val_to_zero,
 
-        .ram_zp_n
+            ._ram_zp
 	);
     
 
@@ -60,18 +60,18 @@ module test();
         $dumpfile("dumpfile.vcd");
         $dumpvars(0,  
             hi_rom, 
-            flag_z_n, flag_c_n, flag_o_n, flag_eq_n, flag_ne_n, flag_gt_n, flag_lt_n,
-            uart_in_ready_n, uart_out_ready_n,
+            _flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt,
+            _uart_in_ready, _uart_out_ready,
 
-            rom_out_n, ram_out_n, alu_out_n, uart_out_n,
-            ram_in_n, marlo_in_n, marhi_in_n, uart_in_n,
-            pchitmp_in_n, pclo_in_n, pc_in_n,
+            _rom_out, _ram_out, _alu_out, _uart_out,
+            _ram_in, _marlo_in, _marhi_in, _uart_in,
+            _pchitmp_in, _pclo_in, _pc_in,
             
-            reg_in_n,
+            _reg_in,
             force_x_val_to_zero,
             force_alu_op_to_passx,
             
-            ram_zp_n
+            _ram_zp
         );
 
 /*
@@ -89,21 +89,20 @@ module test();
                                                 "nRamZp");
         $monitor ($time, "  %08b  %3b %3b %3b %3b %3b %3b %3b  %3b %3b  %5b %5b %5b %5b   %5b %5b %5b %5b  %8b %6b %5b  %5b %14b %12b %7b", 
             hi_rom, 
-            flag_z_n, flag_c_n, flag_o_n, flag_eq_n, flag_ne_n, flag_gt_n, flag_lt_n,
-            uart_in_ready_n, uart_out_ready_n,
+            _flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt,
+            _uart_in_ready, _uart_out_ready,
 
-            rom_out_n, ram_out_n, alu_out_n, uart_out_n,
-            ram_in_n, marlo_in_n, marhi_in_n, uart_in_n,
-            pchitmp_in_n, pclo_in_n, pc_in_n,
+            _rom_out, _ram_out, _alu_out, _uart_out,
+            _ram_in, _marlo_in, _marhi_in, _uart_in,
+            _pchitmp_in, _pclo_in, _pc_in,
             
-            reg_in_n,
+            _reg_in,
             force_x_val_to_zero,
             force_alu_op_to_passx,
             
-            ram_zp_n
+            _ram_zp
         );
-  */      
-        
+ */       
         `endif
     end
 
@@ -162,180 +161,180 @@ module test();
     // ===========================================================================
 	hi_rom={op_DEV_eq_ROM_sel, dev_RAM_sel};
 	#101
-        `equals(rom_out_n, F, "rom_out sel");
-        `equals(ram_out_n, T, "ram_out not sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, F, "ram_in_n sel");
-        `equals(reg_in_n, T, "reg_in_n sel");
-        `equals(ram_zp_n, T, "ram_zp_n not sel");
+        `equals(_rom_out, F, "rom_out sel");
+        `equals(_ram_out, T, "ram_out not sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, F, "_ram_in sel");
+        `equals(_reg_in, T, "_reg_in sel");
+        `equals(_ram_zp, T, "_ram_zp not sel");
         
 	hi_rom={op_DEV_eq_ROM_sel, dev_MARLO_sel};
 	#101
-        `equals(rom_out_n, F, "rom_out sel");
-        `equals(ram_out_n, T, "ram_out not sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, T, "ram_in_n sel");
-        `equals(marlo_in_n, F, "marlo_in_n sel");
-        `equals(reg_in_n, T, "reg_in_n sel");
-        `equals(ram_zp_n, T, "ram_zp_n not sel");
+        `equals(_rom_out, F, "rom_out sel");
+        `equals(_ram_out, T, "ram_out not sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, T, "_ram_in sel");
+        `equals(_marlo_in, F, "_marlo_in sel");
+        `equals(_reg_in, T, "_reg_in sel");
+        `equals(_ram_zp, T, "_ram_zp not sel");
         
     hi_rom={op_DEV_eq_ROM_sel, dev_REGA_sel};
 	#101
-        `equals(rom_out_n, F, "rom_out sel");
-        `equals(ram_out_n, T, "ram_out not sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, T, "ram_in_n not sel");
-        `equals(reg_in_n, F, "reg_in_n sel");
-        `equals(ram_zp_n, T, "ram_zp_n not sel");
+        `equals(_rom_out, F, "rom_out sel");
+        `equals(_ram_out, T, "ram_out not sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, T, "_ram_in not sel");
+        `equals(_reg_in, F, "_reg_in sel");
+        `equals(_ram_zp, T, "_ram_zp not sel");
 
     hi_rom={op_DEV_eq_ROM_sel, dev_REGP_sel};
 	#101
-        `equals(rom_out_n, F, "rom_out sel");
-        `equals(ram_out_n, T, "ram_out not sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, T, "ram_in_n not sel");
-        `equals(reg_in_n, F, "reg_in_n sel");
-        `equals(ram_zp_n, T, "ram_zp_n not sel");
+        `equals(_rom_out, F, "rom_out sel");
+        `equals(_ram_out, T, "ram_out not sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, T, "_ram_in not sel");
+        `equals(_reg_in, F, "_reg_in sel");
+        `equals(_ram_zp, T, "_ram_zp not sel");
 
     // ===========================================================================
 	
     hi_rom={op_DEV_eq_RAM_sel, dev_RAM_sel}; // ILLEGAL - CANT READ AND WRITE RAM
 	#101
-        `equals(rom_out_n, T, "rom_out not sel");
-        `equals(ram_out_n, F, "ram_out sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, T, "ram_in_n not sel - ILLEGAL");  // !! RAM_IN is disabled
-        `equals(reg_in_n, T, "reg_in_n not sel");
-        `equals(ram_zp_n, T, "ram_zp_n not sel");
+        `equals(_rom_out, T, "rom_out not sel");
+        `equals(_ram_out, F, "ram_out sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, T, "_ram_in not sel - ILLEGAL");  // !! RAM_IN is disabled
+        `equals(_reg_in, T, "_reg_in not sel");
+        `equals(_ram_zp, T, "_ram_zp not sel");
     
     hi_rom={op_DEV_eq_RAM_sel, dev_MARLO_sel};
 	#101
-        `equals(rom_out_n, T, "rom_out not sel");
-        `equals(ram_out_n, F, "ram_out sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, T, "ram_in_n not sel");
-        `equals(reg_in_n, T, "reg_in_n not sel");
-        `equals(marlo_in_n, F, "marlo_in_n sel");
-        `equals(ram_zp_n, T, "ram_zp_n not sel");
+        `equals(_rom_out, T, "rom_out not sel");
+        `equals(_ram_out, F, "ram_out sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, T, "_ram_in not sel");
+        `equals(_reg_in, T, "_reg_in not sel");
+        `equals(_marlo_in, F, "_marlo_in sel");
+        `equals(_ram_zp, T, "_ram_zp not sel");
     
     hi_rom={op_DEV_eq_RAM_sel, dev_REGA_sel};
 	#101
-        `equals(rom_out_n, T, "rom_out not sel");
-        `equals(ram_out_n, F, "ram_out sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, T, "ram_in_n not sel");
-        `equals(reg_in_n, F, "reg_in_n sel");
-        `equals(ram_zp_n, T, "ram_zp_n not sel");
+        `equals(_rom_out, T, "rom_out not sel");
+        `equals(_ram_out, F, "ram_out sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, T, "_ram_in not sel");
+        `equals(_reg_in, F, "_reg_in sel");
+        `equals(_ram_zp, T, "_ram_zp not sel");
         
     hi_rom={op_DEV_eq_RAM_sel, dev_REGP_sel};
 	#101
-        `equals(rom_out_n, T, "rom_out not sel");
-        `equals(ram_out_n, F, "ram_out sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, T, "ram_in_n not sel");
-        `equals(reg_in_n, F, "reg_in_n sel");
-        `equals(ram_zp_n, T, "ram_zp_n not sel");
+        `equals(_rom_out, T, "rom_out not sel");
+        `equals(_ram_out, F, "ram_out sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, T, "_ram_in not sel");
+        `equals(_reg_in, F, "_reg_in sel");
+        `equals(_ram_zp, T, "_ram_zp not sel");
         
     // ===========================================================================
 	
     hi_rom={op_DEV_eq_RAMZP_sel, dev_RAM_sel}; // ILLEGAL - CAN'T READ AND WRITE RAM
 	#101
-        `equals(rom_out_n, T, "rom_out not sel");
-        `equals(ram_out_n, F, "ram_out sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, T, "ram_in_n not sel - ILLEGAL");  // !! RAM_IN is disabled
-        `equals(reg_in_n, T, "reg_in_n not sel");
-        `equals(ram_zp_n, F, "ram_zp_n not sel");
+        `equals(_rom_out, T, "rom_out not sel");
+        `equals(_ram_out, F, "ram_out sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, T, "_ram_in not sel - ILLEGAL");  // !! RAM_IN is disabled
+        `equals(_reg_in, T, "_reg_in not sel");
+        `equals(_ram_zp, F, "_ram_zp not sel");
     
     hi_rom={op_DEV_eq_RAMZP_sel, dev_MARLO_sel};
 	#101
-        `equals(rom_out_n, T, "rom_out not sel");
-        `equals(ram_out_n, F, "ram_out sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, T, "ram_in_n not sel");
-        `equals(reg_in_n, T, "reg_in_n not sel");
-        `equals(marlo_in_n, F, "marlo_in_n sel");
-        `equals(ram_zp_n, F, "ram_zp_n not sel");
+        `equals(_rom_out, T, "rom_out not sel");
+        `equals(_ram_out, F, "ram_out sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, T, "_ram_in not sel");
+        `equals(_reg_in, T, "_reg_in not sel");
+        `equals(_marlo_in, F, "_marlo_in sel");
+        `equals(_ram_zp, F, "_ram_zp not sel");
     
     hi_rom={op_DEV_eq_RAMZP_sel, dev_REGA_sel};
 	#101
-        `equals(rom_out_n, T, "rom_out not sel");
-        `equals(ram_out_n, F, "ram_out sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, T, "ram_in_n not sel");
-        `equals(reg_in_n, F, "reg_in_n sel");
-        `equals(ram_zp_n, F, "ram_zp_n not sel");
+        `equals(_rom_out, T, "rom_out not sel");
+        `equals(_ram_out, F, "ram_out sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, T, "_ram_in not sel");
+        `equals(_reg_in, F, "_reg_in sel");
+        `equals(_ram_zp, F, "_ram_zp not sel");
         
     hi_rom={op_DEV_eq_RAMZP_sel, dev_REGP_sel};
 	#101
-        `equals(rom_out_n, T, "rom_out not sel");
-        `equals(ram_out_n, F, "ram_out sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, T, "ram_in_n not sel");
-        `equals(reg_in_n, F, "reg_in_n sel");
-        `equals(ram_zp_n, F, "ram_zp_n not sel");
+        `equals(_rom_out, T, "rom_out not sel");
+        `equals(_ram_out, F, "ram_out sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, T, "_ram_in not sel");
+        `equals(_reg_in, F, "_reg_in sel");
+        `equals(_ram_zp, F, "_ram_zp not sel");
             
     // ===========================================================================
     
     hi_rom={op_RAMZP_eq_REG_sel, dev_RAM_sel};
 	#101
         // illegal cos can't read and write RAM - REGX_ADDR=device[3:0] for RAM sel is same as REGA sel     
-        `equals(rom_out_n, T, "rom_out not sel");
-        `equals(ram_out_n, T, "ram_out not sel");
-        `equals(alu_out_n, F, "alu_out_n sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, F,   "ram_in_n sel");
-        `equals(reg_in_n, T, "reg_in_n not sel");
-        `equals(ram_zp_n, F, "ram_zp_n sel");
+        `equals(_rom_out, T, "rom_out not sel");
+        `equals(_ram_out, T, "ram_out not sel");
+        `equals(_alu_out, F, "_alu_out sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, F,   "_ram_in sel");
+        `equals(_reg_in, T, "_reg_in not sel");
+        `equals(_ram_zp, F, "_ram_zp sel");
         `equals(force_alu_op_to_passx, T, "force_alu_op_to_passx sel");
         `equals(force_x_val_to_zero, F, "force_x_val_to_zero not sel");
     
     hi_rom={op_RAMZP_eq_REG_sel, dev_MARLO_sel};
 	#101
         // illegal cos can't read MARLO - REGX_ADDR=device[3:0] for MARLO sel is same as REGB sel     
-        `equals(rom_out_n, T, "rom_out not sel");
-        `equals(ram_out_n, T, "ram_out not sel");
-        `equals(alu_out_n, F, "alu_out_n sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, F,   "ram_in_n sel");
-        `equals(reg_in_n, T, "reg_in_n not sel");
-        `equals(ram_zp_n, F, "ram_zp_n sel");
+        `equals(_rom_out, T, "rom_out not sel");
+        `equals(_ram_out, T, "ram_out not sel");
+        `equals(_alu_out, F, "_alu_out sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, F,   "_ram_in sel");
+        `equals(_reg_in, T, "_reg_in not sel");
+        `equals(_ram_zp, F, "_ram_zp sel");
         `equals(force_alu_op_to_passx, T, "force_alu_op_to_passx sel");
         `equals(force_x_val_to_zero, F, "force_x_val_to_zero not sel");
         
     hi_rom={op_RAMZP_eq_REG_sel, dev_REGA_sel};
 	#101
-        `equals(rom_out_n, T, "rom_out not sel");
-        `equals(ram_out_n, T, "ram_out not sel");
-        `equals(alu_out_n, F, "alu_out_n sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, F, "ram_in_n sel");
-        `equals(reg_in_n, T, "reg_in_n not sel");
-        `equals(ram_zp_n, F, "ram_zp_n sel");
+        `equals(_rom_out, T, "rom_out not sel");
+        `equals(_ram_out, T, "ram_out not sel");
+        `equals(_alu_out, F, "_alu_out sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, F, "_ram_in sel");
+        `equals(_reg_in, T, "_reg_in not sel");
+        `equals(_ram_zp, F, "_ram_zp sel");
         `equals(force_alu_op_to_passx, T, "force_alu_op_to_passx sel");
         `equals(force_x_val_to_zero, F, "force_x_val_to_zero not sel");
         
     hi_rom={op_RAMZP_eq_REG_sel, dev_REGP_sel};
 	#101
-        `equals(rom_out_n, T, "rom_out not sel");
-        `equals(ram_out_n, T, "ram_out not sel");
-        `equals(alu_out_n, F, "alu_out_n sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, F, "ram_in_n sel");
-        `equals(reg_in_n, T, "reg_in_n not sel");
-        `equals(ram_zp_n, F, "ram_zp_n sel");
+        `equals(_rom_out, T, "rom_out not sel");
+        `equals(_ram_out, T, "ram_out not sel");
+        `equals(_alu_out, F, "_alu_out sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, F, "_ram_in sel");
+        `equals(_reg_in, T, "_reg_in not sel");
+        `equals(_ram_zp, F, "_ram_zp sel");
         `equals(force_alu_op_to_passx, T, "force_alu_op_to_passx sel");
         `equals(force_x_val_to_zero, F, "force_x_val_to_zero not sel");
         
@@ -343,14 +342,14 @@ module test();
     
     hi_rom={op_NONREG_eq_OPREGY_sel, dev_MARLO_sel[4:1], 1'b1};
 	#101
-        `equals(rom_out_n, T, "rom_out not sel");
-        `equals(ram_out_n, T, "ram_out not sel");
-        `equals(alu_out_n, F, "alu_out_n sel");
-        `equals(uart_out_n, T, "uart_out not sel");
-        `equals(ram_in_n, T,   "ram_in_n not sel");
-        `equals(marlo_in_n, F,   "marlo_in_n sel");
-        `equals(reg_in_n, T, "reg_in_n not sel");
-        `equals(ram_zp_n, T, "ram_zp_n not sel");
+        `equals(_rom_out, T, "rom_out not sel");
+        `equals(_ram_out, T, "ram_out not sel");
+        `equals(_alu_out, F, "_alu_out sel");
+        `equals(_uart_out, T, "uart_out not sel");
+        `equals(_ram_in, T,   "_ram_in not sel");
+        `equals(_marlo_in, F,   "_marlo_in sel");
+        `equals(_reg_in, T, "_reg_in not sel");
+        `equals(_ram_zp, T, "_ram_zp not sel");
         `equals(force_alu_op_to_passx, F, "force_alu_op_to_passx not sel");
         `equals(force_x_val_to_zero, T, "force_x_val_to_zero sel");
 
@@ -358,15 +357,15 @@ module test();
     
     hi_rom={op_REGX_eq_ALU_sel, dev_REGA_sel[4:1], 1'b1};
 	#101
-        `equals(alu_out_n, F, "alu_out_n sel");
-        `equals(reg_in_n, F, "reg_in_n sel");
+        `equals(_alu_out, F, "_alu_out sel");
+        `equals(_reg_in, F, "_reg_in sel");
         `equals(force_alu_op_to_passx, F, "force_alu_op_to_passx not sel");
         `equals(force_x_val_to_zero, F, "force_x_val_to_zero sel");
  
     hi_rom={op_REGX_eq_ALU_sel, dev_REGP_sel[4:1], 1'b1};
 	#101
-        `equals(alu_out_n, F, "alu_out_n sel");
-        `equals(reg_in_n, F, "reg_in_n sel");
+        `equals(_alu_out, F, "_alu_out sel");
+        `equals(_reg_in, F, "_reg_in sel");
         `equals(force_alu_op_to_passx, F, "force_alu_op_to_passx not sel");
         `equals(force_x_val_to_zero, F, "force_x_val_to_zero sel");
  
@@ -374,241 +373,241 @@ module test();
 	
     hi_rom={op_DEV_eq_UART_sel, dev_RAM_sel};
 	#101
-        `equals(rom_out_n, T, "rom_out sel");
-        `equals(ram_out_n, T, "ram_out not sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, F, "uart_out not sel");
-        `equals(ram_in_n, F, "ram_in_n sel");
-        `equals(reg_in_n, T, "reg_in_n not sel");
+        `equals(_rom_out, T, "rom_out sel");
+        `equals(_ram_out, T, "ram_out not sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, F, "uart_out not sel");
+        `equals(_ram_in, F, "_ram_in sel");
+        `equals(_reg_in, T, "_reg_in not sel");
         
     hi_rom={op_DEV_eq_UART_sel, dev_MARLO_sel};
 	#101
-        `equals(rom_out_n, T, "rom_out sel");
-        `equals(ram_out_n, T, "ram_out not sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, F, "uart_out not sel");
-        `equals(ram_in_n, T, "ram_in_n sel");
-        `equals(marlo_in_n, F, "ram_marlo_n sel");
-        `equals(reg_in_n, T, "reg_in_n not sel");
+        `equals(_rom_out, T, "rom_out sel");
+        `equals(_ram_out, T, "ram_out not sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, F, "uart_out not sel");
+        `equals(_ram_in, T, "_ram_in sel");
+        `equals(_marlo_in, F, "_marlo_in sel");
+        `equals(_reg_in, T, "_reg_in not sel");
         
     hi_rom={op_DEV_eq_UART_sel, dev_REGP_sel};
 	#101
-        `equals(rom_out_n, T, "rom_out sel");
-        `equals(ram_out_n, T, "ram_out not sel");
-        `equals(alu_out_n, T, "alu_out_n not sel");
-        `equals(uart_out_n, F, "uart_out sel");
-        `equals(ram_in_n, T, "ram_in_n not sel");
-        `equals(marlo_in_n, T, "ram_marlo_n not sel");
-        `equals(reg_in_n, F, "reg_in_n sel");
+        `equals(_rom_out, T, "rom_out sel");
+        `equals(_ram_out, T, "ram_out not sel");
+        `equals(_alu_out, T, "_alu_out not sel");
+        `equals(_uart_out, F, "uart_out sel");
+        `equals(_ram_in, T, "_ram_in not sel");
+        `equals(_marlo_in, T, "_marlo_in not sel");
+        `equals(_reg_in, F, "_reg_in sel");
         
     // ===========================================================================
 	
     hi_rom={op_RAMZP_eq_UART_sel, dev_RAM_sel};
 	#101
-        `equals(uart_out_n, F, "uart_out sel");
-        `equals(ram_in_n, F, "ram_in_n sel");
-        `equals(ram_zp_n, F, "ram_zp_n sel");
-        `equals(reg_in_n, T, "reg_in_n not sel");
+        `equals(_uart_out, F, "uart_out sel");
+        `equals(_ram_in, F, "_ram_in sel");
+        `equals(_ram_zp, F, "_ram_zp sel");
+        `equals(_reg_in, T, "_reg_in not sel");
         
     hi_rom={op_RAMZP_eq_UART_sel, 5'b11111};
 	#101
-        `equals(uart_out_n, F, "uart_out sel");
-        `equals(ram_in_n, F, "ram_in_n sel");
-        `equals(ram_zp_n, F, "ram_zp_n sel");
-        `equals(reg_in_n, T, "reg_in_n not sel");
+        `equals(_uart_out, F, "uart_out sel");
+        `equals(_ram_in, F, "_ram_in sel");
+        `equals(_ram_zp, F, "_ram_zp sel");
+        `equals(_reg_in, T, "_reg_in not sel");
         
     // JUMP TESTS ===========================================================================
 	
     hi_rom={op_DEV_eq_ROM_sel, dev_REGA_sel};  // just to see PC flags not set
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, T);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, T);
         
 
     hi_rom={op_DEV_eq_ROM_sel, dev_PCHITMP_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, F);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, T);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, F);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, T);
         
     hi_rom={op_DEV_eq_ROM_sel, dev_PCLO_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, F);
-        `Equals(pc_in_n, T);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, F);
+        `Equals(_pc_in, T);
 
     hi_rom={op_DEV_eq_ROM_sel, dev_PC_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, F);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, F);
 
     //---------------------------
 
-    flag_o_n=F;
+    _flag_o=F;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPO_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, F);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, F);
         
-    flag_o_n=T;
+    _flag_o=T;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPO_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, T);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, T);
         
     //---------------------------
     
-    flag_z_n=F;
+    _flag_z=F;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPZ_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, F);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, F);
     
-    flag_z_n=T;
+    _flag_z=T;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPZ_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, T);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, T);
 
     //---------------------------
     
-    flag_c_n=F;
+    _flag_c=F;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPC_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, F);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, F);
     
-    flag_c_n=T;
+    _flag_c=T;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPC_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, T);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, T);
     
     //---------------------------
     
-    uart_in_ready_n=F;
+    _uart_in_ready=F;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPDI_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, F);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, F);
     
-    uart_in_ready_n=T;
+    _uart_in_ready=T;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPDI_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, T);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, T);
     
     //---------------------------
     
-    uart_out_ready_n=F;
+    _uart_out_ready=F;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPDO_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, F);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, F);
     
-    uart_out_ready_n=T;
+    _uart_out_ready=T;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPDO_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, T);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, T);
 
     //---------------------------
     
-    flag_eq_n=F;
+    _flag_eq=F;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPEQ_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, F);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, F);
     
-    flag_eq_n=T;
+    _flag_eq=T;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPEQ_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, T);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, T);
      
     //---------------------------
     
-    flag_ne_n=F;
+    _flag_ne=F;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPNE_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, F);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, F);
     
-    flag_ne_n=T;
+    _flag_ne=T;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPNE_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, T);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, T);
             
     //---------------------------
     
-    flag_gt_n=F;
+    _flag_gt=F;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPGT_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, F);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, F);
     
-    flag_gt_n=T;
+    _flag_gt=T;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPGT_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, T);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, T);
             
     //---------------------------
     
-    flag_lt_n=F;
+    _flag_lt=F;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPLT_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, F);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, F);
     
-    flag_lt_n=T;
+    _flag_lt=T;
     hi_rom={op_DEV_eq_ROM_sel, dev_JMPLT_sel};
 	#101
-        `Equals(rom_out_n, F);
-        `Equals(pchitmp_in_n, T);
-        `Equals(pclo_in_n, T);
-        `Equals(pc_in_n, T);
+        `Equals(_rom_out, F);
+        `Equals(_pchitmp_in, T);
+        `Equals(_pclo_in, T);
+        `Equals(_pc_in, T);
             
 	end
 endmodule : test
