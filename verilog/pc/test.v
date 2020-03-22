@@ -4,42 +4,28 @@
 `include "../lib/assertion.v"
 `include "pc.v"
 
+`timescale 1ns/100ps
+
 module test();
-input CP;
-input _MR;
-input CONTen;
-input _PCLOin;
-input _PCHIin;
-input _PCHITMPin;
+logic CP;
+logic _MR;
+logic _PCLOin;
+logic _PCHIin;
+logic _PCHITMPin;
+logic [7:0] D;
+wire [7:0] PCHI, PCLO;
 
-input [7:0] D;
-wire [7:0] PCHI;
-wire [7:0] PCLO;
 
-hct74163 LO
-(
+pc PC (
   .CP(CP),
   ._MR(_MR),
-  .CEP(CEP1),
-  .CET(CET1),
-  ._PE(_PE),
-  .D(D1),
+  ._PCHIin(_PCHIin),
+  ._PCLOin(_PCLOin),
+  ._PCHITMPin(_PCHITMPin),
+  .D(D),
 
-  .Q(Q1),
-  .TC(TC1)
-);
-
-hct74163 HI
-(
-  .CP(CP),
-  ._MR(_MR),
-  .CEP(CEP2),
-  .CET(CET2),
-  ._PE(_PE),
-  .D(D2),
-
-  .Q(Q2),
-  .TC(TC2)
+  .PCLO(PCLO),
+  .PCHI(PCHI)
 );
 
 task clkpulse;
@@ -53,42 +39,73 @@ endtask
 
 
   always @(*)
-    $display("Q1=%4b", Q1, " Q2=%4b", Q2);
+    $display("PC=%8b,%8b", PCHI, PCLO);
 
 initial begin
   
-  CEP1 = 1'b1;
-  CET1 = 1'b1;
-  CEP2 = 1'b1;
-  assign CET2 = TC1; // CHAIN 
-  
-  _PE = 1'b1;
-  _MR = 1'b1;
+  _PCHIin = 1'b1;
+  _PCHITMPin = 1'b1;
+  _PCLOin = 1'b1;
   CP = 1'b1;
-  D1 = 4'b1110;
-  D2 = 4'b0000;
+  _MR = 1'b0;
+  
+  clkpulse();
+  #50
+  _MR = 1'b1;
 
-  #100;
-  _PE = 1'b0;
-  
-  clkpulse;
-  
-  #100;
-  _PE = 1'b1;
-  `Equals(Q1, 4'b1110);
-  `Equals(Q2, 4'b0000);
+  #50
+  `Equals(PCLO, 8'b00000000);
+  `Equals(PCHI, 8'b00000000);
 
-  clkpulse;
-  
-  #100;
-  `Equals(Q1, 4'b1111);
-  `Equals(Q2, 4'b0000);
 
-  clkpulse;
-  
-  #100;
-  `Equals(Q1, 4'b0000);
-  `Equals(Q2, 4'b0001);
+// Set PCHITmp
+  D = 8'b11111111;
+  $display("load PCHITmp with %8b", D);
+  _PCHIin = 1'b1;
+  _PCHITMPin = 1'b0;
+  _PCLOin = 1'b1;
+  clkpulse();
+  #50
+  `Equals(PCLO, 8'b00000000);
+  `Equals(PCHI, 8'b00000000);
+
+// Set PCHI
+  $display("load PCHI with %8b", D);
+  _PCHIin = 1'b0;
+  _PCHITMPin = 1'b1;
+  _PCLOin = 1'b1;
+  clkpulse();
+  #50
+  `Equals(PCLO, 8'b00000000);
+  `Equals(PCHI, 8'b11111111);
+
+// Set PCLO
+  D = 8'b11111110;
+  $display("load PCLO with %8b", D);
+  _PCHIin = 1'b1;
+  _PCHITMPin = 1'b1;
+  _PCLOin = 1'b0;
+  clkpulse();
+  #50
+  `Equals(PCLO, 8'b11111110);
+  `Equals(PCHI, 8'b11111111);
+
+// count PC
+  $display("count");
+  _PCHIin = 1'b1;
+  _PCHITMPin = 1'b1;
+  _PCLOin = 1'b1;
+  clkpulse();
+  #50
+  `Equals(PCLO, 8'b11111111);
+  `Equals(PCHI, 8'b11111111);
+
+  clkpulse();
+  #50
+  `Equals(PCLO, 8'b00000000);
+  `Equals(PCHI, 8'b00000000);
+
+
 end
 
 endmodule: test

@@ -3,73 +3,59 @@
 // verilator lint_off STMTDLY
 
 `include "../lib/assertion.v"
-`include "../74163/hct74163.v"
+`include "../counterReg/counterReg.v"
+`include "../74573/hct74573.v"
 
-module pc();
-input CP;
-input _MR;
-input COUNTen;
-input _PCLOin;
-input _PCHIin;
-input _PCHITMPin;
+`timescale 1ns/100ps
 
-input [7:0] D;
-output [7:0] PCHI;
-output [7:0] PCLO;
-output [7:0] PCLO;
+module pc(
+    input CP,
+    input _MR,
+    input _PCLOin,
+    input _PCHIin,
+    input _PCHITMPin,
+    input [7:0] D,
 
+    output [7:0] PCLO,
+    output [7:0] PCHI
+);
 
-logic CP;
-logic _MR;
-logic CEPlo;
-logic CEPhi;
-logic CETlo;
-logic CEThi;
-logic _PE;
-logic [3:0] Dlo;
-logic [3:0] Dhi;
-logic [3:0] Qlo;
-logic [3:0] Qhi;
-wire TClo;
-wire TChi;
+wire COUNTen = _PCLOin && _PCHIin && _PCHITMPin;
+
+wire [7:0] PCHI, PCLO, PCHITMP;
+    
+hct74573 PCHITMPReg(
+  .D, .Q(PCHITMP), .LE(_PCHITMPin), .OE_N(1'b0)
+);
+
+wire TC;
 
 // naming from https://www.ti.com/lit/ds/symlink/sn74f163a.pdf
-hct74163 LO
+counterReg LO
 (
   .CP(CP),
   ._MR(_MR),
-  .CEP(CEPlo),
-  .CET(CETlo),
-  ._PE(_PE),
-  .D(Dlo),
+  .CEP(COUNTen),
+  .CET(1'b1),
+  ._PE(_PCLOin),
+  .D(D),
 
-  .Q(Qlo),
-  .TC(TClo)
+  .Q(PCLO),
+  .TC(TC)
 );
 
-hct74163 HI
+counterReg HI
 (
   .CP(CP),
   ._MR(_MR),
-  .CEP(CEPhi),
-  .CET(CEThi),
-  ._PE(_PE),
-  .D(Dhi),
+  .CEP(COUNTen),
+  .CET(TC),
+  ._PE(_PCHIin),
+  .D(PCHITMP),
 
-  .Q(Qhi),
-  .TC(TChi)
+  .Q(PCHI),
+  .TC() // ignored out
 );
 
-initial begin
-
-    CEPlo = COUNTen
-    CEPhi = COUNTen
-
-    CETlo = 1'b1;
-    assign CEThi = TClo; // CHAIN 
   
-
-
-end
-
-endmodule: test
+endmodule

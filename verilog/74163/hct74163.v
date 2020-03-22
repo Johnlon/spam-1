@@ -1,6 +1,8 @@
 // Hate the TI docs, so changed naming to... https://assets.nexperia.com/documents/data-sheet/74HC_HCT163.pdf
 // 4 bit fully synchronous binary counter, parallel loadable
 // HCT timings
+`timescale 1ns/100ps
+
 module hct74163
 (
   input CP,       // clock

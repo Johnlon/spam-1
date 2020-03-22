@@ -4,6 +4,8 @@
 
 `include "../74163/hct74163.v"
 
+`timescale 1ns/100ps
+
 module counterReg(
 input CP,
 input _MR,
