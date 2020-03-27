@@ -32,32 +32,86 @@ module control (
     output _ram_zp
 );
 
+    // constants
+    parameter [2:0] op_DEV_eq_ROM_sel = 0;
+    parameter [2:0] op_DEV_eq_RAM_sel = 1;
+    parameter [2:0] op_DEV_eq_RAMZP_sel = 2;
+    parameter [2:0] op_DEV_eq_UART_sel = 3;
+    parameter [2:0] op_REGX_eq_ALU_sel = 4;
+    parameter [2:0] op_NONREG_eq_OPREGY_sel = 5;
+    parameter [2:0] op_RAMZP_eq_REG_sel = 6;
+    parameter [2:0] op_RAMZP_eq_UART_sel = 7;
+
+    // bank 0
+    parameter [4:0] idx_RAM_sel      = 0;
+    parameter [4:0] idx_MARLO_sel    = 1;
+    parameter [4:0] idx_MARHI_sel    = 2;
+    parameter [4:0] idx_UART_sel     = 3;
+    parameter [4:0] idx_PCHITMP_sel  = 4;
+    parameter [4:0] idx_PCLO_sel     = 5;
+    parameter [4:0] idx_PC_sel       = 6;
+    parameter [4:0] idx_JMPO_sel     = 7;
+
+    // bank 1
+    parameter [4:0] idx_JMPZ_sel     = 0;
+    parameter [4:0] idx_JMPC_sel     = 1;
+    parameter [4:0] idx_JMPDI_sel    = 2;
+    parameter [4:0] idx_JMPDO_sel    = 3;
+    parameter [4:0] idx_JMPEQ_sel    = 4;
+    parameter [4:0] idx_JMPNE_sel    = 5;
+    parameter [4:0] idx_JMPGT_sel    = 6;
+    parameter [4:0] idx_JMPLT_sel    = 7;
+
+    // bank 2-3
+    parameter [4:0] idx_REGA_sel     = 16;
+    parameter [4:0] idx_REGP_sel     = 31;
+
+    // wiring
+
     wire [2:0] operation_sel = hi_rom[7:5];
     wire [7:0] _decodedOp;
     hct74138 opDecoder(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(operation_sel), .Y(_decodedOp));
     
-    assign  _rom_out = _decodedOp[0]; // diode logic?
-    assign  _ram_out = _decodedOp[1] && _decodedOp[2]; // diodes? 
-    assign  _alu_out = _decodedOp[3] && _decodedOp[4] && _decodedOp[5];
-    assign  _uart_out = _decodedOp[6] && _decodedOp[7];
+    // BUS ACCESS
+    assign  _rom_out = _decodedOp[op_DEV_eq_ROM_sel];
+    assign  _ram_out = _decodedOp[op_DEV_eq_RAM_sel] && _decodedOp[op_DEV_eq_RAMZP_sel];
+    assign  _alu_out = _decodedOp[op_NONREG_eq_OPREGY_sel] && _decodedOp[op_REGX_eq_ALU_sel] && _decodedOp[op_RAMZP_eq_REG_sel];
+    assign  _uart_out = _decodedOp[op_DEV_eq_UART_sel] && _decodedOp[op_RAMZP_eq_UART_sel];
 
     // _ram_zp will turn off the ram address buffers letting HiAddr pull down to 0 and will turn on ROM->MARLO for the lo addr
-    assign _ram_zp = _decodedOp[2] && _decodedOp[3] && _decodedOp[7];
+    assign _ram_zp = _decodedOp[op_DEV_eq_RAMZP_sel] && _decodedOp[op_RAMZP_eq_REG_sel] && _decodedOp[op_RAMZP_eq_UART_sel];
     
-    assign force_x_val_to_zero = !_decodedOp[4];  // +ve logic needed - EXTRA GATE
-    assign force_alu_op_to_passx = !_decodedOp[3]; // +ve logic needed - EXTRA GATE
+    assign force_x_val_to_zero = !_decodedOp[op_NONREG_eq_OPREGY_sel];  // +ve logic needed - EXTRA GATE
+    assign force_alu_op_to_passx = !_decodedOp[op_RAMZP_eq_REG_sel]; // +ve logic needed - EXTRA GATE
     
-    wire _is_non_reg = _decodedOp[4];
-    wire [4:0] device_sel = {hi_rom[0] && _is_non_reg, hi_rom[4:1]}; // pull down top bit if this instruction applies to non-reg as that bit is used by ALU
+    // write device
+    wire _ram_write = _decodedOp[op_RAMZP_eq_REG_sel] && _decodedOp[op_RAMZP_eq_UART_sel];
+    wire _is_non_reg_override = _decodedOp[op_NONREG_eq_OPREGY_sel] && _ram_write;
+    wire _is_reg_override = _decodedOp[op_REGX_eq_ALU_sel];
+    wire implied_dev_top_bit = hi_rom[0];
 
-    wire device_is_reg = device_sel[4];
+    wire reg_in = (implied_dev_top_bit && _is_non_reg_override) || !_is_reg_override;
+
+    wire [4:0] device_sel_pre = {reg_in, hi_rom[4:1]}; // pull down top bit if this instruction applies to non-reg as that bit is used by ALU
+
+    // everything else is device decode and jump logic
+
+
+    wire [7:0] device_sel_in = {3'b0, device_sel_pre};
+    wire [7:0] device_sel_out;
+    hct74245 bufDeviceSel(.A(device_sel_in), .B(device_sel_out), .dir(1'b1), .nOE( ! _ram_write )); 
+    pulldown pullDeviceToZero[7:0](device_sel_out);
+
+    wire [4:0] device_sel = device_sel_out[4:0];
+    assign _reg_in = ! device_sel_out[4];
 
     wire [7:0] _decodedDevLo;
-    hct74138 decoderLoDev(.Enable3(1'b1), .Enable2_bar(device_is_reg), .Enable1_bar(device_sel[3]), .A(device_sel[2:0]), .Y(_decodedDevLo));
+    hct74138 decoderLoDev(.Enable3(1'b1), .Enable2_bar(reg_in), .Enable1_bar(device_sel[3]), .A(device_sel[2:0]), .Y(_decodedDevLo));
     
     wire [7:0] _decodedDevHi;
-    hct74138 decoderHiDev(.Enable3(device_sel[3]), .Enable2_bar(device_is_reg), .Enable1_bar(1'b0), .A(device_sel[2:0]), .Y(_decodedDevHi));
+    hct74138 decoderHiDev(.Enable3(device_sel[3]), .Enable2_bar(reg_in), .Enable1_bar(1'b0), .A(device_sel[2:0]), .Y(_decodedDevHi));
     
+/*
     assign _reg_in = ! (
         (!_rom_out && device_is_reg) || 
         (!_ram_out && device_is_reg) ||
@@ -65,38 +119,50 @@ module control (
         (!_decodedOp[5]) ||
         (!_decodedOp[6] && device_is_reg)
     );
-    
-    assign  _ram_in = (_decodedDevLo[0] && _decodedOp[3] && _decodedOp[7]) || ! _ram_out ;  // combine with _ram_out prevents ram_in and doing ram_out
-    assign  _marlo_in = _decodedDevLo[1];
-    assign  _marhi_in= _decodedDevLo[2];
-    assign  _uart_in= _decodedDevLo[3];
+*/
+
+    assign  _ram_in = (_decodedDevLo[idx_RAM_sel] && _decodedOp[op_RAMZP_eq_REG_sel] && _decodedOp[op_RAMZP_eq_UART_sel]) || ! _ram_out ; // combine with _ram_out prevents ram_in and doing ram_out
+
+    assign  _marlo_in = _decodedDevLo[idx_MARLO_sel];
+    assign  _marhi_in= _decodedDevLo[idx_MARHI_sel];
+    assign  _uart_in= _decodedDevLo[idx_UART_sel];
 
     wire _jmpo_in, _jmpz_in, _jmpc_in, _jmpdi_in, _jmpdo_in, _jmpeq_in, _jmpne_in, _jmpgt_in, _jmplt_in;
 
-    assign  _jmpo_in= _decodedDevLo[7] || _flag_o;
+    assign  _jmpo_in= _decodedDevLo[idx_JMPO_sel] || _flag_o;
     
-    assign  _jmpz_in= _decodedDevHi[0] || _flag_z;
-    assign  _jmpc_in= _decodedDevHi[1] || _flag_c;
-    assign  _jmpdi_in= _decodedDevHi[2] || _uart_in_ready;
-    assign  _jmpdo_in= _decodedDevHi[3] || _uart_out_ready;
-    assign  _jmpeq_in= _decodedDevHi[4] || _flag_eq;
-    assign  _jmpne_in= _decodedDevHi[5] || _flag_ne;
-    assign  _jmpgt_in= _decodedDevHi[6] || _flag_gt;
-    assign  _jmplt_in= _decodedDevHi[7] || _flag_lt;
+    assign  _jmpz_in= _decodedDevHi[idx_JMPZ_sel] || _flag_z;
+    assign  _jmpc_in= _decodedDevHi[idx_JMPC_sel] || _flag_c;
+    assign  _jmpdi_in= _decodedDevHi[idx_JMPDI_sel] || _uart_in_ready;
+    assign  _jmpdo_in= _decodedDevHi[idx_JMPDO_sel] || _uart_out_ready;
+    assign  _jmpeq_in= _decodedDevHi[idx_JMPEQ_sel] || _flag_eq;
+    assign  _jmpne_in= _decodedDevHi[idx_JMPNE_sel] || _flag_ne;
+    assign  _jmpgt_in= _decodedDevHi[idx_JMPGT_sel] || _flag_gt;
+    assign  _jmplt_in= _decodedDevHi[idx_JMPLT_sel] || _flag_lt;
 
-    assign  _pchitmp_in= _decodedDevLo[4];
-    assign  _pclo_in= _decodedDevLo[5];
-    assign  _pc_in= _decodedDevLo[6] && _jmpo_in && _jmpz_in && _jmpc_in && _jmpdi_in && _jmpdo_in && _jmpeq_in && _jmpne_in && _jmpgt_in && _jmplt_in;
+    assign  _pchitmp_in= _decodedDevLo[idx_PCHITMP_sel];
+    assign  _pclo_in= _decodedDevLo[idx_PCLO_sel];
+    assign  _pc_in= _decodedDevLo[idx_PC_sel] && _jmpo_in && _jmpz_in && _jmpc_in && _jmpdi_in && _jmpdo_in && _jmpeq_in && _jmpne_in && _jmpgt_in && _jmplt_in;
     
     
-    // always @ * 
-    //     $display(
-    //      " hi=%08b", hi_rom, 
-    //         " op_sel=%03b ", operation_sel, " dev_sel=%05b ", device_sel, 
-    //         " => devHi=%08b" , _decodedDevHi," devLo=%08b" , _decodedDevLo,
-    //         " _force_x_to_zero=%1b", force_x_val_to_zero, 
-    //         " force_alu_op_to_passx=%1b", force_alu_op_to_passx, 
-    //         " zp=%1b", _ram_zp, " isreg=%1b", device_is_reg);
+     always @ * 
+         $display("%5d", $time,
+          " hi=%08b", hi_rom, 
+            // " op_sel=%03b ", operation_sel, " dev_sel=%05b ", device_sel, 
+            " devHi=%08b" , _decodedDevHi,
+            " devLo=%08b" , _decodedDevLo,
+            // " _force_x_0=%1b", force_x_val_to_zero, 
+            // " force_alu_passx=%1b", force_alu_op_to_passx, 
+            " _ram_in=%1b", _ram_in, 
+            " ram_writew=%1b", _ram_write, 
+            " reg_in=%1b", reg_in, 
+            " dsin=%5b", device_sel_in[4:0] , 
+            " dsout=%5b", device_sel_out[4:0] , 
+            " zp=%1b", _ram_zp, 
+            //" _is_non_reg_override=%1b",_is_non_reg_override,
+            //" _is_reg_override=%1b", _is_reg_override, 
+            //" implied_dev_top_bit=%1b", implied_dev_top_bit
+);
 
 endmodule : control
 // verilator lint_on ASSIGNDLY

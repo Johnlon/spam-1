@@ -116,39 +116,59 @@ module test();
         parameter pad4      = 4'b0000;
         
 
-        // all routeb to belect
+        // all routes to belect
         parameter [2:0] op_DEV_eq_ROM_sel = 0;
         parameter [2:0] op_DEV_eq_RAM_sel = 1;
         parameter [2:0] op_DEV_eq_RAMZP_sel = 2;
-        parameter [2:0] op_RAMZP_eq_REG_sel = 3;
-        parameter [2:0] op_NONREG_eq_OPREGY_sel = 4;
-        parameter [2:0] op_REGX_eq_ALU_sel = 5;
-        parameter [2:0] op_DEV_eq_UART_sel = 6;
+        parameter [2:0] op_DEV_eq_UART_sel = 3;
+        parameter [2:0] op_REGX_eq_ALU_sel = 4;
+        parameter [2:0] op_NONREG_eq_OPREGY_sel = 5;
+        parameter [2:0] op_RAMZP_eq_REG_sel = 6;
         parameter [2:0] op_RAMZP_eq_UART_sel = 7;
 
         // because MSB
+        parameter [4:0] idx_RAM_sel      = 0;
+        parameter [4:0] idx_MARLO_sel    = 1;
+        parameter [4:0] idx_MARHI_sel    = 2;
+        parameter [4:0] idx_UART_sel     = 3;
+        parameter [4:0] idx_PCHITMP_sel  = 4;
+        parameter [4:0] idx_PCLO_sel     = 5;
+        parameter [4:0] idx_PC_sel       = 6;
+        parameter [4:0] idx_JMPO_sel     = 7;
+
+        parameter [4:0] idx_JMPZ_sel     = 8;
+        parameter [4:0] idx_JMPC_sel     = 9;
+        parameter [4:0] idx_JMPDI_sel    = 10;
+        parameter [4:0] idx_JMPDO_sel    = 11;
+        parameter [4:0] idx_JMPEQ_sel    = 12;
+        parameter [4:0] idx_JMPNE_sel    = 13;
+        parameter [4:0] idx_JMPGT_sel    = 14;
+        parameter [4:0] idx_JMPLT_sel    = 15;
+
+        parameter [4:0] idx_REGA_sel     = 16;
+        parameter [4:0] idx_REGP_sel     = 31;
 
         // all devices to select
-        parameter [4:0] dev_RAM_sel      = rol(0);
-        parameter [4:0] dev_MARLO_sel    = rol(1);
-        parameter [4:0] dev_MARHI_sel    = rol(2);
-        parameter [4:0] dev_UART_sel     = rol(3);
-        parameter [4:0] dev_PCHITMP_sel  = rol(4);
-        parameter [4:0] dev_PCLO_sel     = rol(5);
-        parameter [4:0] dev_PC_sel       = rol(6);
-        parameter [4:0] dev_JMPO_sel     = rol(7);
+        parameter [4:0] dev_RAM_sel      = rol(idx_RAM_sel);
+        parameter [4:0] dev_MARLO_sel    = rol(idx_MARLO_sel);
+        parameter [4:0] dev_MARHI_sel    = rol(idx_MARHI_sel);
+        parameter [4:0] dev_UART_sel     = rol(idx_UART_sel);
+        parameter [4:0] dev_PCHITMP_sel  = rol(idx_PCHITMP_sel);
+        parameter [4:0] dev_PCLO_sel     = rol(idx_PCLO_sel);
+        parameter [4:0] dev_PC_sel       = rol(idx_PC_sel);
+        parameter [4:0] dev_JMPO_sel     = rol(idx_JMPO_sel);
 
-        parameter [4:0] dev_JMPZ_sel     = rol(8);
-        parameter [4:0] dev_JMPC_sel     = rol(9);
-        parameter [4:0] dev_JMPDI_sel    = rol(10);
-        parameter [4:0] dev_JMPDO_sel    = rol(11);
-        parameter [4:0] dev_JMPEQ_sel    = rol(12);
-        parameter [4:0] dev_JMPNE_sel    = rol(13);
-        parameter [4:0] dev_JMPGT_sel    = rol(14);
-        parameter [4:0] dev_JMPLT_sel    = rol(15);
+        parameter [4:0] dev_JMPZ_sel     = rol(idx_JMPZ_sel);
+        parameter [4:0] dev_JMPC_sel     = rol(idx_JMPC_sel);
+        parameter [4:0] dev_JMPDI_sel    = rol(idx_JMPDI_sel);
+        parameter [4:0] dev_JMPDO_sel    = rol(idx_JMPDO_sel);
+        parameter [4:0] dev_JMPEQ_sel    = rol(idx_JMPEQ_sel);
+        parameter [4:0] dev_JMPNE_sel    = rol(idx_JMPNE_sel);
+        parameter [4:0] dev_JMPGT_sel    = rol(idx_JMPGT_sel);
+        parameter [4:0] dev_JMPLT_sel    = rol(idx_JMPLT_sel);
 
-        parameter [4:0] dev_REGA_sel     = rol(16);
-        parameter [4:0] dev_REGP_sel     = rol(31);
+        parameter [4:0] dev_REGA_sel     = rol(idx_REGA_sel);
+        parameter [4:0] dev_REGP_sel     = rol(idx_REGP_sel);
         
         
         parameter [4:0] ALU_ZERO_VAL     = 0;
