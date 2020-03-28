@@ -18,7 +18,12 @@ module control (
     input _uart_in_ready, _uart_out_ready,
 
     output _rom_out, _ram_out, _alu_out, _uart_out,
+
+    output force_alu_op_to_passx,
+    output force_x_val_to_zero,
+    output _ram_zp
     
+    // decoded
     output _ram_in, _marlo_in, _marhi_in, _uart_in, 
     output _pchitmp_in, // load hi tmp reg
     output _pclo_in, // load lo pc reg only
@@ -26,10 +31,6 @@ module control (
     
     output _reg_in,
 
-    output force_alu_op_to_passx,
-    output force_x_val_to_zero,
-
-    output _ram_zp
 );
 
     // constants
@@ -85,8 +86,8 @@ module control (
     assign force_alu_op_to_passx = !_decodedOp[op_RAMZP_eq_REG_sel]; // +ve logic needed - EXTRA GATE
     
     // write device
-    wire _ram_write = _decodedOp[op_RAMZP_eq_REG_sel] && _decodedOp[op_RAMZP_eq_UART_sel];
-    wire _is_non_reg_override = _decodedOp[op_NONREG_eq_OPREGY_sel] && _ram_write;
+    wire _ram_write_override = _decodedOp[op_RAMZP_eq_REG_sel] && _decodedOp[op_RAMZP_eq_UART_sel];
+    wire _is_non_reg_override = _decodedOp[op_NONREG_eq_OPREGY_sel] && _ram_write_override;
     wire _is_reg_override = _decodedOp[op_REGX_eq_ALU_sel];
     wire implied_dev_top_bit = hi_rom[0];
 
@@ -94,15 +95,20 @@ module control (
 
     wire [4:0] device_sel_pre = {reg_in, hi_rom[4:1]}; // pull down top bit if this instruction applies to non-reg as that bit is used by ALU
 
-    // everything else is device decode and jump logic
-
 
     wire [7:0] device_sel_in = {3'b0, device_sel_pre};
     wire [7:0] device_sel_out;
-    hct74245 bufDeviceSel(.A(device_sel_in), .B(device_sel_out), .dir(1'b1), .nOE( ! _ram_write )); 
+    wire [4:0] device_sel = device_sel_out[4:0]; 
+
+    // DO I NEED THIS
+    //hct74245 bufDeviceSel(.A(device_sel_in), .B(device_sel_out), .dir(1'b1), .nOE( ! _ram_write_override )); 
+    hct74245 bufDeviceSel(.A(device_sel_in), .B(device_sel_out), .dir(1'b1), .nOE( 1'b0 )); 
     pulldown pullDeviceToZero[7:0](device_sel_out);
 
-    wire [4:0] device_sel = device_sel_out[4:0];
+    /////////////////////
+    // everything else is device decode and jump logic
+    /////////////////////
+
     assign _reg_in = ! device_sel_out[4];
 
     wire [7:0] _decodedDevLo;
@@ -110,16 +116,6 @@ module control (
     
     wire [7:0] _decodedDevHi;
     hct74138 decoderHiDev(.Enable3(device_sel[3]), .Enable2_bar(reg_in), .Enable1_bar(1'b0), .A(device_sel[2:0]), .Y(_decodedDevHi));
-    
-/*
-    assign _reg_in = ! (
-        (!_rom_out && device_is_reg) || 
-        (!_ram_out && device_is_reg) ||
-        (!_alu_out && _ram_zp && device_is_reg) || 
-        (!_decodedOp[5]) ||
-        (!_decodedOp[6] && device_is_reg)
-    );
-*/
 
     assign  _ram_in = (_decodedDevLo[idx_RAM_sel] && _decodedOp[op_RAMZP_eq_REG_sel] && _decodedOp[op_RAMZP_eq_UART_sel]) || ! _ram_out ; // combine with _ram_out prevents ram_in and doing ram_out
 
@@ -154,10 +150,10 @@ module control (
             // " _force_x_0=%1b", force_x_val_to_zero, 
             // " force_alu_passx=%1b", force_alu_op_to_passx, 
             " _ram_in=%1b", _ram_in, 
-            " ram_writew=%1b", _ram_write, 
+            " ram_write_ov=%1b", _ram_write_override, 
             " reg_in=%1b", reg_in, 
-            " dsin=%5b", device_sel_in[4:0] , 
-            " dsout=%5b", device_sel_out[4:0] , 
+            //" dsin=%5b", device_sel_in[4:0] , 
+            " dev_write=%5b", device_sel_out[4:0] , 
             " zp=%1b", _ram_zp, 
             //" _is_non_reg_override=%1b",_is_non_reg_override,
             //" _is_reg_override=%1b", _is_reg_override, 
