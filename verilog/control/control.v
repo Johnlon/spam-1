@@ -21,7 +21,7 @@ module control (
 
     output force_alu_op_to_passx,
     output force_x_val_to_zero,
-    output _ram_zp
+    output _ram_zp,
     
     // decoded
     output _ram_in, _marlo_in, _marhi_in, _uart_in, 
@@ -29,7 +29,7 @@ module control (
     output _pclo_in, // load lo pc reg only
     output _pc_in, // load high (from tmp)
     
-    output _reg_in,
+    output _reg_in
 
 );
 
@@ -38,8 +38,8 @@ module control (
     parameter [2:0] op_DEV_eq_RAM_sel = 1;
     parameter [2:0] op_DEV_eq_RAMZP_sel = 2;
     parameter [2:0] op_DEV_eq_UART_sel = 3;
-    parameter [2:0] op_REGX_eq_ALU_sel = 4;
-    parameter [2:0] op_NONREG_eq_OPREGY_sel = 5;
+    parameter [2:0] op_NONREG_eq_OPREGY_sel = 4;
+    parameter [2:0] op_REGX_eq_ALU_sel = 5;
     parameter [2:0] op_RAMZP_eq_REG_sel = 6;
     parameter [2:0] op_RAMZP_eq_UART_sel = 7;
 

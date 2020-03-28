@@ -121,8 +121,8 @@ module test();
         parameter [2:0] op_DEV_eq_RAM_sel = 1;
         parameter [2:0] op_DEV_eq_RAMZP_sel = 2;
         parameter [2:0] op_DEV_eq_UART_sel = 3;
-        parameter [2:0] op_REGX_eq_ALU_sel = 4;
-        parameter [2:0] op_NONREG_eq_OPREGY_sel = 5;
+        parameter [2:0] op_NONREG_eq_OPREGY_sel = 4;
+        parameter [2:0] op_REGX_eq_ALU_sel = 5;
         parameter [2:0] op_RAMZP_eq_REG_sel = 6;
         parameter [2:0] op_RAMZP_eq_UART_sel = 7;
 
