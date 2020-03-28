@@ -14,9 +14,6 @@
 module control (
     input [7:0] hi_rom,
 
-    input _flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt,
-    input _uart_in_ready, _uart_out_ready,
-
     output _rom_out, _ram_out, _alu_out, _uart_out,
 
     output force_alu_op_to_passx,
@@ -24,6 +21,10 @@ module control (
     output _ram_zp,
     
     // decoded
+
+    input _flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt,
+    input _uart_in_ready, _uart_out_ready,
+
     output _ram_in, _marlo_in, _marhi_in, _uart_in, 
     output _pchitmp_in, // load hi tmp reg
     output _pclo_in, // load lo pc reg only
