@@ -19,7 +19,7 @@ module control (
     output force_alu_op_to_passx,
     output force_x_val_to_zero,
     output _ram_zp,
-    
+
     // decoded
 
     input _flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt,

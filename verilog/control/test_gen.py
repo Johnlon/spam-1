@@ -8,11 +8,11 @@ def unrot(bits):
     return (bits >> 1) + (bottombit*16)
 
 
-def tc(bits_7_5, bits_4_0, b_acc, d_in, zp, alu_passx, x_eq_0):
+def tc(op, bits_7_5, bits_4_0, b_acc, d_in, zp, alu_passx, x_eq_0):
     #op=subbits(opidx, 7, 5)
-    opidx=bits_7_5
+    opidx=ops.index(op)
 
-    code = bits_7_5*32 + bits_4_0
+    code = opidx*32 + bits_4_0
 
     # top most op bit is in pos[0]
     #bit = 1 if (d_in>16) else 0;
@@ -28,23 +28,20 @@ def tc(bits_7_5, bits_4_0, b_acc, d_in, zp, alu_passx, x_eq_0):
 
     verilog=1
     if verilog:
+        
+        print("// {0} {1}".format(op, dev))
         print("hi_rom=8'b{0:08b};".format(code))
         print("#101") 
         for o in bus_outs:
             if o == b_acc:
-                print("`Equals({0}, F);".format(o))
+                print("`Equals({0}, F); //  expected".format(o))
             else:
                 print("`Equals({0}, T);".format(o))
-        for o in devices:
-            dname = devices[o]
-            if dname == dev:
-                print("`Equals({0}, F);".format(dname))
-            else:
-                print("`Equals({0}, T);".format(dname))
+        print("`Equals(_device_in, 5'b{0:05b}); // expect {1}".format(d_in, dev))
     else:
         print(
             "{0:08b}: ".format(code) +
-            " op={0:23s}".format(ops[opidx]) +
+            " op={0:23s}".format(op) +
             " _DEV_in={0:13s}".format(devices[d_in]) + 
             " _BUS_out={0:9s}".format(b_acc) +
             " _zp={0}".format(zp) + 
@@ -54,15 +51,16 @@ def tc(bits_7_5, bits_4_0, b_acc, d_in, zp, alu_passx, x_eq_0):
         )
 
 
-ops={}
-ops[0] = "op_DEV_eq_ROM_sel"
-ops[1] = "op_DEV_eq_RAM_sel"
-ops[2] = "op_DEV_eq_RAMZP_sel"
-ops[3] = "op_DEV_eq_UART_sel"
-ops[4] = "op_NONREG_eq_OPREGY_sel"
-ops[5] = "op_REGX_eq_ALU_sel"
-ops[6] = "op_RAMZP_eq_REG_sel"
-ops[7] = "op_RAMZP_eq_UART_sel"
+ops=[
+"op_DEV_eq_ROM_sel",
+"op_DEV_eq_RAM_sel",
+"op_DEV_eq_RAMZP_sel",
+"op_DEV_eq_UART_sel",
+"op_NONREG_eq_OPREGY_sel",
+"op_REGX_eq_ALU_sel",
+"op_RAMZP_eq_REG_sel",
+"op_RAMZP_eq_UART_sel"
+]
 
 devices={}
 devices[0] = "_ram_in"
@@ -88,30 +86,30 @@ for r in range(16):
 # tests
 
 for i in range(32):
-    tc(bits_7_5=0, bits_4_0=i, b_acc="_rom_out", d_in=unrot(i), zp=1, alu_passx=1, x_eq_0=1)
+    tc(op="op_DEV_eq_ROM_sel", bits_7_5=0, bits_4_0=i, b_acc="_rom_out", d_in=unrot(i), zp=1, alu_passx=1, x_eq_0=1)
 
 for i in range(32):
-    tc(bits_7_5=1, bits_4_0=i, b_acc="_ram_out", d_in=unrot(i), zp=1, alu_passx=1, x_eq_0=1)
+    tc(op="op_DEV_eq_RAM_sel", bits_7_5=1, bits_4_0=i, b_acc="_ram_out", d_in=unrot(i), zp=1, alu_passx=1, x_eq_0=1)
 
 for i in range(32):
-    tc(bits_7_5=2, bits_4_0=i, b_acc="_ram_out", d_in=unrot(i), zp=0, alu_passx=1, x_eq_0=1)
+    tc(op="op_DEV_eq_RAMZP_sel", bits_7_5=2, bits_4_0=i, b_acc="_ram_out", d_in=unrot(i), zp=0, alu_passx=1, x_eq_0=1)
 
 for i in range(32):
-    tc(bits_7_5=3, bits_4_0=i, b_acc="_uart_out", d_in=unrot(i), zp=1, alu_passx=1, x_eq_0=1)
+    tc(op="op_DEV_eq_UART_sel", bits_7_5=3, bits_4_0=i, b_acc="_uart_out", d_in=unrot(i), zp=1, alu_passx=1, x_eq_0=1)
 
 for i in range(32):
     # never a reg in
-    tc(bits_7_5=4, bits_4_0=i, b_acc="_alu_out", d_in=subbits(i, 4, 1), zp=1, alu_passx=1, x_eq_0=0)
+    tc(op="op_NONREG_eq_OPREGY_sel", bits_7_5=4, bits_4_0=i, b_acc="_alu_out", d_in=subbits(i, 4, 1), zp=1, alu_passx=1, x_eq_0=0)
 
 for i in range(32):
     # always a reg in
-    tc(bits_7_5=5, bits_4_0=i, b_acc="_alu_out", d_in=16+subbits(i, 4,1), zp=1, alu_passx=1, x_eq_0=1)
+    tc(op="op_REGX_eq_ALU_sel", bits_7_5=5, bits_4_0=i, b_acc="_alu_out", d_in=16+subbits(i, 4,1), zp=1, alu_passx=1, x_eq_0=1)
 
 for i in range(32):
     # always ram in
-    tc(bits_7_5=6, bits_4_0=i, b_acc="_alu_out", d_in=0, zp=0, alu_passx=0, x_eq_0=1)
+    tc(op="op_RAMZP_eq_REG_sel", bits_7_5=6, bits_4_0=i, b_acc="_alu_out", d_in=0, zp=0, alu_passx=0, x_eq_0=1)
 
 for i in range(32):
     # always ram in
-    tc(bits_7_5=7, bits_4_0=i, b_acc="_uart_out", d_in=0, zp=0, alu_passx=1, x_eq_0=1)
+    tc(op="op_RAMZP_eq_UART_sel",bits_7_5=7, bits_4_0=i, b_acc="_uart_out", d_in=0, zp=0, alu_passx=1, x_eq_0=1)
 
