@@ -14,12 +14,12 @@ module test();
 	logic [7:0] x;
 	logic [7:0] y;
 	logic [4:0] alu_op;
-    logic force_alu_op_to_passx;
-    logic force_x_val_to_zero;
-    logic flag_cin;
-    logic flag_cout;
-    logic flag_n;
-    logic flag_z;
+        logic force_alu_op_to_passx;
+        logic force_x_val_to_zero;
+        logic _flag_cin;
+        logic _flag_cout;
+        logic flag_n;
+        logic flag_z;
 	
 	alu Alu(
         .o, 
@@ -28,9 +28,8 @@ module test();
         .alu_op,
         .force_alu_op_to_passx,
         .force_x_val_to_zero,
-        .flag_cin,
-        .flag_cout
-
+        ._flag_cin,
+        ._flag_cout
     );
 
     initial begin
@@ -75,8 +74,8 @@ module test();
             o, 
             force_alu_op_to_passx,
             force_x_val_to_zero,
-            flag_cin,
-            flag_cout
+            _flag_cin,
+            _flag_cout
         );
         
         `endif
@@ -91,55 +90,107 @@ module test();
 
         assign force_alu_op_to_passx = 1'b0;
         assign force_x_val_to_zero = 1'b0;
-        assign flag_cin=0;
-        
+
+        //
+        assign _flag_cin=1;
         assign x = 8'b10101010;
         assign y = 8'b10000001;
         assign alu_op = Alu.OP_A_PLUS_B;
-        
         #100
         `Equals(o, 8'b00101011);
-        assign alu_op = Alu.OP_A_AND_B;
+        `Equals(_flag_cout, 0);
 
+        assign _flag_cin=1;
+        assign x = 254;
+        assign y = 3;
+        assign alu_op = Alu.OP_A_PLUS_B;
+        #100
+        `Equals(o, 8'b00000001);
+        `Equals(_flag_cout, 0);
+
+        assign x = 8'b11010101;
+        assign y = 8'b10000000;
+        assign alu_op = Alu.OP_A_AND_B;
         #100
         `Equals(o, 8'b10000000);
-        assign alu_op = Alu.OP_A;
+        `Equals(_flag_cout, 1);
 
+        assign x = 8'b11010101;
+        assign y = 8'b10000000;
+        assign alu_op = Alu.OP_A;
         #100
-        `Equals(o, 8'b10101010);
+        `Equals(o, 8'b11010101);
+        `Equals(_flag_cout, 1);
 
         assign force_alu_op_to_passx = 1'b0;
         assign force_x_val_to_zero = 1'b0;
-        
         #100
         assign x = 1;
         assign y = 1;
         assign alu_op = Alu.OP_A_PLUS_B;
         #100
         `Equals(o, 2);
+        `Equals(_flag_cout, 1);
         
         assign x = 1;
         assign y = 1;
-        assign flag_cin = 1;
+        assign _flag_cin = 0;
         assign alu_op = Alu.OP_A_PLUS_B;
         #100
         `Equals(o, 3);
+        `Equals(_flag_cout, 1);
 
         assign x = 1;
         assign y = 1;
-        assign flag_cin = 0;
+        assign _flag_cin = 1;
         assign alu_op = Alu.OP_A_MINUS_B;
         #100
         `Equals(o, 0);
+        `Equals(_flag_cout, 1);
 
         assign x = 1;
         assign y = 1;
-        assign flag_cin = 1;
+        assign _flag_cin = 0;
         assign alu_op = Alu.OP_A_MINUS_B;
         #100
         `Equals(o, 8'b11111111);
+        `Equals(_flag_cout, 0);
+
+        // TIMES
+        assign x = 8'h0F;
+        assign y = 8'h0F;
+        assign _flag_cin = 1'bx;
+        assign alu_op = Alu.OP_A_TIMES_B_HI;
+        #100
+        `Equals(o, 8'b00000000);
+        `Equals(_flag_cout, 1'b1);
+
+        assign x = 8'hF0;
+        assign y = 8'h10;
+        assign _flag_cin = 1'bx;
+        assign alu_op = Alu.OP_A_TIMES_B_HI;
+        #100
+        `Equals(o, 8'h0F);
+        `Equals(_flag_cout, 1'b1);
+
+        assign x = 8'hFF;
+        assign y = 8'hFF;
+        assign _flag_cin = 1'bx;
+        assign alu_op = Alu.OP_A_TIMES_B_HI;
+        #100
+        `Equals(o, 8'hFE);
+        `Equals(_flag_cout, 1'b1);
+
+        assign x = 8'hFF;
+        assign y = 8'hFF;
+        assign _flag_cin = 1'bx;
+        assign alu_op = Alu.OP_A_TIMES_B_LO;
+        #100
+        `Equals(o, 8'h01);
+        `Equals(_flag_cout, 1'b1);
 
         #100
+
 
 
         $display("---");

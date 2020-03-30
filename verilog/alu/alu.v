@@ -13,13 +13,13 @@
 
 module alu(
     output [7:0] o,
-    output flag_cout,
+    output _flag_cout,
     input  [7:0] x,
     input  [7:0] y,
     input  [4:0] alu_op,
     input  force_alu_op_to_passx,
     input  force_x_val_to_zero,
-    input  flag_cin
+    input  _flag_cin
 );
 // A           | B-1               | A*B (high bits)   | A ROR B       |
 // | B           | __A+B+Cin (0)__   | A*B (low bits)    | A AND B       |
@@ -45,6 +45,9 @@ module alu(
     localparam OP_B_MINUS_A=11;
     localparam OP_A_AND_B=25;
     localparam OP_A_OR_B=26;
+    localparam OP_A_TIMES_B_HI=16;
+    localparam OP_A_TIMES_B_LO=17;
+    reg [8*12:0] sOp;
 
 
     wire [7:0] xout;
@@ -54,24 +57,27 @@ module alu(
     assign alu_op_effective = alu_op_out[4:0];
 
     logic [7:0] ALU_Result;
-    assign o =ALU_Result;
+    logic [15:0] TimesResult;
+    assign o = ALU_Result;
 
-    logic [8:0] tmp;
-    assign flag_cout = tmp[8];
+    logic [8:0] tmp = 0;
+    assign _flag_cout = ! tmp[8];
     
-    // always @(*) 
-    //     $display("alu force_alu_op_to_passx=%1b", force_alu_op_to_passx, 
-    //     " force_x_val_to_zero=%1b", force_x_val_to_zero, 
-    //     " op=%-5b ", alu_op,
-    //     // " xin=%-8b ", xin,
-    //     " x=%-8b ", x,
-    //     " y=%-8b ", y,
-    //     " o=%-8b ", o
-    //     );
+    always @(*) 
+         $display("%6d ALU", $time,
+         " aluop=%05b(%s) ", alu_op, sOp,
+         " x=%08b(%3d) ", x, x,
+         " y=%08b(%3d) ", y, y,
+         " o=%08b(%3d) ", o, o,
+         " force_passx=%1b", force_alu_op_to_passx, 
+         " force_x_to_0=%1b", force_x_val_to_zero, 
+         " _cin=%1b ", _flag_cin,
+         " _cout=%1b ", _flag_cout,
+         );
 
+//     always @(*) 
+ //        $display("alu  : x=%-8b y=%-8b o=%-8b xin=%8b xout=%8b forcepassx=%1b aluopin=%b opeff=%d", x,y,o,xin,xout, force_alu_op_to_passx, aluopin, alu_op_effective);
 
-    // always @(*) 
-    //     $display("alu  : x=%-8b y=%-8b o=%-8b xin=%8b xout=%8b forcepassx=%1b aluopin=%b opeff=%d", x,y,o,xin,xout, force_alu_op_to_passx, aluopin, alu_op_effective);
     localparam AtoB=1'b1;
 
     wire [7:0] xin = x;
@@ -83,25 +89,50 @@ module alu(
     pulldown pullOpToZero[7:0](alu_op_out);
 
     
-    //https://www.fpga4student.com/2017/06/Verilog-code-for-ALU.html
-    wire [7:0] cin8 = {7'b0, flag_cin};
+    wire [7:0] cin8 = {7'b0, !_flag_cin};
     
     always @* begin
         case (alu_op_effective)
-            OP_A: 
+            OP_A: begin
+                sOp = "A";
                 ALU_Result = xout;
-            OP_A_OR_B: 
+                tmp=0;
+            end
+            OP_A_OR_B: begin
+                sOp = "A_OR_B";
                 ALU_Result = xout | y;
-            OP_A_AND_B: 
+                tmp=0;
+            end
+            OP_A_AND_B: begin
+                sOp = "A_AND_B";
                 ALU_Result = xout & y;
+                tmp=0;
+            end
             OP_A_PLUS_B: begin 
+                sOp = "A_PLUS_B";
                 ALU_Result = xout + y + cin8;
                 tmp = {1'b0,xout} + {1'b0,y} + cin8;
             end
             OP_A_MINUS_B: begin
+                sOp = "A_MINUS_B";
                 ALU_Result = xout - y - cin8;
                 tmp = {1'b0,xout} - {1'b0,y} - cin8;
             end
+
+            OP_A_TIMES_B_HI: begin
+                sOp = "A_TIMES_B_HI";
+                TimesResult = (xout * y);
+                ALU_Result = TimesResult[15:8];
+                tmp=0;
+            end
+
+            OP_A_TIMES_B_LO: begin
+                sOp = "A_TIMES_B_LO";
+                TimesResult = (xout * y);
+                ALU_Result = TimesResult[7:0];
+                tmp=0;
+            end
+
             default: ALU_Result = 8'bxxxxxxxx;
         endcase
     end
