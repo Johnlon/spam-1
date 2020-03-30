@@ -23,7 +23,7 @@ module hct74245(
     endspecify
 
     always @(*) begin
-        if (LOG) $display("BUF %-s: A=%8b ", NAME, A, "B=%-8b ", B, "dir=%1b", dir, " nOE=%1b", nOE);
+        if (LOG) $display("%6d", $time,  " BUF %-s: A=%8b ", NAME, A, "B=%-8b ", B, "dir=%1b", dir, " nOE=%1b", nOE);
     end
 
     assign A=nOE? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
