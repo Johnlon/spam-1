@@ -4,7 +4,7 @@
 // Hate the TI docs, so changed naming to... https://assets.nexperia.com/documents/data-sheet/74HC_HCT163.pdf
 // 4 bit fully synchronous binary counter, parallel loadable
 // HCT timings
-`timescale 1ns/100ps
+`timescale 1ns/1ns
 
 module hct74163
 (
@@ -26,7 +26,7 @@ specify
   (CET *> TC) = (14);
 endspecify
 
-reg [3:0] count = 0;
+reg [3:0] count;
 
 always @(posedge CP)
 begin
@@ -46,6 +46,11 @@ end
 
 assign Q = count;
 assign TC = (count == 4'b1111) & CET;
+
+// set a default "random" but recognizable value
+initial begin
+    count=4'bxxxx;
+end
 
 endmodule
 

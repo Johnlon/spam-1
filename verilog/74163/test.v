@@ -1,6 +1,8 @@
 `include "../lib/assertion.v"
 `include "hct74163.v"
 
+`timescale 1ns/1ns
+
 module counter_74163_tb();
 logic CP;
 logic _MR;
@@ -39,42 +41,58 @@ initial begin
   CET = 1'b0;
   _PE = 1'b1;
   D = 4'b1111;
-  _MR = 1'b0;
 
+`define CLOCK_PULSE  \
+  #300 \
+  CP= 1'b0; \
+  #300 \
+  CP= 1'b1; \
+  #300 \
+  CP= 1'b0; \
+  #300
+
+  // SYNC RESET
+  _MR = 1'b0;
   #100;
+  `Equals(Q, 4'bxxxx);
+
+  // Clock the reset state into the latch
+  `CLOCK_PULSE
+  `Equals(Q, 4'b0000);
 
   // Release reset state
   _MR = 1'b1;
   #100;
 
-  `Equals(Q, 4'b0000);
-
   // Load zero as initial counter state
-  $display("[%t]: Load 0 as initial value", $time);
-  D = 4'b0000;
+  $display("[%t]: Load 1 as initial value", $time);
+  D = 4'b0001;
   #10
   _PE = 1'b0;
+
+  `CLOCK_PULSE 
+
   #100
   _PE = 1'b1;
   #100;
 
-  `Equals(Q, 4'b0000);
+  `Equals(Q, 4'b0001);
   
   
   $display("[%t]: Regular count test", $time);
   CEP = 1'b1;
   CET = 1'b1;
-  $display("COUNT ", Q);
+  $display("COUNT %4b", Q);
   for (int i = 0; i < 10; i++)
   begin
     #300
     CP= 1'b1;
     #300
     CP= 1'b0;
-    $display("COUNT ", Q);
+    $display("COUNT %4b", Q);
   end
 
-  `Equals(Q, 4'b1010);
+  `Equals(Q, 4'b1011);
 
   //////////
   // both CEP and CET have to be High to count
@@ -87,8 +105,8 @@ initial begin
   #300
   CP= 1'b0;
   #300
-  $display("NO COUNT ", Q);
-  `Equals(Q, 4'b1010);
+  $display("NO COUNT %4b", Q);
+  `Equals(Q, 4'b1011);
 
   //////////
   // both CEP and CET have to be High to count
@@ -101,8 +119,8 @@ initial begin
   #300
   CP= 1'b0;
   #300
-  $display("NO COUNT ", Q);
-  `Equals(Q, 4'b1010);
+  $display("NO COUNT %4b", Q);
+  `Equals(Q, 4'b1011);
 
   // MR sync with clock test
   // MR is synced with clock reset on new +ve edge of clock
@@ -110,11 +128,11 @@ initial begin
   CET = 1'b1; 
   _MR= 1'b0;
   #300
-  `Equals(Q, 4'b1010); // no reset cos no +ve clock
+  `Equals(Q, 4'b1011); // no reset cos no +ve clock
   
   CP= 1'b0;
   #300
-  `Equals(Q, 4'b1010); // still no reset cos no +ve clock
+  `Equals(Q, 4'b1011); // still no reset cos no +ve clock
   
   CP= 1'b1;
   #300
