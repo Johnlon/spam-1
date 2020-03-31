@@ -26,17 +26,18 @@ module um245r #(parameter FILENAME="", DEPTH=0)  (
 
   integer i=-1;
 
-  assign _RXF=!(i<(DEPTH-1));
   
-  always @(negedge _RD) begin
+  // posedge so advance after reading
+  always @(posedge _RD) begin
     i = i + 1;
   end
 
   /// small delay necessary to prevent previous value of Mem[i] appearing on wire 
-  assign #1 D = _RD? 8'bzzzzzzzz: _RXF? 8'bxxxxxxxx: Mem[i];
+  assign #1 _RXF=!(i<DEPTH);
+  assign #5 D = _RD? 8'bzzzzzzzz: _RXF? 8'bxxxxxxxx: Mem[i];
 
   if (0)  always @*
-    $display("D=", D, ", WR=", WR, ",_RD=", _RD, ", i=", i, " MEM[%2d]=h%2x", i, Mem[i]);
+    $display("D=", D, ", WR=", WR, ",_RD=", _RD, ", i=", i, " MEM[%2d]=h%2x", i, Mem[i], " _RXF=%1b", _RXF);
 
 
 endmodule

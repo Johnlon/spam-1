@@ -11,7 +11,7 @@ logic _RD;
 wire _TXE;
 wire _RXF;
 
-um245r #(.FILENAME("data.mem"), .DEPTH(20))  uart (
+um245r #(.FILENAME("data.mem"), .DEPTH(12))  uart (
     .D,	                // Input data
     .WR,		// Writes data on -ve edge
     ._RD,		// When goes from high to low then the FIFO data is placed onto D (equates to _OE)
@@ -20,6 +20,8 @@ um245r #(.FILENAME("data.mem"), .DEPTH(20))  uart (
   );
 
 assign D=Dv;
+
+reg [12*8:0] expected = "Hello World!";
 
 initial begin
 
@@ -46,21 +48,44 @@ initial begin
     WR=1;
     Dv=8'bz;
     
-    $write("[");
-    while (!_RXF) begin
-        #10
-        _RD=0;
-        #10
-        if ( D !== 8'bxxxxxxxx )
-            $write("%c", D);
-        else
-            $write("x");
-        #10
-        _RD=1;
-        #10
-        `Equals(D, 8'bz); // bus is Z unless reading
-    end
-    $write("]");
+`define CLK_RD(EXPECTED) \
+    #10 \
+    `Equals(_RXF, 1'b0); \
+    _RD=0; \
+    #10 \
+    if ( D !== 8'bxxxxxxxx ) \
+        $write("%c", D); \
+    else \
+        $write("%c(%2x) %c(%2x)", D, D, EXPECTED, EXPECTED); \
+    `Equals(D, EXPECTED); \
+    #10 \
+    _RD=1;
+
+    // data available?
+    #10 
+    `Equals(_RXF, 1'b0); 
+    #10 
+    
+    // read data
+    `CLK_RD(expected[12*8-1:(12*8)-8])
+    `CLK_RD(expected[11*8-1:(11*8)-8])
+    `CLK_RD(expected[10*8-1:(10*8)-8])
+    `CLK_RD(expected[09*8-1:(09*8)-8])
+    `CLK_RD(expected[08*8-1:(08*8)-8])
+    `CLK_RD(expected[07*8-1:(07*8)-8])
+    `CLK_RD(expected[06*8-1:(06*8)-8])
+    `CLK_RD(expected[05*8-1:(05*8)-8])
+    `CLK_RD(expected[04*8-1:(04*8)-8])
+    `CLK_RD(expected[03*8-1:(03*8)-8])
+    `CLK_RD(expected[02*8-1:(02*8)-8])
+    `CLK_RD(expected[01*8-1:(01*8)-8])
+
+    $display("\nREAD ALL");
+
+    // no data left
+    #10 
+    `Equals(_RXF, 1'b1); 
+
     $display("\nEND");
 end
 
