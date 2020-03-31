@@ -9,32 +9,32 @@
 // - when clear/preset are both set then Q and Qb are both 1
 
 // Tim Rudy's version has these compromises.
-//      Note: Note: Preset_bar is synchronous, not asynchronous as specified in datasheet for this device,
+//      Note: Note: _SD is synchronous, not asynchronous as specified in datasheet for this device,
 //      in order to meet requirements for FPGA circuit design (see IceChips Technical Notes)
 
 module ttl_7474 #(parameter BLOCKS = 2, DELAY_RISE = 100, DELAY_FALL = 100)
 (
-  input [BLOCKS-1:0] Preset_bar,
-  input [BLOCKS-1:0] Clear_bar,
+  input [BLOCKS-1:0] _SD,
+  input [BLOCKS-1:0] _RD,
   input [BLOCKS-1:0] D,
-  input [BLOCKS-1:0] Clk,
+  input [BLOCKS-1:0] CP,
   output [BLOCKS-1:0] Q,
-  output [BLOCKS-1:0] Q_bar
+  output [BLOCKS-1:0] _Q
 );
 
 //------------------------------------------------//
 reg [BLOCKS-1:0] Q_current;
 reg [BLOCKS-1:0] Qb_current;
-reg [BLOCKS-1:0] Preset_bar_previous;
+reg [BLOCKS-1:0] _SD_previous;
 reg [BLOCKS-1:0] Q_defined = 0;
 
 generate
   genvar i;
   for (i = 0; i < BLOCKS; i = i + 1)
   begin: gen_blocks
-    always @(posedge Clk[i])
+    always @(posedge CP[i])
     begin
-      if (Clear_bar[i] && Preset_bar[i])
+      if (_RD[i] && _SD[i])
       begin
         //$display("Setting");
         Q_defined[i] <= 1'b1;
@@ -47,15 +47,15 @@ generate
         end
     end
 
-    always @(Clear_bar[i] or Preset_bar[i])
+    always @(_RD[i] or _SD[i])
     begin
-      if (!Clear_bar[i] && !Preset_bar[i])
+      if (!_RD[i] && !_SD[i])
         begin
             //$display("Clear and Preset");
             Q_current[i] <= 1'b1;
             Qb_current[i] <= 1'b1;
         end
-      else if (!Clear_bar[i])
+      else if (!_RD[i])
         begin
             //$display("Clear");
             
@@ -63,7 +63,7 @@ generate
             Q_current[i] <= 1'b0;
             Qb_current[i] <= 1'b1;
         end
-      else if (!Preset_bar[i])
+      else if (!_SD[i])
         begin
             //$display("Preset");
             Q_defined[i] <= 1'b1;
@@ -85,7 +85,7 @@ endgenerate
 //------------------------------------------------//
 
 assign #(DELAY_RISE, DELAY_FALL) Q = Q_current;
-assign #(DELAY_RISE, DELAY_FALL) Q_bar = Qb_current;
+assign #(DELAY_RISE, DELAY_FALL) _Q = Qb_current;
 
 endmodule
 
