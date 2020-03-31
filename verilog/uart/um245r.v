@@ -19,23 +19,23 @@ module um245r #(parameter FILENAME="", DEPTH=0)  (
 
   // UART output
   assign _TXE=0; // always ready to transmit
-  assign _RXF=1;
 
   always @(negedge WR) begin
     $write("%c", D);
   end
 
   integer i=-1;
+
+  assign _RXF=!(i<(DEPTH-1));
   
   always @(negedge _RD) begin
     i = i + 1;
   end
 
   /// small delay necessary to prevent previous value of Mem[i] appearing on wire 
-  assign #1 D = (!_RD)? Mem[i]: 8'bzzzzzzzz;
+  assign #1 D = _RD? 8'bzzzzzzzz: _RXF? 8'bxxxxxxxx: Mem[i];
 
-
-if (0)  always @*
+  if (0)  always @*
     $display("D=", D, ", WR=", WR, ",_RD=", _RD, ", i=", i, " MEM[%2d]=h%2x", i, Mem[i]);
 
 

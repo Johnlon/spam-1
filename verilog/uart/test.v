@@ -11,7 +11,7 @@ logic _RD;
 wire _TXE;
 wire _RXF;
 
-um245r #(.FILENAME("data.mem"), .DEPTH(12))  uart (
+um245r #(.FILENAME("data.mem"), .DEPTH(20))  uart (
     .D,	                // Input data
     .WR,		// Writes data on -ve edge
     ._RD,		// When goes from high to low then the FIFO data is placed onto D (equates to _OE)
@@ -21,7 +21,6 @@ um245r #(.FILENAME("data.mem"), .DEPTH(12))  uart (
 
 assign D=Dv;
 
-integer c;
 initial begin
 
     _RD=1;
@@ -47,16 +46,21 @@ initial begin
     WR=1;
     Dv=8'bz;
     
-    for (c=0; c<19; c++) begin
+    $write("[");
+    while (!_RXF) begin
         #10
         _RD=0;
         #10
-        $write("%c", D);
+        if ( D !== 8'bxxxxxxxx )
+            $write("%c", D);
+        else
+            $write("x");
         #10
         _RD=1;
         #10
         `Equals(D, 8'bz); // bus is Z unless reading
     end
+    $write("]");
     $display("\nEND");
 end
 
