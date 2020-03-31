@@ -22,7 +22,7 @@ um245r #(.FILENAME("data.mem"), .DEPTH(12))  uart (
 
 assign D=Dv;
 
-reg [12*8:0] expected = "Hello World!";
+reg [12*8:0] expected;
 
 initial begin
 
@@ -68,6 +68,7 @@ initial begin
     #100 
     
     // read data
+    expected = "Hello World!";
     `CLK_RD(expected[12*8-1:(12*8)-8])
     `CLK_RD(expected[11*8-1:(11*8)-8])
     `CLK_RD(expected[10*8-1:(10*8)-8])
