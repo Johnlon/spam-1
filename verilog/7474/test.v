@@ -9,7 +9,7 @@ wire q, qb;
 localparam BLOCKS = 1;
 
 // names: https://assets.nexperia.com/documents/data-sheet/74HC_HCT74.pdf
-ttl_7474 #(.BLOCKS(BLOCKS), .DELAY_RISE(9), .DELAY_FALL(9)) dut(
+hct7474 #(.BLOCKS(BLOCKS), .DELAY_RISE(9), .DELAY_FALL(9)) dut(
   ._SD(_sd),
   ._RD(_rd),
   .D(d),

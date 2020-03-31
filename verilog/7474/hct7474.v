@@ -12,7 +12,7 @@
 //      Note: Note: _SD is synchronous, not asynchronous as specified in datasheet for this device,
 //      in order to meet requirements for FPGA circuit design (see IceChips Technical Notes)
 
-module ttl_7474 #(parameter BLOCKS = 2, DELAY_RISE = 100, DELAY_FALL = 100)
+module hct7474 #(parameter BLOCKS = 2, DELAY_RISE = 100, DELAY_FALL = 100)
 (
   input [BLOCKS-1:0] _SD,
   input [BLOCKS-1:0] _RD,
