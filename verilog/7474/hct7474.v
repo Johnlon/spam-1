@@ -12,7 +12,8 @@
 //      Note: Note: _SD is synchronous, not asynchronous as specified in datasheet for this device,
 //      in order to meet requirements for FPGA circuit design (see IceChips Technical Notes)
 
-module hct7474 #(parameter BLOCKS = 2, DELAY_RISE = 100, DELAY_FALL = 100)
+`timescale 1ns/1ns
+module hct7474 #(parameter BLOCKS = 2, DELAY_RISE = 18, DELAY_FALL = 18, LOG = 1)
 (
   input [BLOCKS-1:0] _SD,
   input [BLOCKS-1:0] _RD,
@@ -28,6 +29,8 @@ reg [BLOCKS-1:0] Qb_current;
 reg [BLOCKS-1:0] _SD_previous;
 reg [BLOCKS-1:0] Q_defined = 0;
 
+if (LOG) always @* $display("%6d ", $time, "FF CP=%1b D=%1b _SD=%1b  _RD=%1b  Q=%1b  _Q=%1b (Qc=%1b, _Qc=%1b)", CP,D,_SD, _RD, Q, _Q, Q_current, Qb_current);
+
 generate
   genvar i;
   for (i = 0; i < BLOCKS; i = i + 1)
@@ -36,14 +39,14 @@ generate
     begin
       if (_RD[i] && _SD[i])
       begin
-        //$display("Setting");
+        if (LOG) $display("%6d", $time, " FF Setting");
         Q_defined[i] <= 1'b1;
         Q_current[i] <= D[i];
         Qb_current[i] <= !D[i];
       end
         else
         begin
-        //$display("Setting disabled by Clear or Preset");
+        if (LOG) $display("%6d", $time, " FF Setting disabled by Clear or Preset");
         end
     end
 
@@ -51,28 +54,27 @@ generate
     begin
       if (!_RD[i] && !_SD[i])
         begin
-            //$display("Clear and Preset");
+            if (LOG) $display("%6d", $time, " FF Clear and Preset");
             Q_current[i] <= 1'b1;
             Qb_current[i] <= 1'b1;
         end
       else if (!_RD[i])
         begin
-            //$display("Clear");
-            
+            if (LOG) $display("%6d", $time, " FF Clear");
             Q_defined[i] <= 1'b1;
             Q_current[i] <= 1'b0;
             Qb_current[i] <= 1'b1;
         end
       else if (!_SD[i])
         begin
-            //$display("Preset");
+            if (LOG) $display("%6d", $time, " FF Preset");
             Q_defined[i] <= 1'b1;
             Q_current[i] <= 1'b1;
             Qb_current[i] <= 1'b0;
         end
       else //
         begin
-            //$display("Not Clear and Not Preset");
+            if (LOG) $display("%6d", $time, " FF Not Clear and Not Preset");
             if (!Q_defined[i]) begin
                 // no value has been defined - realistically a random value would be settled on, we'll use X
                 Q_current[i] <= 1'bx;
