@@ -1,7 +1,8 @@
-// https://www.ftdichip.com/Support/Documents/DataSheets/Modules/DS_UM245R.pdf
+// UART Verilog for https://www.ftdichip.com/Support/Documents/DataSheets/Modules/DS_UM245R.pdf
 /* verilator lint_off ASSIGNDLY */
 
-module um245r #(parameter FILENAME="", DEPTH=0)  (
+`timescale 1ns/1ns
+module um245r #(parameter DELAY=50, FILENAME="", DEPTH=0)  (
         inout [7:0] D,	// Input data
 	input WR,		// Writes data on -ve edge
 	input _RD,		// When goes from high to low then the FIFO data is placed onto D (equates to _OE)
@@ -33,8 +34,8 @@ module um245r #(parameter FILENAME="", DEPTH=0)  (
   end
 
   /// small delay necessary to prevent previous value of Mem[i] appearing on wire 
-  assign #1 _RXF=!(i<DEPTH);
-  assign #5 D = _RD? 8'bzzzzzzzz: _RXF? 8'bxxxxxxxx: Mem[i];
+  assign #DELAY _RXF=!(i<DEPTH);
+  assign #DELAY D = _RD? 8'bzzzzzzzz: _RXF? 8'bxxxxxxxx: Mem[i];
 
   if (0)  always @*
     $display("D=", D, ", WR=", WR, ",_RD=", _RD, ", i=", i, " MEM[%2d]=h%2x", i, Mem[i], " _RXF=%1b", _RXF);

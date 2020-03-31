@@ -1,5 +1,6 @@
 `include "um245r.v"
 `include "../lib/assertion.v"
+`timescale 1ns/1ns
 
 module test();
 
@@ -28,9 +29,9 @@ initial begin
     _RD=1;
 
 `define CLK_WR \
-    #10 \
+    #100 \
     WR=0; \
-    #10 \
+    #100 \
     WR=1;
 
     $display("WRITING ....");
@@ -44,27 +45,27 @@ initial begin
 
     // READING ....
     $display("\nREADING ....");
-    #10
+    #100
     WR=1;
     Dv=8'bz;
     
 `define CLK_RD(EXPECTED) \
-    #10 \
+    #100 \
     `Equals(_RXF, 1'b0); \
     _RD=0; \
-    #10 \
+    #100 \
     if ( D !== 8'bxxxxxxxx ) \
         $write("%c", D); \
     else \
         $write("%c(%2x) %c(%2x)", D, D, EXPECTED, EXPECTED); \
     `Equals(D, EXPECTED); \
-    #10 \
+    #100 \
     _RD=1;
 
     // data available?
-    #10 
+    #100 
     `Equals(_RXF, 1'b0); 
-    #10 
+    #100 
     
     // read data
     `CLK_RD(expected[12*8-1:(12*8)-8])
@@ -83,7 +84,7 @@ initial begin
     $display("\nREAD ALL");
 
     // no data left
-    #10 
+    #100 
     `Equals(_RXF, 1'b1); 
 
     $display("\nEND");
