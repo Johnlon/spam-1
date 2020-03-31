@@ -13,7 +13,7 @@
 //      in order to meet requirements for FPGA circuit design (see IceChips Technical Notes)
 
 `timescale 1ns/1ns
-module hct7474 #(parameter BLOCKS = 2, DELAY_RISE = 18, DELAY_FALL = 18, LOG = 1)
+module hct7474 #(parameter BLOCKS = 2, DELAY_RISE = 18, DELAY_FALL = 18, LOG = 0)
 (
   input [BLOCKS-1:0] _SD,
   input [BLOCKS-1:0] _RD,
