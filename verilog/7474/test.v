@@ -9,7 +9,7 @@ wire q, qb;
 localparam BLOCKS = 1;
 
 // names: https://assets.nexperia.com/documents/data-sheet/74HC_HCT74.pdf
-ttl_7474 #(.BLOCKS(BLOCKS), .DELAY_RISE(5), .DELAY_FALL(3)) dut(
+ttl_7474 #(.BLOCKS(BLOCKS), .DELAY_RISE(9), .DELAY_FALL(9)) dut(
   .Preset_bar(sd),
   .Clear_bar(rd),
   .D(d),
@@ -48,7 +48,7 @@ initial begin
     `Equals(q, 1'bx); // still no definite value set
     `Equals(qb, 1'bx); // still no definite value set
 
-    // should reset async
+    $display(" should reset async");
     #10
     rd=0;
     sd=1;
@@ -57,7 +57,7 @@ initial begin
     `Equals(q, 1'b0);
     `Equals(qb, 1'b1); 
 
-    // should stay same
+    $display(" should stay same");
     #10
     rd=1;
     sd=1;
@@ -66,7 +66,7 @@ initial begin
     `Equals(q, 1'b0);
     `Equals(qb, 1'b1); 
 
-    // should set async
+    $display(" should set async");
     #10
     rd=1;
     sd=0;
@@ -75,7 +75,7 @@ initial begin
     `Equals(q, 1'b1);
     `Equals(qb, 1'b0); 
 
-    // should stay same
+    $display(" should stay same");
     #10
     rd=1;
     sd=1;
@@ -84,7 +84,7 @@ initial begin
     `Equals(q, 1'b1);
     `Equals(qb, 1'b0); 
 
-    // should stay same even if d changes
+    $display(" should stay same even if d changes");
     #10
     d=0;
 
@@ -92,7 +92,7 @@ initial begin
     `Equals(q, 1'b1);
     `Equals(qb, 1'b0); 
 
-    // should override clock +ve edge with set
+    $display(" should override clock +ve edge with set");
     #10
     rd=1;
     sd=0;
@@ -103,7 +103,7 @@ initial begin
     `Equals(qb, 1'b0); 
 
 
-    // should clock in d
+    $display(" should clock in d");
     d=0;
     rd=1;
     sd=1;
@@ -116,7 +116,7 @@ initial begin
     `Equals(q, 1'b0);
     `Equals(qb, 1'b1); 
 
-    // should clock in d
+    $display(" should clock in d");
     d=1;
     rd=1;
     sd=1;
@@ -129,7 +129,7 @@ initial begin
     `Equals(q, 1'b1);
     `Equals(qb, 1'b0); 
 
-    // should clear async
+    $display(" should clear async");
     d=1;
     rd=0;
     sd=1;

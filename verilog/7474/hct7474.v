@@ -12,7 +12,7 @@
 //      Note: Note: Preset_bar is synchronous, not asynchronous as specified in datasheet for this device,
 //      in order to meet requirements for FPGA circuit design (see IceChips Technical Notes)
 
-module ttl_7474 #(parameter BLOCKS = 2, DELAY_RISE = 18, DELAY_FALL = 18)
+module ttl_7474 #(parameter BLOCKS = 2, DELAY_RISE = 100, DELAY_FALL = 100)
 (
   input [BLOCKS-1:0] Preset_bar,
   input [BLOCKS-1:0] Clear_bar,
