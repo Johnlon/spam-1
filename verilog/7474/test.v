@@ -19,7 +19,7 @@ ttl_7474 #(.BLOCKS(BLOCKS), .DELAY_RISE(5), .DELAY_FALL(3)) dut(
 );
 
 initial begin
-    $monitor("cp=%1b,d=%1b,sd=%1b, rd=%1b, q=%1b, qb=%1b", cp,d,sd, rd, q, qb);
+    $monitor("%6d ", $time, " : cp=%1b,d=%1b,sd=%1b, rd=%1b, q=%1b, qb=%1b", cp,d,sd, rd, q, qb);
 
     cp=0;
     d=1;
