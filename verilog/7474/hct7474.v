@@ -1,7 +1,7 @@
 // Dual D flip-flop with set and clear; positive-edge-triggered
 // Timings from https://assets.nexperia.com/documents/data-sheet/74HC_HCT74.pdf
 
-// Corrected - https://raw.githubusercontent.com/TimRudy/ice-chips-verilog/master/source-7400/7474.v
+// Corrected based on - https://raw.githubusercontent.com/TimRudy/ice-chips-verilog/master/source-7400/7474.v
 // 
 // TimRudy version doesn't match datasheet
 // - the clear/preset should be async (see note below)
