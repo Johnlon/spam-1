@@ -13,7 +13,7 @@
 //      in order to meet requirements for FPGA circuit design (see IceChips Technical Notes)
 
 `timescale 1ns/1ns
-module hct7474 #(parameter BLOCKS = 2, DELAY_RISE = 18, DELAY_FALL = 18, LOG = 0)
+module hct7474 #(parameter BLOCKS = 2, DELAY_RISE = 18, DELAY_FALL = 18, LOG = 0, NAME = "7474FF")
 (
   input [BLOCKS-1:0] _SD,
   input [BLOCKS-1:0] _RD,
@@ -29,7 +29,8 @@ reg [BLOCKS-1:0] Qb_current;
 reg [BLOCKS-1:0] _SD_previous;
 reg [BLOCKS-1:0] Q_defined = 0;
 
-if (LOG) always @* $display("%6d ", $time, "FF CP=%1b D=%1b _SD=%1b  _RD=%1b  Q=%1b  _Q=%1b (Qc=%1b, _Qc=%1b)", CP,D,_SD, _RD, Q, _Q, Q_current, Qb_current);
+if (LOG) always @* $display("%6d ", $time, "%s CP=%1b D=%1b _SD=%1b _RD=%1b  =>  Q=%1b _Q=%1b", NAME, CP,D,_SD, _RD, Q, _Q);
+//if (LOG) always @* $display("%6d ", $time, "%s CP=%1b D=%1b _SD=%1b  _RD=%1b  Q=%1b  _Q=%1b (Qc=%1b, _Qc=%1b)", NAME, CP,D,_SD, _RD, Q, _Q, Q_current, Qb_current);
 
 generate
   genvar i;
@@ -39,14 +40,15 @@ generate
     begin
       if (_RD[i] && _SD[i])
       begin
-        if (LOG) $display("%6d", $time, " FF Setting");
+        if (LOG>1) $display("%6d", $time, " %s CLOCK IN DATA Q=%1b", NAME, D);
         Q_defined[i] <= 1'b1;
+
         Q_current[i] <= D[i];
         Qb_current[i] <= !D[i];
       end
         else
         begin
-        if (LOG) $display("%6d", $time, " FF Setting disabled by Clear or Preset");
+        if (LOG>1) $display("%6d", $time, " %s CLOCK IN DISABLED BY CLEAR or PRESET", NAME);
         end
     end
 
@@ -54,32 +56,36 @@ generate
     begin
       if (!_RD[i] && !_SD[i])
         begin
-            if (LOG) $display("%6d", $time, " FF Clear and Preset");
+            if (LOG>1) $display("%6d", $time, " %s FORCE Q=_Q=1", NAME);
             Q_current[i] <= 1'b1;
             Qb_current[i] <= 1'b1;
         end
       else if (!_RD[i])
         begin
-            if (LOG) $display("%6d", $time, " FF Clear");
+            if (LOG>1) $display("%6d", $time, " %s Q=0", NAME);
             Q_defined[i] <= 1'b1;
+
             Q_current[i] <= 1'b0;
             Qb_current[i] <= 1'b1;
         end
       else if (!_SD[i])
         begin
-            if (LOG) $display("%6d", $time, " FF Preset");
+            if (LOG>1) $display("%6d", $time, " %s Q=1", NAME);
             Q_defined[i] <= 1'b1;
+
             Q_current[i] <= 1'b1;
             Qb_current[i] <= 1'b0;
         end
       else //
         begin
-            if (LOG) $display("%6d", $time, " FF Not Clear and Not Preset");
             if (!Q_defined[i]) begin
+                if (LOG) $display("%6d", $time, " %s Q=X NOT CLEAR AND NOT PRESET", NAME);
                 // no value has been defined - realistically a random value would be settled on, we'll use X
                 Q_current[i] <= 1'bx;
                 Qb_current[i] <= 1'bx;
             end
+            else
+                if (LOG>1) $display("%6d", $time, " %s Q=%1b - HOLD", NAME, Q_current);
         end
       end
   end
