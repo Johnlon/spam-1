@@ -15,7 +15,7 @@ inout [DWIDTH-1:0] D;
 reg [DWIDTH-1:0] mem [DEPTH-1:0];
 logic [7:0] dout;
 
-assign D = dout;
+assign D = _OE? {DWIDTH{1'bz}}: dout;
 
 // always @*
 //     $monitor("RAM : _OE=%1b, _WE=%1b, addr=%8b, d=%8b, m0=%8b, m1=%8b, m2=%8b",_OE, _WE, addr, d, mem[0], mem[1], mem[2]);
@@ -42,7 +42,7 @@ assign D = dout;
       if (!_OE && _WE) 
         dout = mem[A];
 
-        //if (dout == 8'bxxxxxxxx) dout=99; // MARKER VALUE FOR UNASSIGNED - TEMPORARY
+        if (dout == 8'bxxxxxxxx) dout=99; // MARKER VALUE FOR UNASSIGNED - TEMPORARY
    end
 
   integer i;
