@@ -26,6 +26,8 @@ module tb();
     always @*
         $display($time, " => dir=%1b", dir, " nOEX=%1b", nOEX, " Astim=%8b", Va, " Bstim=%8b ", Vb, " A=%8b ", A," B=%8b ", B);
      
+    integer timer;
+
     initial begin
       
       Va=8'bxxxxxxxx;
@@ -56,7 +58,7 @@ module tb();
 
       Va=8'b11111111;
       Vb=8'b11111111;
-      #30
+      #31
        `equals(A , 8'b11111111, "OE disable - 1");
        `equals(B , 8'b11111111, "OE disable - 1");
 
@@ -67,6 +69,29 @@ module tb();
        `equals(B , 8'b00000000, "OE disable - 0");
       
       ////////////////////////////////
+
+      $display("disable output , set dir a->b");
+      dir <= 1; // b->a
+      nOEX <= 1;
+      Va=8'b11111111;
+      Vb=8'bzzzzzzzz;
+      #50 // settle
+      timer=$time;
+      nOEX <= 0;
+      wait(B === 8'b11111111);
+      if ($time - timer < 16) 
+        $display("TOO QUICK - EXPECTED 16ns - TOOK %-d", ($time - timer));
+        else
+        $display("TOOK %-d", ($time - timer));
+        //$finish;
+
+      #50
+
+      $display("enable output");
+      nOEX <= 0;
+      #30
+       `Equals(A , 8'b11111111);
+       `Equals(B , 8'b11111111);
 
       dir <= 0; // b->a
       nOEX <= 0;
@@ -120,16 +145,18 @@ module tb();
       nOEX <= 0;
       Va=8'b11111111;
       Vb=8'b0000000z;
-      #30
+      #17
        `equals(A , 8'b11111111, "OE A->B 1's");
        `equals(B , 8'bxxxxxxx1, "OE A->B 0 conflicted's");
       
       ////////////////////////////////
+$display("-------------------------");
       dir <= 0; // b-a
       nOEX <= 0;
       Va=8'b1111111z;
       Vb=8'b00000000;
-      #30
+      #33 // 2*16+1 << problem with 74245 delays - they double up if changing DIR and Val at same time
+$display("-------------------------");
        `equals(A , 8'bxxxxxxx0, "OE B->A 1 conflicted's");
        `equals(B , 8'b00000000, "OE B->A 0's");
       
@@ -137,7 +164,8 @@ module tb();
       nOEX <= 0;
       Va=8'b0000000z;
       Vb=8'b11111111;
-      #30
+      #17 
+$display("-------------------------");
        `equals(A , 8'bxxxxxxx1, "OE B->A 1 conflicted's");
        `equals(B , 8'b11111111, "OE B->A 0's");
       
