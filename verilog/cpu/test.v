@@ -88,7 +88,7 @@ module test();
 
     // names: https://assets.nexperia.com/documents/data-sheet/74HC_HCT74.pdf
     wire _RESET, RESET;
-    hct7474 #(.BLOCKS(1)) resetFF(
+    hct7474 #(.BLOCKS(1), .NAME("RESETFF (sensitivity = _CP)"), .LOG(1)) resetFF(
       ._SD(1'b1),
       ._RD(_MR),
       .D(1'b1),
@@ -106,7 +106,7 @@ module test();
     //    $display("%6d CPU ", $time, "_MR=%1b _RESET=%1b =============================", _MR, _RESET);
 
     always @(posedge _CP) begin
-        if (!_RESET) $display(">>>>>>>>>>>>>>>>>> RESET <<<<<<<<<<<<<<<<<<<<<<<<<");
+        if (!_RESET) $display(">>>>>>>>>>>>>>>>>> RESET RELEASED <<<<<<<<<<<<<<<<<<<<<<<<<");
     end
 
     pc PC (
@@ -126,7 +126,7 @@ module test();
     rom #(.AWIDTH(15), .Filename("hi.rom")) rom_hi(._CS(1'b0), ._OE(1'b0), .A(rom_address), .D(rom_hi_data));
     rom #(.AWIDTH(15), .Filename("lo.rom")) rom_lo(._CS(1'b0), ._OE(1'b0), .A(rom_address), .D(rom_lo_data));
 
-    hct74245 #(.LOG(1), .NAME("ROMBUS")) bufROMBUS(.A(rom_lo_data), .B(data_bus), .dir(1'b1), .nOE(_rom_out));
+    hct74245 #(.LOG(0), .NAME("ROMBUS")) bufROMBUS(.A(rom_lo_data), .B(data_bus), .dir(1'b1), .nOE(_rom_out));
 
     // ram =====================================================
     wire _gated_marlo_in = _marlo_in || CP; 
@@ -149,10 +149,10 @@ module test();
         $display("%6d ", $time, "RAM: MARHI %2x MARLO %2x MuxMARHI %02x MuxMARLO %02x _ZP %1b", MARHI, MARLO, muxed_marhi, muxed_marlo, _ram_zp);
     end
 
-    ram #(.LOG(1), .AWIDTH(16)) Ram(._WE(_ram_in), ._OE(1 || _ram_out), .A(ram_address), .D(data_bus));
+    ram #(.LOG(1), .AWIDTH(16)) Ram(._WE(_ram_in), ._OE(_ram_out), .A(ram_address), .D(data_bus));
 
     // control =====================================================
-    control_selector #(.LOG(1)) CtrlSelect(
+    control_selector #(.LOG(0)) CtrlSelect(
         .hi_rom(rom_hi_data), 
 
         ._rom_out, ._ram_out,	._alu_out, ._uart_out,
@@ -161,7 +161,7 @@ module test();
         .device_in
     );
  
-    control_decode #(.LOG(1)) CtrlDecode(
+    control_decode #(.LOG(0)) CtrlDecode(
         .device_in,
         ._flag_z, ._flag_c, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt,
         ._uart_in_ready, ._uart_out_ready,
@@ -180,7 +180,7 @@ module test();
         ._flag_cout
     );
 
-    hct74245 #(.LOG(1), .NAME("ALUBUS")) bufALUBUS(.A(alu_result), .B(data_bus), .dir(1'b1), .nOE(_alu_out));
+    hct74245 #(.LOG(0), .NAME("ALUBUS")) bufALUBUS(.A(alu_result), .B(data_bus), .dir(1'b1), .nOE(_alu_out));
     always @* begin
         $display("%6d ", $time, "ALU: RESULT %2x _alu_out %1b BUS %2x", alu_result, _alu_out, data_bus);
     end
@@ -211,32 +211,38 @@ module test();
 
     `define LOG_CPU \
         $display("%6d CPU ", $time, \
-            "CP=%1b PC=x%4x ROM=%8b,%8b BUS=h%2x RRAU=%4b ZCOENGL=%7b UIO=%2b ", CP, rom_address, rom_hi_data, rom_lo_data, data_bus,  \
+            "CP=%1b PC=x%4x   ROM=%8b,%8b   BUS=h%2x RRAU=%4b   ZCOENGL=%7b UIO=%2b  ", CP, rom_address, rom_hi_data, rom_lo_data, data_bus,  \
             {_rom_out, _ram_out, _alu_out, _uart_out}, \
             {_flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt}, \
             {_uart_in_ready, _uart_out_ready}, \
-            " ALUOP=h%02x X=h%02x Y=h%02x R=h%02x CIN=%1b COUT=%1b FPX=%1b",  \
-            alu_op, x,y,alu_result, _flag_cin, _flag_cout, Alu.force_alu_op_to_passx \
+            " ALUOP=h%02x X=h%02x Y=h%02x R=h%02x CIN=%1b COUT=%1b   FPX=%1b",  \
+            alu_op, x,y,alu_result, _flag_cin, _flag_cout, Alu.force_alu_op_to_passx, \
+            " _ZP=%1b", _ram_zp\
         );
         
     always @* `LOG_CPU
 
-    `define CLOCK_DOWN \
-        #200  \
+    `define CLOCK_DOWN(MSG) \
+        #1000  \
+        $display("\n", MSG); \
         CP = 0; \
         if (CP == 0)  \
-            $display("\n%6d CPU CLK=%1b       ----------------", $time, CP); \
+            $display("%6d CPU CLK=%1b       ----------------", $time, CP); \
         else \
-            $display("\n%6d CPU CLK=%1b       ++++++++++++++++", $time, CP); \
+            $display("%6d CPU CLK=%1b       ++++++++++++++++", $time, CP); \
 
-    `define CLOCK_UP \
-        #200  \
+    `define CLOCK_UP(MSG) \
+        #1000  \
+        $display("\n",MSG); \
         CP = 1; \
         if (CP == 0)  \
-            $display("\n%6d CPU CLK=%1b       ----------------", $time, CP); \
+            $display("%6d CPU CLK=%1b       ----------------", $time, CP); \
         else \
-            $display("\n%6d CPU CLK=%1b       ++++++++++++++++", $time, CP); \
+            $display("%6d CPU CLK=%1b       ++++++++++++++++", $time, CP); \
 
+
+    `define CLOCK_CYCLE CLOCK_UP("++") \
+                        CLOCK_DOW("--")N
 /*
     always begin
         `LOG_CPU
@@ -250,17 +256,25 @@ module test();
         $dumpfile("dumpfile.vcd");
         $dumpvars(0, test );
 
+        // WANT PC RESET TO OCCUR DURING THE LOW PHASE SO THAT THE RESULT IS LATCHED ON THE NEXT +VE
         CP = 0;
         _MR = _POWER_ON_RESET;
 
-        #50 _MR=1'b1; // release reset after 50ns
+        #1000 
+        $display("\nMR timeout");
+        _MR=1'b1; // release reset after delay
+
+        `CLOCK_UP("initial +ve ignored")
+
+        `CLOCK_DOWN("initial -ve resets PC and clears RESET latch")
+
+        /*
 
         `CLOCK_UP    
 
         `CLOCK_DOWN    
         `CLOCK_UP    
-
-        `CLOCK_DOWN    
+*/
 
         #700  $finish; 
     end
