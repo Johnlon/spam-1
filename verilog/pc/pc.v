@@ -59,7 +59,6 @@ counterReg HI
   .TC() // ignored out
 );
 
-  
 endmodule
 
 `endif
