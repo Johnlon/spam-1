@@ -7,21 +7,21 @@
 module icarus_tb();
     
 	logic [7:0] D, Q;
-	logic CLK, OE_N;
+	logic CLK, _OE;
     
 	hct74574 register(
 	.D, .Q,
-	.CLK, .OE_N
+	.CLK, ._OE
 	);
     
     
     initial begin
         $dumpfile("dumpfile.vcd");
-        $dumpvars(0,  D, Q, CLK, OE_N);
+        $dumpvars(0,  D, Q, CLK, _OE);
         
         $display ("");
-        $display ($time, "   D         Q         CLK  OE_N");
-        $monitor ($time, "   %8b  %8b  %b   %b", D,   Q,   CLK,  OE_N);
+        $display ($time, "   D         Q         CLK  _OE");
+        $monitor ($time, "   %8b  %8b  %b   %b", D,   Q,   CLK,  _OE);
     end
 
     initial begin
@@ -40,11 +40,11 @@ module icarus_tb();
 	#tPD 
         `equals(Q , undefined, "initial");
 
-	OE_N=disabled;
+	_OE=disabled;
 	#tPD 
         `equals(Q , zed, "output disabled");
 
-	OE_N=enabled;
+	_OE=enabled;
 	#tPD 
         `equals(Q , undefined, "unclocked - D = X");
 
@@ -69,11 +69,11 @@ module icarus_tb();
 
 	D=255;
 	CLK=high;
-	OE_N=disabled;
+	_OE=disabled;
 	#tPD
-        `equals(Q , zed, "transition to high - wth 255 but OE disabled");
+        `equals(Q , zed, "transition to high - wth 255 but _OE disabled");
 
-	OE_N=enabled;
+	_OE=enabled;
 	#tPD
         `equals(Q , 255, "oe enabled");
 

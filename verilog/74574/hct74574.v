@@ -3,7 +3,7 @@
 `timescale 1ns/100ps
 module hct74574 (
 input CLK,
-input OE_N,        // negative enable
+input _OE,        // negative enable
 input [7:0] D,
 output [7:0] Q
 );
@@ -11,12 +11,12 @@ output [7:0] Q
     
     specify
     (CLK *> Q) = (15);
-    (OE_N *> Q) = (19);
+    (_OE *> Q) = (19);
     endspecify
     
     always @(posedge CLK)
         data <= D;
     
-    assign #(19) Q = OE_N ? 8'bz: data;
+    assign #(19) Q = _OE ? 8'bz: data;
     
 endmodule
