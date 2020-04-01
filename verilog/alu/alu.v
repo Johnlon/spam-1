@@ -11,7 +11,7 @@
 //assign reg_x_addr = device_sel[3:0]; // top bit of device sel ignored
     
 
-module alu(
+module alu #(parameter LOG=0) (
     output [7:0] o,
     output _flag_cout,
     input  [7:0] x,
@@ -19,7 +19,8 @@ module alu(
     input  [4:0] alu_op,
     input  force_alu_op_to_passx,
     input  force_x_val_to_zero,
-    input  _flag_cin
+    input  _flag_cin,
+    output [8*12:0] OP_OUT
 );
 // A           | B-1               | A*B (high bits)   | A ROR B       |
 // | B           | __A+B+Cin (0)__   | A*B (low bits)    | A AND B       |
@@ -47,8 +48,9 @@ module alu(
     localparam OP_A_OR_B=26;
     localparam OP_A_TIMES_B_HI=16;
     localparam OP_A_TIMES_B_LO=17;
-    reg [8*12:0] sOp;
+    reg [8*12:0] OP_NAME;
 
+    assign OP_OUT=OP_NAME;
 
     wire [7:0] xout;
 
@@ -63,15 +65,15 @@ module alu(
     logic [8:0] tmp = 0;
     assign _flag_cout = ! tmp[8];
     
-    if (1) always @(*) 
+    if (LOG) always @(*) 
          $display("%6d ALU", $time,
-         " aluop=%05b(%-s) ", alu_op, sOp,
+         " result=%08b(%3d) ", o, o,
+         "   aluop=%-s(%d) ", OP_NAME, alu_op, 
          " x=%08b(%3d) ", x, x,
          " y=%08b(%3d) ", y, y,
-         " o=%08b(%3d) ", o, o,
-         " force_passx=%1b", force_alu_op_to_passx, 
+         "   force_passx=%1b", force_alu_op_to_passx, 
          " force_x_to_0=%1b", force_x_val_to_zero, 
-         " _cin=%1b ", _flag_cin,
+         "   _cin=%1b ", _flag_cin,
          " _cout=%1b ", _flag_cout,
          );
 
@@ -90,50 +92,53 @@ module alu(
 
     
     wire [7:0] cin8 = {7'b0, !_flag_cin};
-    
+
     always @* begin
         case (alu_op_effective)
             OP_A: begin
-                sOp = "A";
+                OP_NAME = "A";
                 ALU_Result = xout;
                 tmp=0;
             end
             OP_A_OR_B: begin
-                sOp = "A_OR_B";
+                OP_NAME = "A_OR_B";
                 ALU_Result = xout | y;
                 tmp=0;
             end
             OP_A_AND_B: begin
-                sOp = "A_AND_B";
+                OP_NAME = "A_AND_B";
                 ALU_Result = xout & y;
                 tmp=0;
             end
             OP_A_PLUS_B: begin 
-                sOp = "A_PLUS_B";
+                OP_NAME = "A_PLUS_B";
                 ALU_Result = xout + y + cin8;
                 tmp = {1'b0,xout} + {1'b0,y} + cin8;
             end
             OP_A_MINUS_B: begin
-                sOp = "A_MINUS_B";
+                OP_NAME = "A_MINUS_B";
                 ALU_Result = xout - y - cin8;
                 tmp = {1'b0,xout} - {1'b0,y} - cin8;
             end
 
             OP_A_TIMES_B_HI: begin
-                sOp = "A_TIMES_B_HI";
+                OP_NAME = "A_TIMES_B_HI";
                 TimesResult = (xout * y);
                 ALU_Result = TimesResult[15:8];
                 tmp=0;
             end
 
             OP_A_TIMES_B_LO: begin
-                sOp = "A_TIMES_B_LO";
+                OP_NAME = "A_TIMES_B_LO";
                 TimesResult = (xout * y);
                 ALU_Result = TimesResult[7:0];
                 tmp=0;
             end
 
-            default: ALU_Result = 8'bxxxxxxxx;
+            default: begin
+                ALU_Result = 8'bxxxxxxxx;
+                $sformat(OP_NAME,"UNSUPPORTED %02x",alu_op_effective);
+            end
         endcase
     end
 

@@ -79,6 +79,7 @@ module test();
     logic [7:0] x = 8'b11111110;
     logic [7:0] y = 8'b00000011;
     logic [4:0] alu_op;
+    logic [12*8:0] alu_op_name;
     wire  [7:0] alu_result;
     logic force_alu_op_to_passx;
     logic force_x_val_to_zero;
@@ -171,17 +172,20 @@ module test();
 
     // alu ==========================================================
     assign alu_op = { rom_hi_data[0], rom_lo_data[7:4] };
-    alu Alu(
+
+    alu #(.LOG(0)) Alu(
         .alu_op,
         .o(alu_result), .x, .y,
         .force_alu_op_to_passx,
         .force_x_val_to_zero,
         ._flag_cin, 
-        ._flag_cout
+        ._flag_cout,
+        .OP_OUT(alu_op_name)
+
     );
 
     hct74245 #(.LOG(0), .NAME("ALUBUS")) bufALUBUS(.A(alu_result), .B(data_bus), .dir(1'b1), .nOE(_alu_out));
-    always @* begin
+    if (0) always @* begin
         $display("%6d ", $time, "ALU: RESULT %2x _alu_out %1b BUS %2x", alu_result, _alu_out, data_bus);
     end
 
@@ -203,7 +207,7 @@ module test();
 
     always @* begin
         assert (^data_bus !== 'X)
-        else $error("Detected contention on data bus");
+        else $error("Detected potential contention on data bus");
     end
 
 
@@ -211,20 +215,24 @@ module test();
 
     `define LOG_CPU \
         $display("%6d CPU ", $time, \
-            "CP=%1b PC=x%4x   ROM=%8b,%8b   BUS=h%2x RRAU=%4b   ZCOENGL=%7b UIO=%2b  ", CP, rom_address, rom_hi_data, rom_lo_data, data_bus,  \
-            {_rom_out, _ram_out, _alu_out, _uart_out}, \
-            {_flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt}, \
-            {_uart_in_ready, _uart_out_ready}, \
-            " ALUOP=h%02x X=h%02x Y=h%02x R=h%02x CIN=%1b COUT=%1b   FPX=%1b",  \
-            alu_op, x,y,alu_result, _flag_cin, _flag_cout, Alu.force_alu_op_to_passx, \
-            " _ZP=%1b", _ram_zp\
+            "CP=%1b PC=x%4x   ROM=%8b,%8b ", CP, rom_address, rom_hi_data, rom_lo_data, \
+            " BUS=h%2x ", data_bus,  \
+            " RRAU=%4b ", {_rom_out, _ram_out, _alu_out, _uart_out}, \
+            "   ZCOENGL=%7b UIO=%2b ", \
+                {_flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt}, \
+                {_uart_in_ready, _uart_out_ready}, \
+            "   ALUOP=%-s X=%03d Y=%03d R=%03d _CIN=%1b _COUT=%1b   FPassX=%1b FX2Z=%1b ",  \
+                alu_op_name, x,y,alu_result, _flag_cin, _flag_cout, Alu.force_alu_op_to_passx, Alu.force_x_val_to_zero, \
+            " _ZP=%1b", _ram_zp, \
+            " RAM=h%02x MAR=h%02x%02x RAMAddr=h%4x", Ram.D, MARHI, MARLO, ram_address,\
+            " - " \
         );
         
     always @* `LOG_CPU
 
     `define CLOCK_DOWN(MSG) \
         #1000  \
-        $display("\n", MSG); \
+        $write(MSG); \
         CP = 0; \
         if (CP == 0)  \
             $display("%6d CPU CLK=%1b       ----------------", $time, CP); \
@@ -233,7 +241,7 @@ module test();
 
     `define CLOCK_UP(MSG) \
         #1000  \
-        $display("\n",MSG); \
+        $write(MSG); \
         CP = 1; \
         if (CP == 0)  \
             $display("%6d CPU CLK=%1b       ----------------", $time, CP); \
@@ -264,9 +272,8 @@ module test();
         $display("\nMR timeout");
         _MR=1'b1; // release reset after delay
 
-        `CLOCK_UP("initial +ve ignored")
-
-        `CLOCK_DOWN("initial -ve resets PC and clears RESET latch")
+        `CLOCK_UP("\ninitial +ve ignored\n")
+        `CLOCK_DOWN("\ninitial -ve resets PC and clears RESET latch\n")
 
         /*
 
