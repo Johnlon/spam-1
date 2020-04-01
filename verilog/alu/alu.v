@@ -63,9 +63,9 @@ module alu(
     logic [8:0] tmp = 0;
     assign _flag_cout = ! tmp[8];
     
-    always @(*) 
+    if (1) always @(*) 
          $display("%6d ALU", $time,
-         " aluop=%05b(%s) ", alu_op, sOp,
+         " aluop=%05b(%-s) ", alu_op, sOp,
          " x=%08b(%3d) ", x, x,
          " y=%08b(%3d) ", y, y,
          " o=%08b(%3d) ", o, o,
@@ -81,11 +81,11 @@ module alu(
     localparam AtoB=1'b1;
 
     wire [7:0] xin = x;
-    hct74245 bufX(.A(xin), .B(xout), .dir(AtoB), .nOE(force_x_val_to_zero)); 
+    hct74245 #(.NAME("F_X_to_0")) bufX(.A(xin), .B(xout), .dir(AtoB), .nOE(force_x_val_to_zero)); 
     pulldown pullXToZero[7:0](xout);
 
     wire [7:0] alu_op_in = {3'b0, alu_op};
-    hct74245 bufOp(.A(alu_op_in), .B(alu_op_out), .dir(AtoB), .nOE(force_alu_op_to_passx)); 
+    hct74245 #(.NAME("F_OP_PASSX")) bufOp(.A(alu_op_in), .B(alu_op_out), .dir(AtoB), .nOE(force_alu_op_to_passx)); 
     pulldown pullOpToZero[7:0](alu_op_out);
 
     
