@@ -149,7 +149,7 @@ module test();
         $display("%6d ", $time, "RAM: MARHI %2x MARLO %2x MuxMARHI %02x MuxMARLO %02x _ZP %1b", MARHI, MARLO, muxed_marhi, muxed_marlo, _ram_zp);
     end
 
-//    ram #(.LOG(1), .AWIDTH(16)) Ram(._WE(_ram_in), ._OE(1 || _ram_out), .A(ram_address), .D(data_bus));
+    ram #(.LOG(1), .AWIDTH(16)) Ram(._WE(_ram_in), ._OE(1 || _ram_out), .A(ram_address), .D(data_bus));
 
     // control =====================================================
     control_selector #(.LOG(1)) CtrlSelect(
