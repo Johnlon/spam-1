@@ -9,15 +9,15 @@
 // (c) 2019 Warren Toomey, GPL3
 // verilator lint_off UNOPTFLAT
 
-module rom (Address, Data, _CS, _OE);
+module rom (A, D, _CS, _OE);
 
   parameter DWIDTH=8,AWIDTH=16, DEPTH= 1 << AWIDTH;
   parameter Filename = "data.rom";
   parameter DELAY_RISE = 45;
   parameter DELAY_FALL = 45;
 
-  input  [AWIDTH-1:0] Address;
-  inout  [DWIDTH-1:0] Data;
+  input  [AWIDTH-1:0] A;
+  inout  [DWIDTH-1:0] D;
   input _CS, _OE;
 
   reg [DWIDTH-1:0] Mem [0:DEPTH-1];
@@ -29,7 +29,7 @@ module rom (Address, Data, _CS, _OE);
 
 /* verilator lint_off ASSIGNDLY */
   assign #(DELAY_RISE, DELAY_FALL)
-	Data = (!_CS && !_OE) ? Mem[Address] : {DWIDTH{1'bz}};
+	D = (!_CS && !_OE) ? Mem[A] : {DWIDTH{1'bz}};
 /* verilator lint_on ASSIGNDLY */
 
 endmodule
