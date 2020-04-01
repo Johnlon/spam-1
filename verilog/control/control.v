@@ -142,7 +142,7 @@ module control (
     assign  _pc_in= _decodedDevLo[idx_PC_sel] && _jmpo_in && _jmpz_in && _jmpc_in && _jmpdi_in && _jmpdo_in && _jmpeq_in && _jmpne_in && _jmpgt_in && _jmplt_in;
     
     
-     always @ * 
+if (0)     always @ * 
          $display("%5d", $time,
           " hi=%08b", hi_rom, 
             // " op_sel=%03b ", operation_sel, " dev_sel=%05b ", device_sel, 

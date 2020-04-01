@@ -1,5 +1,5 @@
-`ifndef V_CONTROL
-`define V_CONTROL
+`ifndef V_CONTROL_SELECT
+`define V_CONTROL_SELECT
 
 
 `include "../74138/hct74138.v"
@@ -11,7 +11,8 @@
 
 `timescale 1ns/100ps
 
-module control_selector (
+module control_selector #(parameter LOG=0) 
+(
     input [7:0] hi_rom,
 
     output _rom_out, _ram_out, _alu_out, _uart_out,
@@ -48,16 +49,16 @@ module control_selector (
     hct74138 opDecoder(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(operation_sel), .Y(_decodedOp));
     
     // BUS ACCESS
-    assign  _rom_out = _decodedOp[op_DEV_eq_ROM_sel];
-    assign  _ram_out = _decodedOp[op_DEV_eq_RAM_sel] && _decodedOp[op_DEV_eq_RAMZP_sel];
-    assign  _alu_out = _decodedOp[op_NONREG_eq_OPREGY_sel] && _decodedOp[op_REGX_eq_ALU_sel] && _decodedOp[op_RAMZP_eq_REG_sel];
-    assign  _uart_out = _decodedOp[op_DEV_eq_UART_sel] && _decodedOp[op_RAMZP_eq_UART_sel];
+    assign  #18 _rom_out = _decodedOp[op_DEV_eq_ROM_sel];
+    assign  #28 _ram_out = _decodedOp[op_DEV_eq_RAM_sel] && _decodedOp[op_DEV_eq_RAMZP_sel];
+    assign  #28 _alu_out = _decodedOp[op_NONREG_eq_OPREGY_sel] && _decodedOp[op_REGX_eq_ALU_sel] && _decodedOp[op_RAMZP_eq_REG_sel];
+    assign  #28 _uart_out = _decodedOp[op_DEV_eq_UART_sel] && _decodedOp[op_RAMZP_eq_UART_sel];
 
     // _ram_zp will turn off the ram address buffers letting HiAddr pull down to 0 and will turn on ROM->MARLO for the lo addr
-    assign _ram_zp = _decodedOp[op_DEV_eq_RAMZP_sel] && _decodedOp[op_RAMZP_eq_REG_sel] && _decodedOp[op_RAMZP_eq_UART_sel];
+    assign #28 _ram_zp = _decodedOp[op_DEV_eq_RAMZP_sel] && _decodedOp[op_RAMZP_eq_REG_sel] && _decodedOp[op_RAMZP_eq_UART_sel];
     
-    assign force_x_val_to_zero = !_decodedOp[op_NONREG_eq_OPREGY_sel];  // +ve logic needed - EXTRA GATE
-    assign force_alu_op_to_passx = !_decodedOp[op_RAMZP_eq_REG_sel]; // +ve logic needed - EXTRA GATE
+    assign #28 force_x_val_to_zero = !_decodedOp[op_NONREG_eq_OPREGY_sel];  // +ve logic needed - EXTRA GATE
+    assign #28 force_alu_op_to_passx = !_decodedOp[op_RAMZP_eq_REG_sel]; // +ve logic needed - EXTRA GATE
     
     // write device - sometimes bit 0 is a device bit and sometimes ALU op bit
     wire _ram_write_override = _decodedOp[op_RAMZP_eq_REG_sel] && _decodedOp[op_RAMZP_eq_UART_sel];
@@ -73,24 +74,20 @@ module control_selector (
     wire [7:0] device_sel_in = {3'b0, device_sel_pre};
     wire [7:0] device_sel_out;
 
-    hct74245 bufDeviceSel(.A(device_sel_in), .B(device_sel_out), .dir(1'b1), .nOE( !_ram_write_override ));  // EXTRA GATE
+    hct74245 #(.NAME("F_RAMWR")) bufDeviceSel(.A(device_sel_in), .B(device_sel_out), .dir(1'b1), .nOE( !_ram_write_override ));  // EXTRA GATE
     pulldown pullDeviceToZero[7:0](device_sel_out);
 
     // return
-    assign device_in = device_sel_out[4:0];
+    assign #18 device_in = device_sel_out[4:0];
 
-    always @ * 
-         $display("%5d", $time,
+if (LOG)    always @ * 
+         $display("%6d CRTLSEL", $time,
           " hi=%08b", hi_rom, 
-            // " op_sel=%03b ", operation_sel, " dev_sel=%05b ", device_sel, 
             " _rom_out=%1b, _ram_out=%1b, _alu_out=%1b, _uart_out=%1b", _rom_out, _ram_out, _alu_out, _uart_out,
             " device_in=%5b", device_in, 
             " force_x_0=%1b", force_x_val_to_zero, 
             " force_alu_passx=%1b", force_alu_op_to_passx, 
-            " _ram_zp=%1b", _ram_zp, 
-            //" _is_non_reg_override=%1b",_is_non_reg_override,
-            //" _is_reg_override=%1b", _is_reg_override, 
-            //" implied_dev_top_bit=%1b", implied_dev_top_bit
+            " _ram_zp=%1b", _ram_zp
 );
 
 endmodule : control_selector

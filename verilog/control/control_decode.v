@@ -1,5 +1,5 @@
-`ifndef V_CONTROL
-`define V_CONTROL
+`ifndef V_CONTROL_DECODE
+`define V_CONTROL_DECODE
 
 `include "../74138/hct74138.v"
 
@@ -8,7 +8,8 @@
 
 `timescale 1ns/100ps
 
-module control_decode (
+module control_decode #(parameter LOG=0) 
+(
     input [4:0] device_in,
     input _flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt,
     input _uart_in_ready, _uart_out_ready,
@@ -79,8 +80,8 @@ module control_decode (
     assign  _pc_in= _decodedDevLo[idx_PC_sel] && _jmpo_in && _jmpz_in && _jmpc_in && _jmpdi_in && _jmpdo_in && _jmpeq_in && _jmpne_in && _jmpgt_in && _jmplt_in;
     
     
-     always @ * 
-         $display("%5d", $time,
+if (LOG)     always @ * 
+         $display("%6d CRTLDEC", $time,
             " device_in=%05b" , device_in,
             " devHi:Lo=%08b" , _decodedDevHi,
             ",%08b" , _decodedDevLo,
@@ -94,7 +95,7 @@ module control_decode (
             " _pc_in=%1b", _pc_in
            );
 
-    endmodule : control_decode
+endmodule : control_decode
     // verilator lint_on ASSIGNDLY
 
 `endif
