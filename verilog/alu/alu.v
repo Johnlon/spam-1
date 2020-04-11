@@ -52,11 +52,7 @@ module alu #(parameter LOG=0) (
 
     assign OP_OUT=OP_NAME;
 
-    wire [7:0] xout;
 
-    wire [7:0] alu_op_out;
-    wire [4:0] alu_op_effective;
-    assign alu_op_effective = alu_op_out[4:0];
 
     logic [7:0] ALU_Result;
     logic [15:0] TimesResult;
@@ -65,10 +61,33 @@ module alu #(parameter LOG=0) (
     logic [8:0] tmp = 0;
     assign _flag_cout = ! tmp[8];
     
+//     always @(*) 
+ //        $display("alu  : x=%-8b y=%-8b o=%-8b xin=%8b xout=%8b forcepassx=%1b aluopin=%b opeff=%d", x,y,o,xin,xout, force_alu_op_to_passx, aluopin, alu_op_effective);
+
+    localparam AtoB=1'b1;
+
+    //tri [7:0] xout;
+    tri0 [7:0] xout;
+    wire [7:0] xin = x;
+    hct74245 #(.NAME("F_X_to_0")) bufX(.A(xin), .B(xout), .dir(AtoB), .nOE(force_x_val_to_zero)); 
+    //pulldown pullXToZero[7:0](xout);
+
+    //wire [7:0] alu_op_out;
+    tri0 [7:0] alu_op_out;
+    wire [7:0] alu_op_in = {3'b0, alu_op};
+    wire [4:0] alu_op_effective;
+    assign alu_op_effective = alu_op_out[4:0];
+
+    hct74245 #(.NAME("F_OP_PASSX")) bufOp(.A(alu_op_in), .B(alu_op_out), .dir(AtoB), .nOE(force_alu_op_to_passx)); 
+    //pulldown pullOpToZero[7:0](alu_op_out);
+    
+    wire [7:0] cin8 = {7'b0, !_flag_cin};
+
     if (LOG) always @(*) 
          $display("%6d ALU", $time,
          " result=%08b(%3d) ", o, o,
          "   aluop=%-s(%d) ", OP_NAME, alu_op, 
+         " xout=%08b ", xout,
          " x=%08b(%3d) ", x, x,
          " y=%08b(%3d) ", y, y,
          "   force_passx=%1b", force_alu_op_to_passx, 
@@ -77,21 +96,6 @@ module alu #(parameter LOG=0) (
          " _cout=%1b ", _flag_cout,
          );
 
-//     always @(*) 
- //        $display("alu  : x=%-8b y=%-8b o=%-8b xin=%8b xout=%8b forcepassx=%1b aluopin=%b opeff=%d", x,y,o,xin,xout, force_alu_op_to_passx, aluopin, alu_op_effective);
-
-    localparam AtoB=1'b1;
-
-    wire [7:0] xin = x;
-    hct74245 #(.NAME("F_X_to_0")) bufX(.A(xin), .B(xout), .dir(AtoB), .nOE(force_x_val_to_zero)); 
-    pulldown pullXToZero[7:0](xout);
-
-    wire [7:0] alu_op_in = {3'b0, alu_op};
-    hct74245 #(.NAME("F_OP_PASSX")) bufOp(.A(alu_op_in), .B(alu_op_out), .dir(AtoB), .nOE(force_alu_op_to_passx)); 
-    pulldown pullOpToZero[7:0](alu_op_out);
-
-    
-    wire [7:0] cin8 = {7'b0, !_flag_cin};
 
     always @* begin
         case (alu_op_effective)

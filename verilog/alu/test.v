@@ -21,7 +21,7 @@ module test();
         logic flag_n;
         logic flag_z;
 	
-	alu Alu(
+	alu #(.LOG(1)) Alu(
         .o, 
         .x,
         .y,
@@ -99,6 +99,7 @@ module test();
         #100
         `Equals(o, 8'b00101011);
         `Equals(_flag_cout, 0);
+
 
         assign _flag_cin=1;
         assign x = 254;
