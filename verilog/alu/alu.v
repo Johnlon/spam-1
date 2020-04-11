@@ -73,13 +73,13 @@ module alu #(parameter LOG=0) (
     pulldown pullXToZero[7:0](xout);
 
     //wire [7:0] alu_op_out;
-    tri [7:0] alu_op_out;
+    tri0 [7:0] alu_op_out;
     wire [7:0] alu_op_in = {3'b0, alu_op};
     wire [4:0] alu_op_effective;
     assign alu_op_effective = alu_op_out[4:0];
 
     hct74245 #(.NAME("F_OP_PASSX")) bufOp(.A(alu_op_in), .B(alu_op_out), .dir(AtoB), .nOE(force_alu_op_to_passx)); 
-    pulldown pullOpToZero[7:0](alu_op_out);
+    //pulldown pullOpToZero[7:0](alu_op_out);
     
     wire [7:0] cin8 = {7'b0, !_flag_cin};
 
