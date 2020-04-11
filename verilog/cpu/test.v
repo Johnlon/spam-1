@@ -275,6 +275,8 @@ module test();
         `CLOCK_UP("\ninitial +ve ignored\n")
         `CLOCK_DOWN("\ninitial -ve resets PC and clears RESET latch\n")
 
+        `CLOCK_UP("\ninitial +ve ignored\n")
+        `CLOCK_DOWN("\ninitial -ve resets PC and clears RESET latch\n")
         /*
 
         `CLOCK_UP    
