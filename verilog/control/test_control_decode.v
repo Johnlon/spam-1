@@ -9,7 +9,7 @@
 `default_nettype none
 
 
-module test();
+module test_decode();
 
         logic [4:0] device_in;
 
@@ -42,6 +42,7 @@ module test();
     
 
     initial begin
+
         `ifndef verilator
 
         $dumpfile("dumpfile.vcd");
@@ -55,8 +56,8 @@ module test();
             _reg_in
         );
 
-/*
-        $monitor ($time, "  %05b  %3b %3b %3b %3b %3b %3b %3b  %3b %3b  %5b %5b %5b %5b   %8b %6b %5b  %5b", 
+
+        $monitor ($time, " DECODETEST  %05b  %3b %3b %3b %3b %3b %3b %3b  %3b %3b  %5b %5b %5b %5b   %8b %6b %5b  %5b", 
             device_in, 
             _flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt,
             _uart_in_ready, _uart_out_ready,
@@ -66,7 +67,7 @@ module test();
             
             _reg_in
         );
-*/
+
 
         `endif
     end
@@ -103,6 +104,7 @@ module test();
         parameter [4:0] idx_REGA_sel     = 16;
         parameter [4:0] idx_REGP_sel     = 31;
 
+        $display("testing decode");
     // ===========================================================================
         device_in=5'b00000;
 	#101
@@ -302,4 +304,4 @@ module test();
 
     end
 
-endmodule : test
+endmodule : test_decode

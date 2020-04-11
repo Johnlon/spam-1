@@ -9,7 +9,7 @@
 `default_nettype none
 
 
-module test();
+module test_select();
 
         function [4:0] rol(input [4:0] x);
             logic [4:0] rol;
@@ -42,6 +42,7 @@ module test();
     
 
     initial begin
+
         `ifndef verilator
 
         $dumpfile("dumpfile.vcd");
@@ -160,6 +161,7 @@ module test();
         parameter zp_on_sel = 1'b0;
         
 
+        $display("testing select");
     // ===========================================================================
 
 `include "./generated_tests.v"
@@ -167,4 +169,4 @@ module test();
 
 end
 
-endmodule : test
+endmodule : test_select

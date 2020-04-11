@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 # start = left most, end is right most
 def subbits(x, start, end):
     return (x >> end) & (pow(2,1+start-end)-1)
@@ -19,9 +21,11 @@ def tc(op, bits_7_5, bits_4_0, b_acc, d_in, zp, alu_passx, x_eq_0):
     #d_rot = ((d_in << 1) & 0x1e) + bit
     dev=devices[d_in]
     err=""
-    if (dev == "_RAM_in" and b_acc == "_ram_out"):
+    if (dev == "_ram_in" and b_acc == "_ram_out"):
         i="MAR" if zp  else "ZP"
         err="// => RAM["+i+"]=0 - _WE wins & bus is Z pulled down to 0"  
+    if (dev == "_uart_in" and b_acc == "_uart_out"):
+        err="// => UART= UNKNOWN "
 
     bus_outs={"_ram_out", "_rom_out", "_alu_out", "_uart_out"}
     devs={"_ram_out", "_rom_out", "_alu_out", "_uart_out"}
@@ -29,6 +33,7 @@ def tc(op, bits_7_5, bits_4_0, b_acc, d_in, zp, alu_passx, x_eq_0):
     verilog=1
     if verilog:
         
+        print("// {0}".format(err))
         print("// {0} {1}".format(op, dev))
         print("hi_rom=8'b{0:08b};".format(code))
         print("#101") 
@@ -37,7 +42,7 @@ def tc(op, bits_7_5, bits_4_0, b_acc, d_in, zp, alu_passx, x_eq_0):
                 print("`Equals({0}, F); //  expected".format(o))
             else:
                 print("`Equals({0}, T);".format(o))
-        print("`Equals(_device_in, 5'b{0:05b}); // expect {1}".format(d_in, dev))
+        print("`Equals(device_in, 5'b{0:05b}); // expect {1}".format(d_in, dev))
     else:
         print(
             "{0:08b}: ".format(code) +

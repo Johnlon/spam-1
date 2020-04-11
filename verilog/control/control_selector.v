@@ -72,15 +72,15 @@ module control_selector #(parameter LOG=0)
 
     // apply ram write device override
     wire [7:0] device_sel_in = {3'b0, device_sel_pre};
-    wire [7:0] device_sel_out;
+    tri0 [7:0] device_sel_out; // !!! PULLED DOWN WIRES
 
     hct74245 #(.NAME("F_RAMWR")) bufDeviceSel(.A(device_sel_in), .B(device_sel_out), .dir(1'b1), .nOE( !_ram_write_override ));  // EXTRA GATE
-    pulldown pullDeviceToZero[7:0](device_sel_out);
+    //pulldown (weak0, weak1) pullDeviceToZero[7:0](device_sel_out);
 
     // return
     assign #18 device_in = device_sel_out[4:0];
 
-if (LOG)    always @ * 
+if (1)    always @ * 
          $display("%6d CRTLSEL", $time,
           " hi=%08b", hi_rom, 
             " _rom_out=%1b, _ram_out=%1b, _alu_out=%1b, _uart_out=%1b", _rom_out, _ram_out, _alu_out, _uart_out,
@@ -88,6 +88,7 @@ if (LOG)    always @ *
             " force_x_0=%1b", force_x_val_to_zero, 
             " force_alu_passx=%1b", force_alu_op_to_passx, 
             " _ram_zp=%1b", _ram_zp
+    ,implied_dev_top_bit , _is_non_reg_override, _is_reg_override, " %05b %05b %08b", device_sel_pre, device_in, device_sel_out
 );
 
 endmodule : control_selector
