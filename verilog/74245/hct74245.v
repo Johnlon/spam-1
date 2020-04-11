@@ -22,15 +22,12 @@ module hct74245(
         (nOE *> B) = (16);
     endspecify
 
-
     if (LOG) always @(*) begin
         $display("%6d", $time,  " BUF %-s: A=%8b ", NAME, A, "B=%-8b ", B, "dir=%1b", dir, " nOE=%1b", nOE);
     end
 
     wire [7:0] Az;
     wire [7:0] Bz;
-    //assign Az = !dir?B:8'bzzzzzzzz;
-    //assign Bz = dir?A:8'bzzzzzzzz;
 
     assign A=nOE? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
     assign B=nOE? 8'bzzzzzzzz :dir?A:8'bzzzzzzzz;
