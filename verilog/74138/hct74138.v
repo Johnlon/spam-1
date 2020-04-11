@@ -17,12 +17,15 @@ module hct74138 #(parameter WIDTH_OUT = 8, WIDTH_IN = $clog2(WIDTH_OUT))
   output [WIDTH_OUT-1:0] Y
 );
 
-// according to https://assets.nexperia.com/documents/data-sheet/74HC_HCT138.pdf
+// timings according to nexperia seem short https://assets.nexperia.com/documents/data-sheet/74HC_HCT138.pdf
+// these timings are longer https://www.diodes.com/assets/Datasheets/74HCT138.pdf
+// TI is longer still https://www.diodes.com/assets/Datasheets/74HCT138.pdf
+// using longer timings here ...
 specify
-  (Enable1_bar *> Y) = (14);
-  (Enable2_bar *> Y) = (14);
-  (Enable3 *> Y) = (14);
-  (A *> Y) = (12);
+  (Enable1_bar *> Y) = (19); // NEXPERIA 14 // DIODES 19 // TI 18-30
+  (Enable2_bar *> Y) = (19); // NEXPERIA 14 // DIODES 19 // TI 18-30
+  (Enable3 *> Y) = (19); // NEXPERIA 14 // DIODES 19 // TI 18-30
+  (A *> Y) = (17); // NEXPERIA 12 //DIODES 17  // TI 17-32
 endspecify
   
 //------------------------------------------------//
