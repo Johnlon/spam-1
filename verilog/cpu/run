@@ -2,7 +2,12 @@ if [ -z $1 ]; then
     echo missing arg
     exit 1
 fi
-cp $1/$1_lo.rom lo.rom
-cp $1/$1_hi.rom hi.rom
+cd $1
+../assemble.py $1.as
+
+cp $1_lo.rom ../lo.rom
+cp $1_hi.rom ../hi.rom
+
+cd ..
 ../simulate.sh
 
