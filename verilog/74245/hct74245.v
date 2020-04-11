@@ -29,8 +29,8 @@ module hct74245(
     wire [7:0] Az;
     wire [7:0] Bz;
 
-    assign A=nOE? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
-    assign B=nOE? 8'bzzzzzzzz :dir?A:8'bzzzzzzzz;
+    assign #(16) A=nOE? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
+    assign #(16) B=nOE? 8'bzzzzzzzz :dir?A:8'bzzzzzzzz;
 
 endmodule: hct74245
 
