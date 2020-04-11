@@ -13,6 +13,7 @@
 `include "../7474/hct7474.v"
 `include "../74377/hct74377.v"
 `include "../74574/hct74574.v"
+`include "../registerFile/registerFile.v"
 
 `timescale 1ns/1ns
 
@@ -22,12 +23,13 @@ module test();
 
     logic CP=1'b0;
     wire _CP = ! CP; // EXTRA GATE
-    tri [7:0] data_bus;
+
+    tri0 [7:0] data_bus; // <<<<<<<<<<<<<<<<<<PULLED DOWN
 
     // PULSED -ve ON +ve CLOCK EDGE 
-    //logic clk_en=1;
-    //wire _CP_pulse; // short -ve pulse on each +CP edge
-    //pulseGenerator gen( CP, clk_en, _CP_pulse);
+    logic clk_en=1;
+    wire _CP_pulse; // short -ve pulse on each +CP edge
+    pulseGenerator gen( CP, clk_en, _CP_pulse);
 
     // PROGRAM COUNTER 
     logic _POWER_ON_RESET=1'b0;
@@ -74,6 +76,35 @@ module test();
     logic _reg_in;
     logic _ram_zp;
 
+    // REGISTERS:
+    // A-D registers at device address 16+[0-3]
+    // NB: _reg_in=!device_in[4]
+
+    wire _regfile_in = _reg_in || device_in[3] || device_in[2];
+    wire [1:0] regfile_wr_addr = device_in[1:0];
+    wire [1:0] rdL_addr = regfile_wr_addr;
+    wire [1:0] rdR_addr = rom_lo_data[1:0];
+    wire _rdL_en = 1'b0;
+    wire _rdR_en = 1'b0;
+    wire [7:0] rdL_data; // TODO send to ALU
+    wire [7:0] rdR_data; // TODO send to ALU
+
+    registerFile regABCD(
+        ._wr_en(_regfile_in), 
+        .wr_addr(regfile_wr_addr),
+        .wr_data(data_bus),
+
+        ._rdL_en,
+        .rdL_addr,
+        .rdL_data,
+
+        ._rdR_en,
+        .rdR_addr,
+        .rdR_data
+    );
+
+
+    
 
     // ALU ================================================================
     logic [7:0] x = 8'b11111110;
@@ -147,10 +178,10 @@ module test();
     assign ram_address = { muxed_marhi[6:0], muxed_marlo };
 
     always @(*) begin
-        $display("%6d ", $time, "RAM: MARHI %2x MARLO %2x MuxMARHI %02x MuxMARLO %02x _ZP %1b", MARHI, MARLO, muxed_marhi, muxed_marlo, _ram_zp);
+        $display("%8d ", $time, "RAM: MARHI %2x MARLO %2x MuxMARHI %02x MuxMARLO %02x _ZP %1b", MARHI, MARLO, muxed_marhi, muxed_marlo, _ram_zp);
     end
 
-    ram #(.LOG(1), .AWIDTH(16)) Ram(._WE(_ram_in), ._OE(_ram_out), .A(ram_address), .D(data_bus));
+    ram #(.AWIDTH(16)) Ram(._WE(_ram_in), ._OE(_ram_out), .A(ram_address), .D(data_bus));
 
     // control =====================================================
     control_selector #(.LOG(0)) CtrlSelect(
@@ -166,6 +197,8 @@ module test();
         .device_in,
         ._flag_z, ._flag_c, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt,
         ._uart_in_ready, ._uart_out_ready,
+
+       ._pulse_clk(_CP_pulse), 
 
         ._ram_in, ._marlo_in, ._marhi_in, ._uart_in, ._pchitmp_in, ._pclo_in, ._pc_in, ._reg_in
     );
@@ -186,7 +219,7 @@ module test();
 
     hct74245 #(.LOG(0), .NAME("ALUBUS")) bufALUBUS(.A(alu_result), .B(data_bus), .dir(1'b1), .nOE(_alu_out));
     if (0) always @* begin
-        $display("%6d ", $time, "ALU: RESULT %2x _alu_out %1b BUS %2x", alu_result, _alu_out, data_bus);
+        $display("%8d ", $time, "ALU: RESULT %2x _alu_out %1b BUS %2x", alu_result, _alu_out, data_bus);
     end
 
 
@@ -196,7 +229,7 @@ module test();
     hct74377 flags_reg(._EN(_flags_in), .CP, .D(flags_reg_in), .Q(flags_reg_out));
 
     always @(flags_reg_out)
-        $display("%6d FLAGS ", $time, "ZCOENGL=%8b" , flags_reg_out[6:0]);
+        $display("%8d FLAGS ", $time, "ZCOENGL=%8b" , flags_reg_out[6:0]);
     
     assign flags_reg_in = {2'b11, _flag_cout, 5'b11111};
     assign {_flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt} = flags_reg_out[6:0];
@@ -214,7 +247,7 @@ module test();
     // THREADS ...
 
     `define LOG_CPU \
-        $display("%6d CPU ", $time, \
+        $display("%8d CPU ", $time, \
             "CP=%1b PC=x%4x   ROM=%8b,%8b ", CP, rom_address, rom_hi_data, rom_lo_data, \
             " BUS=h%2x ", data_bus,  \
             " RRAU=%4b ", {_rom_out, _ram_out, _alu_out, _uart_out}, \
@@ -235,22 +268,22 @@ module test();
         $write(MSG); \
         CP = 0; \
         if (CP == 0)  \
-            $display("%6d CPU CLK=%1b       ----------------", $time, CP); \
+            $display("%8d CPU CLK=%1b       ----------------", $time, CP); \
         else \
-            $display("%6d CPU CLK=%1b       ++++++++++++++++", $time, CP); \
+            $display("%8d CPU CLK=%1b       ++++++++++++++++", $time, CP); \
 
     `define CLOCK_UP(MSG) \
         #1000  \
         $write(MSG); \
         CP = 1; \
         if (CP == 0)  \
-            $display("%6d CPU CLK=%1b       ----------------", $time, CP); \
+            $display("%8d CPU CLK=%1b       ----------------", $time, CP); \
         else \
-            $display("%6d CPU CLK=%1b       ++++++++++++++++", $time, CP); \
+            $display("%8d CPU CLK=%1b       ++++++++++++++++", $time, CP); \
 
 
-    `define CLOCK_CYCLE CLOCK_UP("++") \
-                        CLOCK_DOW("--")N
+    `define CLOCK_CYCLE(XXX) CLOCK_UP("++ XXX") \
+                        CLOCK_DOW("-- XXX")N
 /*
     always begin
         `LOG_CPU
@@ -275,8 +308,14 @@ module test();
         `CLOCK_UP("\ninitial +ve ignored\n")
         `CLOCK_DOWN("\ninitial -ve resets PC and clears RESET latch\n")
 
+
+        `CLOCK_UP("\ninstruction 1 latched\n")
+
+        `CLOCK_DOWN("\ninstruction 2 start\n")
+/*
         `CLOCK_UP("\ninitial +ve ignored\n")
         `CLOCK_DOWN("\ninitial -ve resets PC and clears RESET latch\n")
+*/
         /*
 
         `CLOCK_UP    
