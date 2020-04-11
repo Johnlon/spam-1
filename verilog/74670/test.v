@@ -6,30 +6,30 @@
 
 module icarus_tb();
     
-    logic wr_en;
-    logic rd_en;
+    logic _wr_en;
+    logic _rd_en;
     logic [1:0] wr_addr, rd_addr;
     logic [3:0] wr_data, rd_data;
     
     hct74670 regfile(
-    wr_en, wr_addr,  wr_data,
-    rd_en, rd_addr,  rd_data
+    _wr_en, wr_addr,  wr_data,
+    _rd_en, rd_addr,  rd_data
     );
     
     
     initial begin
         $dumpfile("dumpfile.vcd");
-        $dumpvars(0,  wr_en, rd_en,   wr_addr, rd_addr, wr_data, rd_data);
+        $dumpvars(0,  _wr_en, _rd_en,   wr_addr, rd_addr, wr_data, rd_data);
         
         $display ("");
-        $display ($time,"   %s   %s | %s <= %s  | %s => %s", "wr_en", "rd_en",   "wr_addr", "wr_data", "rd_addr", "rd_data");
-        $monitor ($time,"   %5b   %5b | %7b <= %7b  | %7b => %7b", wr_en, rd_en,   wr_addr, wr_data, rd_addr, rd_data);
+        $display ($time,"   %s   %s | %s <= %s  | %s => %s", "_wr_en", "_rd_en",   "wr_addr", "wr_data", "rd_addr", "rd_data");
+        $monitor ($time,"   %5b   %5b | %7b <= %7b  | %7b => %7b", _wr_en, _rd_en,   wr_addr, wr_data, rd_addr, rd_data);
     end
     
     
     // uncoment to see periodic reports
     //always
-    //	#10 $display ($time,"   %5b   %5b %7b < = %7b  out %7b = > %7b", wr_en, rd_en,   wr_addr, wr_data, rd_addr, rd_data);
+    //	#10 $display ($time,"   %5b   %5b %7b < = %7b  out %7b = > %7b", _wr_en, _rd_en,   wr_addr, wr_data, rd_addr, rd_data);
     
     initial begin
         parameter low      = 1'b0;
@@ -40,14 +40,14 @@ module icarus_tb();
         parameter undefined_data = 4'bx;
         parameter zed_data       = 4'bz;
         
-        rd_en   = enabled;
+        _rd_en   = enabled;
         wr_addr = 0;
         wr_data = 10;
         rd_addr = 0;
         #10
         `equals(rd_data , undefined_data, "nothing written so all data should be x");
         
-        wr_en = enabled;
+        _wr_en = enabled;
         #5
         `equals(rd_data , undefined_data, "nothing written so all data should be x");
         #24
@@ -62,15 +62,15 @@ module icarus_tb();
         #5
         
         wr_data = 15;
-        wr_en   = disabled;
+        _wr_en   = disabled;
         #29
         `equals(rd_data , 1, "write disabled - retains value");
         
-        wr_en = enabled;
+        _wr_en = enabled;
         #29
         `equals(rd_data , 15, "write enabled location 2");
         
-        rd_en = disabled;
+        _rd_en = disabled;
         #29
         `equals(rd_data , zed_data, "read disabled");
         

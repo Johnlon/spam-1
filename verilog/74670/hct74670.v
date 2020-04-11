@@ -2,10 +2,10 @@
 // active low enable inputs
 
 `timescale 1ns/100ps
-module hct74670 (input wr_en,
+module hct74670 (input _wr_en,
                  input [1:0] wr_addr,
                  input [3:0] wr_data,
-                 input rd_en,
+                 input _rd_en,
                  input [1:0] rd_addr,
                  output [3:0] rd_data);
     
@@ -13,15 +13,15 @@ module hct74670 (input wr_en,
     reg [3:0] registers[3:0];
     
     specify
-    (rd_en *> rd_data)   = (18:18:35);
-    (wr_en *> rd_data)   = (28:28:50);
+    (_rd_en *> rd_data)   = (18:18:35);
+    (_wr_en *> rd_data)   = (28:28:50);
     (rd_addr *> rd_data) = (21:21:40);
     (wr_data => rd_data) = (27:27:50);
     endspecify
     
     // write to register file
     always @(*) begin
-        if (!wr_en) begin
+        if (!_wr_en) begin
             registers[wr_addr] <= wr_data;
 	    //$display(" writing @ " , wr_addr , "  <= ",wr_data);
         end
@@ -35,6 +35,6 @@ module hct74670 (input wr_en,
     
     reg [7:0] out_val;
     
-    assign rd_data = rd_en ? 4'bz : out_val;
+    assign rd_data = _rd_en ? 4'bz : out_val;
     
 endmodule
