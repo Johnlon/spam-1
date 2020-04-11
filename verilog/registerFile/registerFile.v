@@ -2,18 +2,18 @@
  */
 
 `include "../74670/hct74670.v"
-`include "../pulseGenerator/pulseGenerator.v"
-`timescale 1ns/100ps
+//`include "../pulseGenerator/pulseGenerator.v"
+`timescale 1ns/1ns
 module registerFile(
-                    input wr_en, 
+                    input _wr_en, 
                     input [1:0] wr_addr,
                     input [7:0] wr_data,
 
-                    input rdL_en,
+                    input _rdL_en,
                     input [1:0] rdL_addr,
                     output [7:0] rdL_data,
 
-                    input rdR_en,
+                    input _rdR_en,
                     input [1:0] rdR_addr,
                     output [7:0] rdR_data
 	    );
@@ -22,35 +22,35 @@ module registerFile(
     wire [3:0] rdL_data_hi, rdL_data_lo, rdR_data_hi, rdR_data_lo;
     
     hct74670 left_bank_lo(
-    wr_en,
+    _wr_en,
     wr_addr,
     wr_data_lo,
-    rdL_en,
+    _rdL_en,
     rdL_addr,
     rdL_data_lo
     );
     hct74670 left_bank_hi(
-    wr_en,
+    _wr_en,
     wr_addr,
     wr_data_hi,
-    rdL_en,
+    _rdL_en,
     rdL_addr,
     rdL_data_hi
     );
     
     hct74670 bankR_lo(
-    wr_en,
+    _wr_en,
     wr_addr,
     wr_data_lo,
-    rdR_en,
+    _rdR_en,
     rdR_addr,
     rdR_data_lo
     );
     hct74670 bankR_hi(
-    wr_en,
+    _wr_en,
     wr_addr,
     wr_data_hi,
-    rdR_en,
+    _rdR_en,
     rdR_addr,
     rdR_data_hi
     );
