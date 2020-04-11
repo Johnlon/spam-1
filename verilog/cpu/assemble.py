@@ -2,6 +2,13 @@
 import re
 import sys
 
+verbose = False
+
+if len(sys.argv) > 1:
+    sourcecode = sys.argv[1]
+else:
+    sourcecode = "code.as"
+
 
 lines = {}
 labels = {}
@@ -264,18 +271,42 @@ def checkOp(codeline, line, op, lineno):
             error("failed: wrong op, expected {}, got {} at {} for {}".format(expected, op, lineno, codeline))
 
 
+hrom=None
+lrom=None
+written=0
 
-verbose = False
+def writeRoms(h,l):
+    global hrom
+    global lrom
+    global written
+
+    root = sourcecode.replace(".as","")
+    hfile = root + "_hi.rom"
+    lfile = root + "_lo.rom"
+
+    if not hrom:
+        hrom=open(hfile, "w")
+        if not hrom:
+            print("cant open " + hfile)
+    if not lrom:
+        lrom=open(lfile, "w")
+        if not lrom:
+            print("cant open " + hfile)
+
+    hrom.write("{:02x} ".format(int(h,2)))
+    lrom.write("{:02x} ".format(int(l,2)))
+
+    written +=1 
+    if written > 16:
+        h.write("\n")
+        l.write("\n")
+        
+
+
 
 def prt(s):
     if verbose:
         print(s)
-
-if len(sys.argv) > 1:
-    sourcecode = sys.argv[1]
-else:
-    sourcecode = "code.as"
-
 with open(sourcecode, "r") as fp:
     line = fp.readline()
     address = 0
@@ -458,10 +489,11 @@ with open(sourcecode, "r") as fp:
                 print("decoded    src : {}".format(src))
                 error("Not recognised : {}".format(line))
             
-            if verbose:
-                print("\tH:L = " + h + " " + l)
-                print("\tALUOP  = " + str(aluop))
-                print("\tOP  = " + str(op))
+            writeRoms(h,l)
+
+            print("\t\t\t\t\tH:L = " + h + " " + l)
+            #print("\tALUOP  = " + str(aluop))
+            #print("\tOP  = " + str(op))
 
             address += 1
       
@@ -471,7 +503,7 @@ with open(sourcecode, "r") as fp:
 
         line = nextline
 
-if True:
+if False:
     print("==================")
     print("LINES")
     for l in lines:
