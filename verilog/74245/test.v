@@ -23,6 +23,12 @@ module tb();
       wire [7:0] Ay = 8'b11111111;
       hct74245 #(.LOG(1), .NAME("BUFY")) buf245Y(.A(Ay), .B, .dir(1'b1), .nOE(nOEY));
 
+    // for pull down int test
+    logic nOEZ=1;
+    tri [7:0]Bother;
+    hct74245 #(.LOG(1), .NAME("BUFZ")) buf245Z(.A(Ay), .B(Bother), .dir(1'b1), .nOE(nOEZ));
+    pulldown pd[7:0](Bother);
+
 
     always @*
         $display($time, " => dir=%1b", dir, " nOEX=%1b", nOEX, " Astim=%8b", Va, " Bstim=%8b ", Vb, " A=%8b ", A," B=%8b ", B);
@@ -192,17 +198,8 @@ $display("-------------------------");
       nOEY <= 0;
       #30
       `equals(B , 8'b11111111, "OE A->B Y driving");
-    end
-
-
-///////////////////////////////////
-
-    tri [7:0]Bother;
-    logic nOEZ=1;
-    hct74245 #(.LOG(1), .NAME("BUFZ")) buf245Z(.A(Ay), .B(Bother), .dir(1'b1), .nOE(nOEZ));
-    pulldown pd[7:0](Bother);
-
-    initial begin
+    
+    $display("pull down integration test");
     // test with pulldown
       Va=8'b00000000;
       Vb=8'bzzzzzzzz;
@@ -210,6 +207,7 @@ $display("-------------------------");
       nOEZ <= 1;
       #30
       `equals(Bother , 8'b00000000, "OE disable A->B");
+
     end
 
 endmodule : tb
