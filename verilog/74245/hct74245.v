@@ -13,7 +13,7 @@ module hct74245(
     parameter LOG=0;
 
     // HCT typical @ 5v according to https://assets.nexperia.com/documents/data-sheet/74HC_HCT245.pdf
-/*    specify
+    specify
         (A => B) = (10);
         (B => A) = (10);
         (dir *> A) = (16);
@@ -22,7 +22,7 @@ module hct74245(
         (nOE *> B) = (16);
     endspecify
 
-*/
+
     if (LOG) always @(*) begin
         $display("%6d", $time,  " BUF %-s: A=%8b ", NAME, A, "B=%-8b ", B, "dir=%1b", dir, " nOE=%1b", nOE);
     end
@@ -32,8 +32,8 @@ module hct74245(
     //assign Az = !dir?B:8'bzzzzzzzz;
     //assign Bz = dir?A:8'bzzzzzzzz;
 
-    assign #(16,16) A=nOE? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
-    assign #(16,16) B=nOE? 8'bzzzzzzzz :dir?A:8'bzzzzzzzz;
+    assign A=nOE? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
+    assign B=nOE? 8'bzzzzzzzz :dir?A:8'bzzzzzzzz;
 
 endmodule: hct74245
 
