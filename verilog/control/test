@@ -1,0 +1,10 @@
+
+../simulate.sh test_control_selector
+if [ $? -ne 0 ]; then
+exit 1
+fi
+
+../simulate.sh test_control_decode
+if [ $? -ne 0 ]; then
+exit 1
+fi
