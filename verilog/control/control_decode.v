@@ -13,6 +13,7 @@ module control_decode #(parameter LOG=0)
     input [4:0] device_in,
     input _flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt,
     input _uart_in_ready, _uart_out_ready,
+    input _pulse_clk, // short pulse low on positive edge of clock
 
     // decoded
     output _ram_in, _marlo_in, _marhi_in, _uart_in, 
@@ -52,11 +53,16 @@ module control_decode #(parameter LOG=0)
     wire reg_in = device_in[4];
     assign _reg_in = ! device_in[4];
 
+    // clock gating so output selection only made momentarily for compatibility with latches as registers on the control lines
+    wire neg_pulse = _pulse_clk;
+    wire pos_pulse = ! _pulse_clk; // extra gate
+
+    // selectors
     wire [7:0] _decodedDevLo;
-    hct74138 decoderLoDev(.Enable3(1'b1), .Enable2_bar(reg_in), .Enable1_bar(device_in[3]), .A(device_in[2:0]), .Y(_decodedDevLo));
+    hct74138 decoderLoDev(.Enable3(pos_pulse), .Enable2_bar(reg_in), .Enable1_bar(device_in[3]), .A(device_in[2:0]), .Y(_decodedDevLo));
     
     wire [7:0] _decodedDevHi;
-    hct74138 decoderHiDev(.Enable3(device_in[3]), .Enable2_bar(reg_in), .Enable1_bar(1'b0), .A(device_in[2:0]), .Y(_decodedDevHi));
+    hct74138 decoderHiDev(.Enable3(device_in[3]), .Enable2_bar(reg_in), .Enable1_bar(neg_pulse), .A(device_in[2:0]), .Y(_decodedDevHi));
 
     assign  _ram_in = _decodedDevLo[idx_RAM_sel];
     assign  _marlo_in = _decodedDevLo[idx_MARLO_sel];

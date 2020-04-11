@@ -16,6 +16,8 @@ module test_decode();
 	logic _flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt;
         logic _uart_in_ready, _uart_out_ready;
 
+        logic _pulse_clk;
+
         logic _ram_in;
         logic _marlo_in;
         logic _marhi_in;
@@ -33,6 +35,7 @@ module test_decode();
             .device_in,
             ._flag_z, ._flag_c, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt,
             ._uart_in_ready, ._uart_out_ready,
+            ._pulse_clk,
 
             ._ram_in, ._marlo_in, ._marhi_in, ._uart_in,
             ._pchitmp_in, ._pclo_in, ._pc_in,
@@ -104,10 +107,28 @@ module test_decode();
         parameter [4:0] idx_REGA_sel     = 16;
         parameter [4:0] idx_REGP_sel     = 31;
 
+        // min response time requirement
+        parameter TP = 20;
+
         $display("testing decode");
     // ===========================================================================
         device_in=5'b00000;
-	#101
+
+        $display("while clock is high then no output");
+        _pulse_clk=1'b1;
+	#1000
+        `Equals( _ram_in, T);
+	`Equals( _marlo_in, T);
+	`Equals( _marhi_in, T);
+	`Equals( _uart_in, T);
+	`Equals( _pchitmp_in, T);
+	`Equals( _pclo_in, T);
+	`Equals( _pc_in, T);
+	`Equals( _reg_in, T);
+
+        $display("while clock is low then output");
+        _pulse_clk=1'b0;
+	#TP
         `Equals( _ram_in, F);
 	`Equals( _marlo_in, T);
 	`Equals( _marhi_in, T);
@@ -117,8 +138,11 @@ module test_decode();
 	`Equals( _pc_in, T);
 	`Equals( _reg_in, T);
 
+        _pulse_clk=1'b1;
+        #100
+        _pulse_clk=1'b0;
         device_in=5'b00001;
-	#101
+	#TP
         `Equals( _ram_in, T);
 	`Equals( _marlo_in, F);
 	`Equals( _marhi_in, T);
@@ -128,8 +152,11 @@ module test_decode();
 	`Equals( _pc_in, T);
 	`Equals( _reg_in, T);
             
+        _pulse_clk=1'b1;
+        #100
+        _pulse_clk=1'b0;
         device_in=5'b00010;
-	#101
+	#TP
         `Equals( _ram_in, T);
 	`Equals( _marlo_in, T);
 	`Equals( _marhi_in, F);
@@ -139,8 +166,11 @@ module test_decode();
 	`Equals( _pc_in, T);
 	`Equals( _reg_in, T);
 
+        _pulse_clk=1'b1;
+        #100
+        _pulse_clk=1'b0;
         device_in=5'b00011;
-	#101
+	#TP
         `Equals( _ram_in, T);
 	`Equals( _marlo_in, T);
 	`Equals( _marhi_in, T);
@@ -150,8 +180,11 @@ module test_decode();
 	`Equals( _pc_in, T);
 	`Equals( _reg_in, T);
             
+        _pulse_clk=1'b1;
+        #100
+        _pulse_clk=1'b0;
         device_in=5'b00100;
-	#101
+	#TP
         `Equals( _ram_in, T);
 	`Equals( _marlo_in, T);
 	`Equals( _marhi_in, T);
@@ -161,8 +194,11 @@ module test_decode();
 	`Equals( _pc_in, T);
 	`Equals( _reg_in, T);
 
+        _pulse_clk=1'b1;
+        #100
+        _pulse_clk=1'b0;
         device_in=5'b00101;
-	#101
+	#TP
         `Equals( _ram_in, T);
 	`Equals( _marlo_in, T);
 	`Equals( _marhi_in, T);
@@ -172,8 +208,11 @@ module test_decode();
 	`Equals( _pc_in, T);
 	`Equals( _reg_in, T);
             
+        _pulse_clk=1'b1;
+        #100
+        _pulse_clk=1'b0;
         device_in=5'b00110;
-	#101
+	#TP
         `Equals( _ram_in, T);
 	`Equals( _marlo_in, T);
 	`Equals( _marhi_in, T);
@@ -200,7 +239,10 @@ module test_decode();
             device_in=counter;
             `RESET_FLAGS;
             
-            #101
+            _pulse_clk=1'b1;
+            #100
+            _pulse_clk=1'b0;
+            #TP
             `Equals( _ram_in, T);
             `Equals( _marlo_in, T);
             `Equals( _marhi_in, T);
@@ -225,63 +267,63 @@ module test_decode();
         device_in=7;
         `RESET_FLAGS;
         _flag_o=0;
-	#101
+	#TP
 	`PC_IN_SET;
             
         // conditional JMP tests
         device_in=8;
         `RESET_FLAGS;
         _flag_z=0;
-	#101
+	#TP
 	`PC_IN_SET;
 
         // conditional JMP tests
         device_in=9;
         `RESET_FLAGS;
         _flag_c=0;
-	#101
+	#TP
 	`PC_IN_SET;
 
         // conditional JMP tests
         device_in=10;
         `RESET_FLAGS;
         _uart_in_ready=0;
-	#101
+	#TP
 	`PC_IN_SET;
             
         // conditional JMP tests
         device_in=11;
         `RESET_FLAGS;
         _uart_out_ready=0;
-	#101
+	#TP
 	`PC_IN_SET;
             
         // conditional JMP tests
         device_in=12;
         `RESET_FLAGS;
         _flag_eq=0;
-	#101
+	#TP
 	`PC_IN_SET;
             
         // conditional JMP tests
         device_in=13;
         `RESET_FLAGS;
         _flag_ne=0;
-	#101
+	#TP
 	`PC_IN_SET;
 
         // conditional JMP tests
         device_in=14;
         `RESET_FLAGS;
         _flag_gt=0;
-	#101
+	#TP
 	`PC_IN_SET;
 
         // conditional JMP tests
         device_in=15;
         `RESET_FLAGS;
         _flag_lt=0;
-	#101
+	#TP
 	`PC_IN_SET;
 
 
@@ -289,7 +331,7 @@ module test_decode();
         for (counter=16; counter < 32; counter++) begin
             device_in=counter;
             
-            #101
+            #TP
             `Equals( _ram_in, T);
             `Equals( _marlo_in, T);
             `Equals( _marhi_in, T);
