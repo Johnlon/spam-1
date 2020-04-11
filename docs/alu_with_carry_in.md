@@ -45,13 +45,13 @@ The SPAM-1 ALU ROM functions are ...
 | 0-7 ALU Ops | 8-15 ALU Ops      | 16-23 ALU Ops     | 24-31 ALU Ops |
 |-------------|-------------------|-------------------|---------------|
 | A           | B-1               | A*B (high bits)   | A ROR B       |
-| B           | __A+B+Cin (0)__   | A*B (low bits)    | A AND B       |
-| 0           | __A-B-Cin (0)__   | A/B               | A OR B        |
-| -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
+| B           | __A+B+Cin (cin 0)__   | A*B (low bits)    | A AND B       |
+| 0           | __A-B+Cin (cin 0)__   | A/B               | A OR B        |
+| -A          | __B-A+Cin (cin 0)__   | A%B               | A XOR B       |
 | -B          | A-B (special)     | A << B            | NOT A         |
-| A+1         | __A+B+Cin (1)__   | A >> B arithmetic | NOT B         |
-| B+1         | __A-B-Cin (1)__   | A >> B logical    | A+B (BCD)     |
-| A-1         | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
+| A+1         | __A+B+Cin (cin 1)__   | A >> B arithmetic | NOT B         |
+| B+1         | __A-B+Cin (cin 1)__   | A >> B logical    | A+B (BCD)     |
+| A-1         | __B-A+Cin (cin 1)__   | A ROL B           | A-B (BCD)     |
 
 Re "A-B (special)" above, see [CSCVon8 ALU design](https://github.com/DoctorWkt/CSCvon8/blob/2b362a9e793238ebd150855a6dd6c5987674c7c6/Docs/CSCvon8_design.md) for an explanation of "Special"
 
