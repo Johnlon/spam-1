@@ -29,8 +29,8 @@ reg [BLOCKS-1:0] Qb_current;
 reg [BLOCKS-1:0] _SD_previous;
 reg [BLOCKS-1:0] Q_defined = 0;
 
-if (LOG) always @* $display("%6d ", $time, "%s CP=%1b D=%1b _SD=%1b _RD=%1b  =>  Q=%1b _Q=%1b", NAME, CP,D,_SD, _RD, Q, _Q);
-//if (LOG) always @* $display("%6d ", $time, "%s CP=%1b D=%1b _SD=%1b  _RD=%1b  Q=%1b  _Q=%1b (Qc=%1b, _Qc=%1b)", NAME, CP,D,_SD, _RD, Q, _Q, Q_current, Qb_current);
+if (LOG) always @* $display("%8d ", $time, "%s CP=%1b D=%1b _SD=%1b _RD=%1b  =>  Q=%1b _Q=%1b", NAME, CP,D,_SD, _RD, Q, _Q);
+//if (LOG) always @* $display("%8d ", $time, "%s CP=%1b D=%1b _SD=%1b  _RD=%1b  Q=%1b  _Q=%1b (Qc=%1b, _Qc=%1b)", NAME, CP,D,_SD, _RD, Q, _Q, Q_current, Qb_current);
 
 generate
   genvar i;
@@ -40,7 +40,7 @@ generate
     begin
       if (_RD[i] && _SD[i])
       begin
-        if (LOG>1) $display("%6d", $time, " %s CLOCK IN DATA Q=%1b", NAME, D);
+        if (LOG>1) $display("%8d", $time, " %s CLOCK IN DATA Q=%1b", NAME, D);
         Q_defined[i] <= 1'b1;
 
         Q_current[i] <= D[i];
@@ -48,7 +48,7 @@ generate
       end
         else
         begin
-        if (LOG>1) $display("%6d", $time, " %s CLOCK IN DISABLED BY CLEAR or PRESET", NAME);
+        if (LOG>1) $display("%8d", $time, " %s CLOCK IN DISABLED BY CLEAR or PRESET", NAME);
         end
     end
 
@@ -56,13 +56,13 @@ generate
     begin
       if (!_RD[i] && !_SD[i])
         begin
-            if (LOG>1) $display("%6d", $time, " %s FORCE Q=_Q=1", NAME);
+            if (LOG>1) $display("%8d", $time, " %s FORCE Q=_Q=1", NAME);
             Q_current[i] <= 1'b1;
             Qb_current[i] <= 1'b1;
         end
       else if (!_RD[i])
         begin
-            if (LOG>1) $display("%6d", $time, " %s Q=0", NAME);
+            if (LOG>1) $display("%8d", $time, " %s Q=0", NAME);
             Q_defined[i] <= 1'b1;
 
             Q_current[i] <= 1'b0;
@@ -70,7 +70,7 @@ generate
         end
       else if (!_SD[i])
         begin
-            if (LOG>1) $display("%6d", $time, " %s Q=1", NAME);
+            if (LOG>1) $display("%8d", $time, " %s Q=1", NAME);
             Q_defined[i] <= 1'b1;
 
             Q_current[i] <= 1'b1;
@@ -79,13 +79,13 @@ generate
       else //
         begin
             if (!Q_defined[i]) begin
-                if (LOG) $display("%6d", $time, " %s Q=X NOT CLEAR AND NOT PRESET", NAME);
+                if (LOG) $display("%8d", $time, " %s Q=X NOT CLEAR AND NOT PRESET", NAME);
                 // no value has been defined - realistically a random value would be settled on, we'll use X
                 Q_current[i] <= 1'bx;
                 Qb_current[i] <= 1'bx;
             end
             else
-                if (LOG>1) $display("%6d", $time, " %s Q=%1b - HOLD", NAME, Q_current);
+                if (LOG>1) $display("%8d", $time, " %s Q=%1b - HOLD", NAME, Q_current);
         end
       end
   end
