@@ -20,7 +20,7 @@ module alu #(parameter LOG=0) (
     input  force_alu_op_to_passx,
     input  force_x_val_to_zero,
     input  _flag_cin,
-    output [8*12:0] OP_OUT
+    output [8*8:0] OP_OUT
 );
 // A           | B-1               | A*B (high bits)   | A ROR B       |
 // | B           | __A+B+Cin (0)__   | A*B (low bits)    | A AND B       |
@@ -48,7 +48,7 @@ module alu #(parameter LOG=0) (
     localparam OP_A_OR_B=26;
     localparam OP_A_TIMES_B_HI=16;
     localparam OP_A_TIMES_B_LO=17;
-    reg [8*12:0] OP_NAME;
+    reg [8*8:0] OP_NAME;
 
     assign OP_OUT=OP_NAME;
 
@@ -67,10 +67,10 @@ module alu #(parameter LOG=0) (
     localparam AtoB=1'b1;
 
     //tri [7:0] xout;
-    tri [7:0] xout;
+    tri0 [7:0] xout;
     wire [7:0] xin = x;
     hct74245 #(.NAME("F_X_to_0")) bufX(.A(xin), .B(xout), .dir(AtoB), .nOE(force_x_val_to_zero)); 
-    pulldown pullXToZero[7:0](xout);
+    //pulldown pullXToZero[7:0](xout);
 
     //wire [7:0] alu_op_out;
     tri0 [7:0] alu_op_out;
@@ -84,14 +84,14 @@ module alu #(parameter LOG=0) (
     wire [7:0] cin8 = {7'b0, !_flag_cin};
 
     if (LOG) always @(*) 
-         $display("%6d ALU", $time,
+         $display("%8d ALU", $time,
+         " aluop=(%d) %-s ", alu_op, OP_NAME, 
          " result=%08b(%3d) ", o, o,
-         "   aluop=%-s(%d) ", OP_NAME, alu_op, 
-         " xout=%08b ", xout,
-         " x=%08b(%3d) ", x, x,
+         " x=%08b(%3d) ", xout, xout,
          " y=%08b(%3d) ", y, y,
-         "   force_passx=%1b", force_alu_op_to_passx, 
-         " force_x_to_0=%1b", force_x_val_to_zero, 
+         " xin=%08b(%3d) ", x, x,
+         "  passx=%1b", force_alu_op_to_passx, 
+         "  x_to_0=%1b", force_x_val_to_zero, 
          "   _cin=%1b ", _flag_cin,
          " _cout=%1b ", _flag_cout,
          );
@@ -104,45 +104,57 @@ module alu #(parameter LOG=0) (
                 ALU_Result = xout;
                 tmp=0;
             end
+            OP_B: begin
+                OP_NAME = "B";
+                ALU_Result = y;
+                tmp=0;
+            end
+            OP_0: begin
+                OP_NAME = "0";
+                ALU_Result = 0;
+                tmp=0;
+            end
             OP_A_OR_B: begin
-                OP_NAME = "A_OR_B";
+                OP_NAME = "OR";
                 ALU_Result = xout | y;
                 tmp=0;
             end
             OP_A_AND_B: begin
-                OP_NAME = "A_AND_B";
+                OP_NAME = "AND";
                 ALU_Result = xout & y;
                 tmp=0;
             end
             OP_A_PLUS_B: begin 
-                OP_NAME = "A_PLUS_B";
+                OP_NAME = "PLUS";
                 ALU_Result = xout + y + cin8;
                 tmp = {1'b0,xout} + {1'b0,y} + cin8;
             end
             OP_A_MINUS_B: begin
-                OP_NAME = "A_MINUS_B";
+                OP_NAME = "MINUS";
                 ALU_Result = xout - y - cin8;
                 tmp = {1'b0,xout} - {1'b0,y} - cin8;
             end
 
             OP_A_TIMES_B_HI: begin
-                OP_NAME = "A_TIMES_B_HI";
+                OP_NAME = "*HI";
                 TimesResult = (xout * y);
                 ALU_Result = TimesResult[15:8];
                 tmp=0;
             end
 
             OP_A_TIMES_B_LO: begin
-                OP_NAME = "A_TIMES_B_LO";
+                OP_NAME = "*LO";
                 TimesResult = (xout * y);
                 ALU_Result = TimesResult[7:0];
                 tmp=0;
             end
 
             default: begin
-                ALU_Result = 8'bxxxxxxxx;
-                $sformat(OP_NAME,"UNSUPPORTED %02x",alu_op_effective);
+                ALU_Result = 8'b11111111;
+                $sformat(OP_NAME,"? %02x ?",alu_op_effective);
+                $display("%8d !!!!!!!!!!!!!!!!!!!!!!!!!!!! RANDOM ALU OUT !!!!!!!!!!!!!!!!!!!!!!", $time);
             end
+
         endcase
     end
 
