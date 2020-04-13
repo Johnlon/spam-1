@@ -58,5 +58,13 @@ module registerFile(
     assign {wr_data_hi, wr_data_lo} = wr_data;
     assign rdL_data                 = {rdL_data_hi, rdL_data_lo};
     assign rdR_data                 = {rdR_data_hi, rdR_data_lo};
+
+    always @(posedge _wr_en) begin
+        $display("%8d REGFILE : LATCHING REG[%d] = %d (%02x)", $time, wr_addr, wr_data, wr_data);
+    end
+    always @(*) begin 
+        $display("%8d REGFILE : READ X[%d]=>%d  Y[%d]=>%d" , $time, rdL_addr, rdL_data, rdR_addr, rdR_data);
+    end
+
     
 endmodule
