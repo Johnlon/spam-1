@@ -2,7 +2,7 @@
 /* verilator lint_off ASSIGNDLY */
 
 `timescale 1ns/1ns
-module um245r #(parameter DELAY=50, FILENAME="", DEPTH=0)  (
+module um245r #(parameter DELAY=50, FILENAME="", DEPTH=0, HEXMODE=0, LOG=0)  (
         inout [7:0] D,	// Input data
 	input WR,		// Writes data on -ve edge
 	input _RD,		// When goes from high to low then the FIFO data is placed onto D (equates to _OE)
@@ -22,7 +22,8 @@ module um245r #(parameter DELAY=50, FILENAME="", DEPTH=0)  (
   assign _TXE=0; // always ready to transmit
 
   always @(negedge WR) begin
-    $write("%c", D);
+    if (HEXMODE) $write("UART: %02x \n", D);
+    else $write("%c", D);
   end
 
   integer i=-1;
@@ -37,7 +38,7 @@ module um245r #(parameter DELAY=50, FILENAME="", DEPTH=0)  (
   assign #DELAY _RXF=!(i<DEPTH);
   assign #DELAY D = _RD? 8'bzzzzzzzz: _RXF? 8'bxxxxxxxx: Mem[i];
 
-  if (0)  always @*
+  if (LOG) always @*
     $display("D=", D, ", WR=", WR, ",_RD=", _RD, ", i=", i, " MEM[%2d]=h%2x", i, Mem[i], " _RXF=%1b", _RXF);
 
 
