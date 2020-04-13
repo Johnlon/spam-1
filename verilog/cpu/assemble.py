@@ -2,7 +2,7 @@
 import re
 import sys
 
-verbose = False
+verbose = True
 
 if len(sys.argv) > 1:
     sourcecode = sys.argv[1]
@@ -57,9 +57,9 @@ def regId(dev):
 Z=True
 # OP, NEEDL, NEEDR
 alu_ops = [
-    ["0",False,False],
     ["L","L",Z],
     ["R","R",Z],
+    ["0",False,False],
     ["-L","-L",Z],
     ["-R",Z,Z],
     ["L+1",Z,Z],
@@ -292,6 +292,8 @@ def writeRoms(h,l):
         lrom=open(lfile, "w")
         if not lrom:
             print("cant open " + hfile)
+
+    print("WRITE {:02x} {:02x}".format(int(h,2), int(l,2)))
 
     hrom.write("{:02x} ".format(int(h,2)))
     lrom.write("{:02x} ".format(int(l,2)))
