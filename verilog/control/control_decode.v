@@ -49,13 +49,14 @@ module control_decode #(parameter LOG=0)
     parameter [4:0] idx_REGP_sel     = 31;
 
     // wiring
-
     wire reg_in = device_in[4];
-    assign _reg_in = ! device_in[4];
+    wire #8 not_reg_in = ! device_in[4];
+    wire #11 _gated_reg_in = not_reg_in || _pulse_clk;
+    assign _reg_in = _gated_reg_in;
 
     // clock gating so output selection only made momentarily for compatibility with latches as registers on the control lines
     wire neg_pulse = _pulse_clk;
-    wire pos_pulse = ! _pulse_clk; // extra gate
+    wire #8 pos_pulse = ! _pulse_clk; // extra gate
 
     // selectors
     wire [7:0] _decodedDevLo;
@@ -71,23 +72,23 @@ module control_decode #(parameter LOG=0)
 
     wire _jmpo_in, _jmpz_in, _jmpc_in, _jmpdi_in, _jmpdo_in, _jmpeq_in, _jmpne_in, _jmpgt_in, _jmplt_in;
 
-    assign  _jmpo_in= _decodedDevLo[idx_JMPO_sel] || _flag_o;
-    assign  _jmpz_in= _decodedDevHi[idx_JMPZ_sel] || _flag_z;
-    assign  _jmpc_in= _decodedDevHi[idx_JMPC_sel] || _flag_c;
-    assign  _jmpdi_in= _decodedDevHi[idx_JMPDI_sel] || _uart_in_ready;
-    assign  _jmpdo_in= _decodedDevHi[idx_JMPDO_sel] || _uart_out_ready;
-    assign  _jmpeq_in= _decodedDevHi[idx_JMPEQ_sel] || _flag_eq;
-    assign  _jmpne_in= _decodedDevHi[idx_JMPNE_sel] || _flag_ne;
-    assign  _jmpgt_in= _decodedDevHi[idx_JMPGT_sel] || _flag_gt;
-    assign  _jmplt_in= _decodedDevHi[idx_JMPLT_sel] || _flag_lt;
+    assign  #11 _jmpo_in= _decodedDevLo[idx_JMPO_sel] || _flag_o;
+    assign  #11 _jmpz_in= _decodedDevHi[idx_JMPZ_sel] || _flag_z;
+    assign  #11 _jmpc_in= _decodedDevHi[idx_JMPC_sel] || _flag_c;
+    assign  #11 _jmpdi_in= _decodedDevHi[idx_JMPDI_sel] || _uart_in_ready;
+    assign  #11 _jmpdo_in= _decodedDevHi[idx_JMPDO_sel] || _uart_out_ready;
+    assign  #11 _jmpeq_in= _decodedDevHi[idx_JMPEQ_sel] || _flag_eq;
+    assign  #11 _jmpne_in= _decodedDevHi[idx_JMPNE_sel] || _flag_ne;
+    assign  #11 _jmpgt_in= _decodedDevHi[idx_JMPGT_sel] || _flag_gt;
+    assign  #11 _jmplt_in= _decodedDevHi[idx_JMPLT_sel] || _flag_lt;
 
-    assign  _pchitmp_in= _decodedDevLo[idx_PCHITMP_sel];
-    assign  _pclo_in= _decodedDevLo[idx_PCLO_sel];
-    assign  _pc_in= _decodedDevLo[idx_PC_sel] && _jmpo_in && _jmpz_in && _jmpc_in && _jmpdi_in && _jmpdo_in && _jmpeq_in && _jmpne_in && _jmpgt_in && _jmplt_in;
+    assign  #11 _pchitmp_in= _decodedDevLo[idx_PCHITMP_sel];
+    assign  #11 _pclo_in= _decodedDevLo[idx_PCLO_sel];
+    assign  #11 _pc_in= _decodedDevLo[idx_PC_sel] && _jmpo_in && _jmpz_in && _jmpc_in && _jmpdi_in && _jmpdo_in && _jmpeq_in && _jmpne_in && _jmpgt_in && _jmplt_in;
     
     
 if (LOG)     always @ * 
-         $display("%6d CRTLDEC", $time,
+         $display("%8d CTRL_DEC", $time,
             " device_in=%05b" , device_in,
             " devHi:Lo=%08b" , _decodedDevHi,
             ",%08b" , _decodedDevLo,
