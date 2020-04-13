@@ -57,35 +57,35 @@ def regId(dev):
 Z=True
 # OP, NEEDL, NEEDR
 alu_ops = [
-    ["L","L",Z],
-    ["R","R",Z],
-    ["0",False,False],
-    ["-L","-L",Z],
-    ["-R",Z,Z],
-    ["L+1",Z,Z],
-    ["R+1",Z,Z],
-    ["L-1",Z,Z],
-    ["R-1",Z,Z],
-    ["+",Z,Z],
-    ["-",Z,Z],
-    ["R-L",Z,Z],
-    ["-!",Z,Z],
-    ["*HI",Z,Z],
-    ["*LO",Z,Z],
-    ["/",Z,Z],
-    ["%",Z,Z],
-    ["<<",Z,Z],
-    [">>>",Z,Z],
-    [">>" ,Z,Z],
-    ["ROL",Z,Z],
-    ["ROR",Z,Z],
-    ["AND",Z,Z],
-    ["OR",Z,Z],
-    ["XOR",Z,Z],
-    ["NOT A",Z,Z],
-    ["NOT B",Z,Z],
-    ["+BCD",Z,Z],
-    ["-BCD",Z,Z],
+    "L",
+    "R",
+    "0",
+    "-L",
+    "-R",
+    "L+1",
+    "R+1",
+    "L-1",
+    "R-1",
+    "+",
+    "-",
+    "R-L",
+    "-!",
+    "*HI",
+    "*LO",
+    "/",
+    "%",
+    "<<",
+    ">>>",
+    ">>" ,
+    "ROL",
+    "ROR",
+    "AND",
+    "OR",
+    "XOR",
+    "NOT A",
+    "NOT B",
+    "+BCD",
+    "-BCD",
 
 ]
 
@@ -112,10 +112,10 @@ def tryGPReg(x):
      return None
 
 def isAluOp(x):
-    return x in [ op for op, nl, nr in alu_ops ]
+    return x in alu_ops
 
 def aluOpId(x):
-    aluopid = [ op for op, nl, nr in alu_ops ].index(x)
+    aluopid = alu_ops.index(x)
     if aluopid is None:
         error("{} is not an alu op".format(x))
     return aluopid

@@ -13,6 +13,7 @@
 `include "../7474/hct7474.v"
 `include "../74377/hct74377.v"
 `include "../74574/hct74574.v"
+`include "../uart/um245r.v"
 `include "../registerFile/registerFile.v"
 
 `timescale 1ns/1ns
@@ -24,7 +25,7 @@ module test();
     logic CP=1'b0;
     wire _CP = ! CP; // EXTRA GATE
 
-    tri0 [7:0] data_bus; // <<<<<<<<<<<<<<<<<<PULLED DOWN
+    tri [7:0] data_bus; // <<<<<<<<<<<<<<<<<<PULLED DOWN
 
     // PULSED -ve ON +ve CLOCK EDGE 
     logic clk_en=1;
@@ -89,6 +90,13 @@ module test();
     wire [7:0] rdL_data; // TODO send to ALU
     wire [7:0] rdR_data; // TODO send to ALU
 
+    wire [1:0] waddr = device_in[3] || device_in[2];
+    /*
+    always @(*) begin
+        $display("!!!!! _reg_in %1b waddr %d _regfile_in %1b  regfile_wr_addr %d  regfile_wr_data %1x", _reg_in, waddr, _regfile_in, regfile_wr_addr, data_bus);
+    end
+    */
+
     registerFile regABCD(
         ._wr_en(_regfile_in), 
         .wr_addr(regfile_wr_addr),
@@ -102,25 +110,23 @@ module test();
         .rdR_addr,
         .rdR_data
     );
-
-
     
 
     // ALU ================================================================
-    logic [7:0] x = 8'b11111110;
-    logic [7:0] y = 8'b00000011;
+    wire [7:0] x = rdL_data;
+    wire [7:0] y = rdR_data;
     logic [4:0] alu_op;
-    logic [12*8:0] alu_op_name;
-    wire  [7:0] alu_result;
+    logic [8*8:0] alu_op_name;
     logic force_alu_op_to_passx;
     logic force_x_val_to_zero;
     wire _flag_cin, _flag_cout;
+    wire  [7:0] alu_result;
 
     // RESET CIRCUIT
 
-    // names: https://assets.nexperia.com/documents/data-sheet/74HC_HCT74.pdf
+    // Quote : "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     wire _RESET, RESET;
-    hct7474 #(.BLOCKS(1), .NAME("RESETFF (sensitivity = _CP)"), .LOG(1)) resetFF(
+    hct7474 #(.BLOCKS(1), .NAME("RESETFF (sensitivity = _CP)"), .LOG(0)) resetFF(
       ._SD(1'b1),
       ._RD(_MR),
       .D(1'b1),
@@ -137,8 +143,8 @@ module test();
     //always @(*)
     //    $display("%6d CPU ", $time, "_MR=%1b _RESET=%1b =============================", _MR, _RESET);
 
-    always @(posedge _CP) begin
-        if (!_RESET) $display(">>>>>>>>>>>>>>>>>> RESET RELEASED <<<<<<<<<<<<<<<<<<<<<<<<<");
+    always @(posedge CP) begin
+        if (!_RESET) $display("\n>>>>>>>>>>>>>>>>>> RESET RELEASED <<<<<<<<<<<<<<<<<<<<<<<<<\n");
     end
 
     pc PC (
@@ -152,6 +158,9 @@ module test();
       .PCLO(PCLO),
       .PCHI(PCHI)
     );
+
+    // uart =====================================================
+    um245r #(.HEXMODE(1)) ioDevice(.D(data_bus), .WR(_uart_in), ._RD(_uart_out), ._TXE(_uart_in_ready), ._RXF(_uart_out_ready));
 
     // rom =====================================================
     assign rom_address = { PCHI[6:0], PCLO };
@@ -214,7 +223,6 @@ module test();
         ._flag_cin, 
         ._flag_cout,
         .OP_OUT(alu_op_name)
-
     );
 
     hct74245 #(.LOG(0), .NAME("ALUBUS")) bufALUBUS(.A(alu_result), .B(data_bus), .dir(1'b1), .nOE(_alu_out));
@@ -237,53 +245,101 @@ module test();
 
 
     // rules =====================================================
+    integer LOG=1;
+
+    `define LOG_CPU \
+        if (LOG) $display("%8d CPU (%1d) ", $time, cpcount, \
+            "CP=%1b PC=x%4x => ROM=%8b,%8b ", CP, rom_address, rom_hi_data, rom_lo_data, \
+            " BUS=%8b ", data_bus,  \
+            " RRAU=%4b ", {_rom_out, _ram_out, _alu_out, _uart_out}, \
+            " DEVIN=%2d", device_in, \
+            "  ZCOENGL=%7b UIO=%2b ", \
+               {_flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt}, \
+               {_uart_in_ready, _uart_out_ready}, \
+            "  ALUOP=%-s X=%03d Y=%03d R=%03d _CIN=%1b _COUT=%1b   FPassX=%1b FX2Z=%1b ",  \
+               alu_op_name, x,y,alu_result, _flag_cin, _flag_cout, Alu.force_alu_op_to_passx, Alu.force_x_val_to_zero, \
+            " _ZP=%1b", _ram_zp, \
+            " RAMD=h%02x RAMAddr=h%4x", Ram.D, ram_address\
+        );
+
 
     always @* begin
-        assert (^data_bus !== 'X)
-        else $error("Detected potential contention on data bus");
+        //assert (^data_bus !== 'x)
+        assert (
+            data_bus[7] !== 1'bx ||
+            data_bus[6] !== 1'bx ||
+            data_bus[5] !== 1'bx ||
+            data_bus[4] !== 1'bx ||
+            data_bus[3] !== 1'bx ||
+            data_bus[2] !== 1'bx ||
+            data_bus[1] !== 1'bx ||
+            data_bus[0] !== 1'bx
+         )
+        else begin
+            $error("Detected potential contention on data bus\n");
+            //`LOG_CPU
+            //$display("--------\n");
+            //$finish_and_return(1); 
+        end
+    end
+
+    wire [3:0] rrau = {_rom_out, _ram_out, _alu_out, _uart_out};
+
+    integer contentionStart=0;
+    integer took;
+    always @* begin
+        took = $time - contentionStart;
+
+        assert (rrau == 4'b1111 || rrau == 4'b1110 || rrau == 4'b1101 || rrau == 4'b1011 || rrau == 4'b0111) begin
+            if (contentionStart != 0) begin
+                $error("RESOLVED  %d ns Contention on data control lines %4b            !!!!!!!!!!!!!!!!!!!!!!!!\n", took, rrau);
+            end
+            contentionStart=0;
+        end
+        else begin
+            if (contentionStart != 0) begin
+                // ns units ONLY if units for this files are ns
+                if (took > 20 /*ns*/) begin 
+                    $error("LONG %d ns Contention on data control lines %4b            !!!!!!!!!!!!!!!!!!!!!!!!\n", took, rrau);
+                    $finish_and_return(1); 
+                end else begin
+                    $error("ONGOING %d ns Contention on data control lines %4b            !!!!!!!!!!!!!!!!!!!!!!!!\n", took, rrau);
+                end
+            end 
+            else begin
+                $error("DETECTED Contention on data control lines %4b            !!!!!!!!!!!!!!!!!!!!!!!!\n", rrau);
+                contentionStart=$time;
+            end
+        end
     end
 
 
-    // THREADS ...
 
-    `define LOG_CPU \
-        $display("%8d CPU ", $time, \
-            "CP=%1b PC=x%4x   ROM=%8b,%8b ", CP, rom_address, rom_hi_data, rom_lo_data, \
-            " BUS=h%2x ", data_bus,  \
-            " RRAU=%4b ", {_rom_out, _ram_out, _alu_out, _uart_out}, \
-            "   ZCOENGL=%7b UIO=%2b ", \
-                {_flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt}, \
-                {_uart_in_ready, _uart_out_ready}, \
-            "   ALUOP=%-s X=%03d Y=%03d R=%03d _CIN=%1b _COUT=%1b   FPassX=%1b FX2Z=%1b ",  \
-                alu_op_name, x,y,alu_result, _flag_cin, _flag_cout, Alu.force_alu_op_to_passx, Alu.force_x_val_to_zero, \
-            " _ZP=%1b", _ram_zp, \
-            " RAM=h%02x MAR=h%02x%02x RAMAddr=h%4x", Ram.D, MARHI, MARLO, ram_address,\
-            " - " \
-        );
-        
-    always @* `LOG_CPU
+    // THREADS ...
+    integer cpcount=0;
 
     `define CLOCK_DOWN(MSG) \
         #1000  \
-        $write(MSG); \
-        CP = 0; \
-        if (CP == 0)  \
-            $display("%8d CPU CLK=%1b       ----------------", $time, CP); \
-        else \
-            $display("%8d CPU CLK=%1b       ++++++++++++++++", $time, CP); \
+        cpcount = cpcount + 1; \
+        $write("\n%-5d begin %-s\n", cpcount, MSG); \
+        if (CP == 1)  begin \
+            $display("%8d CPU  CLK=%1b       ------------------------------------------------   ---------------- \n", $time, CP); \
+        end \
+        CP = 0;
 
     `define CLOCK_UP(MSG) \
         #1000  \
-        $write(MSG); \
-        CP = 1; \
-        if (CP == 0)  \
-            $display("%8d CPU CLK=%1b       ----------------", $time, CP); \
-        else \
-            $display("%8d CPU CLK=%1b       ++++++++++++++++", $time, CP); \
+        $write("\n%-5d latched %-s\n", cpcount, MSG); \
+        if (CP == 0)  begin \
+            $display("%8d CPU  CLK=%1b       ++++++++++++++++++++++++++++++++++++++++++++++++   ++++++++++++++++ \n", $time, CP); \
+        end \
+        CP = 1;
 
 
-    `define CLOCK_CYCLE(XXX) CLOCK_UP("++ XXX") \
-                        CLOCK_DOW("-- XXX")N
+    `define CLOCK_CYCLE(XXX) \
+            `CLOCK_UP("++ XXX") \
+            `CLOCK_DOWN("-- XXX")
+
 /*
     always begin
         `LOG_CPU
@@ -293,6 +349,9 @@ module test();
     end
 */
     
+        
+    always @* `LOG_CPU
+
     initial begin
         $dumpfile("dumpfile.vcd");
         $dumpvars(0, test );
@@ -305,26 +364,44 @@ module test();
         $display("\nMR timeout");
         _MR=1'b1; // release reset after delay
 
-        `CLOCK_UP("\ninitial +ve ignored\n")
-        `CLOCK_DOWN("\ninitial -ve resets PC and clears RESET latch\n")
+        `CLOCK_UP("initial +ve ignored")
 
-
-        `CLOCK_UP("\ninstruction 1 latched\n")
-
-        `CLOCK_DOWN("\ninstruction 2 start\n")
 /*
-        `CLOCK_UP("\ninitial +ve ignored\n")
-        `CLOCK_DOWN("\ninitial -ve resets PC and clears RESET latch\n")
+        `CLOCK_DOWN("initial -ve resets PC and clears RESET latch")
+        `CLOCK_UP("")
+
+        `CLOCK_DOWN("")
+        `CLOCK_UP("")
+
+        `CLOCK_DOWN("")
+        `CLOCK_UP("")
+
+        `CLOCK_DOWN("")
+        `CLOCK_UP("")
+
+        `CLOCK_DOWN("")
+        `CLOCK_UP("")
+
+        `CLOCK_DOWN("")
+        `CLOCK_UP("uart=1")
+
+        `CLOCK_DOWN("")
+        `CLOCK_UP("inc a")
+
+        `CLOCK_DOWN("")
+        `CLOCK_UP("uart=2")
 */
-        /*
+        // run to end of rom
+        `CLOCK_DOWN("")
+        `CLOCK_UP("")
+        while(rom_hi_data !== 8'bxxxxxxxx) begin
+            `CLOCK_DOWN("")
+            `CLOCK_UP("")
+        end
 
-        `CLOCK_UP    
+        #1000 $display("  <<<<<<<<<<<<<<< STOP >>>>>>>>>>>>>>>>>>>>>");
 
-        `CLOCK_DOWN    
-        `CLOCK_UP    
-*/
-
-        #700  $finish; 
+        #1000  $finish; 
     end
 
 endmodule
