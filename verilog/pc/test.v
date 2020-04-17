@@ -9,19 +9,24 @@
 module test();
 logic CP;
 logic _MR;
-logic _PCLOin;
-logic _PCHIin;
-logic _PCHITMPin;
+logic _pclo_in;
+logic _pc_in;
+logic _pchitmp_in;
 logic [7:0] D;
 wire [7:0] PCHI, PCLO;
 
+wire #8 _CP = ! CP;
+
+localparam T=25;
+localparam SETTLE=50;
 
 pc PC (
   .CP(CP),
+  ._CP(_CP),
   ._MR(_MR),
-  ._PCHIin(_PCHIin),
-  ._PCLOin(_PCLOin),
-  ._PCHITMPin(_PCHITMPin),
+  ._pc_in(_pc_in),
+  ._pclo_in(_pclo_in),
+  ._pchitmp_in(_pchitmp_in),
   .D(D),
 
   .PCLO(PCLO),
@@ -30,78 +35,129 @@ pc PC (
 
 task clkpulse;
   begin
-  #50
+  #T
   CP= 1'b0;
-  #50
+  #T
   CP= 1'b1;
   end
 endtask
 
 
   always @(*)
-    $display("PC=%8b,%8b", PCHI, PCLO);
+    $display("%8d TEST : CP=%1b _CP=%1b PC=%8b,%8b _pc_in=%1b _pclo_in=%1b _pchitmp_in=%1b ", $time, CP, _CP, PCHI, PCLO, _pc_in, _pclo_in, _pchitmp_in);
 
 initial begin
   
-  _PCHIin = 1'b1;
-  _PCHITMPin = 1'b1;
-  _PCLOin = 1'b1;
-  CP = 1'b1;
+  $display("initial undefined");
+  `Equals(PCLO, 8'bxxxxxxxx);
+  `Equals(PCHI, 8'bxxxxxxxx);
+  _pc_in = 1'b1;
+  _pchitmp_in = 1'b1;
+  _pclo_in = 1'b1;
   _MR = 1'b0;
+  D = 8'b0;
+  CP = 1'b1;
   
+  $display("resetting");
   clkpulse();
-  #50
+  #SETTLE
+  `Equals(PCLO, 8'b00000000);
+  `Equals(PCHI, 8'b00000000);
+
+
+  $display("still reset because _ME is low");
+  clkpulse();
+  #SETTLE
+  `Equals(PCLO, 8'b00000000);
+  `Equals(PCHI, 8'b00000000);
+
+
+  $display("releasing _MR but no CP yet so still 0x00");
   _MR = 1'b1;
-
-  #50
+  #SETTLE
   `Equals(PCLO, 8'b00000000);
   `Equals(PCHI, 8'b00000000);
 
+  $display("now CP so 0x01");
+  clkpulse();
+  #SETTLE
+  `Equals(PCLO, 8'b00000001);
+  `Equals(PCHI, 8'b00000000);
 
-// Set PCHITmp
+
+  $display("now CP so 0x02");
+  clkpulse();
+  #SETTLE
+  `Equals(PCLO, 8'b00000010);
+  `Equals(PCHI, 8'b00000000);
+
+
+// Set PCHITmp + PC advances
   D = 8'b11111111;
-  $display("load PCHITmp with %8b", D);
-  _PCHIin = 1'b1;
-  _PCHITMPin = 1'b0;
-  _PCLOin = 1'b1;
-  clkpulse();
-  #50
-  `Equals(PCLO, 8'b00000000);
+  $display("load PCHITmp with %8b - PC should advance on -ve edge", D);
+  _pc_in = 1'b1;
+  _pchitmp_in = 1'b0;
+  _pclo_in = 1'b1;
+  CP= 1'b0;
+  #SETTLE
+  `Equals(PCLO, 8'b00000011);
   `Equals(PCHI, 8'b00000000);
 
-// Set PCHI
-  $display("load PCHI with %8b", D);
-  _PCHIin = 1'b0;
-  _PCHITMPin = 1'b1;
-  _PCLOin = 1'b1;
+  $display("PC should NOT advance on +ve edge");
+  CP= 1'b1;
+  #SETTLE
+  `Equals(PCLO, 8'b00000011);
+  `Equals(PCHI, 8'b00000000);
+
+  $display("PC should advance on -ve edge");
+  CP= 1'b0;
+  #SETTLE
+  `Equals(PCLO, 8'b00000100);
+  `Equals(PCHI, 8'b00000000);
+
+  $display("PC should NOT advance on +ve edge");
+  CP= 1'b1;
+  #SETTLE
+  `Equals(PCLO, 8'b00000100);
+  `Equals(PCHI, 8'b00000000);
+
+
+// Set PCHI=PCTMPHI=11111111 and PCLO=10101010 - PC does not advance
+
+  D = 8'b10101010; // distinctive value that should be loaded to LO
+  $display("load PCLO with %8b - PCHI should load with PCHITMP and PC not advance", D);
+  _pc_in = 1'b0;
+  _pchitmp_in = 1'b1;
+  _pclo_in = 1'b1;
   clkpulse();
-  #50
-  `Equals(PCLO, 8'b00000000);
+  #SETTLE
+  `Equals(PCLO, 8'b10101010);
   `Equals(PCHI, 8'b11111111);
 
-// Set PCLO
+// Set only PCLO - PC should not advance
   D = 8'b11111110;
-  $display("load PCLO with %8b", D);
-  _PCHIin = 1'b1;
-  _PCHITMPin = 1'b1;
-  _PCLOin = 1'b0;
+  $display("load PCLO with %8b - PCLO should load and PC not advance", D);
+  _pc_in = 1'b1;
+  _pchitmp_in = 1'b1;
+  _pclo_in = 1'b0;
   clkpulse();
-  #50
+  #SETTLE
   `Equals(PCLO, 8'b11111110);
   `Equals(PCHI, 8'b11111111);
 
 // count PC
-  $display("count");
-  _PCHIin = 1'b1;
-  _PCHITMPin = 1'b1;
-  _PCLOin = 1'b1;
+  $display("count - Should count to ff:ff");
+  _pc_in = 1'b1;
+  _pchitmp_in = 1'b1;
+  _pclo_in = 1'b1;
   clkpulse();
-  #50
+  #SETTLE
   `Equals(PCLO, 8'b11111111);
   `Equals(PCHI, 8'b11111111);
 
+  $display("count - Should count to 00:00");
   clkpulse();
-  #50
+  #SETTLE
   `Equals(PCLO, 8'b00000000);
   `Equals(PCHI, 8'b00000000);
 

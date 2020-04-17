@@ -6,40 +6,63 @@
 
 `include "../lib/assertion.v"
 `include "../counterReg/counterReg.v"
-`include "../74573/hct74573.v"
+`include "../74377/hct74377.v"
+`include "../74574/hct74574.v"
+`include "../7474/hct7474.v"
 
 `timescale 1ns/100ps
 
 module pc(
     input CP,
+    input _CP,
     input _MR,
-    input _PCLOin,
-    input _PCHIin,
-    input _PCHITMPin,
+    input _pchitmp_in,
+    input _pclo_in,
+    input _pc_in,       // load hi and lo
     input [7:0] D,
 
     output [7:0] PCLO,
     output [7:0] PCHI
 );
 
-wire COUNTen = _PCLOin && _PCHIin && _PCHITMPin;
-
 wire [7:0] PCHI, PCLO, PCHITMP;
+
+// low is loaded if separately loaded or both loaded
+wire #11 _pclo_load = _pclo_in & _pc_in;
+
+//wire #11 _gated_pchitmp_in = _pchitmp_in | CP;
     
-hct74573 PCHITMPReg(
-  .D, .Q(PCHITMP), .LE(_PCHITMPin), .OE_N(1'b0)
+hct74377 PCHiTmpReg(
+  .D, .Q(PCHITMP), .CP, ._EN(_pchitmp_in)
 );
+
+// count disabled for this clock cycle if we've just loaded PC
+wire countEn;
+
+/*
+hct7474 #(.BLOCKS(1), .NAME("RESETFF (sensitivity = _CP)"), .LOG(0)) resetFF(
+  ._SD(1'b1),
+  ._RD(_pclo_load),     // ASYNC !! gets set as soon as _pclo fires TODO FIXME << SPURIOUS RESET RISK??
+  .D(1'b1),
+  .CP(_CP),             // gets cleared on next neg clk
+  .Q(countEn)
+);
+*/
+
+// 74163 counts when CEP/CET/PE are all high
+// _pclo_load is synchronous and must be held low DURING a +ve CP
 
 wire TC;
 
-// naming from https://www.ti.com/lit/ds/symlink/sn74f163a.pdf
+assign #11 countEn = _pclo_load; // _pclo_load is always involved in a jump so the inverse of this signal can enable count
+
 counterReg LO
 (
-  .CP(CP),
+  .CP(_CP),
   ._MR(_MR),
-  .CEP(COUNTen),
+  .CEP(countEn),
   .CET(1'b1),
-  ._PE(_PCLOin),
+  ._PE(_pclo_load),
   .D(D),
 
   .Q(PCLO),
@@ -48,16 +71,21 @@ counterReg LO
 
 counterReg HI
 (
-  .CP(CP),
+  .CP(_CP),
   ._MR(_MR),
-  .CEP(COUNTen),
+  .CEP(countEn),
   .CET(TC),
-  ._PE(_PCHIin),
+  ._PE(_pc_in),
   .D(PCHITMP),
 
   .Q(PCHI),
   .TC() // ignored out
 );
+
+
+if (1) always @(*) begin
+  $display("%8d PC   : _MR=%1b countEn=%1b _pclo_in=%1b _pc_in=%1b _pclo_load=%1b _pchitmp_in=%1b CP=%1b  D=%8b PCLO=%8b PCHI=%8b PCHITMP=%8b ", $time, _MR, countEn, _pclo_in, _pc_in, _pclo_load, _pchitmp_in, CP, D, PCLO, PCHI, PCHITMP);
+end
 
 endmodule
 
