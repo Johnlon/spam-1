@@ -1,3 +1,5 @@
+`ifndef  V_74377
+`define  V_74377
 // based on https://raw.githubusercontent.com/TimRudy/ice-chips-verilog/master/source-7400/74377.v
 // timings from https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf
 
@@ -27,3 +29,4 @@ assign #(DELAY_RISE, DELAY_FALL) Q = Q_current;
 
 endmodule
 
+`endif
