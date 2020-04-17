@@ -275,23 +275,22 @@ hrom=None
 lrom=None
 written=0
 
+root = sourcecode.replace(".as","")
+hfile = root + "_hi.rom"
+lfile = root + "_lo.rom"
+
+hrom=open(hfile, "w")
+if not hrom:
+    print("cant open " + hfile)
+
+lrom=open(lfile, "w")
+if not lrom:
+    print("cant open " + hfile)
+
 def writeRoms(h,l):
     global hrom
     global lrom
     global written
-
-    root = sourcecode.replace(".as","")
-    hfile = root + "_hi.rom"
-    lfile = root + "_lo.rom"
-
-    if not hrom:
-        hrom=open(hfile, "w")
-        if not hrom:
-            print("cant open " + hfile)
-    if not lrom:
-        lrom=open(lfile, "w")
-        if not lrom:
-            print("cant open " + hfile)
 
     print("WRITE {:02x} {:02x}".format(int(h,2), int(l,2)))
 
@@ -517,3 +516,8 @@ if False:
     print(labels)
     print("==================")
 
+
+hrom.flush()
+lrom.flush()
+hrom.close()
+lrom.close()
