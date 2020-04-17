@@ -44,8 +44,8 @@ begin
   end
 end
 
-assign Q = count;
-assign TC = (count == 4'b1111) & CET;
+assign #20 Q = count;
+assign #25 TC = (count == 4'b1111) & CET;
 
 // set a default "random" but recognizable value
 initial begin
