@@ -1,3 +1,5 @@
+`ifndef  V_7474
+`define  V_7474
 // Dual D flip-flop with set and clear; positive-edge-triggered
 // Timings from https://assets.nexperia.com/documents/data-sheet/74HC_HCT74.pdf
 
@@ -97,3 +99,5 @@ assign #(DELAY_RISE, DELAY_FALL) _Q = Qb_current;
 
 endmodule
 
+
+`endif
