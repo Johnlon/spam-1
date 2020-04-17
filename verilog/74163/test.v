@@ -14,6 +14,10 @@ logic [3:0] Q;
 
 wire TC;
 
+always @(*)  begin
+    $display("%t TEST : CP=%1b _MR=%1b CEP=%1b CET=%1b _PE=%1b D=%4b Q=%4b ", $time, CP, _MR, CEP, CET, _PE, D, Q);
+end
+
 // naming from https://www.ti.com/lit/ds/symlink/sn74f163a.pdf
 hct74163 DUT
 (
@@ -28,20 +32,6 @@ hct74163 DUT
   .TC(TC)
 );
 
-  always @(*)
-    $display("Q=%4b", Q);
-
-initial begin
-  // Set up time printing format to nanoseconds with no decimal precision digits
-  // $timeformat [ ( units_number , precision_number , suffix_string , minimum_field_width ) ] ;
-  $timeformat(-9, 0, " ns", 3);
-
-  CP = 1'b0;
-  CEP = 1'b0;
-  CET = 1'b0;
-  _PE = 1'b1;
-  D = 4'b1111;
-
 `define CLOCK_PULSE  \
   #300 \
   CP= 1'b0; \
@@ -51,12 +41,25 @@ initial begin
   CP= 1'b0; \
   #300
 
+initial begin
+  // Set up time printing format to nanoseconds with no decimal precision digits
+  // $timeformat [ ( units_number , precision_number , suffix_string , minimum_field_width ) ] ;
+  $timeformat(-9, 0, " ns", 10);
+  $display("[%t]: initial state", $time);
+
+  CP = 1'b0;
+  CEP = 1'b0;
+  CET = 1'b0;
+  _PE = 1'b1;
+  D = 4'b1111;
+
   // SYNC RESET
   _MR = 1'b0;
   #100;
   `Equals(Q, 4'bxxxx);
 
   // Clock the reset state into the latch
+  $display("[%t]: clock pulse", $time);
   `CLOCK_PULSE
   `Equals(Q, 4'b0000);
 
@@ -89,13 +92,12 @@ initial begin
     CP= 1'b1;
     #300
     CP= 1'b0;
-    $display("COUNT %4b", Q);
   end
 
   `Equals(Q, 4'b1011);
 
   //////////
-  // both CEP and CET have to be High to count
+  $display("both CEP and CET have to be High to count");
   CEP = 1'b0;
   CET = 1'b1;
   #50;
@@ -109,7 +111,7 @@ initial begin
   `Equals(Q, 4'b1011);
 
   //////////
-  // both CEP and CET have to be High to count
+  $display("both CEP and CET have to be High to count");
   CEP = 1'b1;
   CET = 1'b0; // other way round
   #50;
@@ -124,16 +126,19 @@ initial begin
 
   // MR sync with clock test
   // MR is synced with clock reset on new +ve edge of clock
+  $display("_MR test = _MR low");
   CEP = 1'b1;
   CET = 1'b1; 
   _MR= 1'b0;
   #300
   `Equals(Q, 4'b1011); // no reset cos no +ve clock
   
+  $display("_MR test = _MR low and CP low");
   CP= 1'b0;
   #300
   `Equals(Q, 4'b1011); // still no reset cos no +ve clock
   
+  $display("_MR test = _MR low and CP high");
   CP= 1'b1;
   #300
   `Equals(Q, 4'b0000); // now resets
@@ -141,21 +146,26 @@ initial begin
 
   // PE sync with clock test
   // MR is synced with clock reset on new +ve edge of clock
+  $display("_PE test = _MR hi and CP high");
+  CP= 1'b1;
   CEP = 1'b1;
   CET = 1'b1; 
   _MR= 1'b1;
   #300
   `Equals(Q, 4'b0000); // still 0
 
+  $display("_PE test = _PE low but no load yet as no +ve CP");
   D=4'b1110;
   _PE=1'b0;
   #300
   `Equals(Q, 4'b0000); // no load cos no +ve clock
   
+  $display("_PE test = _PE low but no load yet as no +ve CP");
   CP= 1'b0;
   #300
   `Equals(Q, 4'b0000); // still no load cos no +ve clock
   
+  $display("_PE test = _PE low expect load as +ve CP");
   CP= 1'b1;
   #300
   `Equals(Q, 4'b1110); // now loads
@@ -163,6 +173,7 @@ initial begin
   // test overflow
   // The TC output is HIGH when CET is HIGH and the counter is at terminal count (HHHH);
 
+  $display("overflow test");
   `Equals(Q, 4'b1110); // initial state
   `Equals(TC, 1'b0); // not carry
   CEP = 1'b1;
