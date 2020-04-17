@@ -13,13 +13,12 @@ module control_decode #(parameter LOG=0)
     input [4:0] device_in,
     input _flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt,
     input _uart_in_ready, _uart_out_ready,
-    input _pulse_clk, // short pulse low on positive edge of clock
 
     // decoded
     output _ram_in, _marlo_in, _marhi_in, _uart_in, 
     output _pchitmp_in, // load hi tmp reg
     output _pclo_in, // load lo pc reg only
-    output _pc_in, // load high (from tmp)
+    output _pc_in, // load high (from tmp) and lo
     
     output _reg_in
 
@@ -50,21 +49,16 @@ module control_decode #(parameter LOG=0)
 
     // wiring
     wire reg_in = device_in[4];
-    wire #8 not_reg_in = ! device_in[4];
-    wire #11 _gated_reg_in = not_reg_in || _pulse_clk;
-    assign _reg_in = _gated_reg_in;
+    wire #8 _reg_in = ! device_in[4];
 
-    // clock gating so output selection only made momentarily for compatibility with latches as registers on the control lines
-    wire neg_pulse = _pulse_clk;
-    wire #8 pos_pulse = ! _pulse_clk; // extra gate
-
-    // selectors
+    // SELECTORS
     wire [7:0] _decodedDevLo;
-    hct74138 decoderLoDev(.Enable3(pos_pulse), .Enable2_bar(reg_in), .Enable1_bar(device_in[3]), .A(device_in[2:0]), .Y(_decodedDevLo));
-    
+    hct74138 decoderLoDev(.Enable3(1'b1), .Enable2_bar(reg_in), .Enable1_bar(device_in[3]), .A(device_in[2:0]), .Y(_decodedDevLo));
+     
     wire [7:0] _decodedDevHi;
-    hct74138 decoderHiDev(.Enable3(device_in[3]), .Enable2_bar(reg_in), .Enable1_bar(neg_pulse), .A(device_in[2:0]), .Y(_decodedDevHi));
-
+    hct74138 decoderHiDev(.Enable3(device_in[3]), .Enable2_bar(reg_in), .Enable1_bar(1'b0), .A(device_in[2:0]), .Y(_decodedDevHi));
+ 
+    // selections
     assign  _ram_in = _decodedDevLo[idx_RAM_sel];
     assign  _marlo_in = _decodedDevLo[idx_MARLO_sel];
     assign  _marhi_in= _decodedDevLo[idx_MARHI_sel];
@@ -90,16 +84,15 @@ module control_decode #(parameter LOG=0)
 if (LOG)     always @ * 
          $display("%8d CTRL_DEC", $time,
             " device_in=%05b" , device_in,
-            " devHi:Lo=%08b" , _decodedDevHi,
-            ",%08b" , _decodedDevLo,
+            " devHi:Lo=%08b:%08b" , _decodedDevHi, _decodedDevLo, 
             " _ram_in=%1b", _ram_in, 
-            " _reg_in=%1b", _reg_in, 
             " _marlo_in=%1b", _marlo_in,
             " _marhi_in=%1b", _marhi_in,
             " _uart_in =%1b", _uart_in ,
             " _pchitmp_in=%1b", _pchitmp_in,
             " _pclo_in=%1b", _pclo_in,
-            " _pc_in=%1b", _pc_in
+            " _pc_in=%1b", _pc_in,
+            " _reg_in=%1b", _reg_in
            );
 
 endmodule : control_decode
