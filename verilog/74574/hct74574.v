@@ -1,3 +1,6 @@
+`ifndef hct74574
+`define hct74574
+
 /* Timings from https://assets.nexperia.com/documents/data-sheet/74HC_HCT574.pdf
  * */
 `timescale 1ns/100ps
@@ -20,3 +23,5 @@ output [7:0] Q
     assign #(19) Q = _OE ? 8'bz: data;
     
 endmodule
+
+`endif
