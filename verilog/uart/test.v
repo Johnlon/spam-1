@@ -16,8 +16,9 @@ module test();
     logic _RD;
     wire _TXE;
     wire _RXF;
-    reg RECEIVED;
+    reg [7:0] RECEIVED;
 
+    localparam T3 = 51;
     localparam T9 = 20;
     localparam T10 = 0;
 
@@ -26,25 +27,26 @@ module test();
     reg [12*8:0] expected;
     integer countTx=0;
     integer countRx=0;
-    integer MAX_RX=10;
+    integer MAX_RX=-1;
 
-    logic clk;
+//    logic clk;
 
     initial begin
+        $dumpfile("dumpfile.vcd");
+        $dumpvars(0, test);
 
         Dtx=8'bzzzzzzzz;
-        $display("%t TEST: START", $time);
+        $display("[%9t] TEST: START", $time);
 
         _RD=1;
         WR=1; 
 
+/*
         clk=0;
         forever begin
             #100  clk =  ! clk; 
         end
-
-        #5000 
-        $display("%t TEST: END", $time);
+*/
 
     end
 
@@ -60,45 +62,53 @@ module test();
     always @(negedge _RXF) begin
         countRx ++;
         if (verbose) $display("================================= READ ==================", countRx);
-        #20 
-        if (verbose) $display("%t TEST: Start Read : _RD goes low", $time);
+        #10
+        if (verbose) $display("[%9t] TEST: Start Read : _RD goes low", $time);
         _RD=0;
 
-        #151 // T3 delay
+        #T3 // T3 delay -- why so big?? Writew down reason !
         RECEIVED=D;
-        $display("%t TEST: ", $time, "Bin=%8b Hex=%02x Char=%c", D, D, D, " RECEIVED");
+        $display("[%9t] TEST: ", $time, "RECEIVED     Dec=%3d Bin=%8b Hex=%02x Char=%c", D, D, D, D);
 
         #10
         _RD=1;
-        if (verbose) $display("%t TEST: Finished Read : _RD goes high", $time);
+        if (verbose) $display("[%9t] TEST: Finished Read : _RD goes high", $time);
 
-        if (countRx == MAX_RX) begin
-            $display("%t TEST: ABORT", $time);
+        if (MAX_RX > -1 && countRx == MAX_RX) begin
+            $display("[%9t] TEST: ABORT", $time);
             $finish();
         end
     end
 
     always @(negedge _TXE) begin
-        countTx = countTx + 1;
 
         // WR is -ve edge triggered - strobe it H then L
-        $display("TEST: Strobing WR=1 BEGIN write of countTx=%-d", countTx);
+        if (verbose) $display("TEST: Strobing WR=1 BEGIN write of countTx=%-d", countTx);
         WR=1;
 
         Dtx=countTx;
         #T9
-        $display("TEST: Strobing WR=0 LATCH TRANSMIT");
+        if (verbose) $display("TEST: Strobing WR=0 LATCH TRANSMIT");
+
+        // dont print ctrl chars
+        if (Dtx <=31 || Dtx == 127)
+            $display("[%9t] TEST: ", $time, "TRANSMITTED  Dec=%3d Bin=%8b Hex=%02x Char=ctrlchar", Dtx, Dtx, Dtx);
+        else
+            $display("[%9t] TEST: ", $time, "TRANSMITTED  Dec=%3d Bin=%8b Hex=%02x Char=%c", Dtx, Dtx, Dtx, Dtx);
         WR=0;
 
         #T10
-        $display("TEST: Strobing END BUS=z");
+        if (verbose) $display("TEST: Strobing END - BUS should be Z");
         Dtx=8'bzzzzzzzz;
+
+        countTx = countTx + 1;
 
     end
 
     always @(*)
         if (verbose)
-        $display("%t TEST: ", $time, 
+        $display("[%9t] TEST: ", $time, 
+//           "CLK=%1b", clk, 
             "D=%8b", D, 
             ", WR=%1b", WR, 
             ",_RD=%1b", _RD, 
