@@ -1,4 +1,6 @@
 // UART Verilog for https://www.ftdichip.com/Support/Documents/DataSheets/Modules/DS_UM245R.pdf
+// see also https://hackaday.io/project/166922-spam-1-8-bit-cpu-with-a-tool-chain-twist/log/176325-interactive-verilog-um245r-uart
+
 /* verilator lint_off ASSIGNDLY */
 
 `timescale 1ns/1ns
