@@ -22,9 +22,9 @@ module hct74670 (input _wr_en,
     endspecify
     
     // write to register file
-    always @(*) begin
+    always_comb begin
         if (!_wr_en) begin
-            registers[wr_addr] <= wr_data;
+            registers[wr_addr] = wr_data;
             if (LOG) $display(" writing @ " , wr_addr , "  <= ",wr_data);
         end
     end
