@@ -11,7 +11,7 @@ if [ $? != 0 ] ; then
     echo ERROR 
     exit 1
 fi
-vvp -i $T.vvp
+vvp -N -i $T.vvp
 if [ $? != 0 ] ; then
     echo ERROR 
     exit 1
