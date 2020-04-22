@@ -17,7 +17,6 @@ initial
     begin : file_block 
     $timeformat(-9, 0, "ns", 6); 
 
-
     fControl = $fopenr("/tmp/fifo"); 
     if (fControl == `NULL) // If error opening file 
         disable file_block; // Just quit 

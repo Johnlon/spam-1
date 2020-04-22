@@ -1,0 +1,2 @@
+#install pyserial NOT serial
+pip install pyserial 
