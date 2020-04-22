@@ -8,7 +8,7 @@
 
 module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80,
         INPUT_FILE="", OUTPUT_FILE="", INPUT_FILE_DEPTH=0, HEXMODE=0, LOG=0)  (
-            inout [7:0] D,    // Input data
+    inout [7:0] D,    // Input data
     input WR,        // Writes data on -ve edge
     input _RD,        // When goes from high to low then the FIFO data is placed onto D (equates to _OE)
  
@@ -28,30 +28,21 @@ function string strip;
     end
 endfunction
 
-/*if (str.len() > 0) begin
-    if (str[str.len()-1] == `NL) begin
-        str = str.substr(0, str.len()-2); 
-    end
-end
-*/
-localparam MAX_LINE_LENGTH=80;
 
-logic _MR=0;
+logic _MR=0; // master reset
 
 integer fOut=`NULL, fControl, c, r, txLength, tDelta;
 
+localparam MAX_LINE_LENGTH=80;
 reg [8*MAX_LINE_LENGTH:0] line; /* Line of text read from file */ 
-reg [8*2:0] lineend; /* Line of text read from file */ 
-reg TX_READY;
-reg RX_READY;
+reg _TXE_SUPPRESS; // purpose is actually to suppress readiness
+reg _RXF_SUPPRESS; // purpose is actually to suppress readiness
 
 integer verbose=0;
 string str = "";
-string str1 = "";
 
 localparam BUFFER_SIZE=80;
 
-//reg [8*BUFFER_SIZE:0] rxBuf; // Line of text read from file 
 int rxBuf[BUFFER_SIZE]; // Line of text read from file 
 int absWritePos = 0; // next place to write
 int absReadPos = 0; // next place to read
@@ -74,18 +65,17 @@ always @* begin
         " RPOS=%-3d", absReadPos % BUFFER_SIZE,
         " WPOS=%-3d", absWritePos % BUFFER_SIZE,
         " DAVAIL=%1b", dataAvailable,
-        " TX_READY=%1b", TX_READY, 
-        " RX_READY=%1b", RX_READY
+        " _TXE_SUPPRESS=%1b", _TXE_SUPPRESS, 
+        " _RXF_SUPPRESS=%1b", _RXF_SUPPRESS
         );
 
 end
 
 integer tx_count=0;
-assign _TXE = !(fOut != `NULL && TX_READY && tx_count > 0 && _MR);
-assign _RXF = !(dataAvailable && RX_READY && _MR);
-//assign _RXF = !(dataAvailable && RX_READY && _MR);
+assign _TXE = !(fOut != `NULL && _TXE_SUPPRESS && tx_count > 0 && _MR);
+assign _RXF = !(dataAvailable && _RXF_SUPPRESS && _MR);
 
-assign #T3 D= _RD? 8'bzzzzzzzz: dataAvailable ? Drx : 8'bxzxzxzxz;
+assign #T3 D= _RD? 8'bzzzzzzzz: dataAvailable ? Drx : 8'bxzxzxzxz; // xzxzxzxz is a distinctive signal that we're reading uninitialised data
 
 /*
     Transmit only valid when _TXE is low.
@@ -106,7 +96,7 @@ always @(negedge WR) begin
 
     #T11 // -WR to _TXE inactive delay
     if (verbose) $display("%t ", $time, "UART: TX NOT READY");
-    TX_READY=0; 
+    _TXE_SUPPRESS=0; 
 
     tx_count --;
     if (tx_count < 0) begin
@@ -116,7 +106,7 @@ always @(negedge WR) begin
 
     #T12 // min inactity period
     if (verbose) $display("TX INACTIVE PERIOD ENDS");
-    TX_READY=1;
+    _TXE_SUPPRESS=1;
 
     end
 end
@@ -136,11 +126,6 @@ always @(negedge _RD) begin
             $display("%t ", $time, "UART: _RD low while data not available");
             $finish_and_return(1);
     end
-
-    //#T3 
-    //$display("0 = %d", rxBuf[0]);
-    //$display("1 = %d", rxBuf[1]);
-    //$display("2 = %d", rxBuf[2]);
 
     if (verbose) $display("%t ", $time, "UART: READING AT %-d", absReadPos);
     Drx = rxBuf[absReadPos%BUFFER_SIZE];
@@ -162,11 +147,11 @@ always @(posedge _RD) begin
 
         #T11 // -WR to _TXE inactive delay
         if (verbose) $display("%t ", $time, "UART: RX NOT READY");
-        RX_READY=0; 
+        _RXF_SUPPRESS=0; 
 
         #T12 // min inactity period
         if (verbose) $display("%t ", $time, "UART: RX INACTIVE PERIOD ENDS");
-        RX_READY=1;
+        _RXF_SUPPRESS=1;
     end
 end
 
@@ -180,18 +165,14 @@ initial
         rxBuf[i] = i;
     end
 
-    RX_READY=0;
-    TX_READY=0;
-    #50
-    _MR=1;
+    _RXF_SUPPRESS=0; // suppressed
+    _TXE_SUPPRESS=0;
+
+    #50 // arbitrary delay before device is available
     $display("%t UART: reset end",$time);
-    #50
-
-    // FIXME
-    //absWritePos = 15; // next place to write into receive buffer
-
-    TX_READY=1;
-    RX_READY=1;
+    _MR=1;
+    _TXE_SUPPRESS=1; // unsuppressed
+    _RXF_SUPPRESS=1;
     #50
 
     if (1) begin
@@ -235,7 +216,8 @@ initial
                         r = $fgets(line, fControl); 
                         str = strip(line);
 
-                        if (verbose) $display("[%9t] ", $time, "RX: '%s' into ringpos=%3d abs=%3d, spaceAvailable=%1b", str, absWritePos%BUFFER_SIZE, absWritePos, spaceAvailable);
+                        if (verbose) 
+                        $display("[%9t] ", $time, "RX: '%s' into ringpos=%3d abs=%3d, spaceAvailable=%1b", str, absWritePos%BUFFER_SIZE, absWritePos, spaceAvailable);
 
                         for (int p=0; p<str.len() && spaceAvailable; p++) begin
                             rxBuf[absWritePos%BUFFER_SIZE] = str[p];
@@ -286,12 +268,6 @@ initial
                     end
 
             end
-/*            else
-            begin
-                $display("EOF");
-                $finish;
-            end // if not EOF 
- */       
         end // while
     end
 end // initial

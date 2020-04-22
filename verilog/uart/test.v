@@ -10,7 +10,7 @@ module test();
     integer verbose = 0;
 
     // 33 exclamation mark
-    tri [7:0] D;
+    tri [7:0] BUS;
     logic [7:0] Dtx;
     logic WR;
     logic _RD;
@@ -18,18 +18,19 @@ module test();
     wire _RXF;
     reg [7:0] RECEIVED;
 
-    localparam T3 = 51;
+    localparam RXFtoRD = 15; // arbitrarily long or short - app determined response time
+    localparam T1 = 50; // RD low min width
+    localparam T3 = 20; // RD low to data available , 20 to 50
+    localparam T8 = 50;
     localparam T9 = 20;
     localparam T10 = 0;
 
-    assign D=Dtx;
+    assign BUS=Dtx;
 
     reg [12*8:0] expected;
     integer countTx=0;
     integer countRx=0;
     integer MAX_RX=-1;
-
-//    logic clk;
 
     initial begin
         $dumpfile("dumpfile.vcd");
@@ -41,38 +42,33 @@ module test();
         _RD=1;
         WR=1; 
 
-/*
-        clk=0;
-        forever begin
-            #100  clk =  ! clk; 
-        end
-*/
-
     end
 
-    //um245r #(.OUTPUT_FILE("out.txt"), .INPUT_FILE("data.mem"), .INPUT_FILE_DEPTH(12))  uart (
     um245r #(.LOG(1), .HEXMODE(1), .OUTPUT_FILE("/dev/stdout"), .INPUT_FILE("/dev/stdin"), .INPUT_FILE_DEPTH(12))  uart (
-        .D,	                // Input data
+        .D(BUS),	                // Input data
         .WR,		// Writes data on -ve edge
         ._RD,		// When goes from high to low then the FIFO data is placed onto D (equates to _OE)
         ._TXE,		// When high do NOT write data using WR, when low write data by strobing WR
         ._RXF		// When high to NOT read from D, when low then data is available to read by strobing RD low
       );
 
+
     always @(negedge _RXF) begin
-        countRx ++;
-        if (verbose) $display("================================= READ ==================", countRx);
-        #10
+
+        #RXFtoRD
         if (verbose) $display("[%9t] TEST: Start Read : _RD goes low", $time);
-        _RD=0;
+        countRx ++;
+         _RD=0;
 
-        #T3 // T3 delay -- why so big?? Writew down reason !
-        RECEIVED=D;
-        $display("[%9t] TEST: ", $time, "RECEIVED     Dec=%3d Bin=%8b Hex=%02x Char=%c", D, D, D, D);
+        #T3 // T3 delay - delay before data becomes available on BUS - so don't try and register the data for that long
+        RECEIVED=BUS;
 
-        #10
-        _RD=1;
+        #T1
+        RECEIVED=BUS;
         if (verbose) $display("[%9t] TEST: Finished Read : _RD goes high", $time);
+        _RD=1;
+
+        $display("[%9t] TEST: ", $time, "RECEIVED     Dec=%3d Bin=%8b Hex=%02x Char=%c", RECEIVED, RECEIVED, RECEIVED, RECEIVED);
 
         if (MAX_RX > -1 && countRx == MAX_RX) begin
             $display("[%9t] TEST: ABORT", $time);
@@ -100,7 +96,6 @@ module test();
         #T10
         if (verbose) $display("TEST: Strobing END - BUS should be Z");
         Dtx=8'bzzzzzzzz;
-
         countTx = countTx + 1;
 
     end
@@ -108,8 +103,8 @@ module test();
     always @(*)
         if (verbose)
         $display("[%9t] TEST: ", $time, 
-//           "CLK=%1b", clk, 
-            "D=%8b", D, 
+            "BUS=%8b", BUS, 
+            "RECEIVED=%8b", RECEIVED, 
             ", WR=%1b", WR, 
             ",_RD=%1b", _RD, 
             " _RXF=%1b", _RXF, 
