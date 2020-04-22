@@ -9,6 +9,8 @@ module hct74670 (input _wr_en,
                  input [1:0] rd_addr,
                  output [3:0] rd_data);
     
+    parameter LOG=0;
+
     // Register file storage
     reg [3:0] registers[3:0];
     
@@ -23,13 +25,15 @@ module hct74670 (input _wr_en,
     always @(*) begin
         if (!_wr_en) begin
             registers[wr_addr] <= wr_data;
-	    //$display(" writing @ " , wr_addr , "  <= ",wr_data);
+            if (LOG) $display(" writing @ " , wr_addr , "  <= ",wr_data);
         end
     end
         
     // reading from register file
-    always @(*) begin
-        out_val <= registers[rd_addr];
+    always_comb
+    // always @(*)  << this gives warning: ./hct74670.v:32: warning: @* is sensitive to all 4 words in array 'registers'.
+    begin
+        out_val = registers[rd_addr];
     end
     
     
