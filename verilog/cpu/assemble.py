@@ -180,9 +180,13 @@ def tryHiLoFn(x):
      if r:
           label = r.groups(1)[0]
           if label in labels:
-               print(str(labels))
-               addr = labels[label]
-               return ["CONST", hi(addr)]
+            print(str(labels))
+            addr = labels[label]
+            return ["CONST", hi(addr)]
+
+          addr = tryConst(right)
+          if addr is not None:
+            return ["CONST", hi(addr)]
      
      p = re.compile("^LO\((.+)\)$")
      r = p.match(x)
@@ -191,6 +195,10 @@ def tryHiLoFn(x):
           if label in labels:
                addr = labels[label]
                return ["CONST", lo(addr)]
+
+          addr = tryConst(right)
+          if addr is not None:
+            return ["CONST", lo(addr)]
      
      return None
 
