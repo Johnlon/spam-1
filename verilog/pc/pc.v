@@ -24,6 +24,7 @@ module pc(
     output [7:0] PCLO,
     output [7:0] PCHI
 );
+  parameter LOG = 0;
 
 wire [7:0] PCHI, PCLO, PCHITMP;
 
@@ -83,7 +84,7 @@ counterReg HI
 );
 
 
-if (1) always @(*) begin
+if (LOG) always @(*) begin
   $display("%8d PC   : _MR=%1b countEn=%1b _pclo_in=%1b _pc_in=%1b _pclo_load=%1b _pchitmp_in=%1b CP=%1b  D=%8b PCLO=%8b PCHI=%8b PCHITMP=%8b ", $time, _MR, countEn, _pclo_in, _pc_in, _pclo_load, _pchitmp_in, CP, D, PCLO, PCHI, PCHITMP);
 end
 
