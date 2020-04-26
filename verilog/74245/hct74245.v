@@ -1,3 +1,8 @@
+
+/* verilator lint_off ASSIGNDLY */
+/* verilator lint_off STMTDLY */
+
+
 `ifndef hct74245
 `define hct74245
 
