@@ -1,4 +1,3 @@
-
 `include "../lib/assertion.v"
 
 `default_nettype none
@@ -20,6 +19,147 @@
 `timescale 1ns/1ns
 
 module test();
+
+
+    task devname;
+        input [4:0] dev;
+
+        output string name;
+        begin
+            case(dev)
+                0: name = "RAM";
+                1: name = "MARLO";
+                2: name = "MARHI";
+                3: name = "UART";
+                4: name = "PCHITMP";
+                5: name = "PCLO";
+                6: name = "PC";
+                7: name = "JMPO";
+                8: name = "JMPZ";
+                9: name = "JMPC";
+                10: name = "JMPDI";
+                11: name = "JMPDO";
+                12: name = "JMPEQ";
+                13: name = "JMPNE";
+                14: name = "JMPGT";
+                15: name = "JMPLT";
+                default: begin
+                    //name = "REG?";
+                    //name[3] = 65+(dev%16); // ascii A+offset
+                    name = 65+(dev%16); // ascii A+offset
+                end
+            endcase
+            $display("%d = %s", dev, name);
+        end
+    endtask
+
+    task aluopname;
+        input [4:0] opcode;
+
+        output string name;
+        begin
+            case(opcode)
+                 0 : name =    "L";
+                 1 : name =    "R";
+                 2 : name =    "0";
+                 3 : name =    "-L";
+                 4 : name =    "-R";
+                 5 : name =    "L+1";
+                 6 : name =    "R+1";
+                 7 : name =    "L-1";
+
+                 8 : name =    "R-1";
+                 9 : name =    "+"; 
+                10 : name =    "-"; 
+                11 : name =    "R-L"; 
+                12 : name =    "L-R spec";
+                //13 : name =    "+ cin=1";  not used directly
+                //14 : name =    "- cin=1";  not used directly
+                //15 : name =    "R-L cin=1"; not used directly
+
+                16 : name =    "*HI";
+                17 : name =    "*LO";
+                18 : name =    "/";
+                19 : name =    "%";
+                20 : name =    "<<";
+                21 : name =    ">>A";
+                22 : name =    ">>L" ;
+                23 : name =    "ROL";
+
+                24 : name =    "ROR";
+                25 : name =    "AND";
+                26 : name =    "OR";
+                27 : name =    "XOR";
+                28 : name =    "NOT A";
+                29 : name =    "NOT B";
+                30 : name =    "+BCD";
+                31 : name =    "-BCD";
+                default: begin
+                    name = "??????";
+                end
+            endcase
+        end
+    endtask
+
+    task disassambler;
+        input [7:0] hi;
+        input [7:0] lo;
+        string opname;
+        string aluname;
+        string xname;
+        string xname_non_reg;
+        string xname_reg;
+        string yname_reg;
+    begin
+        devname({hi[0], hi[4:1]}, xname);
+        devname({1'b0, hi[4:1]}, xname_non_reg);
+        devname({1'b1, hi[4:1]}, xname_reg);
+        devname({1'b1, lo[3:0]}, yname_reg);
+        aluopname({hi[0], lo[7:4]}, aluname);
+
+        $write(">> %5d   ", cpcount);
+
+        case (hi[7:5]) 
+            0:  begin
+                    opname = "DEV_eq_ROM";
+                    $write("%s=%dd", xname, lo);
+                end
+            1:  begin
+                    opname = "DEV_eq_RAM";
+                    $write("%s=RAM[]", xname);
+                end
+            2:  begin
+                    opname = "DEV_eq_RAMZP";
+                    $write("%s=RAM[%d]", xname, lo);
+                end
+            3:  begin
+                    opname = "DEV_eq_UART";
+                    $write("%s=UART", xname);
+                end
+            4:  begin
+                    opname = "NONREG_eq_OPREGY";
+                    $write("%s=0(%s)%s", xname_non_reg, aluname, yname_reg);
+                end
+            5:  begin
+                    opname = "REGX_eq_ALU";
+                    $write("%s=%s(%s)%s", xname_reg, xname_reg, aluname, yname_reg);
+                end
+            6:  begin
+                    opname = "RAMZP_eq_REG";
+                    $write("RAM[%dd]=%-s", lo, xname_reg);
+                end
+            7:  begin
+                    opname = "RAMZP_eq_UART";
+                    $write("RAM[%dd]=UART", lo);
+                end
+            default:  begin
+                    opname = "UNKNOWN";
+                    $write("%s", opname);
+                end
+        endcase
+        $display("\t\t# %20s %08b,%08b", opname, hi, lo);
+    end
+    endtask
 
     event RESET_DONE;
 
@@ -91,7 +231,7 @@ module test();
     wire [1:0] waddr;
     assign #11 waddr = device_in[3] || device_in[2];
 
-    wire #11 _gated_regfile_in = _regfile_in || _CP_pulse;
+    wire #11 _gated_regfile_in = _regfile_in;
 
     /*
     always @(*) begin
@@ -165,7 +305,7 @@ module test();
     );
 
     // uart =====================================================
-    um245r #(.HEXMODE(1)) ioDevice(.D(data_bus), .WR(_uart_in), ._RD(_uart_out), ._TXE(_uart_in_ready), ._RXF(_uart_out_ready));
+    um245r #(.HEXMODE(0)) ioDevice(.D(data_bus), .WR(_uart_in), ._RD(_uart_out), ._TXE(_uart_in_ready), ._RXF(_uart_out_ready));
 
     // rom =====================================================
     assign rom_address = { PCHI[6:0], PCLO };
@@ -175,8 +315,8 @@ module test();
     hct74245 #(.LOG(0), .NAME("ROMBUS")) bufROMBUS(.A(rom_lo_data), .B(data_bus), .dir(1'b1), .nOE(_rom_out));
 
     // ram =====================================================
-    wire #11 _gated_marlo_in = _marlo_in || CP; 
-    wire #11 _gated_marhi_in = _marhi_in || CP; 
+    wire #11 _gated_marlo_in = _marlo_in;
+    wire #11 _gated_marhi_in = _marhi_in;
 
     hct74574 MAR_lo(.CLK(_gated_marlo_in), ._OE(1'b0), .D(data_bus), .Q(MARLO));
     hct74574 MAR_hi(.CLK(_gated_marhi_in), ._OE(1'b0), .D(data_bus), .Q(MARHI));
@@ -248,27 +388,27 @@ module test();
 
 
     // rules =====================================================
-    integer LOG=1;
+    integer LOG=0;
 
+           // " _regfile_in=%1b ", _regfile_in, \
+           // " _gated_regfile_in=%1b ", _gated_regfile_in, \
     `define LOG_CPU \
         if (LOG) $display("%8d CPU (%1d) : ", $time, cpcount, \
-            "CP=%1b PC=x%4x => ROM=%8b,%8b ", CP, rom_address, rom_hi_data, rom_lo_data, \
-            " BUS=%8b ", data_bus,  \
-            " RRAU=%4b ", {_rom_out, _ram_out, _alu_out, _uart_out}, \
+            "CP=%1b PC=x%4x => ROM=%8b,%8b", CP, rom_address, rom_hi_data, rom_lo_data, \
+            " BUS=%8b", data_bus,  \
+            " RRAU=%4b", {_rom_out, _ram_out, _alu_out, _uart_out}, \
             " DEVIN=%2d", device_in, \
             " _reg_in=%1b ", _reg_in, \
-            " _regfile_in=%1b ", _regfile_in, \
-            " _gated_regfile_in=%1b ", _gated_regfile_in, \
-            " _pchitmp_in=%1b ", _pchitmp_in, \
-            " _pclo_in=%1b ", _pclo_in, \
-            " _pc_in=%1b ", _pc_in, \
-            "  ZCOENGL=%7b UIO=%2b ", \
+            " _pcX_in(hitmp=%1b", _pchitmp_in, \
+            " lo=%1b ", _pclo_in, \
+            " pc=%1b)", _pc_in, \
+            " ZCOENGL=%7b UIO=%2b", \
                {_flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt}, \
                {_uart_in_ready, _uart_out_ready}, \
-            "  ALUOP=%-s X=%08b Y=%08b R=%08b _CIN=%1b _COUT=%1b   FPassX=%1b FX2Z=%1b ",  \
+            "  ALUOP=%-s X=%08b Y=%08b R=%08b _C(IN=%1b, OUT=%1b) FPassX=%1b FX2Z=%1b ",  \
                alu_op_name, x,y,alu_result, _flag_cin, _flag_cout, Alu.force_alu_op_to_passx, Alu.force_x_val_to_zero, \
             " _ZP=%1b", _ram_zp, \
-            " RAMD=h%02x RAMAddr=h%4x", Ram.D, ram_address\
+            " RAMD=h%02x RAMA=h%4x", Ram.D, ram_address\
         );
 
 
@@ -341,6 +481,7 @@ module test();
     `define CLOCK_UP(MSG) \
         #CYCLE_TIME  \
         if (LOG) $write("\n%-5d latched %-s\n", cpcount, MSG); \
+        disassambler(rom_hi_data, rom_lo_data); \
         if (CP == 0)  begin \
             if (LOG) $display("%8d CPU  CLK=%1b       ++++++++++++++++++++++++++++++++++++++++++++++++   ++++++++++++++++ \n", $time, CP); \
         end \
@@ -350,6 +491,13 @@ module test();
     `define CLOCK_CYCLE(XXX) \
             `CLOCK_UP("++ XXX") \
             `CLOCK_DOWN("-- XXX")
+
+/*
+    always @* begin
+        disassambler(rom_hi_data, rom_lo_data);
+    end
+*/
+
 
 /*
     always begin
@@ -406,6 +554,7 @@ module test();
 
         `CLOCK_DOWN("")
         `CLOCK_UP("")
+
 */
         while(rom_hi_data !== 8'bxxxxxxxx) begin
             `CLOCK_DOWN("")
@@ -413,7 +562,8 @@ module test();
         end
 
 
-        #1000 $display("  <<<<<<<<<<<<<<< STOP >>>>>>>>>>>>>>>>>>>>>");
+        #1000 $display("  <<<<<<<<<<<<<<< BREAK >>>>>>>>>>>>>>>>>>>>>");
+        $display("  ");
 
         #1000  $finish; 
     end

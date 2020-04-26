@@ -45,8 +45,10 @@ for d in gp_reg:
     device.append(d)
 
 def rot(bits):
-    low = bits > 7
-    return ((bits << 1)& 0xf) + low
+    #return {bits[3:0], bits[4]}
+    low = bits > 0xf
+    #return ((bits << 1)& 0xf) + low
+    return ((bits & 0xf)<<1) + low
 
 def deviceId(dev):
     return device.index(dev.upper())
@@ -65,19 +67,25 @@ alu_ops = [
     "L+1",
     "R+1",
     "L-1",
+
     "R-1",
-    "+",
-    "-",
-    "R-L",
-    "-!",
+    "+", # cin=0",
+    "-", #  cin=0",
+    "R-L", # cin=0",
+    "L-R spec",
+    "#+", # cin=1", NOT ALU CODE
+    "#-", # cin=1", NOT ALU CODE
+    "#R-L", # cin=1", NOT ALU CODE
+
     "*HI",
     "*LO",
     "/",
     "%",
     "<<",
-    ">>>",
-    ">>" ,
+    ">>A",
+    ">>L" ,
     "ROL",
+
     "ROR",
     "AND",
     "OR",
@@ -86,7 +94,6 @@ alu_ops = [
     "NOT B",
     "+BCD",
     "-BCD",
-
 ]
 
 def checkDest(x):
@@ -133,7 +140,7 @@ def tryDevice(x):
      return None
 
 def error(s):
-     print("ERROR " + s)
+     print("ERROR >> " + s)
      exit(1)
 
 def tryUart(x):
