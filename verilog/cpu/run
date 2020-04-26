@@ -1,13 +1,18 @@
+set -e 
 if [ -z $1 ]; then
     echo missing arg
     exit 1
 fi
 cd $1
-../assemble.py $1.as
+prog=$(echo $1 | sed 's/\/.*//')
+echo $prog
+../assemble.py $prog.as
 
-cp $1_lo.rom ../lo.rom
-cp $1_hi.rom ../hi.rom
+cp ${prog}_lo.rom ../lo.rom
+cp ${prog}_hi.rom ../hi.rom
 
+echo hut return to run
+read x
 cd ..
 ../simulate.sh
 

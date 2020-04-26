@@ -2,7 +2,7 @@
 import re
 import sys
 
-verbose = True
+verbose = False
 
 if len(sys.argv) > 1:
     sourcecode = sys.argv[1]
@@ -11,6 +11,7 @@ else:
 
 
 lines = {}
+addressToLine = {} # map address back to line
 labels = {}
 assembled = {}
 
@@ -179,26 +180,29 @@ def tryHiLoFn(x):
      r = p.match(x)
      if r:
           label = r.groups(1)[0]
-          if label in labels:
-            print(str(labels))
-            addr = labels[label]
-            return ["CONST", hi(addr)]
-
-          addr = tryConst(right)
-          if addr is not None:
-            return ["CONST", hi(addr)]
+          if label.startswith(":"):
+            if label in labels:
+              addr = labels[label]
+              return ["CONST", hi(addr)]
+            print("no such label " + label);
+          else:
+            addr = tryConst(label)
+            if addr is not None:
+              return ["CONST", hi(addr)]
      
      p = re.compile("^LO\((.+)\)$")
      r = p.match(x)
      if r:
           label = r.groups(1)[0]
-          if label in labels:
-               addr = labels[label]
-               return ["CONST", lo(addr)]
-
-          addr = tryConst(right)
-          if addr is not None:
-            return ["CONST", lo(addr)]
+          if label.startswith(":"):
+            if label in labels:
+              addr = labels[label]
+              return ["CONST", lo(addr)]
+            print("no such label : " + label);
+          else:
+            addr = tryConst(label)
+            if addr is not None:
+              return ["CONST", lo(addr)]
      
      return None
 
@@ -307,15 +311,16 @@ def writeRoms(h,l):
     global lrom
     global written
 
-    print("WRITE {:02x} {:02x}".format(int(h,2), int(l,2)))
+    if verbose:
+        print("WRITE {:02x} {:02x}".format(int(h,2), int(l,2)))
 
     hrom.write("{:02x} ".format(int(h,2)))
     lrom.write("{:02x} ".format(int(l,2)))
 
     written +=1 
     if written > 16:
-        h.write("\n")
-        l.write("\n")
+        hrom.write("\n")
+        lrom.write("\n")
         
 
 
@@ -323,14 +328,44 @@ def writeRoms(h,l):
 def prt(s):
     if verbose:
         print(s)
-with open(sourcecode, "r") as fp:
-    line = fp.readline()
-    address = 0
-    lineno = 0
-    while line:
+
+def prte(s):
+    if verbose:
+        print(s,end = "")
+
+
+def assemble():
+
+    # capture labels and do static translations eventually
+    with open(sourcecode, "r") as fp:
+        line = fp.readline()
+        address = 0
+        lineno = 0
+        while line:
+            op=None
+            lineno += 1
+            line = line.strip()
+            lines[lineno] = [address, line, lineno]
+
+            if line.startswith("#"):
+                pass
+            elif line == "":
+                pass
+            elif line.startswith(":"):
+                addressToLine[address] = line
+                labels[line.upper()] = address
+            else:
+                addressToLine[address] = line
+                address += 1
+          
+            line = fp.readline()
+
+    # assemble
+    for lineno in lines:
+
+        address, line, _lineno = lines[lineno]
+
         op=None
-        lineno += 1
-        line = line.strip()
 
         def printCode():
             print("{:5d} - addr {:4d}   : {}".format(lineno, address, line),  flush=True)
@@ -343,11 +378,8 @@ with open(sourcecode, "r") as fp:
             printPass()
         elif line.startswith(":"):
             printCode()
-            labels[line.upper()] = address
-            lines[address] = [address, line, lineno]
         else:
             printCode()
-            lines[address] = [address, line, lineno]
 
             [typ, rest] = re.split("\s+", line, 1)
             if typ.upper() != "LD":
@@ -511,13 +543,12 @@ with open(sourcecode, "r") as fp:
             #print("\tALUOP  = " + str(aluop))
             #print("\tOP  = " + str(op))
 
-            address += 1
-      
-        nextline = fp.readline()
+        if lineno < len(lines):
+            _, optionalCheck, _lineno = lines[lineno+1]
+            checkOp(line, optionalCheck, op, lineno)
 
-        checkOp(line, nextline, op, lineno)
 
-        line = nextline
+assemble()
 
 if False:
     print("==================")

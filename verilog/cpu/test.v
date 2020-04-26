@@ -49,7 +49,6 @@ module test();
                     name = 65+(dev%16); // ascii A+offset
                 end
             endcase
-            $display("%d = %s", dev, name);
         end
     endtask
 
@@ -117,7 +116,7 @@ module test();
         devname({1'b1, lo[3:0]}, yname_reg);
         aluopname({hi[0], lo[7:4]}, aluname);
 
-        $write(">> %5d   ", cpcount);
+        $write("%9t  %5d >> %02x:%02x    ", $time, cpcount, PCHI, PCLO);
 
         case (hi[7:5]) 
             0:  begin
@@ -305,7 +304,7 @@ module test();
     );
 
     // uart =====================================================
-    um245r #(.HEXMODE(0)) ioDevice(.D(data_bus), .WR(_uart_in), ._RD(_uart_out), ._TXE(_uart_in_ready), ._RXF(_uart_out_ready));
+    um245r #(.HEXMODE(0),.LOG(1)) ioDevice(.D(data_bus), .WR(_uart_in), ._RD(_uart_out), ._TXE(_uart_out_ready), ._RXF(_uart_in_ready));
 
     // rom =====================================================
     assign rom_address = { PCHI[6:0], PCLO };
@@ -347,7 +346,7 @@ module test();
         .device_in
     );
  
-    control_decode #(.LOG(0)) CtrlDecode(
+    control_decode #(.LOG(1)) CtrlDecode(
         .device_in,
         ._flag_z, ._flag_c, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt,
         ._uart_in_ready, ._uart_out_ready,
@@ -388,7 +387,7 @@ module test();
 
 
     // rules =====================================================
-    integer LOG=0;
+    integer LOG=1;
 
            // " _regfile_in=%1b ", _regfile_in, \
            // " _gated_regfile_in=%1b ", _gated_regfile_in, \
@@ -402,9 +401,9 @@ module test();
             " _pcX_in(hitmp=%1b", _pchitmp_in, \
             " lo=%1b ", _pclo_in, \
             " pc=%1b)", _pc_in, \
-            " ZCOENGL=%7b UIO=%2b", \
+            " ZCOENGL=%7b IO=%1b%1b", \
                {_flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt}, \
-               {_uart_in_ready, _uart_out_ready}, \
+               _uart_in_ready, _uart_out_ready, \
             "  ALUOP=%-s X=%08b Y=%08b R=%08b _C(IN=%1b, OUT=%1b) FPassX=%1b FX2Z=%1b ",  \
                alu_op_name, x,y,alu_result, _flag_cin, _flag_cout, Alu.force_alu_op_to_passx, Alu.force_x_val_to_zero, \
             " _ZP=%1b", _ram_zp, \
@@ -492,11 +491,9 @@ module test();
             `CLOCK_UP("++ XXX") \
             `CLOCK_DOWN("-- XXX")
 
-/*
     always @* begin
         disassambler(rom_hi_data, rom_lo_data);
     end
-*/
 
 
 /*
@@ -510,6 +507,15 @@ module test();
     
         
     always @* `LOG_CPU
+
+    always @(rom_hi_data) begin
+        if(rom_hi_data === 8'bxxxxxxxx) begin
+            $display("  <<<<<<<<<<<<<<< BREAKOUT >>>>>>>>>>>>>>>>>>>>>");
+            $finish; 
+        end
+    end
+
+
 
     initial begin
         $dumpfile("dumpfile.vcd");
@@ -562,7 +568,7 @@ module test();
         end
 
 
-        #1000 $display("  <<<<<<<<<<<<<<< BREAK >>>>>>>>>>>>>>>>>>>>>");
+        $display("  <<<<<<<<<<<<<<< BREAK >>>>>>>>>>>>>>>>>>>>>");
         $display("  ");
 
         #1000  $finish; 
