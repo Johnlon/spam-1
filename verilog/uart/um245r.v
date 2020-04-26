@@ -8,8 +8,7 @@
 `define NULL 0 
 `define NL 10
 
-module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80,
-        INPUT_FILE="", OUTPUT_FILE="", INPUT_FILE_DEPTH=0, HEXMODE=0, LOG=0)  (
+module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80, HEXMODE=0, LOG=0)  (
     inout [7:0] D,    // Input data
     input WR,        // Writes data on -ve edge
     input _RD,        // When goes from high to low then the FIFO data is placed onto D (equates to _OE)
@@ -40,7 +39,7 @@ reg [8*MAX_LINE_LENGTH:0] line; /* Line of text read from file */
 reg _TXE_SUPPRESS; // purpose is actually to suppress readiness
 reg _RXF_SUPPRESS; // purpose is actually to suppress readiness
 
-integer verbose=0;
+integer verbose=1;
 string str = "";
 
 localparam BUFFER_SIZE=80;
@@ -56,7 +55,7 @@ wire spaceAvailable = (absWritePos - absReadPos) < BUFFER_SIZE;
 reg [7:0] Drx = 'x;
 
 always @* begin
-    if (verbose)
+    if (verbose>1)
     $display("%t UART:", $time, 
         " D=%8b", D, " WR=%1b", WR, " _RD=%1b", _RD, 
         " _RXF=%1b", _RXF, 
@@ -87,7 +86,7 @@ always @(negedge WR) begin
     if (_MR) begin
     if (_TXE) begin
             $display("%t ", $time, "UART: TRANSMITTING %8b", D);
-            $display("%t ", $time, "UART: WR low while _TXE not ready");
+            $error("%t ", $time, "UART: WR low while _TXE not ready");
             $finish_and_return(1);
     end
 
@@ -97,17 +96,17 @@ always @(negedge WR) begin
     $fflush(fOut);
 
     #T11 // -WR to _TXE inactive delay
-    if (verbose) $display("%t ", $time, "UART: TX NOT READY");
+    if (verbose>1) $display("%t ", $time, "UART: TX NOT READY");
     _TXE_SUPPRESS=0; 
 
     tx_count --;
     if (tx_count < 0) begin
-            $display("%t ", $time, "UART: tx_count went negative");
+            $error("%t ", $time, "UART: tx_count went negative");
             $finish_and_return(1);
     end
 
     #T12 // min inactity period
-    if (verbose) $display("TX INACTIVE PERIOD ENDS");
+    if (verbose>1) $display("TX INACTIVE PERIOD ENDS");
     _TXE_SUPPRESS=1;
 
     end
@@ -129,10 +128,10 @@ always @(negedge _RD) begin
             $finish_and_return(1);
     end
 
-    if (verbose) $display("%t ", $time, "UART: READING AT %-d", absReadPos);
+    if (verbose>1) $display("%t ", $time, "UART: READING AT %-d", absReadPos);
     Drx = rxBuf[absReadPos%BUFFER_SIZE];
 
-    if (verbose) $display("%t ", $time, "UART: Received %02x (%c) from serial at pos %-d", Drx, Drx, absReadPos);
+    if (verbose) $display("%t ", $time, "UART: RECEIVED   %02x (%c) from serial at pos %-d", Drx, Drx, absReadPos);
     end
 end
 
@@ -144,15 +143,15 @@ always @(posedge _RD) begin
         end
 
         // only advance the read position at the END of the read otherwise _RXF goes high too early
-        if (verbose) $display("%t ", $time, "UART: ADVANCING READ POS FROM %3d", absReadPos);
+        if (verbose>1) $display("%t ", $time, "UART: ADVANCING READ POS FROM %3d", absReadPos);
         absReadPos++;
 
         #T11 // -WR to _TXE inactive delay
-        if (verbose) $display("%t ", $time, "UART: RX NOT READY");
+        if (verbose>1) $display("%t ", $time, "UART: RX NOT READY");
         _RXF_SUPPRESS=0; 
 
         #T12 // min inactity period
-        if (verbose) $display("%t ", $time, "UART: RX INACTIVE PERIOD ENDS");
+        if (verbose>1) $display("%t ", $time, "UART: RX INACTIVE PERIOD ENDS");
         _RXF_SUPPRESS=1;
     end
 end
@@ -182,7 +181,7 @@ initial
         fControl = $fopenr("/tmp/uart.control"); 
         if (fControl == `NULL) // If error opening file 
         begin
-                $error("[%9t] ", $time, "failed opening file");
+                $error("[%9t] ERROR ", $time, "failed opening file");
                 disable file_block; // Just quit 
         end
 
@@ -190,7 +189,7 @@ initial
         fOut = $fopen("/tmp/uart.out", "w+"); 
         if (fOut == `NULL) // If error opening file 
         begin
-                $error("[%9t] ", $time, "failed opening file");
+                $error("[%9t] ERROR ", $time, "failed opening file");
                 disable file_block; // Just quit 
         end
 
@@ -218,7 +217,7 @@ initial
                         r = $fgets(line, fControl); 
                         str = strip(line);
 
-                        if (verbose) 
+                        if (verbose>1) 
                         $display("[%9t] ", $time, "RX: '%s' into ringpos=%3d abs=%3d, spaceAvailable=%1b", str, absWritePos%BUFFER_SIZE, absWritePos, spaceAvailable);
 
                         for (int p=0; p<str.len() && spaceAvailable; p++) begin
@@ -228,7 +227,7 @@ initial
                         if (! spaceAvailable)
                             $display("%t ", $time, "UART: RECEIVE BUFFER NOW FULL");
 
-                        if (verbose) 
+                        if (verbose>1) 
                             $display("%t ", $time, "UART: RECEIVE absWritePos %3d, absReadPos=%3d", absWritePos, absReadPos);
                     end
                     
@@ -240,7 +239,7 @@ initial
                         r = $fgets(line, fControl);  // consumes the line ending and space chars 
                         r = $sscanf(line,"%d\n", txLength); 
 
-                        if (verbose) $display("[%9t] ", $time, "TX: waiting for %1d chars", txLength);
+                        if (verbose>1) $display("[%9t] ", $time, "TX: waiting for %1d chars", txLength);
                         tx_count = txLength;
                     end
                     
@@ -251,7 +250,7 @@ initial
                         r = $fgets(line, fControl);  // consumes the line ending and space chars 
                         r = $sscanf(line,"%d\n", tDelta); 
 
-                        if (verbose) $display("[%9t] ", $time, "#%1d delay begin", tDelta);
+                        if (verbose>1) $display("[%9t] ", $time, "#%1d delay begin", tDelta);
                         #tDelta 
 
                         $display("[%9t] ", $time, "#%1d delay end", tDelta);
