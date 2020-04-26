@@ -44,7 +44,7 @@ module test();
 
     end
 
-    um245r #(.LOG(1), .HEXMODE(1), .OUTPUT_FILE("/dev/stdout"), .INPUT_FILE("/dev/stdin"), .INPUT_FILE_DEPTH(12))  uart (
+    um245r #(.LOG(1), .HEXMODE(1))  uart (
         .D(BUS),	                // Input data
         .WR,		// Writes data on -ve edge
         ._RD,		// When goes from high to low then the FIFO data is placed onto D (equates to _OE)
