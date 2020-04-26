@@ -83,16 +83,15 @@ module control_decode #(parameter LOG=0)
     
 if (LOG)     always @ * 
          $display("%8d CTRL_DEC", $time,
-            " device_in=%05b" , device_in,
+            " dev_in=%05b" , device_in,
             " devHi:Lo=%08b:%08b" , _decodedDevHi, _decodedDevLo, 
-            " _ram_in=%1b", _ram_in, 
-            " _marlo_in=%1b", _marlo_in,
-            " _marhi_in=%1b", _marhi_in,
-            " _uart_in =%1b", _uart_in ,
-            " _pchitmp_in=%1b", _pchitmp_in,
-            " _pclo_in=%1b", _pclo_in,
-            " _pc_in=%1b", _pc_in,
-            " _reg_in=%1b", _reg_in
+            " _X_in(ram=%1b", _ram_in, 
+            " _marlo=%1b", _marlo_in,
+            " _marhi=%1b", _marhi_in,
+            " _uart =%1b)", _uart_in ,
+            " _pcX_in(hitmp=%1b, lo=%1d, pc=%1d)", _pchitmp_in, _pclo_in, _pc_in,
+            " _reg_in=%1b", _reg_in,
+            " _jmpX(O=%1b Z=%1b C=%1b DI=%1b DO=%1b EQ=%1b NE=%1b GT=%1b LT=%1b)",    _jmpo_in, _jmpz_in, _jmpc_in, _jmpdi_in, _jmpdo_in, _jmpeq_in, _jmpne_in, _jmpgt_in, _jmplt_in
            );
 
 endmodule : control_decode

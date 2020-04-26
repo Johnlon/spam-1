@@ -1,3 +1,8 @@
+
+/* verilator lint_off ASSIGNDLY */
+/* verilator lint_off STMTDLY */
+
+
 `include "../lib/assertion.v"
 `include "./hct74245.v"
 `timescale 1ns/100ps
@@ -37,8 +42,8 @@ module tb();
 
     initial begin
       
-      Va=8'bxxxxxxxx;
-      Vb=8'bxxxxxxxx;
+      Va='x;
+      Vb='x;
       dir <= 1; // a->b
       nOEX <= 1;
       #2 // not enought time to stabilise
