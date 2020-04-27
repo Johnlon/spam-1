@@ -290,7 +290,7 @@ module test();
         if (!_RESET) $display("\n>>>>>>>>>>>>>>>>>> RESET RELEASED <<<<<<<<<<<<<<<<<<<<<<<<<\n");
     end
     
-    pc PC (
+    pc #(.LOG(1)) PC (
       .CP(CP), // CP - Latch registers 
       ._CP(_CP), // INVERSE CP - PC ADVANCE ON -Ve CP
       ._MR(_RESET),
