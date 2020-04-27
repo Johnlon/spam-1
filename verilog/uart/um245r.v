@@ -39,7 +39,6 @@ reg [8*MAX_LINE_LENGTH:0] line; /* Line of text read from file */
 reg _TXE_SUPPRESS; // purpose is actually to suppress readiness
 reg _RXF_SUPPRESS; // purpose is actually to suppress readiness
 
-integer verbose=1;
 string str = "";
 
 localparam BUFFER_SIZE=80;
@@ -55,8 +54,8 @@ wire spaceAvailable = (absWritePos - absReadPos) < BUFFER_SIZE;
 reg [7:0] Drx = 'x;
 
 always @* begin
-    if (verbose>1)
-    $display("%t UART:", $time, 
+    if (LOG>1)
+    $display("%9t UART:", $time, 
         " D=%8b", D, " WR=%1b", WR, " _RD=%1b", _RD, 
         " _RXF=%1b", _RXF, 
         " _TXE=%1b", _TXE, 
@@ -72,6 +71,7 @@ always @* begin
 
 end
 
+integer cycle_count=0;
 integer tx_count=0;
 assign _TXE = !(fOut != `NULL && _TXE_SUPPRESS && tx_count > 0 && _MR);
 assign _RXF = !(dataAvailable && _RXF_SUPPRESS && _MR);
@@ -85,28 +85,28 @@ assign #T3 D= _RD? 8'bzzzzzzzz: dataAvailable ? Drx : 8'bxzxzxzxz; // xzxzxzxz i
 always @(negedge WR) begin
     if (_MR) begin
     if (_TXE) begin
-            $display("%t ", $time, "UART: TRANSMITTING %8b", D);
-            $error("%t ", $time, "UART: WR low while _TXE not ready");
+            $display("%9t ", $time, "UART: TRANSMITTING %8b", D);
+            $error("%9t ", $time, "UART: WR low while _TXE not ready");
             $finish_and_return(1);
     end
 
-    if (verbose) $display("%t ", $time, "UART: TRANSMITTING 0x%02x (%c)", D, D);
+    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING 0x%02x (%c)", D, D);
 
     $fwrite(fOut, "%02x\n", D);
     $fflush(fOut);
 
     #T11 // -WR to _TXE inactive delay
-    if (verbose>1) $display("%t ", $time, "UART: TX NOT READY");
+    if (LOG>1) $display("%9t ", $time, "UART: TX NOT READY");
     _TXE_SUPPRESS=0; 
 
     tx_count --;
     if (tx_count < 0) begin
-            $error("%t ", $time, "UART: tx_count went negative");
+            $error("%9t ", $time, "UART: tx_count went negative");
             $finish_and_return(1);
     end
 
     #T12 // min inactity period
-    if (verbose>1) $display("TX INACTIVE PERIOD ENDS");
+    if (LOG>1) $error("%9t ", $time, "UART: inactive period ends");
     _TXE_SUPPRESS=1;
 
     end
@@ -119,39 +119,39 @@ end
 always @(negedge _RD) begin
     if (_MR) begin
     if (_RXF) begin
-            $display("%t ", $time, "UART: _RD low while _RXF not ready");
+            $display("%9t ", $time, "UART: _RD low while _RXF not ready");
             $finish_and_return(1);
     end
 
     if (! dataAvailable) begin
-            $display("%t ", $time, "UART: _RD low while data not available");
+            $display("%9t ", $time, "UART: _RD low while data not available");
             $finish_and_return(1);
     end
 
-    if (verbose>1) $display("%t ", $time, "UART: READING AT %-d", absReadPos);
+    if (LOG>1) $display("%9t ", $time, "UART: READING AT %-d", absReadPos);
     Drx = rxBuf[absReadPos%BUFFER_SIZE];
 
-    if (verbose) $display("%t ", $time, "UART: RECEIVED   %02x (%c) from serial at pos %-d", Drx, Drx, absReadPos);
+    if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x (%c) from serial at pos %-d", Drx, Drx, absReadPos);
     end
 end
 
 always @(posedge _RD) begin
     if (_MR) begin
         if (_RXF) begin
-                $display("%t ", $time, "UART: _RD going high while _RXF not ready");
+                $display("%9t ", $time, "UART: _RD going high while _RXF not ready");
                 $finish_and_return(1);
         end
 
         // only advance the read position at the END of the read otherwise _RXF goes high too early
-        if (verbose>1) $display("%t ", $time, "UART: ADVANCING READ POS FROM %3d", absReadPos);
+        if (LOG>1) $display("%9t ", $time, "UART: ADVANCING READ POS FROM %3d", absReadPos);
         absReadPos++;
 
         #T11 // -WR to _TXE inactive delay
-        if (verbose>1) $display("%t ", $time, "UART: RX NOT READY");
+        if (LOG>1) $display("%9t ", $time, "UART: RX NOT READY");
         _RXF_SUPPRESS=0; 
 
         #T12 // min inactity period
-        if (verbose>1) $display("%t ", $time, "UART: RX INACTIVE PERIOD ENDS");
+        if (LOG>1) $display("%9t ", $time, "UART: RX INACTIVE PERIOD ENDS");
         _RXF_SUPPRESS=1;
     end
 end
@@ -170,30 +170,32 @@ initial
     _TXE_SUPPRESS=0;
 
     #50 // arbitrary delay before device is available
-    $display("%t UART: reset end",$time);
+    $display("%9t UART: RESET END",$time);
     _MR=1;
     _TXE_SUPPRESS=1; // unsuppressed
     _RXF_SUPPRESS=1;
     #50
 
     if (1) begin
-        $display("[%9t] ", $time, "opening uart.control");
-        fControl = $fopenr("/tmp/uart.control"); 
+        $display("%9t ", $time, "UART: opening uart.control");
+        fControl = $fopenr("uart.control"); 
+        //fControl = $fopenr("/dev/stdin"); 
         if (fControl == `NULL) // If error opening file 
         begin
-                $error("[%9t] ERROR ", $time, "failed opening file");
+                $error("%9t ERROR ", $time, "failed opening file");
                 disable file_block; // Just quit 
         end
 
-        $display("[%9t] ", $time, "opening uart.out");
-        fOut = $fopen("/tmp/uart.out", "w+"); 
+        $display("%9t ", $time, "UART: opening uart.out");
+        fOut = $fopen("uart.out", "w+"); 
+        //fOut = $fopen("/dev/stdout", "w+"); 
         if (fOut == `NULL) // If error opening file 
         begin
-                $error("[%9t] ERROR ", $time, "failed opening file");
+                $error("%9t ERROR ", $time, "failed opening file");
                 disable file_block; // Just quit 
         end
 
-        $display("[%9t] ", $time, "fifos open");
+        $display("%9t ", $time, "UART: fifos open");
 
         while (fControl != `NULL)  
         begin
@@ -201,6 +203,7 @@ initial
 
             if (c != `EOF) 
             begin 
+            //        cycle_count=1;
                     /* Check the first character for comment */ 
                     if (c == "/") // just skip
                     begin 
@@ -208,7 +211,7 @@ initial
                         r = $fgets(line, fControl); 
                         str = strip(line);
 
-                        $display("[%9t] ", $time, "/%s", str);
+                        $display("%9t ", $time, "UART: /%s", str);
                     end
 
                     if (c == "r") // pass string back to simulatiom
@@ -217,18 +220,18 @@ initial
                         r = $fgets(line, fControl); 
                         str = strip(line);
 
-                        if (verbose>1) 
-                        $display("[%9t] ", $time, "RX: '%s' into ringpos=%3d abs=%3d, spaceAvailable=%1b", str, absWritePos%BUFFER_SIZE, absWritePos, spaceAvailable);
+                        if (LOG>1) 
+                        $display("%9t ", $time, "UART: RX: '%s' into ringpos=%3d abs=%3d, spaceAvailable=%1b", str, absWritePos%BUFFER_SIZE, absWritePos, spaceAvailable);
 
                         for (int p=0; p<str.len() && spaceAvailable; p++) begin
                             rxBuf[absWritePos%BUFFER_SIZE] = str[p];
                             absWritePos++;
                         end
                         if (! spaceAvailable)
-                            $display("%t ", $time, "UART: RECEIVE BUFFER NOW FULL");
+                            $display("%9t ", $time, "UART: RECEIVE BUFFER NOW FULL");
 
-                        if (verbose>1) 
-                            $display("%t ", $time, "UART: RECEIVE absWritePos %3d, absReadPos=%3d", absWritePos, absReadPos);
+                        if (LOG>1) 
+                            $display("%9t ", $time, "UART: RECEIVE absWritePos %3d, absReadPos=%3d", absWritePos, absReadPos);
                     end
                     
                     if (c == "t") // wait for simulation to transmit N chars
@@ -239,7 +242,7 @@ initial
                         r = $fgets(line, fControl);  // consumes the line ending and space chars 
                         r = $sscanf(line,"%d\n", txLength); 
 
-                        if (verbose>1) $display("[%9t] ", $time, "TX: waiting for %1d chars", txLength);
+                        if (LOG>1) $display("%9t ", $time, "UART: TX: waiting for %1d chars", txLength);
                         tx_count = txLength;
                     end
                     
@@ -250,25 +253,37 @@ initial
                         r = $fgets(line, fControl);  // consumes the line ending and space chars 
                         r = $sscanf(line,"%d\n", tDelta); 
 
-                        if (verbose>1) $display("[%9t] ", $time, "#%1d delay begin", tDelta);
+                        if (LOG>1) $display("%9t ", $time, "UART: #%1d delay begin", tDelta);
                         #tDelta 
 
-                        $display("[%9t] ", $time, "#%1d delay end", tDelta);
+                        $display("%9t ", $time, "UART: #%1d delay end", tDelta);
                     end
 
                     if (c == "q") // quit
                     begin
                         r = $fgets(line, fControl);  // consumes the line ending and space chars 
-                        $display("[%9t] ", $time, "QUIT");
+                        $display("%9t ", $time, "UART: QUIT");
                         $finish;
                     end
 
                     if (c == "\n") // quit
                     begin
-                        $display("[%9t] ", $time, "");
+                        $display("%9t ", $time, "");
                     end
 
             end
+            /*  
+            else
+            begin
+                // allow time to advance
+                #1
+                cycle_count++;
+                if (cycle_count > 1000) begin
+                    $display("UART - read nothing for 1000 iterations");
+                    cycle_count=0;
+                end
+            end
+            */
         end // while
     end
 end // initial
