@@ -49,21 +49,21 @@ module icarus_tb();
         
         _wr_en = enabled;
         #5
-        `equals(rd_data , undefined_data, "nothing written so all data should be x");
-        #24
-        `equals(rd_data , 10, "write enabled");
+        `equals(rd_data , undefined_data, "nothing written yet due to PD so all data should be x");
+        #25
+        `equals(rd_data , 10, "write propagated");
         
         wr_data = 1;
         #5
-        `equals(rd_data , 10, "write enabled - data changed - output not changed yet");
+        `equals(rd_data , 10, "write enabled - data changed - output not propagated yet");
         #24
-        `equals(rd_data , 1, "write enabled and write data changed - should propagate to read");
+        `equals(rd_data , 1, "write enabled and write data changed - should have propagated to read");
         
         #5
         
         wr_data = 15;
         _wr_en   = disabled;
-        #29
+        #1
         `equals(rd_data , 1, "write disabled - retains value");
         
         _wr_en = enabled;
