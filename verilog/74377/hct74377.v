@@ -7,7 +7,7 @@
 
 `timescale 1ns/1ns
 
-module hct74377 #(parameter WIDTH = 8, DELAY_RISE = 7, DELAY_FALL = 7)
+module hct74377 #(parameter WIDTH = 8, LOG = 0)
 (
   input _EN,
   input CP,
@@ -15,17 +15,22 @@ module hct74377 #(parameter WIDTH = 8, DELAY_RISE = 7, DELAY_FALL = 7)
   output [WIDTH-1:0] Q
 );
 
+if (LOG) always @* begin
+    $display("%9t", $time, " REGISTER    CP=%1b _EN=%1b D=%08b Q=%08b", CP, _EN, D, Q);
+end
+
 //------------------------------------------------//
-reg [WIDTH-1:0] Q_current;
+reg [WIDTH-1:0] Q_current='x;
 
 always @(posedge CP)
 begin
-  if (!_EN)
+  if (!_EN) begin
     Q_current <= D;
+  end
 end
 //------------------------------------------------//
 
-assign #(DELAY_RISE, DELAY_FALL) Q = Q_current;
+assign #14 Q = Q_current;
 
 endmodule
 
