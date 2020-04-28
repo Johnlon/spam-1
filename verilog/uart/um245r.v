@@ -275,7 +275,7 @@ initial
             else
             begin
                 // allow time to advance
-                #100
+                #10000
                 cycle_count++;
 /*                if (cycle_count > 1000) begin
                     $display("UART - read nothing for 1000 iterations");
