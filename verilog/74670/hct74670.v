@@ -1,7 +1,11 @@
 // https://media.digikey.com/pdf/Data%20Sheets/NXP%20PDFs/74HC(T)670.pdf
 // active low enable inputs
 
-`timescale 1ns/100ps
+// NOTE:
+// MIN _WE pulsewidth = 20ns   : http://www.ti.com/lit/ds/schs195c/schs195c.pdf?ts=1588009560263
+// MIN _WE pulsewidth = 9-18ns : https://media.digikey.com/pdf/Data%20Sheets/NXP%20PDFs/74HC(T)670.pdf
+
+`timescale 1ns/1ns
 module hct74670 (input _wr_en,
                  input [1:0] wr_addr,
                  input [3:0] wr_data,
@@ -25,7 +29,7 @@ module hct74670 (input _wr_en,
     always_comb begin
         if (!_wr_en) begin
             registers[wr_addr] = wr_data;
-            if (LOG) $display(" writing @ " , wr_addr , "  <= ",wr_data);
+            if (LOG) $display("%9t ", $time, ": 74670 writing @ " , wr_addr , "  <= ",wr_data);
         end
     end
         
