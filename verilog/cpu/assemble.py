@@ -295,8 +295,8 @@ lrom=None
 written=0
 
 root = sourcecode.replace(".as","")
-hfile = root + "_hi.rom"
-lfile = root + "_lo.rom"
+hfile = "hi.rom"
+lfile = "lo.rom"
 
 hrom=open(hfile, "w")
 if not hrom:
