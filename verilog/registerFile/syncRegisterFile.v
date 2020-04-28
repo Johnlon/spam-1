@@ -44,23 +44,14 @@ module syncRegisterFile #(parameter LOG=0, PulseWidth=100) (
     );
 
     if (LOG) always @(*) begin
-        $display("%9t ", $time, "REGFILE-SYNC : REG[%d] = %d  (pre-latch %d) _wr_en=%1b CP=%1b", wr_addr, wr_data_latched, wr_data, _wr_en, CP);
+        $display("%9t ", $time, "REGFILE-S : ARGS : _wr_en=%1b _pulse=%1b write[%d]=%d     _rdX_en=%1b X[%d]=>%d    _rdY_en=%1b Y[%d]=>%d   (preletch=%d)  _MR=%1b" ,
+             _wr_en, _pulse, wr_addr, wr_data, _rdL_en, rdL_addr, rdL_data, _rdL_en, rdR_addr, rdR_data, wr_data_latched, _MR);
+
+        if (!_pulse) $display("%9t ", $time, "REGFILE-S : UPDATING write[%d] = %d", wr_addr, wr_data_latched);
     end
 
-    if (LOG) always @(*) begin 
-        $display("%9t REGFILE : _wr_en=%1b  write[%d]=%d     _rdX_en=%1b X[%d]=>%d    _rdY_en=%1b Y[%d]=>%d" , 
-                $time, _wr_en, wr_addr, wr_data, _rdL_en, rdL_addr, rdL_data, _rdL_en, rdR_addr, rdR_data);
-    end
-
-
-/*
-    if (LOG) always @(posedge _wr_en) begin
-        $display("%8d REGFILE : _wr_en +vs edge - STORING write[%d] = %d", $time, wr_addr, wr_data);
-    end
-*/
-
-    if (LOG) always @(*) begin
-        if (!_wr_en) $display("%9t REGFILE : WRITING write[%d] = %d", $time, wr_addr, wr_data);
+    if (LOG) always @(posedge _pulse) begin
+        $display("%9t ", $time, "REGFILE-S : LATCHED write[%d]=%d", wr_addr, wr_data_latched);
     end
 
     

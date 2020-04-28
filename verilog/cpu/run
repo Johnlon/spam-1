@@ -8,8 +8,8 @@ prog=$(echo $1 | sed 's/\/.*//')
 echo $prog
 ../assemble.py $prog.as
 
-cp ${prog}_lo.rom ../lo.rom
-cp ${prog}_hi.rom ../hi.rom
+cp lo.rom ../lo.rom
+cp hi.rom ../hi.rom
 
 echo hut return to run
 read x

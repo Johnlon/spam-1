@@ -116,7 +116,7 @@ module test();
         devname({1'b1, lo[3:0]}, yname_reg);
         aluopname({hi[0], lo[7:4]}, aluname);
 
-        $write("%9t  %5d >> %02x:%02x    ", $time, cpcount, PCHI, PCLO);
+        $write("\n%9t  %5d >> %02x:%02x    ", $time, cpcount, PCHI, PCLO);
 
         case (hi[7:5]) 
             0:  begin
@@ -156,7 +156,7 @@ module test();
                     $write("%s", opname);
                 end
         endcase
-        $display("\t\t# %20s %08b,%08b", opname, hi, lo);
+        $display("\t\t# %20s %08b,%08b\n", opname, hi, lo);
     end
     endtask
 
@@ -238,7 +238,8 @@ module test();
     end
     */
 
-    syncRegisterFile regABCD(
+    syncRegisterFile #(.LOG(1)) registerFileABCD(
+        ._MR(_MR),
         .CP(CP),
         //._wr_en(_gated_regfile_in),
         ._wr_en(_regfile_in),
@@ -357,7 +358,7 @@ module test();
     // alu ==========================================================
     assign alu_op = { rom_hi_data[0], rom_lo_data[7:4] };
 
-    alu #(.LOG(0)) Alu(
+    alu #(.LOG(1)) Alu(
         .alu_op,
         .o(alu_result), .x, .y,
         .force_alu_op_to_passx,
@@ -477,10 +478,10 @@ module test();
         end \
         CP = 0;
 
+       // disassambler(rom_hi_data, rom_lo_data); 
     `define CLOCK_UP(MSG) \
         #CYCLE_TIME  \
         if (LOG) $write("\n%-5d latched %-s\n", cpcount, MSG); \
-        disassambler(rom_hi_data, rom_lo_data); \
         if (CP == 0)  begin \
             if (LOG) $display("%8d CPU  CLK=%1b       ++++++++++++++++++++++++++++++++++++++++++++++++   ++++++++++++++++ \n", $time, CP); \
         end \
@@ -510,7 +511,7 @@ module test();
 
     always @(rom_hi_data) begin
         if(rom_hi_data === 8'bxxxxxxxx) begin
-            $display("  <<<<<<<<<<<<<<< BREAKOUT >>>>>>>>>>>>>>>>>>>>>");
+            $display("  <<<<<<<<<<<<<<< BREAKOUT - ROMHI=X >>>>>>>>>>>>>>>>>>>>>");
             $finish; 
         end
     end
@@ -534,9 +535,9 @@ module test();
         `CLOCK_DOWN("1 - first operation   -  -ve resets PC and clears RESET latch and starts program")
         `CLOCK_UP("")
 
-/*
         `CLOCK_DOWN("2---- ")
         `CLOCK_UP("")
+/*
 
         `CLOCK_DOWN("3---- ")
         `CLOCK_UP("")
@@ -567,8 +568,9 @@ module test();
             `CLOCK_UP("")
         end
 
+        #10000  
 
-        $display("  <<<<<<<<<<<<<<< BREAK >>>>>>>>>>>>>>>>>>>>>");
+        $display("  <<<<<<<<<<<<<<< BREAK END OF CLOCK >>>>>>>>>>>>>>>>>>>>>");
         $display("  ");
 
         #1000  $finish; 
