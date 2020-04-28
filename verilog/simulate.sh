@@ -5,6 +5,8 @@ then
     T=test
 fi 
 
+T=$(echo $T | sed -e 's/\..*//')
+
 cd $(dirname $(readlink -f $T.v))
 iverilog -Ttyp -Wall -g2012 -gspecify -grelative-include -o $T.vvp  $T.v 
 if [ $? != 0 ] ; then
