@@ -90,7 +90,7 @@ always @(negedge WR) begin
             $finish_and_return(1);
     end
 
-    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING 0x%02x (%c)", D, D);
+    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING 0x%02x (c='%c' b=%08b)", D, D, D);
 
     $fwrite(fOut, "%02x\n", D);
     $fflush(fOut);
@@ -272,18 +272,17 @@ initial
                     end
 
             end
-            /*  
             else
             begin
                 // allow time to advance
-                #1
+                #100
                 cycle_count++;
-                if (cycle_count > 1000) begin
+/*                if (cycle_count > 1000) begin
                     $display("UART - read nothing for 1000 iterations");
                     cycle_count=0;
                 end
+*/
             end
-            */
         end // while
     end
 end // initial
