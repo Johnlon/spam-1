@@ -67,7 +67,12 @@ module registerFile #(parameter LOG=0) (
                     _rdL_en, rdR_addr, rdR_data);
     end
 
-    always_comb begin
+    always @(
+                bankR_hi.registers[0] or bankR_lo.registers[0] or
+                bankR_hi.registers[1] or bankR_lo.registers[1] or
+                bankR_hi.registers[2] or bankR_lo.registers[2] or
+                bankR_hi.registers[3] or bankR_lo.registers[3]
+    ) begin
         $display("%9t ", $time, "REGFILE : A=%3d B=%3d C=%3d D=%3d", 
                 bankR_hi.registers[0]*8 + bankR_lo.registers[0],
                 bankR_hi.registers[1]*8 + bankR_lo.registers[1],

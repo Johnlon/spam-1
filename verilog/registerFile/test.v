@@ -2,7 +2,6 @@
 `include "../lib/assertion.v"
 
 `timescale 1ns/100ps
-`default_nettype none
 
 module icarus_tb();
     
@@ -66,9 +65,8 @@ module icarus_tb();
         wr_data = 255;
         
         _rdL_en   = disabled;
-        rdL_addr = 0;
-        
         _rdR_en   = disabled;
+        rdL_addr = 0;
         rdR_addr = 0;
         
         #10;
@@ -77,8 +75,11 @@ module icarus_tb();
         
         $display("write enabled at 0 with 1, readL disabled, readR en at 0");
         _wr_en   = enabled;
-        _rdR_en  = enabled;
         wr_data = 1;
+        _rdL_en  = disabled;
+        _rdR_en  = enabled;
+        rdL_addr = 0;
+        rdR_addr = 0;
         #cycle;
         `assertEquals(rdL_data, 8'bz);
         `assertEquals(rdR_data, 8'd1);
@@ -87,8 +88,9 @@ module icarus_tb();
         wr_data  = 2;
         wr_addr  = 2;
         _rdR_en   = enabled;
-        rdL_addr = 2;
         _rdL_en   = enabled;
+        rdL_addr = 2;
+        rdR_addr = 0;
         #cycle;
         `assertEquals(rdL_data, 8'd2);
         `assertEquals(rdR_data, 8'd1);
@@ -96,18 +98,25 @@ module icarus_tb();
         $display("write enabled at 1 with 255, readL at 2, readR en at 0");
         wr_addr = 1;
         wr_data = 255;
+        rdL_addr = 2;
+        rdR_addr = 0;
         #cycle;
         `assertEquals(rdL_data, 8'd2);
         `assertEquals(rdR_data, 8'd1);
         
         $display("write enabled at 1 with 255, readL at 2, readR disabled");
+        _rdL_en=enabled;
         _rdR_en=disabled;
+        rdL_addr = 2;
+        rdR_addr = 0;
         #cycle;
         `assertEquals(rdL_data, 8'd2);
         `assertEquals(rdR_data, 8'dz);
         
         $display("write enabled at 1 with 255, readL at 2, readR at 2");
+        _rdL_en=enabled;
         _rdR_en=enabled;
+        rdL_addr = 2;
         rdR_addr = 2;
         #cycle;
         `assertEquals(rdL_data, 8'd2);
@@ -116,6 +125,10 @@ module icarus_tb();
         $display("write disabled at 1 with 1, readL at 2, readR at 2");
         _wr_en = disabled;
         wr_data = 1;
+        _rdL_en=enabled;
+        _rdR_en=enabled;
+        rdL_addr = 2;
+        rdR_addr = 2;
         #cycle;
         `assertEquals(rdL_data, 8'd2);
         `assertEquals(rdR_data, 8'd2);
@@ -123,7 +136,10 @@ module icarus_tb();
         $display("write disabled, readL at 1, readR at 2");
         _wr_en = disabled;
         wr_data = 1;
+        _rdL_en=enabled;
+        _rdR_en=enabled;
         rdL_addr = 1;
+        rdR_addr = 2;
         #cycle;
         `assertEquals(rdL_data, 8'd255);
         `assertEquals(rdR_data, 8'd2);
