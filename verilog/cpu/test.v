@@ -291,7 +291,7 @@ module test();
         if (!_RESET) $display("\n>>>>>>>>>>>>>>>>>> RESET RELEASED <<<<<<<<<<<<<<<<<<<<<<<<<\n");
     end
     
-    pc #(.LOG(1)) PC (
+    pc #(.LOG(0)) PC (
       .CP(CP), // CP - Latch registers 
       ._CP(_CP), // INVERSE CP - PC ADVANCE ON -Ve CP
       ._MR(_RESET),
@@ -347,7 +347,7 @@ module test();
         .device_in
     );
  
-    control_decode #(.LOG(1)) CtrlDecode(
+    control_decode #(.LOG(0)) CtrlDecode(
         .device_in,
         ._flag_z, ._flag_c, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt,
         ._uart_in_ready, ._uart_out_ready,
@@ -358,7 +358,7 @@ module test();
     // alu ==========================================================
     assign alu_op = { rom_hi_data[0], rom_lo_data[7:4] };
 
-    alu #(.LOG(1)) Alu(
+    alu #(.LOG(0)) Alu(
         .alu_op,
         .o(alu_result), .x, .y,
         .force_alu_op_to_passx,
@@ -388,7 +388,7 @@ module test();
 
 
     // rules =====================================================
-    integer LOG=1;
+    integer LOG=0;
 
            // " _regfile_in=%1b ", _regfile_in, \
            // " _gated_regfile_in=%1b ", _gated_regfile_in, \
