@@ -86,7 +86,7 @@ module alu #(parameter LOG=0) (
     wire [7:0] cin8 = {7'b0, !_flag_cin};
 
     if (LOG) always @(*) 
-         $display("%8d ALU", $time,
+         $display("%9t ALU", $time,
          " aluop=(%d) %-s ", alu_op, OP_NAME, 
          " result=%08b(%3d) ", o, o,
          " x=%08b(%3d) ", xout, xout,
@@ -185,7 +185,7 @@ module alu #(parameter LOG=0) (
                 //ALU_Result = 8'b11111111;
                 ALU_Result = 8'bxzxzxzxz;
                 $sformat(OP_NAME,"? %02x ?",alu_op_effective);
-                $display("%8d !!!!!!!!!!!!!!!!!!!!!!!!!!!! RANDOM ALU OUT !!!!!!!!!!!!!!!!!!!!!!", $time);
+                $display("%9t !!!!!!!!!!!!!!!!!!!!!!!!!!!! RANDOM ALU OUT !!!!!!!!!!!!!!!!!!!!!!", $time);
             end
 
         endcase
