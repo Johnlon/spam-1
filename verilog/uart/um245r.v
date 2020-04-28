@@ -53,8 +53,8 @@ wire spaceAvailable = (absWritePos - absReadPos) < BUFFER_SIZE;
 
 reg [7:0] Drx = 'x;
 
-always @* begin
-    if (LOG>1)
+if (LOG>1)
+    always @* begin
     $display("%9t UART:", $time, 
         " D=%8b", D, " WR=%1b", WR, " _RD=%1b", _RD, 
         " _RXF=%1b", _RXF, 
