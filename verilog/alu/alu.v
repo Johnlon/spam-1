@@ -44,10 +44,12 @@ module alu #(parameter LOG=0) (
     localparam OP_A_PLUS_B=9;
     localparam OP_A_MINUS_B=10;
     localparam OP_B_MINUS_A=11;
-    localparam OP_A_AND_B=25;
-    localparam OP_A_OR_B=26;
+
     localparam OP_A_TIMES_B_HI=16;
     localparam OP_A_TIMES_B_LO=17;
+
+    localparam OP_A_AND_B=25;
+    localparam OP_A_OR_B=26;
     reg [8*8:0] OP_NAME;
 
     assign OP_OUT=OP_NAME;
@@ -114,6 +116,36 @@ module alu #(parameter LOG=0) (
                 ALU_Result = 0;
                 tmp=0;
             end
+            OP_MINUS_A: begin
+                OP_NAME = "-A";
+                ALU_Result = -xout;
+                tmp = -{1'b0,xout};
+            end
+            OP_MINUS_B: begin
+                OP_NAME = "-B";
+                ALU_Result = -y;
+                tmp = -{1'b0,y};
+            end
+            OP_A_PLUS_1: begin
+                OP_NAME = "A+1";
+                ALU_Result = xout+1;
+                tmp = {1'b0,xout}+1;
+            end
+            OP_B_PLUS_1: begin
+                OP_NAME = "B+1";
+                ALU_Result = y+1;
+                tmp = {1'b0,y}+1;
+            end
+            OP_A_MINUS_1: begin
+                OP_NAME = "A-1";
+                ALU_Result = xout-1;
+                tmp = {1'b0,xout}-1;
+            end
+            OP_B_MINUS_1: begin
+                OP_NAME = "B-1";
+                ALU_Result = y-1;
+                tmp = {1'b0,y}-1;
+            end
             OP_A_OR_B: begin
                 OP_NAME = "OR";
                 ALU_Result = xout | y;
@@ -150,7 +182,8 @@ module alu #(parameter LOG=0) (
             end
 
             default: begin
-                ALU_Result = 8'b11111111;
+                //ALU_Result = 8'b11111111;
+                ALU_Result = 8'bxzxzxzxz;
                 $sformat(OP_NAME,"? %02x ?",alu_op_effective);
                 $display("%8d !!!!!!!!!!!!!!!!!!!!!!!!!!!! RANDOM ALU OUT !!!!!!!!!!!!!!!!!!!!!!", $time);
             end
