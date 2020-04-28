@@ -26,20 +26,20 @@ module registerFile #(parameter LOG=0) (
     assign rdR_data                 = {rdR_data_hi, rdR_data_lo};
 
     hct74670 left_bank_lo(
-    _wr_en,
-    wr_addr,
-    wr_data_lo,
-    _rdL_en,
-    rdL_addr,
-    rdL_data_lo
+        _wr_en,
+        wr_addr,
+        wr_data_lo,
+        _rdL_en,
+        rdL_addr,
+        rdL_data_lo
     );
     hct74670 left_bank_hi(
-    _wr_en,
-    wr_addr,
-    wr_data_hi,
-    _rdL_en,
-    rdL_addr,
-    rdL_data_hi
+        _wr_en,
+        wr_addr,
+        wr_data_hi,
+        _rdL_en,
+        rdL_addr,
+        rdL_data_hi
     );
     
     hct74670 bankR_lo(
@@ -74,10 +74,10 @@ module registerFile #(parameter LOG=0) (
                 bankR_hi.registers[3] or bankR_lo.registers[3]
     ) begin
         $display("%9t ", $time, "REGFILE-A : A=%3d B=%3d C=%3d D=%3d", 
-                bankR_hi.registers[0]*8 + bankR_lo.registers[0],
-                bankR_hi.registers[1]*8 + bankR_lo.registers[1],
-                bankR_hi.registers[2]*8 + bankR_lo.registers[2],
-                bankR_hi.registers[3]*8 + bankR_lo.registers[3]
+                bankR_hi.registers[0]*16 + bankR_lo.registers[0],
+                bankR_hi.registers[1]*16 + bankR_lo.registers[1],
+                bankR_hi.registers[2]*16 + bankR_lo.registers[2],
+                bankR_hi.registers[3]*16 + bankR_lo.registers[3]
         );
     end
 
