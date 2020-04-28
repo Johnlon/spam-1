@@ -42,7 +42,7 @@ module icarus_tb();
         $display ("");
         $display ($time, "   _____                       ______                           ______");
         $display ($time, "   _wr_en wr_addr   wr_data  |  _rdL_en   rdL_addr  rdL_data  |   _rdR_en  rdR_addr  rdR_data");
-        $monitor ($time, "   %1b         %2b  %8b  |       %1b        %2b  %8b  |        %1b       %2b  %8b",
+        $monitor ($time, "   %1b           %2b  %8b  |         %1b        %2b  %8b  |          %1b       %2b  %8b",
         _wr_en, wr_addr, wr_data, _rdL_en, rdL_addr, rdL_data, _rdR_en, rdR_addr, rdR_data
         );
         /*
@@ -58,7 +58,7 @@ module icarus_tb();
         parameter enabled        = 0;
         parameter pulse_disabled = 0;
         parameter pulse_enabled  = 1;
-        parameter cycle          = 100;
+        parameter cycle          = 25;
         
         $display("defaults: write enabled at 0 with 255, no read");
         _wr_en   = enabled;
