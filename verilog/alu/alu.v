@@ -14,6 +14,7 @@
 module alu #(parameter LOG=0) (
     output [7:0] o,
     output _flag_cout,
+    output _flag_z,
     input  [7:0] x,
     input  [7:0] y,
     input  [4:0] alu_op,
@@ -62,7 +63,7 @@ module alu #(parameter LOG=0) (
 
     logic [8:0] tmp = 0;
     assign _flag_cout = ! tmp[8];
-    
+    assign _flag_z = o != 0;
 //     always @(*) 
  //        $display("alu  : x=%-8b y=%-8b o=%-8b xin=%8b xout=%8b forcepassx=%1b aluopin=%b opeff=%d", x,y,o,xin,xout, force_alu_op_to_passx, aluopin, alu_op_effective);
 
@@ -187,6 +188,7 @@ module alu #(parameter LOG=0) (
                 $sformat(OP_NAME,"? %02x ?",alu_op_effective);
                 $display("%9t !!!!!!!!!!!!!!!!!!!!!!!!!!!! RANDOM ALU OUT !!!!!!!!!!!!!!!!!!!!!!", $time);
             end
+
 
         endcase
     end

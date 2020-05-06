@@ -4,8 +4,7 @@
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
 
-`timescale 1ns/100ps
-`default_nettype none
+`timescale 1ns/1ns
 
 
 module test();
@@ -18,8 +17,8 @@ module test();
         logic force_x_val_to_zero;
         logic _flag_cin;
         logic _flag_cout;
-        logic flag_n;
-        logic flag_z;
+        logic _flag_n;
+        logic _flag_z;
 	
 	alu #(.LOG(1)) Alu(
         .o, 
@@ -29,7 +28,8 @@ module test();
         .force_alu_op_to_passx,
         .force_x_val_to_zero,
         ._flag_cin,
-        ._flag_cout
+        ._flag_cout,
+        ._flag_z
     );
 
     initial begin
@@ -46,17 +46,18 @@ module test();
         );
 
         $display ("");
-        $display ($time, "  %8s %8s  %6s  %8s   %5s %5s  %3s %4s", 
+        $display ($time, "  %8s %8s  %6s  %8s   %5s %5s  %3s %4s %4s", 
             "",
             "",
             "",
             "",
             "force",
             "force",
-            "cin",
-            "cout"
+            "flag",
+            "flag",
+            "flag"
          );
-        $display ($time, "  %8s %8s  %6s  %8s   %5s %5s  %3s %4s", 
+        $display ($time, "  %8s %8s  %6s  %8s   %5s %5s  %3s %4s %4s", 
             "x",
             "y",
             "alu_op",
@@ -64,10 +65,11 @@ module test();
             "passx",
             "xzero",
             "cin",
-            "cout"
+            "cout",
+            "z"
          );
         
-        $monitor ($time, "  %8b %8b  %6b  %8b   %5b %5b  %3b %4b", 
+        $monitor ($time, "  %8b %8b  %6b  %8b   %5b %5b  %3b %4b %4b", 
             x,
             y,
             alu_op,
@@ -75,7 +77,8 @@ module test();
             force_alu_op_to_passx,
             force_x_val_to_zero,
             _flag_cin,
-            _flag_cout
+            _flag_cout,
+            _flag_z
         );
         
         `endif
@@ -141,6 +144,7 @@ module test();
         `Equals(o, 3);
         `Equals(_flag_cout, 1);
 
+        $display("no carryin and 1-1=0 and Z flag");
         assign x = 1;
         assign y = 1;
         assign _flag_cin = 1;
@@ -148,6 +152,17 @@ module test();
         #100
         `Equals(o, 0);
         `Equals(_flag_cout, 1);
+        `Equals(_flag_z, 0);
+
+        $display("carryin and 1-1=255 sets C flag");
+        assign x = 1;
+        assign y = 1;
+        assign _flag_cin = 0; // carry an extra -1 into the subtraction pushing it past 0
+        assign alu_op = Alu.OP_A_MINUS_B;
+        #100
+        `Equals(o, 255);
+        `Equals(_flag_cout, 1'b0);
+        `Equals(_flag_z, 1'b1);
 
         assign x = 1;
         assign y = 1;
@@ -189,6 +204,8 @@ module test();
         #100
         `Equals(o, 8'h01);
         `Equals(_flag_cout, 1'b1);
+
+
 
         #100
 
