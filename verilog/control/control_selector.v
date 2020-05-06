@@ -48,7 +48,7 @@ module control_selector #(parameter LOG=0)
     wire [7:0] _decodedOp;
     hct74138 opDecoder(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(operation_sel), .Y(_decodedOp));
     
-    // BUS ACCESS - FIXME - short sikes of high current possible.
+    // BUS ACCESS - FIXME - short spikes of high current possible.
     // With logic gates this setup causes contention due to differences in timings on the _out's. 
     // A rom based approach might also be glitchy due to unpredicable values during transitions.
     // Diode logic would minimise timings diffs - very short periods of randomness during transitions.
