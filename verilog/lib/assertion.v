@@ -36,7 +36,7 @@ if (ACTUAL === expected) begin \
 end \
 else \
 begin  \
-  $display("%d FAILED: '%b' is not '%b' - ACTUAL", `__LINE__, ACTUAL, expected); 	\
+  $display("%d FAILED: '%b' is not '%b' - ACTUAL != expected", `__LINE__, ACTUAL, expected); 	\
   `FAIL \
 end
   

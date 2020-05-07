@@ -11,9 +11,7 @@
 `include "../pc/pc.v"
 `include "../7474/hct7474.v"
 `include "../74377/hct74377.v"
-`include "../74574/hct74574.v"
 `include "../uart/um245r.v"
-//`include "../registerFile/registerFile.v"
 `include "../registerFile/syncRegisterFile.v"
 
 `timescale 1ns/1ns
@@ -182,12 +180,13 @@ module test();
     tri [7:0] rom_hi_data;
     tri [7:0] rom_lo_data;
     
-    // RAM addressing
+    // RAM addressing - AT27C512R 64kx8 or AT27C256 32kx8
     logic [15:0] ram_address;
     wire [7:0] MARHI, MARLO;
 
     // CONTROL LINES
     logic _flag_z;
+    logic _flag_nz; // FIXME IMPLEMENT ME PLEASE - OR PERHAPS IMPLEMENT ALL INVERSES???
     logic _flag_c;
     logic _flag_o;
     logic _flag_eq;
@@ -238,7 +237,7 @@ module test();
     end
     */
 
-    syncRegisterFile #(.LOG(1)) registerFileABCD(
+    syncRegisterFile #(.LOG(0)) registerFileABCD(
         ._MR(_MR),
         .CP(CP),
         //._wr_en(_gated_regfile_in),
@@ -263,7 +262,7 @@ module test();
     logic [8*8:0] alu_op_name;
     logic force_alu_op_to_passx;
     logic force_x_val_to_zero;
-    wire _flag_cin, _flag_cout;
+    wire _flag_z_alu, _flag_c_alu, _flag_o_alu, _flag_eq_alu, _flag_ne_alu, _flag_gt_alu, _flag_lt_alu;
     wire  [7:0] alu_result;
 
     // RESET CIRCUIT
@@ -314,29 +313,6 @@ module test();
 
     hct74245 #(.LOG(0), .NAME("ROMBUS")) bufROMBUS(.A(rom_lo_data), .B(data_bus), .dir(1'b1), .nOE(_rom_out));
 
-    // ram =====================================================
-    wire #11 _gated_marlo_in = _marlo_in;
-    wire #11 _gated_marhi_in = _marhi_in;
-
-    hct74574 MAR_lo(.CLK(_gated_marlo_in), ._OE(1'b0), .D(data_bus), .Q(MARLO));
-    hct74574 MAR_hi(.CLK(_gated_marhi_in), ._OE(1'b0), .D(data_bus), .Q(MARHI));
-
-    wire [7:0] muxed_marhi;
-    hct74245 #(.NAME("ZPHi")) bufRAMZPHi(.A(MARHI), .B(muxed_marhi), .dir(1'b1), .nOE(!_ram_zp));
-    pulldown MARHIPullDown[7:0](muxed_marhi);
-
-    wire [7:0] muxed_marlo;
-    hct74245 #(.NAME("ZPLoMAR")) bufRAMZPLoMAR(.A(MARLO), .B(muxed_marlo), .dir(1'b1), .nOE(!_ram_zp)); // EXTRA GATE
-    hct74245 #(.NAME("ZPLoROM")) bufRAMZPLoROM(.A(rom_lo_data), .B(muxed_marlo), .dir(1'b1), .nOE(_ram_zp));
-
-    assign ram_address = { muxed_marhi[6:0], muxed_marlo };
-
-    always @(*) begin
-        $display("%8d ", $time, "RAM: MARHI %2x MARLO %2x MuxMARHI %02x MuxMARLO %02x _ZP %1b", MARHI, MARLO, muxed_marhi, muxed_marlo, _ram_zp);
-    end
-
-    ram #(.AWIDTH(16)) Ram(._WE(_ram_in), ._OE(_ram_out), .A(ram_address), .D(data_bus));
-
     // control =====================================================
     control_selector #(.LOG(0)) CtrlSelect(
         .hi_rom(rom_hi_data), 
@@ -347,13 +323,36 @@ module test();
         .device_in
     );
  
-    control_decode #(.LOG(0)) CtrlDecode(
+    control_decode #(.LOG(1)) CtrlDecode(
         .device_in,
         ._flag_z, ._flag_c, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt,
         ._uart_in_ready, ._uart_out_ready,
 
         ._ram_in, ._marlo_in, ._marhi_in, ._uart_in, ._pchitmp_in, ._pclo_in, ._pc_in, ._reg_in
     );
+
+    // ram =====================================================
+    wire #11 _gated_marlo_in = _marlo_in;
+    wire #11 _gated_marhi_in = _marhi_in;
+
+    hct74377 MAR_lo(._EN(_gated_marlo_in), .CP(CP),  .D(data_bus), .Q(MARLO));
+    hct74377 MAR_hi(._EN(_gated_marhi_in), .CP,      .D(data_bus), .Q(MARHI));
+
+    tri0 [7:0] muxed_marhi; // PULLDOWN 
+    hct74245 #(.NAME("ZPHi")) bufRAMZPHi(.A(MARHI), .B(muxed_marhi), .dir(1'b1), .nOE(!_ram_zp)); // EXTRA GATE
+
+    wire [7:0] muxed_marlo;
+    hct74245 #(.NAME("ZPLoMAR")) bufRAMZPLoMAR(.A(MARLO),       .B(muxed_marlo), .dir(1'b1), .nOE(!_ram_zp)); // EXTRA GATE
+    hct74245 #(.NAME("ZPLoROM")) bufRAMZPLoROM(.A(rom_lo_data), .B(muxed_marlo), .dir(1'b1), .nOE(_ram_zp));
+
+    assign ram_address = { muxed_marhi, muxed_marlo };
+
+    always @(*) begin
+        $display("%9t ", $time, "CPU: MARHI %2x MARLO %2x Effective MARHI %02x Effective MARLO %02x _ZP %1b   _gatedMARLOin=%1b   _gatedMARHIin=%1b  ", MARHI, MARLO, muxed_marhi, muxed_marlo, _ram_zp, _gated_marlo_in, _gated_marhi_in);
+    end
+
+    ram #(.AWIDTH(16), .LOG(1)) Ram(._WE(_ram_in), ._OE(_ram_out), .A(ram_address), .D(data_bus));
+
 
     // alu ==========================================================
     assign alu_op = { rom_hi_data[0], rom_lo_data[7:4] };
@@ -363,28 +362,30 @@ module test();
         .o(alu_result), .x, .y,
         .force_alu_op_to_passx,
         .force_x_val_to_zero,
-        ._flag_cin, 
-        ._flag_cout,
+        ._flag_cin(_flag_c), 
+        ._flag_cout(_flag_c_alu),
+        ._flag_z(_flag_z_alu),
         .OP_OUT(alu_op_name)
     );
 
     hct74245 #(.LOG(0), .NAME("ALUBUS")) bufALUBUS(.A(alu_result), .B(data_bus), .dir(1'b1), .nOE(_alu_out));
     if (0) always @* begin
-        $display("%8d ", $time, "ALU: RESULT %2x _alu_out %1b BUS %2x", alu_result, _alu_out, data_bus);
+        $display("%9t ", $time, "ALU: RESULT %2x _alu_out %1b BUS %2x", alu_result, _alu_out, data_bus);
     end
 
 
     // flags =====================================================
-    logic [7:0] flags_reg_in, flags_reg_out;
     wire _flags_in = _alu_out;
+    wire [7:0] flags_reg_out;
+    assign { _flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt} = flags_reg_out[6:0];
+    wire [7:0] flags_reg_in = {1'bx, _flag_z_alu, _flag_c_alu, _flag_o_alu, _flag_eq_alu, _flag_ne_alu, _flag_gt_alu, _flag_lt_alu};
+
     hct74377 flags_reg(._EN(_flags_in), .CP, .D(flags_reg_in), .Q(flags_reg_out));
 
-    always @(flags_reg_out)
-        $display("%8d FLAGS ", $time, "ZCOENGL=%8b" , flags_reg_out[6:0]);
+    always @(*)
+        $display("%9t FLAGS ", $time, " FLAGS OUT ZCOENGL=%7b" , flags_reg_out[6:0], "   FLAGS IN ZCOENGL=%7b" , flags_reg_in[6:0]);
     
-    assign flags_reg_in = {2'b11, _flag_cout, 5'b11111};
-    assign {_flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt} = flags_reg_out[6:0];
-    assign _flag_cin = flags_reg_out[5]; // wire to ALU
+//    assign _flag_cin = flags_reg_out[5]; // wire to ALU
 
 
     // rules =====================================================
@@ -393,7 +394,7 @@ module test();
            // " _regfile_in=%1b ", _regfile_in, \
            // " _gated_regfile_in=%1b ", _gated_regfile_in, \
     `define LOG_CPU \
-        if (LOG) $display("%8d CPU (%1d) : ", $time, cpcount, \
+        if (LOG) $display("%9t CPU (%1d) : ", $time, cpcount, \
             "CP=%1b PC=x%4x => ROM=%8b,%8b", CP, rom_address, rom_hi_data, rom_lo_data, \
             " BUS=%8b", data_bus,  \
             " RRAU=%4b", {_rom_out, _ram_out, _alu_out, _uart_out}, \
@@ -406,8 +407,9 @@ module test();
                {_flag_z, _flag_c, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt}, \
                _uart_in_ready, _uart_out_ready, \
             "  ALUOP=%-s X=%08b Y=%08b R=%08b _C(IN=%1b, OUT=%1b) FPassX=%1b FX2Z=%1b ",  \
-               alu_op_name, x,y,alu_result, _flag_cin, _flag_cout, Alu.force_alu_op_to_passx, Alu.force_x_val_to_zero, \
-            " _ZP=%1b", _ram_zp, \
+               alu_op_name, x,y,alu_result, _flag_c, _flag_c_alu, Alu.force_alu_op_to_passx, Alu.force_x_val_to_zero, \
+            " ALU-ZCOENGL=%7b ", \
+               {_flag_z_alu, _flag_c_alu, _flag_o_alu, _flag_eq_alu, _flag_ne_alu, _flag_gt_alu, _flag_lt_alu}, \
             " RAMD=h%02x RAMA=h%4x", Ram.D, ram_address\
         );
 
@@ -474,7 +476,7 @@ module test();
         cpcount = cpcount + 1; \
         if (LOG) $write("\n%-5d begin %-s\n", cpcount, MSG); \
         if (CP == 1)  begin \
-            if (LOG) $display("%8d CPU  CLK=%1b       ------------------------------------------------   ---------------- \n", $time, CP); \
+            if (LOG) $display("%9t CPU  CLK=%1b       ------------------------------------------------   ---------------- \n", $time, CP); \
         end \
         CP = 0;
 
@@ -483,7 +485,7 @@ module test();
         #CYCLE_TIME  \
         if (LOG) $write("\n%-5d latched %-s\n", cpcount, MSG); \
         if (CP == 0)  begin \
-            if (LOG) $display("%8d CPU  CLK=%1b       ++++++++++++++++++++++++++++++++++++++++++++++++   ++++++++++++++++ \n", $time, CP); \
+            if (LOG) $display("%9t CPU  CLK=%1b       ++++++++++++++++++++++++++++++++++++++++++++++++   ++++++++++++++++ \n", $time, CP); \
         end \
         CP = 1;
 

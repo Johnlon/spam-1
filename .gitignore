@@ -1,4 +1,6 @@
 .idea
+ll
+l
 **/*~
 **/*.vvp
 **/*.swp
@@ -7,3 +9,8 @@
 
 /verilog/_old/
 /venv*/
+**/old/
+*/ll
+**/nohup*
+**/*.1
+**/ll

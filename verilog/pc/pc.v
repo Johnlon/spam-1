@@ -7,7 +7,6 @@
 `include "../lib/assertion.v"
 `include "../counterReg/counterReg.v"
 `include "../74377/hct74377.v"
-`include "../74574/hct74574.v"
 `include "../7474/hct7474.v"
 
 `timescale 1ns/100ps

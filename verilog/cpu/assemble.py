@@ -318,7 +318,7 @@ def writeRoms(h,l):
     lrom.write("{:02x} ".format(int(l,2)))
 
     written +=1 
-    if written > 16:
+    if written % 16 == 0:
         hrom.write("\n")
         lrom.write("\n")
         
@@ -368,9 +368,9 @@ def assemble():
         op=None
 
         def printCode():
-            print("{:5d} - addr {:4d}   : {}".format(lineno, address, line),  flush=True)
+            print("{:5d} - addr {:4d}    {}".format(lineno, address, line),  flush=True)
         def printPass():
-            print("{:5d} -             : {}".format(lineno, line),  flush=True)
+            print("{:5d} -              {}".format(lineno, line),  flush=True)
 
         if line.startswith("#"):
             printPass()
@@ -539,7 +539,7 @@ def assemble():
             
             writeRoms(h,l)
 
-            print("\t\t\t\t\tH:L = " + h + " " + l)
+            print("\t\t\t\t\t\t\t\t\t\tH:L = " + h + " " + l)
             #print("\tALUOP  = " + str(aluop))
             #print("\tOP  = " + str(op))
 

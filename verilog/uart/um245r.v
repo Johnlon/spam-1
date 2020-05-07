@@ -34,14 +34,14 @@ logic _MR=0; // master reset
 
 integer fOut=`NULL, fControl, c, r, txLength, tDelta;
 
-localparam MAX_LINE_LENGTH=80;
+localparam MAX_LINE_LENGTH=255;
 reg [8*MAX_LINE_LENGTH:0] line; /* Line of text read from file */ 
 reg _TXE_SUPPRESS; // purpose is actually to suppress readiness
 reg _RXF_SUPPRESS; // purpose is actually to suppress readiness
 
 string str = "";
 
-localparam BUFFER_SIZE=80;
+localparam BUFFER_SIZE=255;
 
 int rxBuf[BUFFER_SIZE]; // Line of text read from file 
 int absWritePos = 0; // next place to write
