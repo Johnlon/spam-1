@@ -1,4 +1,5 @@
 `include "hct74109.v" 
+`include "../lib/assertion.v"
 `timescale 1ns/1ns
 
 module tb_jk;
@@ -8,9 +9,27 @@ module tb_jk;
 
    wire q, _q;
  
-   always #5 clk = ~clk;
+   // expected PD of device
+   parameter PD=17;
+
+    // must be longer than PD of device else malfunction
+   parameter CLK_T=PD+1;
+
+   parameter TEST_INTERVAL=CLK_T * 10;
+
+   //always  #CLK_T clk = !clk;
+    task clk_pulse;
+    begin
+        clk = 0;
+        #CLK_T 
+        clk = 1;
+        #CLK_T 
+        clk = 1; // repeat setting=1 otherwise syntax error cos can't have a delay as last item
+    end
+    endtask
+
  
-   hct74109    jk0 ( .j(j),
+   hct74109  jk0 ( .j(j),
                   ._k(_k),
                   .clk(clk),
                   .q(q),
@@ -19,35 +38,65 @@ module tb_jk;
  
    initial begin
             // hold
-      #30 
+      #TEST_INTERVAL 
         $display("hold mode");
         j <= 0;
         _k <= 1;
+
+        clk_pulse();
+        `Equals(q, 1'bx) // stays as X       
+        clk_pulse();
+        `Equals(q, 1'bx)
+        clk_pulse();
+        `Equals(q, 1'bx)
  
         // load reset Q=L
-      #30 
+      #TEST_INTERVAL 
         $display("reset mode");
         j <= 0;
         _k <= 0;
 
+        clk_pulse();
+        `Equals(q, 1'b0)
+        clk_pulse();
+        `Equals(q, 1'b0)
+        clk_pulse();
+        `Equals(q, 1'b0)
+
         // load set Q=H
-      #30 
+      #TEST_INTERVAL 
         $display("load mode");
         j <= 1;
         _k <= 1;
 
+        clk_pulse();
+        `Equals(q, 1'b1)
+        clk_pulse();
+        `Equals(q, 1'b1)
+        clk_pulse();
+        `Equals(q, 1'b1)
+
         // toggle
-      #30 
+      #TEST_INTERVAL 
         $display("toggle mode");
         j <= 1;
         _k <= 0;
 
-      #30 $finish;
+        `Equals(q, 1'b1)
+        clk_pulse();
+        `Equals(q, 1'b0)
+        clk_pulse();
+        `Equals(q, 1'b1)
+        clk_pulse();
+        `Equals(q, 1'b0)
+        clk_pulse();
+        `Equals(q, 1'b1)
+
+      #TEST_INTERVAL $finish;
    end
  
    initial
       $monitor ($time, " clk ", clk, " j=%0d _k=%0d q=%0d", j, _k, q);
-      //$monitor ($time, " j=%0d _k=%0d q=%0d", j, _k, q);
 
 endmodule  
  

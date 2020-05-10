@@ -10,28 +10,34 @@ module hct74109 (
     output _q
 );
 
-reg Q;
+    parameter PROP_DELAY=17; 
+    parameter SETUP_TIME=8;  // JK must be setup AHEAD fo the clock - see datasheet
+
+    reg Q,J,_K;
  
+    assign #(SETUP_TIME) J = j;
+    assign #(SETUP_TIME) _K = _k;
+
 /*
     specify
-        (clk => q) = (17);
-        (clk => _q) = (17);
+        (clk => Q) = (PROP_DELAY);
     endspecify
 */
  
     always @(posedge clk)
     begin
-        case ({j,_k})
+        case ({J,_K})
             2'b01 :  Q <= Q;
             2'b00 :  Q <= 0;
             2'b11 :  Q <= 1;
             2'b10 :  Q <= ~Q;
         endcase
-        //$display(" j ", j, " _k ", _k, " q ", Q);
+
+        //$display(" j ", J, " _k ", _K, " q ", Q);
     end
 
-    assign q = Q;
-    assign _q = !Q;
+    assign #(PROP_DELAY) q = Q;
+    assign #(PROP_DELAY) _q = !Q;
 
 endmodule
 
