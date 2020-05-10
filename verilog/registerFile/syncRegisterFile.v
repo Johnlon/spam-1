@@ -28,9 +28,15 @@ module syncRegisterFile #(parameter LOG=0, PulseWidth=100) (
 	wire [7:0] wr_data_latched;
 	wire _pulse;
 
-	hct74423 monostable(._A(_wr_en), .B(CP), ._R(_MR), ._Q(_pulse));
-    hct74574 #(.LOG(0)) register( .D(wr_data), .Q(wr_data_latched), .CLK(CP), ._OE(1'b0));
-    
+    hct74574 #(.LOG(0)) register( .D(wr_data), .Q(wr_data_latched), .CLK(CP), ._OE(1'b0)); // registers data on CP +ve & _pulse goes low slightly later.
+
+    // Make delay long enough the internal settling of the latch and register file has had time,
+    // but short enough so it doesn't excessively impact cycle time.
+    // Signal "_pulse" goes low after monostable's propagation delay, stays low for RC time defined by PulseWidth
+    /* verilator lint_off PINMISSING */
+    hct74423 #(.PulseWidth(100)) monostable(._A(_wr_en), .B(CP), ._R(_MR), ._Q(_pulse)); // reset is async low and forces _pulse high, +ve B edge sends _pulse low for delay period
+    /* verilator lint_on PINMISSING */
+
     registerFile #(.LOG(LOG)) regFile (
         ._wr_en(_pulse),
         .wr_addr,
