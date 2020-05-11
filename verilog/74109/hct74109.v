@@ -16,52 +16,42 @@ module hct74109 (
 
     reg Q,J,_K;
 
-    logic fSR=1'bz;// force set / reset
-
-    wire Qresult = (fSR !== 1'bz)? fSR: Q;
- 
     assign #(SETUP_TIME) J = j;
     assign #(SETUP_TIME) _K = _k;
 
     always @*
         $display($time, " 74109  clk ", clk, 
-                    " j ", J, " _k ", _K, " q ", Qresult,
+                    " j ", J, " _k ", _K, " q ", Q,
                     "   ",
-                    " _sd " , _sd, " _rd ", _rd,
-                    " fSR ", fSR, " regQ ", Q
+                    " _sd " , _sd, " _rd ", _rd
                 );
 
     task checkSR;
         // explicitely state args so these become part fo sensitivity list
         // https://www.verilogpro.com/systemverilog-always_comb-always_ff/
         input _sd, _rd;
-        output fSR;
 
         if (!_sd & _rd) begin
-            fSR<=1;
             Q<=1;
         end
         else if (_sd & !_rd) begin
-            fSR<=0;
             Q<=0;
         end
         else if (!_sd & !_rd) begin
-            fSR<=1;
             Q<=1;
         end
-        else fSR<=1'bz;
     endtask
 
     initial begin
         // explicitely state args so these become part fo sensitivity list
         // https://www.verilogpro.com/systemverilog-always_comb-always_ff/
-        checkSR(_sd, _rd, fSR);
+        checkSR(_sd, _rd);
     end 
 
     always @* begin
         // explicitely state args so these become part fo sensitivity list
         // https://www.verilogpro.com/systemverilog-always_comb-always_ff/
-        checkSR(_sd, _rd, fSR);
+        checkSR(_sd, _rd);
     end 
  
     always @(posedge clk)
@@ -81,12 +71,8 @@ module hct74109 (
 
     end
 
-    //assign #(PROP_DELAY) q = Q;
-    //assign #(PROP_DELAY) _q = !Q;
-
-
-    assign q = Qresult;
-    assign _q = !Qresult;
+    assign q = Q;
+    assign _q = !Q;
 
 endmodule
 
