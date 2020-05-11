@@ -129,11 +129,12 @@ module tb_jk;
         j <= 1;
         _k <= 0;
 
-        `Equals(q, 1'b1)
-        clk_pulse();
+        // expect inital state of 0 as last test did a async reset
         `Equals(q, 1'b0)
         clk_pulse();
         `Equals(q, 1'b1)
+        clk_pulse();
+        `Equals(q, 1'b0)
 
       #TEST_INTERVAL $finish;
    end

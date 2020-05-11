@@ -26,6 +26,7 @@ module hct74109 (
     always @*
         $display($time, " 74109  clk ", clk, 
                     " j ", J, " _k ", _K, " q ", Qresult,
+                    "   ",
                     " _sd " , _sd, " _rd ", _rd,
                     " fSR ", fSR, " regQ ", Q
                 );
@@ -36,9 +37,18 @@ module hct74109 (
         input _sd, _rd;
         output fSR;
 
-        if (!_sd & _rd) fSR<=1;
-        else if (_sd & !_rd) fSR<=0;
-        else if (!_sd & !_rd) fSR<=1;
+        if (!_sd & _rd) begin
+            fSR<=1;
+            Q<=1;
+        end
+        else if (_sd & !_rd) begin
+            fSR<=0;
+            Q<=0;
+        end
+        else if (!_sd & !_rd) begin
+            fSR<=1;
+            Q<=1;
+        end
         else fSR<=1'bz;
     endtask
 
