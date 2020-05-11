@@ -1,5 +1,4 @@
 // NOT implemented fully https://assets.nexperia.com/documents/data-sheet/74HC_HCT109.pdf
-// Missing _SD/_RD
 `timescale 1ns/1ns
 
 module hct74109 ( 
