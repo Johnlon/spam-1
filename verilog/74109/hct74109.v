@@ -1,4 +1,4 @@
-// NOT implemented fully https://assets.nexperia.com/documents/data-sheet/74HC_HCT109.pdf
+// JK flipflop https://assets.nexperia.com/documents/data-sheet/74HC_HCT109.pdf
 `timescale 1ns/1ns
 
 module hct74109 ( 
@@ -10,6 +10,7 @@ module hct74109 (
     output _q
 );
 
+    parameter LOG=0; 
     parameter PROP_DELAY=17; 
     parameter ASYNC_DELAY=15; 
     parameter SETUP_TIME=8;  // JK must be setup AHEAD fo the clock - see datasheet
@@ -19,9 +20,10 @@ module hct74109 (
     assign #(SETUP_TIME) J = j;
     assign #(SETUP_TIME) _K = _k;
 
-    always @*
+    if (LOG) always @*
         $display($time, " 74109  clk ", clk, 
                     " j ", J, " _k ", _K, " q ", Q,
+                    " j' ", j, " _k' ", _k, " q' ", q,
                     "   ",
                     " _sd " , _sd, " _rd ", _rd
                 );
@@ -32,13 +34,13 @@ module hct74109 (
         input _sd, _rd;
 
         if (!_sd & _rd) begin
-            Q<=1;
+            #(ASYNC_DELAY) Q<=1;
         end
         else if (_sd & !_rd) begin
-            Q<=0;
+            #(ASYNC_DELAY) Q<=0;
         end
         else if (!_sd & !_rd) begin
-            Q<=1;
+            #(ASYNC_DELAY) Q<=1;
         end
     endtask
 
@@ -57,15 +59,15 @@ module hct74109 (
     always @(posedge clk)
     begin
         if (_sd & _rd) begin
-            case ({J,_K})
+            #(PROP_DELAY) case ({J,_K})
                 2'b01 :  
-                    #(PROP_DELAY) Q = Q;
+                    Q = Q;
                 2'b00 :  
-                    #(PROP_DELAY) Q = 0;
+                    Q = 0;
                 2'b11 :  
-                    #(PROP_DELAY) Q = 1;
+                    Q = 1;
                 2'b10 :  
-                    #(PROP_DELAY) Q = !Q;
+                    Q = !Q;
             endcase
         end
 
