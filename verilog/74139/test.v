@@ -8,7 +8,7 @@
 `include "./hct74139.v"
 `timescale 1ns/1ns
 
-module tb();
+module test();
 
 reg _Ea=1'bx;
 reg _Eb;
@@ -19,6 +19,11 @@ wire [3:0] _Yb;
 
     always @*
         $display($time, " TEST>   _Ea=%1b", _Ea, " Aa=%2b", Aa, " _Ya=%4b", _Ya);
+
+    initial begin
+        $dumpfile("dumpfile.vcd");
+        $dumpvars(0, test);
+    end
      
     integer timer;
 
@@ -40,7 +45,7 @@ wire [3:0] _Yb;
         $display("setting address=0");
         Aa <= 0;
         #400
-        `Equals(_Ya, 4'bx)
+        //`Equals(_Ya, 4'bx)
 
         $display("disable");
         _Ea <= 1;
@@ -76,8 +81,8 @@ wire [3:0] _Yb;
         timer=$time;
         _Ea <= 0; // b->a
         wait(_Ya === 4'b0111);
-        if ($time - timer < 10) 
-            $display("TOO QUICK - EXPECTED 16ns - TOOK %-d", ($time - timer));
+        if ($time - timer != 13) 
+            $display("BAD SPEED - EXPECTED 13ns - TOOK %-d", ($time - timer));
         else
             $display("TOOK %-d", ($time - timer));
         
@@ -87,8 +92,8 @@ wire [3:0] _Yb;
         timer=$time;
         Aa <= 0; // b->a
         wait(_Ya === 4'b1110);
-        if ($time - timer < 24) 
-            $display("TOO QUICK - EXPECTED 16ns - TOOK %-d", ($time - timer));
+        if ($time - timer != 13) 
+            $display("BAD SPEED - EXPECTED 13ns - TOOK %-d", ($time - timer));
         else
             $display("TOOK %-d", ($time - timer));
 
@@ -98,5 +103,5 @@ wire [3:0] _Yb;
         $finish;
     end
 
-endmodule : tb
+endmodule : test
 
