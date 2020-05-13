@@ -2,7 +2,7 @@
 `include "../lib/assertion.v"
 `timescale 1ns/1ns
 
-module tb_jk;
+module test;
    reg j;
    reg _k;
    reg clk=0;
@@ -21,6 +21,11 @@ module tb_jk;
 
    parameter TEST_INTERVAL=CLK_T * 10;
 
+   initial begin
+        $dumpfile("dumpfile.vcd");
+        $dumpvars(0, test);
+   end
+
    //always  #CLK_T clk = !clk;
    task clk_pulse;
    begin
@@ -33,7 +38,7 @@ module tb_jk;
    endtask
 
  
-   hct74109  jkS ( .j(j),
+   hct74109  jkForceSet ( .j(j),
                   ._k(_k),
                   .clk(clk),
                   ._sd(1'b0),
@@ -42,7 +47,7 @@ module tb_jk;
                   ._q(_qS)
     );
 
-   hct74109  jkR ( .j(j),
+   hct74109  jkForceReset ( .j(j),
                   ._k(_k),
                   .clk(clk),
                   ._sd(1'b1),
@@ -51,7 +56,7 @@ module tb_jk;
                   ._q(_qR)
     );
 
-   hct74109  jk0 ( .j(j),
+   hct74109  jkVariable ( .j(j),
                   ._k(_k),
                   .clk(clk),
                   ._sd(_sd),
