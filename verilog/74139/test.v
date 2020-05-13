@@ -17,8 +17,13 @@ reg [1:0] Ab;
 wire [3:0] _Ya;
 wire [3:0] _Yb;
 
-    always @*
-        $display($time, " TEST>   _Ea=%1b", _Ea, " Aa=%2b", Aa, " _Ya=%4b", _Ya);
+// adds label to dumpfile 
+reg [20*8:0] label;
+`define DISPLAY(x) label=x; $display(x);
+
+    always @* begin
+        $display($time, " TEST>   _Ea=%1b", _Ea, " Aa=%2b", Aa, " _Ya=%4b", _Ya, "  : %s ", label);
+    end
 
     initial begin
         $dumpfile("dumpfile.vcd");
@@ -39,45 +44,45 @@ wire [3:0] _Yb;
     initial begin
       
 
-        $display("initial");
+        `DISPLAY("initial");
         `Equals(_Ya, 4'bx)
 
-        $display("setting address=0");
+        `DISPLAY("setting address=0");
         Aa <= 0;
         #400
         //`Equals(_Ya, 4'bx)
 
-        $display("disable");
+        `DISPLAY("disable");
         _Ea <= 1;
         #40
         `Equals(_Ya, 4'b1111)
 
-        $display("enable");
+        `DISPLAY("enable");
         _Ea <= 0;
         #40
         `Equals(_Ya, 4'b1110)
 
-        $display("address=1");
+        `DISPLAY("address=1");
         Aa <= 1;
         #400
         `Equals(_Ya, 4'b1101)
 
-        $display("address=2");
+        `DISPLAY("address=2");
         Aa <= 2;
         #400
         `Equals(_Ya, 4'b1011)
 
-        $display("address=3");
+        `DISPLAY("address=3");
         Aa <= 3;
         #400
         `Equals(_Ya, 4'b0111)
 
-        $display("disable");
+        `DISPLAY("disable");
         _Ea <= 1;
         #40
         `Equals(_Ya, 4'b1111)
         
-        $display("enable output");
+        `DISPLAY("enable output");
         timer=$time;
         _Ea <= 0; // b->a
         wait(_Ya === 4'b0111);
@@ -88,7 +93,7 @@ wire [3:0] _Yb;
         
         #50
 
-        $display("change address");
+        `DISPLAY("change address");
         timer=$time;
         Aa <= 0; // b->a
         wait(_Ya === 4'b1110);
@@ -99,7 +104,7 @@ wire [3:0] _Yb;
 
       #50
 
-        $display("done");
+        `DISPLAY("done");
         $finish;
     end
 
