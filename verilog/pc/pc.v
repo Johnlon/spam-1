@@ -23,7 +23,8 @@ module pc(
     output [7:0] PCLO,
     output [7:0] PCHI
 );
-  parameter LOG = 0;
+
+parameter LOG = 0;
 
 wire [7:0] PCHI, PCLO, PCHITMP;
 

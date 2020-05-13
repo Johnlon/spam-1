@@ -75,7 +75,6 @@ module alu #(parameter LOG=0) (
     hct74245 #(.NAME("F_X_to_0")) bufX(.A(xin), .B(xout), .dir(AtoB), .nOE(force_x_val_to_zero)); 
     //pulldown pullXToZero[7:0](xout);
 
-    //wire [7:0] alu_op_out;
     tri0 [7:0] alu_op_out;
     wire [7:0] alu_op_in = {3'b0, alu_op};
     wire [4:0] alu_op_effective;

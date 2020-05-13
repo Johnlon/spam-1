@@ -12,8 +12,10 @@ module tb();
       tri [7:0]A;
       tri [7:0]B;
 
-      logic [7:0] Vb=8'b00000000;
-      logic [7:0] Va=8'b11111111;
+      logic [7:0] Vb;
+      logic [7:0] Va;
+      //logic [7:0] Vb=8'b00000000;
+      //logic [7:0] Va=8'b11111111;
 
       logic dir;
       logic nOEX;
@@ -36,7 +38,7 @@ module tb();
 
 
     always @*
-        $display($time, " => dir=%1b", dir, " nOEX=%1b", nOEX, " Astim=%8b", Va, " Bstim=%8b ", Vb, " A=%8b ", A," B=%8b ", B);
+        $display($time, " => dir=%1b", dir, " nOEX=%1b", nOEX, " Va=%8b", Va, " Vb=%8b ", Vb, " A=%8b ", A," B=%8b ", B);
      
     integer timer;
 
@@ -46,7 +48,7 @@ module tb();
       Vb='x;
       dir <= 1; // a->b
       nOEX <= 1;
-      #2 // not enought time to stabilise
+      #2 // not enough time to stabilise
       `equals(A , 8'bxxxxxxxx, "OE disable");
       `equals(B , 8'bxxxxxxxx, "OE disable");
       ////////////////////////////////
@@ -105,6 +107,7 @@ module tb();
        `Equals(A , 8'b11111111);
        `Equals(B , 8'b11111111);
 
+      $display("switch dir while enabled");
       dir <= 0; // b->a
       nOEX <= 0;
       Va=8'bzzzzzzzz;
@@ -113,6 +116,7 @@ module tb();
        `equals(A , 8'b11111111, "OE B->A 1's");
        `equals(B , 8'b11111111, "OE B->A 1's");
       
+      $display("switch to 0's while enabled");
       dir <= 0; // b->a
       nOEX <= 0;
       Va=8'bzzzzzzzz;
@@ -123,6 +127,7 @@ module tb();
 
       ////////////////////////////////
 
+      $display("switch dir while enabled");
       dir <= 1; // a->b
       nOEX <= 0;
       Va=8'b00000000;
@@ -131,6 +136,7 @@ module tb();
        `equals(A , 8'b00000000, "OE A->B 0's");
        `equals(B , 8'b00000000, "OE A->B 0's");
       
+      $display("switch to 1's while enabled");
       dir <= 1; // a->b
       nOEX <= 0;
       Va=8'b11111111;

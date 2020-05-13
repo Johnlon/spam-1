@@ -1,8 +1,11 @@
+/*
+24 bit instruction
+
+*/
 `include "../lib/assertion.v"
 
 `default_nettype none
 
-`include "../pulseGenerator/pulseGenerator.v"
 `include "../rom/rom.v"
 `include "../ram/ram.v"
 `include "../control/control_selector.v"
@@ -18,145 +21,9 @@
 
 module test();
 
-
-    task devname;
-        input [4:0] dev;
-
-        output string name;
-        begin
-            case(dev)
-                0: name = "RAM";
-                1: name = "MARLO";
-                2: name = "MARHI";
-                3: name = "UART";
-                4: name = "PCHITMP";
-                5: name = "PCLO";
-                6: name = "PC";
-                7: name = "JMPO";
-                8: name = "JMPZ";
-                9: name = "JMPC";
-                10: name = "JMPDI";
-                11: name = "JMPDO";
-                12: name = "JMPEQ";
-                13: name = "JMPNE";
-                14: name = "JMPGT";
-                15: name = "JMPLT";
-                default: begin
-                    //name = "REG?";
-                    //name[3] = 65+(dev%16); // ascii A+offset
-                    name = 65+(dev%16); // ascii A+offset
-                end
-            endcase
-        end
-    endtask
-
-    task aluopname;
-        input [4:0] opcode;
-
-        output string name;
-        begin
-            case(opcode)
-                 0 : name =    "L";
-                 1 : name =    "R";
-                 2 : name =    "0";
-                 3 : name =    "-L";
-                 4 : name =    "-R";
-                 5 : name =    "L+1";
-                 6 : name =    "R+1";
-                 7 : name =    "L-1";
-
-                 8 : name =    "R-1";
-                 9 : name =    "+"; 
-                10 : name =    "-"; 
-                11 : name =    "R-L"; 
-                12 : name =    "L-R spec";
-                //13 : name =    "+ cin=1";  not used directly
-                //14 : name =    "- cin=1";  not used directly
-                //15 : name =    "R-L cin=1"; not used directly
-
-                16 : name =    "*HI";
-                17 : name =    "*LO";
-                18 : name =    "/";
-                19 : name =    "%";
-                20 : name =    "<<";
-                21 : name =    ">>A";
-                22 : name =    ">>L" ;
-                23 : name =    "ROL";
-
-                24 : name =    "ROR";
-                25 : name =    "AND";
-                26 : name =    "OR";
-                27 : name =    "XOR";
-                28 : name =    "NOT A";
-                29 : name =    "NOT B";
-                30 : name =    "+BCD";
-                31 : name =    "-BCD";
-                default: begin
-                    name = "??????";
-                end
-            endcase
-        end
-    endtask
-
-    task disassambler;
-        input [7:0] hi;
-        input [7:0] lo;
-        string opname;
-        string aluname;
-        string xname;
-        string xname_non_reg;
-        string xname_reg;
-        string yname_reg;
-    begin
-        devname({hi[0], hi[4:1]}, xname);
-        devname({1'b0, hi[4:1]}, xname_non_reg);
-        devname({1'b1, hi[4:1]}, xname_reg);
-        devname({1'b1, lo[3:0]}, yname_reg);
-        aluopname({hi[0], lo[7:4]}, aluname);
-
-        $write("\n%9t  %5d >> %02x:%02x    ", $time, cpcount, PCHI, PCLO);
-
-        case (hi[7:5]) 
-            0:  begin
-                    opname = "DEV_eq_ROM";
-                    $write("%s=%dd", xname, lo);
-                end
-            1:  begin
-                    opname = "DEV_eq_RAM";
-                    $write("%s=RAM[]", xname);
-                end
-            2:  begin
-                    opname = "DEV_eq_RAMZP";
-                    $write("%s=RAM[%d]", xname, lo);
-                end
-            3:  begin
-                    opname = "DEV_eq_UART";
-                    $write("%s=UART", xname);
-                end
-            4:  begin
-                    opname = "NONREG_eq_OPREGY";
-                    $write("%s=0(%s)%s", xname_non_reg, aluname, yname_reg);
-                end
-            5:  begin
-                    opname = "REGX_eq_ALU";
-                    $write("%s=%s(%s)%s", xname_reg, xname_reg, aluname, yname_reg);
-                end
-            6:  begin
-                    opname = "RAMZP_eq_REG";
-                    $write("RAM[%dd]=%-s", lo, xname_reg);
-                end
-            7:  begin
-                    opname = "RAMZP_eq_UART";
-                    $write("RAM[%dd]=UART", lo);
-                end
-            default:  begin
-                    opname = "UNKNOWN";
-                    $write("%s", opname);
-                end
-        endcase
-        $display("\t\t# %20s %08b,%08b\n", opname, hi, lo);
-    end
-    endtask
+`include "../alu/aluopName.v"
+`include "devName.v"
+`include "disassembler.v"
 
     event RESET_DONE;
 
@@ -165,10 +32,6 @@ module test();
 
     tri [7:0] data_bus; // <<<<<<<<<<<<<<<<<<PULLED DOWN
 
-    // PULSED -ve ON +ve CLOCK EDGE 
-    logic clk_en=1;
-    wire _CP_pulse; // short -ve pulse on each +CP edge
-    pulseGenerator gen( CP, clk_en, _CP_pulse);
 
     // PROGRAM COUNTER 
     logic _POWER_ON_RESET=1'b0;
@@ -176,7 +39,7 @@ module test();
     wire [7:0] PCHI, PCLO;
 
     // ROM IO
-    logic [14:0] rom_address;
+    logic [15:0] rom_address;
     tri [7:0] rom_hi_data;
     tri [7:0] rom_lo_data;
     
@@ -196,10 +59,10 @@ module test();
     logic _uart_in_ready;
     logic _uart_out_ready;
 
-    logic _rom_out;
-    logic _ram_out;
-    logic _alu_out;
-    logic _uart_out;
+    logic _rom_r_out;
+    logic _ram_r_out;
+    logic _uart_l_out;
+
     logic [4:0] device_in;
         
     logic _ram_in;
