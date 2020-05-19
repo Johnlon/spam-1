@@ -7,12 +7,9 @@
 // relies on PD of demux being less than the PD of flipflops
 
 module test;
-    wire phase0;
-    wire phase1;
-    wire phase2;
-    wire phase3;
-   reg clk=0;
-   reg _reset=1;
+    wire clk_1, clk_2, clk_3, clk_4;
+    reg clk=0;
+    reg _MR=1;
 
     // must be longer than PD of device else malfunction
    parameter CLK_T=30;
@@ -21,11 +18,11 @@ module test;
 
    phased_clock  ph(
     .clk,
-    ._reset,
-    .phase0,
-    .phase1,
-    .phase2,
-    .phase3
+    ._MR,
+    .clk_1,
+    .clk_2,
+    .clk_3,
+    .clk_4
     );
  
     initial begin
@@ -37,16 +34,16 @@ module test;
 
    initial begin
         #100 
-        $display($time, " reset");
-        _reset <= 0;
+        $display($time, " MR");
+        _MR <= 0;
         #60 
-        $display($time, " reset release ");
-        _reset <= 1;
+        $display($time, " MR release ");
+        _MR <= 1;
 
         #4000 $finish;
    end
 
-   wire [3:0] phased = {phase3, phase2, phase1, phase0};
+   wire [3:0] phased = {clk_1, clk_2, clk_3, clk_4};
    initial
       $monitor ($time, " clk ", clk, " phase=%4b", phased);
 
