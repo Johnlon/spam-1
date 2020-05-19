@@ -17,12 +17,10 @@ reg [1:0] Ab;
 wire [3:0] _Ya;
 wire [3:0] _Yb;
 
-// adds label to dumpfile 
-reg [20*8:0] label;
-`define DISPLAY(x) label=x; $display(x);
+`include "../lib/display_snippet.v"
 
     always @* begin
-        $display($time, " TEST>   _Ea=%1b", _Ea, " Aa=%2b", Aa, " _Ya=%4b", _Ya, "  : %s ", label);
+        $display("%9t ", $time, " TEST>   _Ea=%1b", _Ea, " Aa=%2b", Aa, " _Ya=%4b", _Ya, "  : %s ", label);
     end
 
     initial begin
