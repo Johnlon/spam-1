@@ -13,17 +13,16 @@
 module phaser #(parameter LOG=0) 
 (
     input clk, 
-    input _mr,
+    input mr,
 
     output [9:0] seq,
 
     output _phaseFetch, phaseFetch , phaseDecode , phaseExec
 );
-    wire mr = ! _mr;
 
     wire _co; 
 
-    hc744017 decade(.cp0(clk), .mr, .q(seq));
+    hc744017 decade(.cp0(clk), .mr, .q(seq), ._co);
 
     // construct using 3 input nor gates so we can OR mr into the trigger
     wire phaseFetch_begin = seq[0];
