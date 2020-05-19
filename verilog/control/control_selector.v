@@ -3,8 +3,8 @@
 
 
 `include "../74138/hct74138.v"
-`include "../74139/hct74139.v"
 `include "../74245/hct74245.v"
+`include "../4PhaseClock/phased_clock.v"
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
@@ -13,82 +13,45 @@
 
 module control_selector #(parameter LOG=0) 
 (
+    input clk, 
+    input _MR,
+
     input [7:0] hi_rom,
 
-    output _rom_out, _ram_out, _alu_out, _uart_out,
+    output _addrmode_register, // enable MAR onto address bus - register direct addressing - op 0
+    output _addrmode_pc, // enable PC onto address bus - register direct addressing - ????
+    output _addrmode_direct, // enable ROM[15:0] onto address bus, needs an IR in implementation - direct addressing
 
-    output force_alu_op_to_passx,
-    output force_x_val_to_zero,
-    output _ram_zp,
+    output [3:0] rbus_dev,
+    output [3:0] lbus_dev,
+    output [4:0] targ_dev,
 
-    output [4:0] device_in
+    output [4:0] aluop
 );
 
-    // constants
-    parameter [2:0] op_DEV_eq_ROM_sel = 0;
-    parameter [2:0] op_DEV_eq_RAM_sel = 1;
-    parameter [2:0] op_DEV_eq_RAMZP_sel = 2;
-    parameter [2:0] op_DEV_eq_UART_sel = 3;
-    parameter [2:0] op_NONREG_eq_OPREGY_sel = 4;
-    parameter [2:0] op_REGX_eq_ALU_sel = 5;
-    parameter [2:0] op_RAMZP_eq_REG_sel = 6;
-    parameter [2:0] op_RAMZP_eq_UART_sel = 7;
+    // constants 
+    // bit 23 can dictate addressing mode as we only have 6 op codes and only 3 use either mode
+    parameter [2:0] op_DEV_eq_ALU_sel       = 0; // == RBUSDEV=ROM[8:5]    LBUSDEV=ROM[12:9]   ALUOP=ROM[4:0]   TARG=IR[20:16]  ADDRMODE=REGISTER  // ie mar
+    parameter [2:0] op_DEV_eq_CONST8_sel    = 1; // == RBUSDEV='ROM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=REGISTER  
+    parameter [2:0] op_DEVP_eq_CONST16_sel  = 2; // == RBUSDEV='ROM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=REGISTER  // stretch objective - load some fixed reg pair (eg if A is targ then A*B, if MARLO then its MARLO+HI)
+    // op 3 unused
+    parameter [2:0] op_DEV_eq_ROM_ABS_sel   = 4; // == RBUSDEV='ROM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=IMMEDIATE // MUST BE VIA IR for all 3 bytes otherwise indexing the ROM using ROM[15:0] will change the logic mid exec
+    parameter [2:0] op_DEV_eq_RAM_ABS_sel   = 5; // == RBUSDEV='RAM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=IMMEDIATE 
+    parameter [2:0] op_RAM_ABS_eq_DEV_sel   = 6; // == RBUSDEV=XXXX        LBUSDEV=ROM[19:16]  ALUOP='PASSL'    TARG='RAM'      ADDRMODE=IMMEDIATE // LBUS WILL TRANSMIT A REGISTER
+    // op 7 unused
 
-    // wiring
-    // dual and     5 = 1x7408 quad dual and and use one of the 7411s
-    // triple and   2 =	1x7411 triple triple input, use one gate as dual
-    // not          4 =	1x7404 inverter
-    // or           1 =	1x7432 quad or
-    // or 17 diodes and 3 not and the 74245 can be replaced by 10 diodes in an AND cfg
-    // plus             1x74245 buf
-    //                  1x74138 decoder
+    // negative non-overlapping 3 phase clock (ignore phase 4)
+    wire clk_1 , clk_2 , clk_3 , clk_4;
 
+    phased_clock phclk(._MR, .clk, .clk_1 , .clk_2 , .clk_3 , .clk_4);
 
-    wire [2:0] operation_sel = hi_rom[7:5];
-    wire [7:0] _decodedOp;
-    hct74138 opDecoder(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(operation_sel), .Y(_decodedOp));
     
-    // BUS ACCESS - FIXME - short spikes of high current possible.
-    // With logic gates this setup causes contention due to differences in timings on the _out's. 
-    // A rom based approach might also be glitchy due to unpredicable values during transitions.
-    // Diode logic would minimise timings diffs - very short periods of randomness during transitions.
-    // Correct approach is not to use 74245's etc and instead to connect to the bus using open collector outputs.
-    // 3 input AND = 11ns - https://assets.nexperia.com/documents/data-sheet/74HC_HCT11.pdf
-    // 2 input AND = 11ns - https://assets.nexperia.com/documents/data-sheet/74HC_HCT08.pdf
-    // inverter = 8ns - https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf
-    assign  _rom_out = _decodedOp[op_DEV_eq_ROM_sel];
-    assign  #11 _ram_out = _decodedOp[op_DEV_eq_RAM_sel] && _decodedOp[op_DEV_eq_RAMZP_sel];
-    assign  #11 _uart_out = _decodedOp[op_DEV_eq_UART_sel] && _decodedOp[op_RAMZP_eq_UART_sel];
-    assign  #11 _alu_out = _decodedOp[op_NONREG_eq_OPREGY_sel] && _decodedOp[op_REGX_eq_ALU_sel] && _decodedOp[op_RAMZP_eq_REG_sel];
-
-    // _ram_zp will turn off the ram address buffers letting HiAddr pull down to 0 and will turn on ROM->MARLO for the lo addr
-    assign #11 _ram_zp = _decodedOp[op_DEV_eq_RAMZP_sel] && _decodedOp[op_RAMZP_eq_REG_sel] && _decodedOp[op_RAMZP_eq_UART_sel];
+    assign _addrmode_pc = clk_1;
     
-    assign #8 force_x_val_to_zero = !_decodedOp[op_NONREG_eq_OPREGY_sel];  // +ve logic needed - EXTRA GATE
-    assign #8 force_alu_op_to_passx = !_decodedOp[op_RAMZP_eq_REG_sel]; // +ve logic needed - EXTRA GATE
-    
-    // write device - sometimes bit 0 is a device bit and sometimes ALU op bit
-    wire #11 _ram_write_override = _decodedOp[op_RAMZP_eq_REG_sel] && _decodedOp[op_RAMZP_eq_UART_sel];
-    wire #11 _is_non_reg_override = _decodedOp[op_NONREG_eq_OPREGY_sel] && _ram_write_override;
-    wire #11 _is_reg_override = _decodedOp[op_REGX_eq_ALU_sel];
-    wire implied_dev_top_bit = hi_rom[0];
 
-    wire #11 implied_reg_in_not_overridden = implied_dev_top_bit && _is_non_reg_override;
-    wire #8 is_reg_override = ! _is_reg_override; // EXTRA GATE
-    wire #11 reg_in = implied_reg_in_not_overridden || is_reg_override; // EXTRA GATE
 
-    wire [4:0] device_sel_pre = {reg_in, hi_rom[4:1]}; // pull down top bit if this instruction applies to non-reg as that bit is used by ALU
 
-    // apply ram write device override
-    wire [7:0] device_sel_in = {3'b0, device_sel_pre};
-    tri0 [7:0] device_sel_out; // !!! PULLED DOWN WIRES
-
-    hct74245 #(.NAME("F_RAMWR")) bufDeviceSel(.A(device_sel_in), .B(device_sel_out), .dir(1'b1), .nOE( !_ram_write_override ));  // EXTRA GATE
-    //pulldown (weak0, weak1) pullDeviceToZero[7:0](device_sel_out);
-
-    // return
-    assign #18 device_in = device_sel_out[4:0];
-
+/*
 if (LOG)    always @ * 
          $display("%8d CTRL_SEL", $time,
           " hi=%08b", hi_rom, 
@@ -99,6 +62,7 @@ if (LOG)    always @ *
             " _ram_zp=%1b", _ram_zp
     ,implied_dev_top_bit , _is_non_reg_override, _is_reg_override, " %05b %05b %08b", device_sel_pre, device_in, device_sel_out
 );
+*/
 
 endmodule : control_selector
 // verilator lint_on ASSIGNDLY
