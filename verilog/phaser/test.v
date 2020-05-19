@@ -16,14 +16,10 @@ module test();
     logic clk;
     logic _mr;
 
-    logic [7:0] hi_rom;
-
-    wire _addrmode_register, _addrmode_pc, _addrmode_direct;
-
-    wire [2:0] _addr_mode = {_addrmode_pc, _addrmode_register, _addrmode_direct};
     wire [9:0] seq;
 
-	phaser #(.LOG(1)) ctrl( .clk, ._mr, .hi_rom, .seq, ._addrmode_pc, ._addrmode_register, ._addrmode_direct);
+    wire _phaseFetch, phaseFetch , phaseDecode , phaseExec;
+	phaser #(.LOG(1)) ctrl( .clk, ._mr, .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec);
     
 
     initial begin
@@ -33,9 +29,9 @@ module test();
         $dumpfile("dumpfile.vcd");
         $dumpvars(0, test);
 
-        $monitor ("%9t ", $time,  "clk=%1b _mr=%2b hi_rom=%08b", clk, _mr, hi_rom, 
+        $monitor ("%9t ", $time,  "clk=%1b _mr=%2b ", clk, _mr, 
                 " seq=%10b", seq,
-                " addr(prd=%1b%1b%1b)", _addrmode_pc, _addrmode_register, _addrmode_direct, 
+                " phase(Fetch=%1b Decode=%1b Exec=%1b)", phaseFetch , phaseDecode , phaseExec,
                 " %s", label
                 );
 
@@ -43,166 +39,99 @@ module test();
     end
 
     integer count;
-    integer p1count=3;
-    integer p2count=6;
+    integer pFetch_count=3;
+    integer pDecode_count=4;
 
     initial begin
         localparam T=100;   // clock cycle
         localparam SMALL_DELAY=20; // come gate delay
 
         `DISPLAY("init");
-        hi_rom <= 8'b00000000;
         _mr <= 0;
         clk <= 0;
 
         #T
         `Equals( seq, 10'b1);
-        `Equals( _addr_mode, 3'b011);
+        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
 
         #T
-        `DISPLAY("_mr no clocking is ineffective = stay in PC mode")
-        hi_rom <= 8'b00000000;
+        `DISPLAY("_mr no clocking is ineffective = stay in FETCH mode")
         count = 0;
         while (count++ < 3) begin
             $display("count ", count);
             clk <= 1;
             #T
-            `Equals( _addr_mode, 3'b011);
+            `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
 
             clk <= 0;
             #T
-            `Equals( _addr_mode, 3'b011);
+            `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
         end
+        `Equals( seq, 10'b1);
         
-        `DISPLAY("_mr released = still in PC mode after settle")
-        _mr <= 1;
+        `DISPLAY("_mr released = still in FETCH mode after settle")
+         _mr <= 1;
          #T
-         `Equals( _addr_mode, 3'b011);
+         `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
+         `Equals( seq, 10'b1);
 
-        `DISPLAY("stay in PC mode for 3 clocks")
+        `DISPLAY("stay in FETCH mode for 3 clocks")
         count = 0;
-        while (count++ < p1count) begin
+        while (count++ < pFetch_count) begin
             $display("count ", count);
             clk <= 1;
             #T
-            `Equals( _addr_mode, 3'b011);
+            `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
 
             clk <= 0;
             #T
-            `Equals( _addr_mode, 3'b011);
+            `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
         end
+         `Equals( seq, 10'b1000);
         
 
-        `DISPLAY("stay in REG mode for 6 clocks = - op[7]=0 so address mode = REGISTER")
-        hi_rom <= 8'b00000000;
+        `DISPLAY("stay in DECODE mode for 4 clocks");
         count = 0;
-        while (count++ < p2count) begin
+        while (count++ < pDecode_count) begin
             $display("count ", count);
             clk <= 1;
             #T
-            `Equals( _addr_mode, 3'b101);
+            `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b010);
 
             clk <= 0;
             #T
-            `Equals( _addr_mode, 3'b101);
+            `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b010);
         end
+         `Equals( seq, 10'b10000000);
 
-        `DISPLAY("return to PC mode")
-        hi_rom <= 8'b00000000;
+        `DISPLAY("stay in DECODE mode for 1 clocks");
         clk <= 1;
         #T
-        `Equals( _addr_mode, 3'b011);
+        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b001);
         clk <= 0;
         #T
+        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b001);
+         `Equals( seq, 10'b100000000);
 
-        `DISPLAY("if op[7]=1 address mode = IMMEDIATE")
-        hi_rom <= 8'b10000000;
-        count = 0;
-        while (count++ < p1count) begin
-            $display("count ", count);
-            #T
-            clk <= 1;
-            #T
-            clk <= 0;
-        end
-        count = 0;
-        while (count++ < p2count) begin
-            $display("count ", count);
-            #T
-            clk <= 1;
-            #T
-            `Equals( _addr_mode, 3'b110);
-            clk <= 0;
-        end
-        
-/*
-        parameter pad6      = 6'b000000;
-        parameter pad5      = 5'b00000;
-        parameter pad4      = 4'b0000;
-        
-        // all routes to belect
-        parameter [2:0] op_DEV_eq_ROM_sel = 0;
-        parameter [2:0] op_DEV_eq_RAM_sel = 1;
-        parameter [2:0] op_DEV_eq_RAMZP_sel = 2;
-        parameter [2:0] op_DEV_eq_UART_sel = 3;
-        parameter [2:0] op_NONREG_eq_OPREGY_sel = 4;
-        parameter [2:0] op_REGX_eq_ALU_sel = 5;
-        parameter [2:0] op_RAMZP_eq_REG_sel = 6;
-        parameter [2:0] op_RAMZP_eq_UART_sel = 7;
+        `DISPLAY("no mode for 1 clocks");
+        clk <= 1;
+        #T
+        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b000);
+        clk <= 0;
+        #T
+        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b000);
+         `Equals( seq, 10'b1000000000);
 
-        // because MSB
-        parameter [4:0] idx_RAM_sel      = 0;
-        parameter [4:0] idx_MARLO_sel    = 1;
-        parameter [4:0] idx_MARHI_sel    = 2;
-        parameter [4:0] idx_UART_sel     = 3;
-        parameter [4:0] idx_PCHITMP_sel  = 4;
-        parameter [4:0] idx_PCLO_sel     = 5;
-        parameter [4:0] idx_PC_sel       = 6;
-        parameter [4:0] idx_JMPO_sel     = 7;
+        `DISPLAY("return to FETCH mode");
+        clk <= 1;
+        #T
+        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
+        clk <= 0;
+        #T
+        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
+         `Equals( seq, 10'b1);
 
-        parameter [4:0] idx_JMPZ_sel     = 8;
-        parameter [4:0] idx_JMPC_sel     = 9;
-        parameter [4:0] idx_JMPDI_sel    = 10;
-        parameter [4:0] idx_JMPDO_sel    = 11;
-        parameter [4:0] idx_JMPEQ_sel    = 12;
-        parameter [4:0] idx_JMPNE_sel    = 13;
-        parameter [4:0] idx_JMPGT_sel    = 14;
-        parameter [4:0] idx_JMPLT_sel    = 15;
-
-        parameter [4:0] idx_REGA_sel     = 16;
-        parameter [4:0] idx_REGP_sel     = 31;
-
-*/
-        // all devices to select
-/*
-        parameter [4:0] dev_RAM_sel      = rol(idx_RAM_sel);
-        parameter [4:0] dev_MARLO_sel    = rol(idx_MARLO_sel);
-        parameter [4:0] dev_MARHI_sel    = rol(idx_MARHI_sel);
-        parameter [4:0] dev_UART_sel     = rol(idx_UART_sel);
-        parameter [4:0] dev_PCHITMP_sel  = rol(idx_PCHITMP_sel);
-        parameter [4:0] dev_PCLO_sel     = rol(idx_PCLO_sel);
-        parameter [4:0] dev_PC_sel       = rol(idx_PC_sel);
-        parameter [4:0] dev_JMPO_sel     = rol(idx_JMPO_sel);
-
-        parameter [4:0] dev_JMPZ_sel     = rol(idx_JMPZ_sel);
-        parameter [4:0] dev_JMPC_sel     = rol(idx_JMPC_sel);
-        parameter [4:0] dev_JMPDI_sel    = rol(idx_JMPDI_sel);
-        parameter [4:0] dev_JMPDO_sel    = rol(idx_JMPDO_sel);
-        parameter [4:0] dev_JMPEQ_sel    = rol(idx_JMPEQ_sel);
-        parameter [4:0] dev_JMPNE_sel    = rol(idx_JMPNE_sel);
-        parameter [4:0] dev_JMPGT_sel    = rol(idx_JMPGT_sel);
-        parameter [4:0] dev_JMPLT_sel    = rol(idx_JMPLT_sel);
-
-        parameter [4:0] dev_REGA_sel     = rol(idx_REGA_sel);
-        parameter [4:0] dev_REGP_sel     = rol(idx_REGP_sel);
- */       
-        
         $display("testing end");
-    // ===========================================================================
-
-//`include "./generated_tests.v"
-
-
-end
+    end
 
 endmodule : test
