@@ -4,27 +4,12 @@
 
 `include "../74138/hct74138.v"
 `include "../74245/hct74245.v"
-`include "../744017/hc744017.v"
-`include "../4PhaseClock/phased_clock.v"
+`include "../phaser/phaser.v"
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
 
 `timescale 1ns/1ns
-
-
-module sr(s,r,q,_q);
-    input s,r;
-    output q, _q;
-
-    assign  #(9) q = ! (r | _q);
-    assign  #(9)_q = ! (s | q);
-
-    always @*
-        $display("%9t", $time, " SR  S=%1b R=%1b   Q=%1b _Q=%1b   %m", s, r, q,  _q);
-
-endmodule : sr
-
 
 module control_selector #(parameter LOG=0) 
 (
@@ -32,6 +17,8 @@ module control_selector #(parameter LOG=0)
     input _mr,
 
     input [7:0] hi_rom,
+
+    output [9:0] seq,
 
     output _addrmode_pc, // enable PC onto address bus - register direct addressing - ????
     output _addrmode_register, // enable MAR onto address bus - register direct addressing - op 0
@@ -45,27 +32,14 @@ module control_selector #(parameter LOG=0)
 );
     wire mr = ! _mr;
 
-    wire [9:0] q10;
     wire _co; 
 
-    // negative non-overlapping 3 phase clock (ignore phase 4)
+    // PHASING ======
     wire _phaseFetch, phaseFetch , phaseDecode , phaseExec;
+    wire [9:0] seq;
 
+    phaser ph(.clk, .mr, .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec);
 
-    hc744017 decade(.cp0(clk), .mr, .q(q10));
-
-    // construct using 3 input nor gates so we can OR mr into the trigger
-    wire phaseFetch_begin = q10[0];
-    wire phaseFetch_end = q10[4];
-    wire phaseDecode_begin = q10[4];
-    wire phaseDecode_end = mr |q10[8]; // ensure phase is reset when MR triggers
-    wire phaseExec_begin = q10[8];
-    wire phaseExec_end = mr |q10[9]; // ensure phase is reset when MR triggers
-
-    sr phase1(.s(phaseFetch_begin), .r(phaseFetch_end), .q(phaseFetch), ._q(_phaseFetch));
-    sr phase2(.s(phaseDecode_begin), .r(phaseDecode_end), .q(phaseDecode));
-    sr phase3(.s(phaseExec_begin), .r(phaseExec_end), .q(phaseExec));
-    
     // constants 
     // bit 23 can dictate addressing mode as we only have 6 op codes and only 3 use either mode
     parameter [2:0] op_DEV_eq_ALU_sel       = 0; // == RBUSDEV=ROM[8:5]    LBUSDEV=ROM[12:9]   ALUOP=ROM[4:0]   TARG=IR[20:16]  ADDRMODE=REGISTER  // ie mar
@@ -83,10 +57,6 @@ module control_selector #(parameter LOG=0)
     wire addr_mode = hi_rom[7];
     wire #(10) _addr_mode = ! addr_mode;
 
-
-//    phased_clock phclk(._mr, .clk, .clk_1 , .clk_2 , .clk_3 , .clk_4);
-
-    
     assign _addrmode_pc = _phaseFetch;
     assign _addrmode_register = phaseFetch | addr_mode;
     assign _addrmode_direct =  phaseFetch | _addr_mode;
@@ -97,18 +67,9 @@ module control_selector #(parameter LOG=0)
          $display("%9t CTRL_SEL", $time,
           " hi=%08b", hi_rom, 
             " clk=%1b", clk, 
-            " q10=%10b phase(fir=%3b)", q10, {phaseFetch, phaseDecode, phaseExec} ,
+            " seq=%10b phase(fir=%3b)", seq, {phaseFetch, phaseDecode, phaseExec} ,
             " amode(pc=%1b,reg=%1b,dir=%1b)", _addrmode_pc, _addrmode_register, _addrmode_direct, 
-            " regmode=%1b _phaseFetch=%1b/phaseFetch=%1b", addr_mode, _phaseFetch, phaseFetch,
-            " trigs=%6b ",
-            {
-                phaseFetch_begin ,
-                phaseFetch_end ,
-                phaseDecode_begin ,
-                phaseDecode_end ,
-                phaseExec_begin ,
-                phaseExec_end 
-            }
+            " regmode=%1b _phaseFetch=%1b/phaseFetch=%1b", addr_mode, _phaseFetch, phaseFetch
             );
 
 /*

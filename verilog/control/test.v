@@ -26,8 +26,9 @@ module test();
     wire [4:0] aluop;
 
     wire [2:0] _addr_mode = {_addrmode_pc, _addrmode_register, _addrmode_direct};
+    wire [9:0] seq;
 
-	control_selector #(.LOG(1)) ctrl( .clk, ._mr, .hi_rom, ._addrmode_pc, ._addrmode_register, ._addrmode_direct, .rbus_dev, .lbus_dev, .targ_dev, .aluop);
+	control_selector #(.LOG(1)) ctrl( .clk, ._mr, .hi_rom, .seq, ._addrmode_pc, ._addrmode_register, ._addrmode_direct, .rbus_dev, .lbus_dev, .targ_dev, .aluop);
     
 
     initial begin
@@ -38,6 +39,7 @@ module test();
         $dumpvars(0, test);
 
         $monitor ("%9t ", $time,  "clk=%1b _mr=%2b hi_rom=%08b", clk, _mr, hi_rom, 
+                " seq=%10b", seq,
                 " addr(prd=%1b%1b%1b)", _addrmode_pc, _addrmode_register, _addrmode_direct, 
                 " rbus=%04b lbus=%04b targ=%05b aluop=%05b", rbus_dev, lbus_dev, targ_dev, aluop,
                 " %s", label
@@ -48,7 +50,7 @@ module test();
 
     integer count;
     integer p1count=3;
-    integer p2count=4;
+    integer p2count=6;
 
     initial begin
         localparam T=100;   // clock cycle
@@ -59,11 +61,16 @@ module test();
         _mr <= 0;
         clk <= 0;
 
-        `DISPLAY("_mr so no clocking = stay in PC mode")
         #T
+        `Equals( seq, 10'b1);
+        `Equals( _addr_mode, 3'b011);
+
+        #T
+        `DISPLAY("_mr no clocking is ineffective = stay in PC mode")
         hi_rom <= 8'b00000000;
-        count = 10*2;
-        while (count -- > 0) begin
+        count = 0;
+        while (count++ < 3) begin
+            $display("count ", count);
             clk <= 1;
             #T
             `Equals( _addr_mode, 3'b011);
@@ -81,6 +88,7 @@ module test();
         `DISPLAY("stay in PC mode for 3 clocks")
         count = 0;
         while (count++ < p1count) begin
+            $display("count ", count);
             clk <= 1;
             #T
             `Equals( _addr_mode, 3'b011);
@@ -91,10 +99,11 @@ module test();
         end
         
 
-        `DISPLAY("stay in REG mode for 4 clocks = - op[7]=0 so address mode = REGISTER")
+        `DISPLAY("stay in REG mode for 6 clocks = - op[7]=0 so address mode = REGISTER")
         hi_rom <= 8'b00000000;
         count = 0;
         while (count++ < p2count) begin
+            $display("count ", count);
             clk <= 1;
             #T
             `Equals( _addr_mode, 3'b101);
@@ -104,29 +113,33 @@ module test();
             `Equals( _addr_mode, 3'b101);
         end
 
-        `DISPLAY("stay in REG mode for 4 clocks = - op[7]=0 so address mode = REGISTER")
+        `DISPLAY("return to PC mode")
         hi_rom <= 8'b00000000;
         clk <= 1;
         #T
-        `Equals( _addr_mode, 3'b111);
+        `Equals( _addr_mode, 3'b011);
         clk <= 0;
         #T
-        `Equals( _addr_mode, 3'b101);
 
         `DISPLAY("if op[7]=1 address mode = IMMEDIATE")
         hi_rom <= 8'b10000000;
-        #SMALL_DELAY
-        `Equals( _addr_mode, 3'b110);
-
-        `DISPLAY("next clock - EXECUTE - addressing should stay stable during exec")
-        hi_rom <= 8'b10000000;
-        clk <= 1;
-        #T
-        `Equals( _addr_mode, 3'b110);
-        clk <= 0;
-        #T
-        `Equals( _addr_mode, 3'b110);
-
+        count = 0;
+        while (count++ < p1count) begin
+            $display("count ", count);
+            #T
+            clk <= 1;
+            #T
+            clk <= 0;
+        end
+        count = 0;
+        while (count++ < p2count) begin
+            $display("count ", count);
+            #T
+            clk <= 1;
+            #T
+            `Equals( _addr_mode, 3'b110);
+            clk <= 0;
+        end
         
 /*
         parameter pad6      = 6'b000000;
@@ -190,7 +203,7 @@ module test();
         parameter [4:0] dev_REGP_sel     = rol(idx_REGP_sel);
  */       
         
-        $display("testing select");
+        $display("testing end");
     // ===========================================================================
 
 //`include "./generated_tests.v"
