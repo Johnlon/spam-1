@@ -66,7 +66,7 @@ module test();
         `Equals( _addr_mode, 3'b011);
 
         #T
-        `DISPLAY("_mr no clocking is ineffective = stay in PC mode")
+        `DISPLAY("_mr no clocking is ineffective = stay in PC addressing mode")
         hi_rom <= 8'b00000000;
         count = 0;
         while (count++ < 3) begin
@@ -80,12 +80,13 @@ module test();
             `Equals( _addr_mode, 3'b011);
         end
         
-        `DISPLAY("_mr released = still in PC mode after settle")
+        `DISPLAY("_mr released = still in PC addressing mode after settle")
         _mr <= 1;
          #T
          `Equals( _addr_mode, 3'b011);
 
-        `DISPLAY("stay in PC mode for 3 clocks")
+
+        `DISPLAY("stay in PC addressing mode for 3 clocks")
         count = 0;
         while (count++ < p1count) begin
             $display("count ", count);
@@ -99,7 +100,7 @@ module test();
         end
         
 
-        `DISPLAY("stay in REG mode for 6 clocks = - op[7]=0 so address mode = REGISTER")
+        `DISPLAY("enter in REG addressing mode for 6 clocks - Note op[7]=0 so address mode = REGISTER")
         hi_rom <= 8'b00000000;
         count = 0;
         while (count++ < p2count) begin
@@ -113,33 +114,20 @@ module test();
             `Equals( _addr_mode, 3'b101);
         end
 
-        `DISPLAY("return to PC mode")
-        hi_rom <= 8'b00000000;
+
+        `DISPLAY("while in REG addressing mode if op[7]=1 then address mode = IMMEDIATE")
+        hi_rom <= 8'b10000000;
+        #SMALL_DELAY
+        `Equals( _addr_mode, 3'b110);
+
+
+        `DISPLAY("return to PC addressing mode")
         clk <= 1;
         #T
         `Equals( _addr_mode, 3'b011);
         clk <= 0;
         #T
 
-        `DISPLAY("if op[7]=1 address mode = IMMEDIATE")
-        hi_rom <= 8'b10000000;
-        count = 0;
-        while (count++ < p1count) begin
-            $display("count ", count);
-            #T
-            clk <= 1;
-            #T
-            clk <= 0;
-        end
-        count = 0;
-        while (count++ < p2count) begin
-            $display("count ", count);
-            #T
-            clk <= 1;
-            #T
-            `Equals( _addr_mode, 3'b110);
-            clk <= 0;
-        end
         
 /*
         parameter pad6      = 6'b000000;
