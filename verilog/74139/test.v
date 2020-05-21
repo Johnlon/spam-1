@@ -10,14 +10,14 @@
 
 module test();
 
-reg _Ea=1'bx;
-reg _Eb;
-reg [1:0] Aa;
-reg [1:0] Ab;
-wire [3:0] _Ya;
-wire [3:0] _Yb;
+    reg _Ea=1'bx;
+    reg _Eb;
+    reg [1:0] Aa;
+    reg [1:0] Ab;
+    wire [3:0] _Ya;
+    wire [3:0] _Yb;
 
-`include "../lib/display_snippet.v"
+    `include "../lib/display_snippet.v"
 
     always @* begin
         $display("%9t ", $time, " TEST>   _Ea=%1b", _Ea, " Aa=%2b", Aa, " _Ya=%4b", _Ya, "  : %s ", label);

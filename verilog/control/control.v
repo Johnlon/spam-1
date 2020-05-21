@@ -24,7 +24,7 @@ parameter [2:0] op_RAM_ABS_eq_DEV_sel   = 6; // == RBUSDEV=XXXX        LBUSDEV=R
 // op 7 unused
 */
 
-module control_selector #(parameter LOG=0) 
+module control #(parameter LOG=0) 
 (
     input clk, 
     input _mr,
@@ -32,6 +32,9 @@ module control_selector #(parameter LOG=0)
     input [7:0] hi_rom,
 
     output [9:0] seq,
+
+    output phaseFetch, 
+    output _phaseFetch,
 
     output _addrmode_pc, // enable PC onto address bus - register direct addressing - ????
     output _addrmode_register, // enable MAR onto address bus - register direct addressing - op 0
@@ -48,7 +51,7 @@ module control_selector #(parameter LOG=0)
     wire _co; 
 
     // PHASING ======
-    wire _phaseFetch, phaseFetch , phaseDecode , phaseExec;
+    wire phaseDecode , phaseExec;
     wire [9:0] seq;
 
     phaser ph(.clk, .mr, .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec);
@@ -60,8 +63,9 @@ module control_selector #(parameter LOG=0)
     wire #(10) _addr_mode = ! addr_mode;
 
     assign _addrmode_pc = _phaseFetch;
-    assign _addrmode_register = phaseFetch | addr_mode;
-    assign _addrmode_direct =  phaseFetch | _addr_mode;
+    wire #10 _programPhase = !(phaseDecode | phaseExec); // GATE
+    assign _addrmode_register = _programPhase | addr_mode;
+    assign _addrmode_direct =  _programPhase | _addr_mode;
     
 
     if (LOG)    
@@ -87,7 +91,7 @@ if (LOG)    always @ *
 */
 
 
-endmodule : control_selector
+endmodule : control
 // verilator lint_on ASSIGNDLY
 
 `endif

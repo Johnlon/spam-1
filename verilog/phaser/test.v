@@ -14,13 +14,14 @@ module test();
     `define DISPLAY(x) label=x; $display("\n>>>> %-s", label);
 
     logic clk;
-    logic _mr;
+    logic mr;
 
     wire [9:0] seq;
 
     wire _phaseFetch, phaseFetch , phaseDecode , phaseExec;
-	phaser #(.LOG(1)) ctrl( .clk, ._mr, .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec);
-    
+	phaser #(.LOG(1)) ctrl( .clk, .mr, .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec);
+
+    wire [2:0] FDE = {phaseFetch , phaseDecode , phaseExec};    
 
     initial begin
 
@@ -29,9 +30,10 @@ module test();
         $dumpfile("dumpfile.vcd");
         $dumpvars(0, test);
 
-        $monitor ("%9t ", $time,  "clk=%1b _mr=%2b ", clk, _mr, 
+        $monitor ("%9t ", $time,  "TEST    clk=%1b", clk, 
                 " seq=%10b", seq,
-                " phase(Fetch=%1b Decode=%1b Exec=%1b)", phaseFetch , phaseDecode , phaseExec,
+                " phase(FDE=%1b%1b%1b)", phaseFetch , phaseDecode , phaseExec,
+                " mr=%1b", mr, 
                 " %s", label
                 );
 
@@ -47,32 +49,32 @@ module test();
         localparam SMALL_DELAY=20; // come gate delay
 
         `DISPLAY("init");
-        _mr <= 0;
+        mr <= 1;
         clk <= 0;
 
         #T
         `Equals( seq, 10'b1);
-        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
+        `Equals( FDE, 3'b000);
 
         #T
-        `DISPLAY("_mr no clocking is ineffective = stay in FETCH mode")
+        `DISPLAY("mr no clocking is ineffective = stay in NONE mode")
         count = 0;
         while (count++ < 3) begin
             $display("count ", count);
             clk <= 1;
             #T
-            `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
+            `Equals( FDE, 3'b000);
 
             clk <= 0;
             #T
-            `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
+            `Equals( FDE, 3'b000);
         end
         `Equals( seq, 10'b1);
         
-        `DISPLAY("_mr released = still in FETCH mode after settle")
-         _mr <= 1;
+        `DISPLAY("mr released = still in NONE mode after settle")
+         mr <= 0;
          #T
-         `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
+         `Equals( FDE, 3'b000);
          `Equals( seq, 10'b1);
 
         `DISPLAY("stay in FETCH mode for 3 clocks")
@@ -81,13 +83,13 @@ module test();
             $display("count ", count);
             clk <= 1;
             #T
-            `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
+            `Equals( FDE, 3'b100);
 
             clk <= 0;
             #T
-            `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
+            `Equals( FDE, 3'b100);
         end
-         `Equals( seq, 10'b1000);
+        `Equals( seq, 10'b1000);
         
 
         `DISPLAY("stay in DECODE mode for 4 clocks");
@@ -96,40 +98,49 @@ module test();
             $display("count ", count);
             clk <= 1;
             #T
-            `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b010);
+            `Equals( FDE, 3'b010);
 
             clk <= 0;
             #T
-            `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b010);
+            `Equals( FDE, 3'b010);
         end
-         `Equals( seq, 10'b10000000);
+        `Equals( seq, 10'b10000000);
 
         `DISPLAY("stay in DECODE mode for 1 clocks");
         clk <= 1;
         #T
-        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b001);
+        `Equals( FDE, 3'b001);
         clk <= 0;
         #T
-        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b001);
-         `Equals( seq, 10'b100000000);
+        `Equals( FDE, 3'b001);
+        `Equals( seq, 10'b100000000);
 
         `DISPLAY("no mode for 1 clocks");
         clk <= 1;
         #T
-        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b000);
+        `Equals( FDE, 3'b000);
         clk <= 0;
         #T
-        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b000);
-         `Equals( seq, 10'b1000000000);
+        `Equals( FDE, 3'b000);
+        `Equals( seq, 10'b1000000000);
+
+        `DISPLAY("return to UNUSED mode");
+        clk <= 1;
+        #T
+        `Equals( FDE, 3'b000);
+        clk <= 0;
+        #T
+        `Equals( FDE, 3'b000);
+        `Equals( seq, 10'b0000000001);
 
         `DISPLAY("return to FETCH mode");
         clk <= 1;
         #T
-        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
+        `Equals( FDE, 3'b100);
         clk <= 0;
         #T
-        `Equals( {phaseFetch, phaseDecode, phaseExec}, 3'b100);
-         `Equals( seq, 10'b1);
+        `Equals( FDE, 3'b100);
+        `Equals( seq, 10'b0000000010);
 
         $display("testing end");
     end

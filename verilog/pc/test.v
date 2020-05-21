@@ -7,7 +7,7 @@
 `timescale 1ns/100ps
 
 module test();
-logic CP;
+logic clk;
 logic _MR;
 logic _pclo_in;
 logic _pc_in;
@@ -15,14 +15,14 @@ logic _pchitmp_in;
 logic [7:0] D;
 wire [7:0] PCHI, PCLO;
 
-wire #8 _CP = ! CP;
+wire #8 _clk = ! clk;
 
 localparam T=25;
 localparam SETTLE=50;
 
 pc PC (
-  .CP(CP),
-  ._CP(_CP),
+  .clk,
+  ._clk,
   ._MR(_MR),
   ._pc_in(_pc_in),
   ._pclo_in(_pclo_in),
@@ -36,15 +36,15 @@ pc PC (
 task clkpulse;
   begin
   #T
-  CP= 1'b0;
+  clk= 1'b0;
   #T
-  CP= 1'b1;
+  clk= 1'b1;
   end
 endtask
 
 
   always @(*)
-    $display("%8d TEST : CP=%1b _CP=%1b PC=%8b,%8b _pc_in=%1b _pclo_in=%1b _pchitmp_in=%1b ", $time, CP, _CP, PCHI, PCLO, _pc_in, _pclo_in, _pchitmp_in);
+    $display("%8d TEST : clk=%1b    PC=%8b,%8b _pc_in=%1b _pclo_in=%1b _pchitmp_in=%1b ", $time, clk, PCHI, PCLO, _pc_in, _pclo_in, _pchitmp_in);
 
 initial begin
   
@@ -56,7 +56,7 @@ initial begin
   _pclo_in = 1'b1;
   _MR = 1'b0;
   D = 8'b0;
-  CP = 1'b1;
+  clk = 1'b1;
   
   $display("resetting");
   clkpulse();
@@ -72,20 +72,20 @@ initial begin
   `Equals(PCHI, 8'b00000000);
 
 
-  $display("releasing _MR but no CP yet so still 0x00");
+  $display("releasing _MR but no CLK yet so still 0x00");
   _MR = 1'b1;
   #SETTLE
   `Equals(PCLO, 8'b00000000);
   `Equals(PCHI, 8'b00000000);
 
-  $display("now CP so 0x01");
+  $display("now clk so 0x01");
   clkpulse();
   #SETTLE
   `Equals(PCLO, 8'b00000001);
   `Equals(PCHI, 8'b00000000);
 
 
-  $display("now CP so 0x02");
+  $display("now clk so 0x02");
   clkpulse();
   #SETTLE
   `Equals(PCLO, 8'b00000010);
@@ -98,25 +98,25 @@ initial begin
   _pc_in = 1'b1;
   _pchitmp_in = 1'b0;
   _pclo_in = 1'b1;
-  CP= 1'b0;
+  clk= 1'b0;
   #SETTLE
   `Equals(PCLO, 8'b00000011);
   `Equals(PCHI, 8'b00000000);
 
   $display("PC should NOT advance on +ve edge");
-  CP= 1'b1;
+  clk= 1'b1;
   #SETTLE
   `Equals(PCLO, 8'b00000011);
   `Equals(PCHI, 8'b00000000);
 
   $display("PC should advance on -ve edge");
-  CP= 1'b0;
+  clk= 1'b0;
   #SETTLE
   `Equals(PCLO, 8'b00000100);
   `Equals(PCHI, 8'b00000000);
 
   $display("PC should NOT advance on +ve edge");
-  CP= 1'b1;
+  clk= 1'b1;
   #SETTLE
   `Equals(PCLO, 8'b00000100);
   `Equals(PCHI, 8'b00000000);
