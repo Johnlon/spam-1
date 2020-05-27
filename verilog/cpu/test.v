@@ -104,6 +104,16 @@ module test();
     wire _marlo_in=1;
 
     wire [7:0] control_byte;
+
+  // instruction reg buffer
+    hct74573 rom_inst_reg(
+         .LE(phaseFetch), // data latches when fetch ends
+         //._OE(_addrmode_immediate), // outputs turn on when 
+         ._OE(1'b0), // always on
+         .D(rom_hi.D),
+         .Q(control_byte) // FIXME WIRE TO CONTROL LOGIC
+    );
+
 	control #(.LOG(1)) ctrl( 
                     .clk, 
                     ._mr(_mrPC), 
@@ -112,6 +122,7 @@ module test();
                     ._addrmode_pc, ._addrmode_register, ._addrmode_immediate, 
                     .rbus_dev, .lbus_dev, .targ_dev, .aluop
                     );
+                    
 
     // PROGRAM COUNTER ======================================================================================
 
@@ -130,8 +141,8 @@ module test();
         .PCHI(PCHI)
     );
 
-    hct74245 pc_addrbus_hi_buf(.A(PCHI), .B(address_bus[15:8]), .dir(1'b1), .nOE(_addrmode_pc));
-    hct74245 pc_addrbus_lo_buf(.A(PCLO), .B(address_bus[7:0]), .dir(1'b1), .nOE(_addrmode_pc));
+    hct74245 pchi_addrbushi_buf(.A(PCHI), .B(address_bus[15:8]), .dir(1'b1), .nOE(_addrmode_pc));
+    hct74245 pclo_addrbuslo_buf(.A(PCLO), .B(address_bus[7:0]), .dir(1'b1), .nOE(_addrmode_pc));
 
     // ROM and IR =============================================================================================
 
@@ -141,24 +152,15 @@ module test();
     
     hct74245 rom_rbus_buf(.A(rom_lo.D), .B(rbus), .dir(1'b1), .nOE(_rdev_rom));
 
-    // instruction reg buffer
-    hct74573 rom_inst_reg(
-         .LE(phaseFetch), // data latches when fetch ends
-         //._OE(_addrmode_immediate), // outputs turn on when 
-         ._OE(1'b0), // always on
-         .D(rom_hi.D),
-         .Q(control_byte) // FIXME WIRE TO CONTROL LOGIC
-    );
-
     // immediate addressing buffer
-    hct74573 rom_addrbus_hi_buf(
+    hct74573 rom_addrbushi_buf(
          .LE(phaseFetch), // data latches when fetch ends
          ._OE(_addrmode_immediate),
          .D(rom_mid.D),
          .Q(address_bus[15:8])
     );
 
-    hct74573 rom_addrbus_lo_buf(
+    hct74573 rom_addrbuslo_buf(
          .LE(phaseFetch), // data latches when fetch ends
          ._OE(_addrmode_immediate), // outputs turn on when 
          .D(rom_lo.D),
@@ -169,13 +171,15 @@ module test();
     // MAR =============================================================================================
     hct74377 MARLO(._EN(_marlo_in), .CP(clk), .D(alu_result_bus));    
     hct74377 MARHI(._EN(_marhi_in), .CP(clk), .D(alu_result_bus));
-    hct74245 marlo_bufl(.A(MARLO.Q), .B(lbus), .dir(1'b1), .nOE(_ldev_marlo));
-    hct74245 marhi_bufl(.A(MARHI.Q), .B(lbus), .dir(1'b1), .nOE(_ldev_marhi));
-    hct74245 marlo_bufr(.A(MARLO.Q), .B(rbus), .dir(1'b1), .nOE(_rdev_marlo));
-    hct74245 marhi_bufr(.A(MARHI.Q), .B(rbus), .dir(1'b1), .nOE(_rdev_marhi));
 
-    hct74245 marhi_addrbus_hi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .dir(1'b1), .nOE(_addrmode_register));
-    hct74245 marlo_addrbus_lo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .dir(1'b1), .nOE(_addrmode_register));
+    hct74245 marlo_lbus_buf(.A(MARLO.Q), .B(lbus), .dir(1'b1), .nOE(_ldev_marlo)); // optional
+    hct74245 marlo_rbus_buf(.A(MARLO.Q), .B(rbus), .dir(1'b1), .nOE(_rdev_marlo)); // optional
+
+    hct74245 marhi_lbus_buf(.A(MARHI.Q), .B(lbus), .dir(1'b1), .nOE(_ldev_marhi)); // optional
+    hct74245 marhi_rbus_buf(.A(MARHI.Q), .B(rbus), .dir(1'b1), .nOE(_rdev_marhi)); // optional
+
+    hct74245 marhi_addrbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .dir(1'b1), .nOE(_addrmode_register));
+    hct74245 marlo_addrbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .dir(1'b1), .nOE(_addrmode_register));
 
 
 
@@ -183,10 +187,6 @@ module test();
     // TESTS ===========================================================================================
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     initial begin
-        $display(`SEQ(1));
-        $display(`SEQ(2));
-        $display(`SEQ(3));
-
         `ifndef verilator
 
         $dumpfile("dumpfile.vcd");
@@ -274,8 +274,8 @@ module test();
         $display("%9t ... seq=%-2d  %8b................", $time, $clog2(seq)+1, seq); 
         
     always @* 
-        $display("%9t ", $time, "ROMBUFFS rom_addrbus_lo_buf=0x%-2x", rom_addrbus_lo_buf.data, 
-            " rom_addrbus_hi_buf=0x%-2x", rom_addrbus_hi_buf.data,
+        $display("%9t ", $time, "ROMBUFFS rom_addrbuslo_buf=0x%-2x", rom_addrbuslo_buf.data, 
+            " rom_addrbus_hi_buf=0x%-2x", rom_addrbushi_buf.data,
             " rom_inst_reg=%8b", rom_inst_reg.data,
             " _oe=%1b(_addrmode_immediate)", _addrmode_immediate
             ); 
