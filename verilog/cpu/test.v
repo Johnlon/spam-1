@@ -18,7 +18,7 @@
 
 module test();
 
-    localparam SETTLE_TOLERANCE=120;
+    localparam SETTLE_TOLERANCE=50;
 
    `include "../lib/display_snippet.v"
 
@@ -174,7 +174,14 @@ module test();
     hct74245 marlo_bufr(.A(MARLO.Q), .B(rbus), .dir(1'b1), .nOE(_rdev_marlo));
     hct74245 marhi_bufr(.A(MARHI.Q), .B(rbus), .dir(1'b1), .nOE(_rdev_marhi));
 
+    hct74245 marhi_addrbus_hi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .dir(1'b1), .nOE(_addrmode_register));
+    hct74245 marlo_addrbus_lo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .dir(1'b1), .nOE(_addrmode_register));
 
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // TESTS ===========================================================================================
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
     initial begin
         $display(`SEQ(1));
         $display(`SEQ(2));
@@ -292,11 +299,11 @@ module test();
     always @(negedge clk)
         $display("\n%9t", $time, " CLK  -----------------------------------------------------------------------\n"); 
         
-    always @(rom_hi.D) begin
-        $display("rom_hi.D", rom_hi.D); 
-        $display("control_byte", control_byte); 
-        if (rom_hi.D ==='x & control_byte === 'x) begin
-            //#10000
+    // constraints
+    always @(*) begin
+        if (phaseDecode & control_byte === 'x) begin
+            $display("rom_hi.D", rom_hi.D); 
+            $display("control_byte", control_byte); 
             DUMP;
             $display("END OF PROGRAM - CONTROL BYTE = XX "); 
             $finish();
@@ -305,23 +312,23 @@ module test();
 
     // constraints
     always @* begin
-        if (_RESET_SWITCH & $time > 1000) begin
-            // only one may be low at a time
-            if (_addrmode_pc + _addrmode_register + _addrmode_immediate < 2) begin
-                $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b sAddrMode=%-s", _addrmode_pc , _addrmode_register , _addrmode_immediate, 
-                sAddrMode() //!_addrmode_pc ? "pc" : !_addrmode_register?  "reg" : !_addrmode_immediate? "imm": "---"
-                );
+        // permits a situation where the control lines conflict.
+        // this is ok as long as they settle quickly and are settled before exec phase.
+        if (_RESET_SWITCH & phaseDecode) begin
+            if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_immediate === 1'bx) begin
+                $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b", _addrmode_pc , _addrmode_register , _addrmode_immediate );
                 #SETTLE_TOLERANCE
-                if (_addrmode_pc + _addrmode_register + _addrmode_immediate < 2) begin
+                if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_immediate === 1'bx) begin
                     DUMP;
                     $display("\n\n%9t ", $time, " ABORT");
                     $finish();
                 end
             end
-            if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_immediate === 1'bx) begin
-                $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b", _addrmode_pc , _addrmode_register , _addrmode_immediate );
+            // only one may be low at a time
+            if (_addrmode_pc + _addrmode_register + _addrmode_immediate < 2) begin
+                $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b sAddrMode=%-s", _addrmode_pc , _addrmode_register , _addrmode_immediate, sAddrMode());
                 #SETTLE_TOLERANCE
-                if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_immediate === 1'bx) begin
+                if (_addrmode_pc + _addrmode_register + _addrmode_immediate < 2) begin
                     DUMP;
                     $display("\n\n%9t ", $time, " ABORT");
                     $finish();
@@ -485,10 +492,9 @@ module test();
         `Equals(address_bus, 16'h2211); // FROM ROM[15:0] 
         `Equals( seq, `SEQ(10));
         clk <= 0;
-        DUMP;
         #T
 
-        `DISPLAY("clock 10")
+        `DISPLAY("clock 10 ----- NEXT CYCLE STARTS")
         clk <= 1;
         #T
         `Equals( phase, PHASE_FETCH)
@@ -543,7 +549,7 @@ module test();
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b1)
         `Equals( _addrmode, _AMODE_REG);
-        `Equals(address_bus, 16'hz); // FROM MAR -- NOT IMPLE
+        `Equals(address_bus, 16'hx); // FROM MAR -- WRITE TO MAR NOT IMPLE
         `Equals( seq, `SEQ(5));
         clk <= 0;
         #T
@@ -555,7 +561,7 @@ module test();
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b1)
         `Equals( _addrmode, _AMODE_REG);
-        `Equals(address_bus, 16'hz); // FROM MAR ---- NOT IMPL
+        `Equals(address_bus, 16'hx); // FROM MAR ---- WRITE TO MAR NOT IMPL
         `Equals( seq, `SEQ(6));
         clk <= 0;
         #T
@@ -567,14 +573,51 @@ module test();
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b1)
         `Equals( _addrmode, _AMODE_REG);
-        `Equals(address_bus, 16'hz); // FROM MAR
+        `Equals(address_bus, 16'hx); // FROM MAR ---- WRITE TO MAR NOT IMPL
         `Equals( seq, `SEQ(7));
         clk <= 0;
         #T
 
+        `DISPLAY("clock 17")
+        clk <= 1;
+        #T
+        `Equals( phase, PHASE_DECODE)
+        `Equals(PCHI, 8'b0)
+        `Equals(PCLO, 8'b1)
+        `Equals( _addrmode, _AMODE_REG);
+        `Equals(address_bus, 16'hx); // FROM MAR ---- WRITE TO MAR NOT IMPL
+        `Equals( seq, `SEQ(8));
+        clk <= 0;
+        #T
+
+        `DISPLAY("clock 18")
+        clk <= 1;
+        #T
+        `Equals( phase, PHASE_EXEC)
+        `Equals(PCHI, 8'b0)
+        `Equals(PCLO, 8'b1)
+        `Equals( _addrmode, _AMODE_REG);
+        `Equals(address_bus, 16'hx); // FROM MAR
+        `Equals( seq, `SEQ(9));
+        clk <= 0;
+        #T
+
+        `DISPLAY("clock 18")
+        clk <= 1;
+        #T
+        `Equals( phase, PHASE_EXEC)
+        `Equals(PCHI, 8'b0)
+        `Equals(PCLO, 8'b1)
+        `Equals( _addrmode, _AMODE_REG);
+        `Equals(address_bus, 16'hx); // FROM MAR
+        `Equals( seq, `SEQ(10));
+        clk <= 0;
+        #T
+
+
 
 //`include "./generated_tests.v"
-
+/*
         #T
         count=100;
         while (count -- > 0) begin
@@ -582,9 +625,9 @@ module test();
             clk <= 1;
             #T
             clk <= 0;
-            $display("PC %2x:%2x !!!!!!!!!!!!!!!!!!!!!!!!1 %d", PCHI, PCLO, count);
+            $display("PC %2x:%2x !!!!!!!!!!!!!!!!!!!!!!!! CLK COUNT REMAINING=%-d", PCHI, PCLO, count);
         end
-
+*/
         $display("END OF TEST");
         $finish();
 

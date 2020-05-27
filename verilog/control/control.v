@@ -6,7 +6,6 @@ Wasn't able to avoid it without a lot more h/w.
 `ifndef V_CONTROL_SELECT
 `define V_CONTROL_SELECT
 
-
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
 
@@ -63,6 +62,7 @@ module control #(parameter LOG=1)
     nand #(10) o2(_addrmode_immediate , _phaseFetch , isImm);
     wire _addrmode_pc;
     assign _addrmode_pc = _phaseFetch;
+
 /*
     wire #(10) _programPhase = ! _phaseFetch;
     wire #(10) isReg = rom_hi[7];
