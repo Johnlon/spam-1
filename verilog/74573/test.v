@@ -1,7 +1,7 @@
 `include "hct74573.v"
 `include "../lib/assertion.v"
 
-`timescale 1ns/100ps
+`timescale 1ns/1ns
 `default_nettype none
 
 module icarus_tb();

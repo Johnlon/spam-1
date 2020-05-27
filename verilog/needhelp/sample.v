@@ -1,5 +1,5 @@
 
-// `timescale 1ns/100ps
+// `timescale 1ns/1ns
 `default_nettype none
 
 `define Equals(ACTUAL, expected) \

@@ -31,7 +31,10 @@ reg [BLOCKS-1:0] Qb_current;
 reg [BLOCKS-1:0] _SD_previous;
 reg [BLOCKS-1:0] Q_defined = 0;
 
-if (LOG) always @* $display("%8d ", $time, "%s CP=%1b D=%1b _SD=%1b _RD=%1b  =>  Q=%1b _Q=%1b", NAME, CP,D,_SD, _RD, Q, _Q);
+if (LOG) 
+    always @* 
+        $display("%9t ", $time, "%s  CP=%1b D=%1b _SD=%1b _RD=%1b  =>  Q=%1b _Q=%1b", NAME, CP,D,_SD, _RD, Q, _Q, "        %m");
+
 //if (LOG) always @* $display("%8d ", $time, "%s CP=%1b D=%1b _SD=%1b  _RD=%1b  Q=%1b  _Q=%1b (Qc=%1b, _Qc=%1b)", NAME, CP,D,_SD, _RD, Q, _Q, Q_current, Qb_current);
 
 generate

@@ -3,7 +3,7 @@
 
 
 `include "../74245/hct74245.v"
-`timescale 1ns/100ps
+`timescale 1ns/1ns
 
 // need to be able to mux the device[3:0] with 74HC243 quad bus tranceiver has OE & /OE for outputs control and 
 // use a sip5 10k resistor pull down to get 0. 

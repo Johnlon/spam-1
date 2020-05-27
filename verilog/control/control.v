@@ -1,10 +1,11 @@
+/*
+This code generates a momentary conflict during propagation of the signals when transitioning back to fetch.
+Wasn't able to avoid it without a lot more h/w. 
+*/
+
 `ifndef V_CONTROL_SELECT
 `define V_CONTROL_SELECT
 
-
-`include "../74138/hct74138.v"
-`include "../74245/hct74245.v"
-`include "../phaser/phaser.v"
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
@@ -24,21 +25,21 @@ parameter [2:0] op_RAM_ABS_eq_DEV_sel   = 6; // == RBUSDEV=XXXX        LBUSDEV=R
 // op 7 unused
 */
 
-module control #(parameter LOG=0) 
+module control #(parameter LOG=1) 
 (
     input clk, 
     input _mr,
 
-    input [7:0] hi_rom,
+    input [7:0] rom_hi,
 
-    output [9:0] seq,
+    input phaseFetch, 
+    input phaseDecode, 
+    input phaseExec, 
+    input _phaseFetch,
 
-    output phaseFetch, 
-    output _phaseFetch,
-
-    output _addrmode_pc, // enable PC onto address bus - register direct addressing - ????
+    output _addrmode_pc, // enable PC onto address bus
     output _addrmode_register, // enable MAR onto address bus - register direct addressing - op 0
-    output _addrmode_direct, // enable ROM[15:0] onto address bus, needs an IR in implementation - direct addressing
+    output _addrmode_immediate, // enable ROM[15:0] onto address bus, needs an IR in implementation - direct addressing
 
     output [3:0] rbus_dev,
     output [3:0] lbus_dev,
@@ -46,49 +47,66 @@ module control #(parameter LOG=0)
 
     output [4:0] aluop
 );
-    wire mr = ! _mr;
 
-    wire _co; 
+    `include "decoding.v"
+    `DECODE_PHASE
+    `DECODE_ADDRMODE
 
-    // PHASING ======
-    wire phaseDecode , phaseExec;
-    wire [9:0] seq;
-
-    phaser ph(.clk, .mr, .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec);
 
     // ADDRESS MODE DECODING =====    
     // as organised above then OPS0/1/2 are all REGISTER and OPS 4/5/6 are all IMMEDIATE 
-    // addr_mode = 0 means REGISTER, 1 means IMMEDIATE
-    wire addr_mode = hi_rom[7];
-    wire #(10) _addr_mode = ! addr_mode;
 
+    wire isImm, isReg;
+    assign isImm = rom_hi[7];
+    nand #(10) o0(isReg, rom_hi[7], rom_hi[7]);
+    nand #(10) o1(_addrmode_register , _phaseFetch , isReg);
+    nand #(10) o2(_addrmode_immediate , _phaseFetch , isImm);
+    wire _addrmode_pc;
     assign _addrmode_pc = _phaseFetch;
-    wire #10 _programPhase = !(phaseDecode | phaseExec); // GATE
-    assign _addrmode_register = _programPhase | addr_mode;
-    assign _addrmode_direct =  _programPhase | _addr_mode;
-    
+/*
+    wire #(10) _programPhase = ! _phaseFetch;
+    wire #(10) isReg = rom_hi[7];
+    wire #(10) isImm = ! rom_hi[7];
+    or #(10) o1(_addrmode_register , _programPhase , isReg);
+    or #(10) o2(_addrmode_immediate ,  _programPhase , isImm);
+    assign #(10) _addrmode_pc = _phaseFetch;
+*/
+/*
+    logic _Ea=1'b0;
+    logic _Eb=1'b0;
+    logic [1:0] Aa;
+    logic [1:0] Ab='0;
+    wire [3:0] _Ya;
+    wire [3:0] _Yb;
 
-    if (LOG)    
+    hct74139 #(.LOG(1)) demux(
+                    ._Ea,
+                    ._Eb,
+                    .Aa,
+                    .Ab,
+                    ._Ya,
+                    ._Yb
+                    );
+    
+    assign Aa={_phaseFetch, rom_hi[7]};
+    assign _addrmode_register = _Ya[1];
+    assign _addrmode_immediate = _Ya[2];
+    assign _addrmode_pc = _phaseFetch;
+*/
+
+    if (1)    
     always @ * 
          $display("%9t CTRL_SEL", $time,
-          " hi=%08b", hi_rom, 
             " clk=%1b", clk, 
-            " seq=%10b phase(fir=%3b)", seq, {phaseFetch, phaseDecode, phaseExec} ,
-            " amode(pc=%1b,reg=%1b,dir=%1b)", _addrmode_pc, _addrmode_register, _addrmode_direct, 
-            " regmode=%1b _phaseFetch=%1b/phaseFetch=%1b", addr_mode, _phaseFetch, phaseFetch
+            "    hibit=%b", rom_hi[7], 
+            //" phase FDE=%3b _phaseFetch=%b", {phaseFetch, phaseDecode, phaseExec}, _phaseFetch,
+            " phase FDE=%3b ", {phaseFetch, phaseDecode, phaseExec}, 
+//            "    _programPhase=%1b", _programPhase,  
+//            " isReg=%b isImm=%b",isReg, isImm,
+            "    _addrmode pri=%1b/%1b/%1b", _addrmode_pc, _addrmode_register, _addrmode_immediate,
+            //" phase=%-s", sPhase,
+            " _amode=%-3s", aAddrMode
             );
-
-/*
-if (LOG)    always @ * 
-         $display("%8d CTRL_SEL", $time,
-          " hi=%08b", hi_rom, 
-            " _rom_out=%1b, _ram_out=%1b, _alu_out=%1b, _uart_out=%1b", _rom_out, _ram_out, _alu_out, _uart_out,
-            " device_in=%5b", device_in, 
-            " force_x_0=%1b", force_x_val_to_zero, 
-            " force_alu_passx=%1b", force_alu_op_to_passx, 
-            " _ram_zp=%1b", _ram_zp
-    ,implied_dev_top_bit , _is_non_reg_override, _is_reg_override, " %05b %05b %08b", device_sel_pre, device_in, device_sel_out
-*/
 
 
 endmodule : control

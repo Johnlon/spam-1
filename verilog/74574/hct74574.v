@@ -3,7 +3,7 @@
 
 /* Timings from https://assets.nexperia.com/documents/data-sheet/74HC_HCT574.pdf
  * */
-`timescale 1ns/100ps
+`timescale 1ns/1ns
 module hct74574 (
 input CLK,
 input _OE,        // negative enable

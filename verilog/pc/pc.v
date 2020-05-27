@@ -9,11 +9,10 @@
 `include "../74377/hct74377.v"
 `include "../7474/hct7474.v"
 
-`timescale 1ns/100ps
+`timescale 1ns/1ns
 
 module pc(
     input clk,
-    input _clk,
     input _MR,
     input _pchitmp_in,
     input _pclo_in,
@@ -26,7 +25,7 @@ module pc(
 
 parameter LOG = 0;
 
-wire [7:0] PCHI, PCLO, PCHITMP;
+wire [7:0] PCHITMP;
 
 // low is loaded if separately loaded or both loaded
 wire #11 _pclo_load = _pclo_in & _pc_in;
@@ -59,7 +58,7 @@ assign countEn = _pclo_load; // _pclo_load is always involved in a jump so the i
 
 counterReg LO
 (
-  .CP(_clk),
+  .CP(clk),
   ._MR(_MR),
   .CEP(countEn),
   .CET(1'b1),
@@ -72,7 +71,7 @@ counterReg LO
 
 counterReg HI
 (
-  .CP(_clk),
+  .CP(clk),
   ._MR(_MR),
   .CEP(countEn),
   .CET(TC),
@@ -85,9 +84,16 @@ counterReg HI
 
 
 if (LOG) always @(*) begin
-  $display("%9t PC   : _MR=%1b countEn=%1b _pclo_in=%1b _pc_in=%1b _pclo_load=%1b _pchitmp_in=%1b clk=%1b  D=%8b PCLO=%8b PCHI=%8b PCHITMP=%8b ", $time, _MR, countEn, _pclo_in, _pc_in, _pclo_load, _pchitmp_in, clk, D, PCLO, PCHI, PCHITMP);
+  $display("%9t ", $time, "PC       ",
+      "PC=%2x:%2x PCHITMP=%2x ",
+      PCHI, PCLO, PCHITMP,
+      "clk=%1b ",  clk, 
+      "_MR=%1b ",  _MR, 
+      " countEn=%1b _pclo_in=%1b _pc_in=%1b _pclo_load=%1b _pchitmp_in=%1b     Din=%8b ",
+      countEn, _pclo_in, _pc_in, _pclo_load, _pchitmp_in, D 
+      );
 end
 
-endmodule
+endmodule :pc
 
 `endif

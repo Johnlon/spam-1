@@ -2,7 +2,7 @@
 `ifndef ROM_V
 `define  ROM_V
 
-`timescale 1ns/100ps
+`timescale 1ns/1ns
 
 // https://raw.githubusercontent.com/DoctorWkt/CSCvon8/master/rom.v
 // ROM component

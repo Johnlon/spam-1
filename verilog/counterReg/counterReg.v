@@ -6,7 +6,7 @@
 
 `include "../74163/hct74163.v"
 
-`timescale 1ns/100ps
+`timescale 1ns/1ns
 
 module counterReg(
 input CP,
@@ -33,7 +33,7 @@ wire TClo;
 wire TChi;
 
 // naming from https://www.ti.com/lit/ds/symlink/sn74f163a.pdf
-hct74163 LO
+hct74163 LO4
 (
   .CP(CP),
   ._MR(_MR),
@@ -46,7 +46,7 @@ hct74163 LO
   .TC(TClo)
 );
 
-hct74163 HI
+hct74163 HI4
 (
   .CP(CP),
   ._MR(_MR),

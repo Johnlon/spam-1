@@ -1,3 +1,6 @@
+`ifndef V_SR
+`define V_SR
+
 `timescale 1ns/1ns
 `include "../lib/assertion.v"
 `include "./sr.v"
@@ -91,3 +94,5 @@ module test();
     end
 
 endmodule
+
+`endif

@@ -4,27 +4,28 @@
  Same model as 74373 but with timings from HCT573
  
  LE = H is transparent
- OE_N = H is Z
+ _OE = H is Z
  
  Timings have are for 74HCT573
  https://assets.nexperia.com/documents/data-sheet/74HC_HCT573.pdf
  https://assets.nexperia.com/documents/data-sheet/74HC_HCT373.pdf
  */
 
-`timescale 1ns/100ps
+`timescale 1ns/1ns
 module hct74573 (
-    input LE,
-    input OE_N,
+    input LE, // transparent when high 
+    input _OE,
 	input [7:0] D,
     output [7:0] Q
 );
+    parameter LOG=0;
 
     reg [7:0] data;
     
     specify
     (D => Q) = (17);
     (LE *> Q) = (15);
-    (OE_N *> Q) = (18);
+    (_OE *> Q) = (18);
     endspecify
     
     always @(D or LE)
@@ -33,8 +34,17 @@ module hct74573 (
             data <= D;
         end
     
-    assign Q = OE_N ? 8'bz : data;
+    assign Q = _OE ? 8'bz : data;
+
+    if (LOG) always @* 
+        $display("%09t ", $time, 
+                " le=%1b", le,
+                " _oe=%1b", _oe,
+                " d=%8b", d,
+                " q=%8b", q,
+                "%m");
+        
     
-endmodule
+endmodule: hct74573
 
 `endif

@@ -1,7 +1,7 @@
 `include "registerFile.v"
 `include "../lib/assertion.v"
 
-`timescale 1ns/100ps
+`timescale 1ns/1ns
 
 module icarus_tb();
     

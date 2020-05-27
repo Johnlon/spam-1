@@ -29,18 +29,19 @@ begin  \
   `FAIL \
 end
 
-`ifndef verilator
-
+`ifdef verilator
+  `define Equals(ACTUAL, EXPECTED)  // PASS
+`else
 `define Equals(ACTUAL, EXPECTED) \
 if (ACTUAL === EXPECTED) begin \
-  $display("%9t ", $time, " Line:%-5d PASSED: '%b' == '%b'    : ACTUAL != EXPECTED", `__LINE__, ACTUAL, EXPECTED); \
+  if (0) $display("%9t ", $time, " Line:%-5d PASSED: '%b' == '%b'    : ACTUAL != EXPECTED", `__LINE__, ACTUAL, EXPECTED); \
 end \
 else \
 begin  \
   $display("%9t ", $time, " Line:%-5d FAILED: '%b' != '%b'    : ACTUAL != EXPECTED", `__LINE__, ACTUAL, EXPECTED); 	\
   `FAIL \
 end
-  
+
 `endif
 
 

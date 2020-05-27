@@ -7,7 +7,7 @@
 /* verilator lint_off DECLFILENAME */
 // These timings are similar to 'typical' values for LS series - however MAX can be >2x worse
 // Adjust for HCT? 
-`timescale 1ns/100ps
+`timescale 1ns/1ns
 module hct74138 #(parameter WIDTH_OUT = 8, WIDTH_IN = $clog2(WIDTH_OUT))
 (
   input Enable1_bar,

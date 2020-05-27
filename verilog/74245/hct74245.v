@@ -6,7 +6,7 @@
 `ifndef hct74245
 `define hct74245
 
-`timescale 1ns/100ps
+`timescale 1ns/1ns
 
 module hct74245( 
     input dir,

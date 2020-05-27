@@ -19,6 +19,8 @@ module hct74163
   output TC         // terminal count output
 );
 
+parameter NAME="74163";
+
 // Timing from HCT https://assets.nexperia.com/documents/data-sheet/74HC_HCT163.pdf
 specify
   (CP *> Q) = (20);
@@ -27,6 +29,17 @@ specify
 endspecify
 
 reg [3:0] count;
+
+if (0) always @* begin
+    $display(
+        "%9t ", $time,
+        "%s   ", NAME,
+        " CP=%1b", CP,
+        " _MR=%1b", _MR,
+        " Q=%4b", Q,
+        "       %m" 
+    );
+end
 
 always @(posedge CP)
 begin
@@ -51,6 +64,7 @@ assign #25 TC = (count == 4'b1111) & CET;
 initial begin
     count=4'bxxxx;
 end
+
 
 endmodule
 

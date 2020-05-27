@@ -2,11 +2,11 @@
 // adds this label to dumpfile and logging
 
 /* verilator lint_off UNUSED */
-reg [20*8:0] label;
+reg [80*8:0] label;
 
 `ifndef verilator
     `define DISPLAY(x) label=x; \
-            $display(x);
+            $display("\n", x);
 `else 
     `define DISPLAY(x) label=x; 
 `endif

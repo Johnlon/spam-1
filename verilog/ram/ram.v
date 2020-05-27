@@ -1,7 +1,7 @@
 `ifndef RAM_V
 `define RAM_V
 
-`timescale 1ns/100ps
+`timescale 1ns/1ns
 
 // verilator lint_off UNOPTFLAT
 module ram(_OE, _WE, A, D);

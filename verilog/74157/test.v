@@ -3,7 +3,7 @@
 
 `include "../lib/assertion.v"
 `include "./hct74157.v"
-`timescale 1ns/100ps
+`timescale 1ns/1ns
 
 module tb();
 
