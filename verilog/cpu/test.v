@@ -27,7 +27,6 @@ module test();
     tri [7:0] rbus, lbus, alu_result_bus;
     wire [3:0] rbus_dev, lbus_dev;
     wire [4:0] targ_dev;
-
     wire [4:0] aluop;
 
     localparam _AMODE_NONE=3'b111;
@@ -92,17 +91,7 @@ module test();
     phaser #(.LOG(1)) ph(.clk, .mr(RESET_SWITCH), .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec);
 
     // CONTROL ===========================================================================================
-    logic _rdev_rom=1; // put rom on rbus
-    logic _ldev_marlo=1;
-    logic _ldev_marhi=1;
-    logic _rdev_marlo=1;
-    logic _rdev_marhi=1;
-    wire _pclo_in=1;
-    wire _pc_in=1;
-    wire _pchitmp_in=1;
-    wire _marhi_in=1;
-    wire _marlo_in=1;
-
+   
     wire [7:0] control_byte;
 
   // instruction reg buffer
@@ -114,14 +103,75 @@ module test();
          .Q(control_byte) // FIXME WIRE TO CONTROL LOGIC
     );
 
-	control #(.LOG(1)) ctrl( 
+    control #(.LOG(1)) ctrl( 
                     .clk, 
                     ._mr(_mrPC), 
-                    .rom_hi(control_byte), 
+                    .ctrl(control_byte[7:5]), 
                     .phaseFetch, ._phaseFetch, .phaseDecode, .phaseExec, 
                     ._addrmode_pc, ._addrmode_register, ._addrmode_immediate, 
                     .rbus_dev, .lbus_dev, .targ_dev, .aluop
                     );
+
+    wire [23:0] rom_data = {control_byte, rom_mid.D, rom_lo.D};
+
+    logic op =0;
+
+    // ops
+    localparam op_dev_eq_xy_alu =0;
+    localparam op_dev_eq_const8 =1;
+    localparam op_dev_eq_const16 =2;
+    localparam op_3_unused =3;
+    localparam op_dev_eq_rom_immed =4;
+    localparam op_dev_eq_ram_immed =5;
+    localparam op_ram_immed_eq_dev =6;
+    localparam op_7_unused =7;
+
+    // sources
+    localparam [3:0] dev_ram = 0;
+    localparam [3:0] dev_rom = 1;
+    localparam [3:0] dev_marlo = 2;
+
+    // targets
+    localparam [4:0] tdev_ram = {1'b0, dev_ram};
+    localparam [4:0] tdev_rom = {1'b0, dev_rom};
+    localparam [4:0] tdev_marlo = {1'b0, dev_marlo};
+
+    // target device sel
+    wire [7:0] tdev_eq_ram_in = {3'b0, tdev_ram};
+    wire [7:0] tdev_from_instruction_in = {3'bz, rom_data[20:16]};
+    wire [7:0] targ_dev_out = {3'bz, targ_dev};
+    hct74245 tdev_from_instruction(.A(tdev_from_instruction_in), .B(targ_dev_out), .dir(1'b1), .nOE(! op == op_ram_immed_eq_dev));
+    hct74245 tdev_eq_ram(.A(tdev_eq_ram_in), .B(targ_dev_out), .dir(1'b1), .nOE(! op == op_ram_immed_eq_dev));
+
+    // l device sel
+    assign lbus_dev = rom_data[12:9];
+    
+    // r device sel
+    wire [7:0] rdev_from_instruction_aluop_in = {4'bz, rom_data[8:5]};
+    wire [7:0] rdev_from_instruction_ramimmed_in = {4'bz, rom_data[19:16]};
+    wire [7:0] rdev_eq_ram_in = {4'b0, dev_ram};
+    wire [7:0] rdev_eq_rom_in = {4'b0, dev_rom};
+    wire [7:0] lbus_dev_out = {4'bz, lbus_dev};
+
+    hct74245 rdev_from_instruction_aluop(.A(rdev_from_instruction_aluop_in), .B(lbus_dev_out), .dir(1'b1), .nOE( !op == op_dev_eq_xy_alu));
+    hct74245 rdev_from_instruction_ramimmed(.A(rdev_from_instruction_ramimmed_in), .B(lbus_dev_out), .dir(1'b1), .nOE(! op == op_ram_immed_eq_dev));
+    hct74245 rdev_eq_ram(.A(rdev_eq_ram_in), .B(lbus_dev_out), .dir(1'b1), .nOE(!op == op_dev_eq_ram_immed));
+    hct74245 rdev_eq_rom(.A(rdev_eq_rom_in), .B(lbus_dev_out), .dir(1'b1), .nOE(! (op == op_dev_eq_const8 | op == op_dev_eq_const16 | op == op_dev_eq_rom_immed)));
+  
+  
+    // control lines for bufs need better names
+    logic _rdev_rom=1; // put rom on rbus
+    logic _ldev_marlo=1;
+    logic _ldev_marhi=1;
+    logic _rdev_marlo=1;
+    logic _rdev_marhi=1;
+
+    // control lines to write registers
+    wire _pclo_in=1;
+    wire _pc_in=1;
+    wire _pchitmp_in=1;
+    wire _marhi_in=1;
+    wire _marlo_in=1;
                     
 
     // PROGRAM COUNTER ======================================================================================

@@ -27,7 +27,7 @@ module test();
     wire #8 _clk = ! clk; // GATE + PD
 
     logic phaseFetch, phaseDecode, phaseExec, _phaseFetch;
-    logic [7:0] rom_hi;
+    logic [2:0] ctrl;
 
     wire _addrmode_register, _addrmode_pc, _addrmode_immediate;
 
@@ -38,7 +38,7 @@ module test();
 
     wire [2:0] _addr_mode = {_addrmode_pc, _addrmode_register, _addrmode_immediate}; 
 
-	control #(.LOG(0)) ctrl( .clk, ._mr, .rom_hi, 
+	control #(.LOG(0)) ctrl_logic( .clk, ._mr, .ctrl, 
                                 .phaseFetch, .phaseDecode, .phaseExec, ._phaseFetch, 
                                 ._addrmode_pc, ._addrmode_register, ._addrmode_immediate, 
                                 .rbus_dev, .lbus_dev, .targ_dev, .aluop);
@@ -64,7 +64,7 @@ module test();
     end
 
     `define DUMP \
-        $display ("%9t ", $time,  "TEST clk=%1b _mr=%1b rom_hi=%08b", clk, _mr, rom_hi, \
+        $display ("%9t ", $time,  "TEST clk=%1b _mr=%1b ctrl=%3b", clk, _mr, ctrl, \
                 " phaseFetch=%b, phaseDecode=%b, phaseExec=%b,    _phaseFetch=%b", phaseFetch, phaseDecode, phaseExec, _phaseFetch,\
                 "     addrmode PRI %b/%b/%b", _addrmode_pc, _addrmode_register, _addrmode_immediate,\
                 " amode=%-3s", sAddrMode(),\
@@ -100,7 +100,7 @@ module test();
     initial begin
 
         `DISPLAY("fetch sets addrmode PC")
-        rom_hi <= 8'b1xxxxxxx;
+        ctrl <= 3'b1xx;
         phaseFetch <= 1;
         phaseDecode <= 0;
         phaseExec <= 0;
@@ -108,7 +108,7 @@ module test();
         //`Equals( _addr_mode, 3'b0xx)
 
         `DISPLAY("fetch sets addrmode PC")
-        rom_hi <= 8'b0xxxxxxx;
+        ctrl <= 3'b0xx;
         phaseFetch <= 1;
         phaseDecode <= 0;
         phaseExec <= 0;
@@ -116,7 +116,7 @@ module test();
         `Equals( _addr_mode, 3'b011)
 
         `DISPLAY("decode sets addrmode IMM or REG depending on top bit of rom")
-        rom_hi <= 8'b1xxxxxxx;
+        ctrl <= 3'b1xx;
         phaseFetch <= 0;
         phaseDecode <= 1;
         phaseExec <= 0;
@@ -124,7 +124,7 @@ module test();
         `Equals( _addr_mode, 3'b110)
 
         `DISPLAY("decode sets addrmode IMM or REG depending on top bit of rom")
-        rom_hi <= 8'b0xxxxxxx;
+        ctrl <= 3'b0xx;
         phaseFetch <= 0;
         phaseDecode <= 1;
         phaseExec <= 0;
@@ -132,7 +132,7 @@ module test();
         `Equals( _addr_mode, 3'b101)
 
         `DISPLAY("exec sets addrmode IMM or REG depending on top bit of rom")
-        rom_hi <= 8'b1xxxxxxx;
+        ctrl <= 3'b1xx;
         phaseFetch <= 0;
         phaseDecode <= 0;
         phaseExec <= 1;
@@ -140,7 +140,7 @@ module test();
         `Equals( _addr_mode, 3'b110)
 
         `DISPLAY("exec sets addrmode IMM or REG depending on top bit of rom")
-        rom_hi <= 8'b0xxxxxxx;
+        ctrl <= 3'b0xx;
         phaseFetch <= 0;
         phaseDecode <= 0;
         phaseExec <= 1;
@@ -148,7 +148,7 @@ module test();
         `Equals( _addr_mode, 3'b101)
 
         `DISPLAY("fetch sets addrmode PC")
-        rom_hi <= 8'b0xxxxxxx;
+        ctrl <= 3'b0xx;
         phaseFetch <= 1;
         phaseDecode <= 0;
         phaseExec <= 0;

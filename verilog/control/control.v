@@ -29,7 +29,7 @@ module control #(parameter LOG=1)
     input clk, 
     input _mr,
 
-    input [7:0] rom_hi,
+    input [2:0] ctrl,
 
     input phaseFetch, 
     input phaseDecode, 
@@ -48,7 +48,7 @@ module control #(parameter LOG=1)
 );
 
     `include "decoding.v"
-    `DECODE_PHASE
+    // `DECODE_PHASE
     `DECODE_ADDRMODE
 
 
@@ -56,11 +56,10 @@ module control #(parameter LOG=1)
     // as organised above then OPS0/1/2 are all REGISTER and OPS 4/5/6 are all IMMEDIATE 
 
     wire isImm, isReg;
-    assign isImm = rom_hi[7];
-    nand #(10) o0(isReg, rom_hi[7], rom_hi[7]);
+    assign isImm = ctrl[2];
+    nand #(10) o0(isReg, ctrl[2], ctrl[2]);
     nand #(10) o1(_addrmode_register , _phaseFetch , isReg);
     nand #(10) o2(_addrmode_immediate , _phaseFetch , isImm);
-    wire _addrmode_pc;
     assign _addrmode_pc = _phaseFetch;
 
 /*
@@ -98,7 +97,7 @@ module control #(parameter LOG=1)
     always @ * 
          $display("%9t CTRL_SEL", $time,
             " clk=%1b", clk, 
-            "    hibit=%b", rom_hi[7], 
+            "    hibit=%b", ctrl[2], 
             //" phase FDE=%3b _phaseFetch=%b", {phaseFetch, phaseDecode, phaseExec}, _phaseFetch,
             " phase FDE=%3b ", {phaseFetch, phaseDecode, phaseExec}, 
 //            "    _programPhase=%1b", _programPhase,  
