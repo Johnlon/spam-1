@@ -39,4 +39,28 @@ module hct74245(
 
 endmodule: hct74245
 
+
+module hct74245ab( 
+    input nOE,
+    input [7:0] A,
+    inout [7:0] B
+);
+
+    parameter [8*10:0] NAME="74245";
+    parameter LOG=0;
+
+    wire [7:0] Ain;
+
+    assign Ain = A;
+
+    hct74245 #(.LOG(LOG), .NAME(NAME)) ab( 
+        .dir(1'b1),
+        .nOE,
+        .A(Ain),
+        .B
+    );
+
+endmodule: hct74245ab
+
 `endif
+

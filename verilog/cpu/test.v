@@ -117,46 +117,41 @@ module test();
     logic op =0;
 
     // ops
-    localparam op_dev_eq_xy_alu =0;
-    localparam op_dev_eq_const8 =1;
-    localparam op_dev_eq_const16 =2;
-    localparam op_3_unused =3;
-    localparam op_dev_eq_rom_immed =4;
-    localparam op_dev_eq_ram_immed =5;
-    localparam op_ram_immed_eq_dev =6;
-    localparam op_7_unused =7;
+    localparam OP_dev_eq_xy_alu =0;
+    localparam OP_dev_eq_const8 =1;
+    localparam OP_dev_eq_const16 =2;
+    localparam OP_3_unused =3;
+    localparam OP_dev_eq_rom_immed =4;
+    localparam OP_dev_eq_ram_immed =5;
+    localparam OP_ram_immed_eq_dev =6;
+    localparam OP_7_unused =7;
 
     // sources
-    localparam [3:0] dev_ram = 0;
-    localparam [3:0] dev_rom = 1;
-    localparam [3:0] dev_marlo = 2;
+    localparam [3:0] DEV_ram = 0;
+    localparam [3:0] DEV_rom = 1;
+    localparam [3:0] DEV_marlo = 2;
+    localparam [3:0] DEV_marhi = 3;
 
     // targets
-    localparam [4:0] tdev_ram = {1'b0, dev_ram};
-    localparam [4:0] tdev_rom = {1'b0, dev_rom};
-    localparam [4:0] tdev_marlo = {1'b0, dev_marlo};
+    localparam [4:0] TDEV_ram = {1'b0, DEV_ram};
+    localparam [4:0] TDEV_rom = {1'b0, DEV_rom};
+    localparam [4:0] TDEV_marlo = {1'b0, DEV_marlo};
+    localparam [4:0] TDEV_marhi = {1'b0, DEV_marhi};
 
     // target device sel
-    wire [7:0] tdev_eq_ram_in = {3'b0, tdev_ram};
-    wire [7:0] tdev_from_instruction_in = {3'bz, rom_data[20:16]};
     wire [7:0] targ_dev_out = {3'bz, targ_dev};
-    hct74245 tdev_from_instruction(.A(tdev_from_instruction_in), .B(targ_dev_out), .dir(1'b1), .nOE(! op == op_ram_immed_eq_dev));
-    hct74245 tdev_eq_ram(.A(tdev_eq_ram_in), .B(targ_dev_out), .dir(1'b1), .nOE(! op == op_ram_immed_eq_dev));
+    hct74245ab tdev_from_instruction(.A({3'bz, rom_data[20:16]}), .B(targ_dev_out), .nOE(! op == OP_ram_immed_eq_dev));
+    hct74245ab tdev_eq_ram(.A({3'b0, tdev_ram}), .B(targ_dev_out), .nOE(! op == OP_ram_immed_eq_dev));
 
     // l device sel
     assign lbus_dev = rom_data[12:9];
     
     // r device sel
-    wire [7:0] rdev_from_instruction_aluop_in = {4'bz, rom_data[8:5]};
-    wire [7:0] rdev_from_instruction_ramimmed_in = {4'bz, rom_data[19:16]};
-    wire [7:0] rdev_eq_ram_in = {4'b0, dev_ram};
-    wire [7:0] rdev_eq_rom_in = {4'b0, dev_rom};
     wire [7:0] lbus_dev_out = {4'bz, lbus_dev};
-
-    hct74245 rdev_from_instruction_aluop(.A(rdev_from_instruction_aluop_in), .B(lbus_dev_out), .dir(1'b1), .nOE( !op == op_dev_eq_xy_alu));
-    hct74245 rdev_from_instruction_ramimmed(.A(rdev_from_instruction_ramimmed_in), .B(lbus_dev_out), .dir(1'b1), .nOE(! op == op_ram_immed_eq_dev));
-    hct74245 rdev_eq_ram(.A(rdev_eq_ram_in), .B(lbus_dev_out), .dir(1'b1), .nOE(!op == op_dev_eq_ram_immed));
-    hct74245 rdev_eq_rom(.A(rdev_eq_rom_in), .B(lbus_dev_out), .dir(1'b1), .nOE(! (op == op_dev_eq_const8 | op == op_dev_eq_const16 | op == op_dev_eq_rom_immed)));
+    hct74245ab rdev_from_instruction_aluop(.A({4'bz, rom_data[8:5]}), .B(lbus_dev_out), .nOE( !op == OP_dev_eq_xy_alu));
+    hct74245ab rdev_from_instruction_ramimmed(.A({4'bz, rom_data[19:16]}), .B(lbus_dev_out), .nOE(! op == OP_ram_immed_eq_dev));
+    hct74245ab rdev_eq_ram(.A(rdev_eq_ram_in), .B(lbus_dev_out), .nOE(!op == OP_dev_eq_ram_immed));
+    hct74245ab rdev_eq_rom(.A(rdev_eq_rom_in), .B(lbus_dev_out), .nOE(! (op == OP_dev_eq_const8 | op == OP_dev_eq_const16 | op == OP_dev_eq_rom_immed)));
   
   
     // control lines for bufs need better names
@@ -191,8 +186,8 @@ module test();
         .PCHI(PCHI)
     );
 
-    hct74245 pchi_addrbushi_buf(.A(PCHI), .B(address_bus[15:8]), .dir(1'b1), .nOE(_addrmode_pc));
-    hct74245 pclo_addrbuslo_buf(.A(PCLO), .B(address_bus[7:0]), .dir(1'b1), .nOE(_addrmode_pc));
+    hct74245ab pchi_addrbushi_buf(.A(PCHI), .B(address_bus[15:8]), .nOE(_addrmode_pc));
+    hct74245ab pclo_addrbuslo_buf(.A(PCLO), .B(address_bus[7:0]), .nOE(_addrmode_pc));
 
     // ROM and IR =============================================================================================
 
@@ -200,7 +195,7 @@ module test();
     rom #(.AWIDTH(16), .Filename("mid.rom")) rom_mid(._CS(1'b0), ._OE(1'b0), .A(address_bus));
     rom #(.AWIDTH(16), .Filename("lo.rom"))   rom_lo(._CS(1'b0), ._OE(1'b0), .A(address_bus)); 
     
-    hct74245 rom_rbus_buf(.A(rom_lo.D), .B(rbus), .dir(1'b1), .nOE(_rdev_rom));
+    hct74245ab rom_rbus_buf(.A(rom_lo.D), .B(rbus), .nOE(_rdev_rom));
 
     // immediate addressing buffer
     hct74573 rom_addrbushi_buf(
@@ -222,14 +217,14 @@ module test();
     hct74377 MARLO(._EN(_marlo_in), .CP(clk), .D(alu_result_bus));    
     hct74377 MARHI(._EN(_marhi_in), .CP(clk), .D(alu_result_bus));
 
-    hct74245 marlo_lbus_buf(.A(MARLO.Q), .B(lbus), .dir(1'b1), .nOE(_ldev_marlo)); // optional
-    hct74245 marlo_rbus_buf(.A(MARLO.Q), .B(rbus), .dir(1'b1), .nOE(_rdev_marlo)); // optional
+    hct74245ab marlo_lbus_buf(.A(MARLO.Q), .B(lbus), .nOE(_ldev_marlo)); // optional
+    hct74245ab marlo_rbus_buf(.A(MARLO.Q), .B(rbus), .nOE(_rdev_marlo)); // optional
 
-    hct74245 marhi_lbus_buf(.A(MARHI.Q), .B(lbus), .dir(1'b1), .nOE(_ldev_marhi)); // optional
-    hct74245 marhi_rbus_buf(.A(MARHI.Q), .B(rbus), .dir(1'b1), .nOE(_rdev_marhi)); // optional
+    hct74245ab marhi_lbus_buf(.A(MARHI.Q), .B(lbus), .nOE(_ldev_marhi)); // optional
+    hct74245ab marhi_rbus_buf(.A(MARHI.Q), .B(rbus), .nOE(_rdev_marhi)); // optional
 
-    hct74245 marhi_addrbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .dir(1'b1), .nOE(_addrmode_register));
-    hct74245 marlo_addrbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .dir(1'b1), .nOE(_addrmode_register));
+    hct74245ab marhi_addrbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .nOE(_addrmode_register));
+    hct74245ab marlo_addrbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register));
 
 
 

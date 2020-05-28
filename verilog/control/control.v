@@ -8,6 +8,8 @@ Wasn't able to avoid it without a lot more h/w.
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
+`include "decoding.v"
+`include "../74138/hct74138.v"
 
 `timescale 1ns/1ns
 
@@ -36,6 +38,8 @@ module control #(parameter LOG=1)
     input phaseExec, 
     input _phaseFetch,
 
+    output [7:0] _decodedOp,
+
     output _addrmode_pc, // enable PC onto address bus
     output _addrmode_register, // enable MAR onto address bus - register direct addressing - op 0
     output _addrmode_immediate, // enable ROM[15:0] onto address bus, needs an IR in implementation - direct addressing
@@ -47,10 +51,12 @@ module control #(parameter LOG=1)
     output [4:0] aluop
 );
 
-    `include "decoding.v"
     // `DECODE_PHASE
     `DECODE_ADDRMODE
 
+    // SELECTORS
+    hct74138 decoderLoDev(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(ctrl), .Y(_decodedOp));
+     
 
     // ADDRESS MODE DECODING =====    
     // as organised above then OPS0/1/2 are all REGISTER and OPS 4/5/6 are all IMMEDIATE 
