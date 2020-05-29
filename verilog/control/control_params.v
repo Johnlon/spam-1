@@ -21,12 +21,21 @@ localparam [3:0] DEV_ram = 0;
 localparam [3:0] DEV_rom = 1;
 localparam [3:0] DEV_marlo = 2;
 localparam [3:0] DEV_marhi = 3;
+localparam [3:0] DEV_uart = 6;
 
 // targets
+function [4:0] TDEV([3:0] x);
+     TDEV = {1'b0, x};
+endfunction
+
+`define LT(DNAME) localparam [4:0] TDEV_``DNAME`` = {1'b0, DEV_``DNAME``};
+
 localparam [4:0] TDEV_ram = {1'b0, DEV_ram};
 localparam [4:0] TDEV_rom = {1'b0, DEV_rom};
 localparam [4:0] TDEV_marlo = {1'b0, DEV_marlo};
 localparam [4:0] TDEV_marhi = {1'b0, DEV_marhi};
+//localparam [4:0] TDEV_uart = TDEV(DEV_uart);
+`LT(uart)
 
 endmodule: control_params
 

@@ -33,41 +33,62 @@ module test();
         `endif
     end
 
+    
     initial begin
 
-        d.display("OP_dev_eq_xy_alu");
+        d.display("0: OP_dev_eq_xy_alu");
         
-        {data_hi, data_mid, data_lo} = {3'd0, 5'b10101, 3'bxxx, 4'b1101, 4'b1110,  5'b01100}; // op, devt, x3, regl, regr, alu
+        {data_hi, data_mid, data_lo} = {3'd0, control_params.TDEV_uart, 3'bxxx, control_params.DEV_marlo, control_params.DEV_marhi, alu_func.ALUOP_ZERO}; // op, devt, x3, regl, regr, alu
 
         #T
-        `Equals( targ_dev, 5'b10101)
-        `Equals( lbus_dev, 4'b1101)
-        `Equals( rbus_dev, 4'b1110)
-        `Equals( aluop, 5'b01100)
+        `Equals( targ_dev, control_params.TDEV_uart)
+        `Equals( lbus_dev, control_params.DEV_marlo)
+        `Equals( rbus_dev, control_params.DEV_marhi)
+        `Equals( aluop, alu_func.ALUOP_ZERO)
 
 
-        d.display("OP_dev_eq_const8");
+        d.display("1: OP_dev_eq_const8");
         
-        {data_hi, data_mid, data_lo} = {3'd1, 5'b10101, 8'bx, 8'b10101010}; // op, devt, x8, const8
+        {data_hi, data_mid, data_lo} = {3'd1, control_params.TDEV_marlo, 8'bx, 8'b10101010}; // op, devt, x8, const8
 
         #T
-        `Equals( targ_dev, 5'b10101)
-        `Equals( lbus_dev, 4'bxxxx) // not used
+        `Equals( targ_dev, control_params.TDEV_marlo)
+        `Equals( lbus_dev, 4'bxxxx)  // passed thru but irrelevant for this operation as [15:0] go to the address bus
         `Equals( rbus_dev, control_params.DEV_rom)
         `Equals( aluop, alu_func.ALUOP_PASSR)
 
-
-        d.display("OP_dev_eq_rom_immed");
+        d.display("4: OP_dev_eq_rom_immed");
         
-        {data_hi, data_mid, data_lo} = {3'd4, 5'b10101, 16'b0101001100011100}; // op, devt, const16
+        {data_hi, data_mid, data_lo} = {3'd4, control_params.TDEV_marlo, 16'b010xzxz100011100}; // op, devt, addr16
 
         #T
-        `Equals( targ_dev, 5'b10101) 
-        `Equals( lbus_dev, 4'b1001) // ignored
+        `Equals( targ_dev, control_params.TDEV_marlo) 
+        `Equals( lbus_dev, 4'bxzxz)  // passed thru but irrelevant for this operation as [15:0] go to the address bus
         `Equals( rbus_dev, control_params.DEV_rom)
         `Equals( aluop, alu_func.ALUOP_PASSR)
 
-        $display("testing end");
+        d.display("5: OP_dev_eq_ram_immed");
+        
+        {data_hi, data_mid, data_lo} = {3'd5, control_params.TDEV_marlo, 16'b010xzxz100011100}; // op, devt, addr16
+
+        #T
+        `Equals( targ_dev, control_params.TDEV_marlo) 
+        `Equals( lbus_dev, 4'bxzxz) // passed thru but irrelevant for this operation as [15:0] go to the address bus
+        `Equals( rbus_dev, control_params.DEV_ram)
+        `Equals( aluop, alu_func.ALUOP_PASSR)
+
+        d.display("6: OP_ram_immed_eq_dev");
+        
+        {data_hi, data_mid, data_lo} = {3'd6, control_params.TDEV_ram, 16'b010xzxz100011100}; // op, devt, addr16
+
+        #T
+        `Equals( targ_dev, control_params.TDEV_ram) 
+        `Equals( lbus_dev, 4'bxzxz) // passed thru but irrelevant for this operation as [15:0] go to the address bus 
+        `Equals( rbus_dev, control_params.DEV_ram)
+        `Equals( aluop, alu_func.ALUOP_PASSL)
+
+        d.display("test end");
+
     end
 
 endmodule : test

@@ -9,6 +9,7 @@ module alu_func;
     // ALUOP
     localparam [4:0] ALUOP_PASSL = 0;
     localparam [4:0] ALUOP_PASSR = 1;
+    localparam [4:0] ALUOP_ZERO = 2;
 
     function string aluopName;
         input [4:0] opcode;

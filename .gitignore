@@ -6,6 +6,7 @@ l
 **/*.swp
 **/*.vcd
 **/a.out
+**/*.v.out
 
 /verilog/_old/
 /venv*/
