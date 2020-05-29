@@ -1,5 +1,8 @@
 
-// `timescale 1ns/1ns
+`ifndef V_74245
+`define V_74245
+
+ `timescale 1ns/1ns
 `default_nettype none
 
 `define Equals(ACTUAL, expected) \
@@ -106,3 +109,5 @@ module test();
 
     end
 endmodule : test
+
+`endif

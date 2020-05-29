@@ -10,9 +10,8 @@
 
 module test();
 
-    reg [60*8:0] label;
-    `define DISPLAY(x) label=x; $display("\n>>>> %-s", label);
-
+    reg [80:0][7:0] label;
+    
     logic clk;
     logic mr;
 
@@ -33,7 +32,7 @@ module test();
         $monitor ("%9t ", $time,  "TEST    clk=%1b", clk, 
                 " seq=%10b", seq,
                 " phase(FDE=%1b%1b%1b)", phaseFetch , phaseDecode , phaseExec,
-                " mr=%1b", mr, 
+                " mr=%1b", mr,
                 " %s", label
                 );
 

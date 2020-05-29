@@ -20,8 +20,9 @@ module test();
 
     localparam SETTLE_TOLERANCE=50;
 
-   `include "../lib/display_snippet.v"
-
+    `include "../lib/display_snippet.v"
+    `include "../control/control_params.v"
+    
     tri [15:0] address_bus;
 
     tri [7:0] rbus, lbus, alu_result_bus;
@@ -36,25 +37,12 @@ module test();
     wire _addrmode_register, _addrmode_pc, _addrmode_immediate;
     wire [2:0] _addrmode = {_addrmode_pc, _addrmode_register, _addrmode_immediate}; 
 
-    function automatic [4*8:0] sAddrMode();
-        begin
-         sAddrMode = !_addrmode_pc ? "pc" : !_addrmode_register?  "reg" : !_addrmode_immediate? "imm": "---";
-        end
-    endfunction
-
-
     localparam PHASE_NONE = 3'b000;
     localparam PHASE_FETCH = 3'b100;
     localparam PHASE_DECODE = 3'b010;
     localparam PHASE_EXEC = 3'b001;
     wire phaseFetch, phaseDecode, phaseExec, _phaseFetch;
     wire [2:0] phase = {phaseFetch, phaseDecode, phaseExec};
-
-    function automatic [7*8:0] sPhase();
-        begin
-            sPhase = phaseFetch ? "fetch" : phaseDecode ? "decode" : phaseExec ?"exec": "---";
-        end
-    endfunction
 
     // CLOCK ===================================================================================
     localparam T=1000;
@@ -103,7 +91,13 @@ module test();
          .Q(control_byte) // FIXME WIRE TO CONTROL LOGIC
     );
 
-    control #(.LOG(1)) ctrl( 
+    op_decoder #(.LOG(1)) op_ctrl( 
+                    .ctrl(control_byte[7:5]), 
+                    .phaseFetch, ._phaseFetch, .phaseDecode, .phaseExec, 
+                    ._addrmode_pc, ._addrmode_register, ._addrmode_immediate, 
+                    );
+
+    address_mode_decoder #(.LOG(1)) addr_ctrl( 
                     .clk, 
                     ._mr(_mrPC), 
                     .ctrl(control_byte[7:5]), 
@@ -112,31 +106,7 @@ module test();
                     .rbus_dev, .lbus_dev, .targ_dev, .aluop
                     );
 
-    wire [23:0] rom_data = {control_byte, rom_mid.D, rom_lo.D};
-
     logic op =0;
-
-    // ops
-    localparam OP_dev_eq_xy_alu =0;
-    localparam OP_dev_eq_const8 =1;
-    localparam OP_dev_eq_const16 =2;
-    localparam OP_3_unused =3;
-    localparam OP_dev_eq_rom_immed =4;
-    localparam OP_dev_eq_ram_immed =5;
-    localparam OP_ram_immed_eq_dev =6;
-    localparam OP_7_unused =7;
-
-    // sources
-    localparam [3:0] DEV_ram = 0;
-    localparam [3:0] DEV_rom = 1;
-    localparam [3:0] DEV_marlo = 2;
-    localparam [3:0] DEV_marhi = 3;
-
-    // targets
-    localparam [4:0] TDEV_ram = {1'b0, DEV_ram};
-    localparam [4:0] TDEV_rom = {1'b0, DEV_rom};
-    localparam [4:0] TDEV_marlo = {1'b0, DEV_marlo};
-    localparam [4:0] TDEV_marhi = {1'b0, DEV_marhi};
 
     // target device sel
     wire [7:0] targ_dev_out = {3'bz, targ_dev};

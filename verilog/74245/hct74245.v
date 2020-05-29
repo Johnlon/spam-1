@@ -3,8 +3,8 @@
 /* verilator lint_off STMTDLY */
 
 
-`ifndef hct74245
-`define hct74245
+`ifndef V_74245
+`define V_74245
 
 `timescale 1ns/1ns
 
@@ -39,6 +39,7 @@ module hct74245(
 
 endmodule: hct74245
 
+`timescale 1ns/1ns
 
 module hct74245ab( 
     input nOE,
@@ -59,6 +60,13 @@ module hct74245ab(
         .A(Ain),
         .B
     );
+
+    
+    if (LOG) 
+        always @(*) 
+        begin
+            $display("%8d", $time,  " BUF %-s: A=%8b ", NAME, A, "B=%-8b ", B, " nOE=%1b", nOE);
+        end
 
 endmodule: hct74245ab
 

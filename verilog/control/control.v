@@ -2,17 +2,6 @@
 This code generates a momentary conflict during propagation of the signals when transitioning back to fetch.
 Wasn't able to avoid it without a lot more h/w. 
 */
-
-`ifndef V_CONTROL_SELECT
-`define V_CONTROL_SELECT
-
-// verilator lint_off ASSIGNDLY
-// verilator lint_off STMTDLY
-`include "decoding.v"
-`include "../74138/hct74138.v"
-
-`timescale 1ns/1ns
-
 /*
 // constants 
 // bit 23 can dictate addressing mode as we only have 6 op codes and only 3 use either mode
@@ -26,38 +15,38 @@ parameter [2:0] op_RAM_ABS_eq_DEV_sel   = 6; // == RBUSDEV=XXXX        LBUSDEV=R
 // op 7 unused
 */
 
-module control #(parameter LOG=1) 
-(
-    input clk, 
-    input _mr,
 
+`ifndef V_CONTROL_SELECT
+`define V_CONTROL_SELECT
+
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
+`include "../74138/hct74138.v"
+`include "../74245/hct74245.v"
+`include "../alu/alu_func.v"
+`include "control_decoding.v"
+`include "control_params.v"
+
+`timescale 1ns/1ns
+
+module address_mode_decoder #(parameter LOG=1) 
+(
     input [2:0] ctrl,
 
-    input phaseFetch, 
+    input phaseFetch,
     input phaseDecode, 
     input phaseExec, 
     input _phaseFetch,
 
-    output [7:0] _decodedOp,
-
     output _addrmode_pc, // enable PC onto address bus
     output _addrmode_register, // enable MAR onto address bus - register direct addressing - op 0
-    output _addrmode_immediate, // enable ROM[15:0] onto address bus, needs an IR in implementation - direct addressing
-
-    output [3:0] rbus_dev,
-    output [3:0] lbus_dev,
-    output [4:0] targ_dev,
-
-    output [4:0] aluop
+    output _addrmode_immediate // enable ROM[15:0] onto address bus, needs an IR in implementation - direct addressing
 );
+
 
     // `DECODE_PHASE
     `DECODE_ADDRMODE
-
-    // SELECTORS
-    hct74138 decoderLoDev(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(ctrl), .Y(_decodedOp));
-     
-
+    
     // ADDRESS MODE DECODING =====    
     // as organised above then OPS0/1/2 are all REGISTER and OPS 4/5/6 are all IMMEDIATE 
 
@@ -68,54 +57,99 @@ module control #(parameter LOG=1)
     nand #(10) o2(_addrmode_immediate , _phaseFetch , isImm);
     assign _addrmode_pc = _phaseFetch;
 
-/*
-    wire #(10) _programPhase = ! _phaseFetch;
-    wire #(10) isReg = rom_hi[7];
-    wire #(10) isImm = ! rom_hi[7];
-    or #(10) o1(_addrmode_register , _programPhase , isReg);
-    or #(10) o2(_addrmode_immediate ,  _programPhase , isImm);
-    assign #(10) _addrmode_pc = _phaseFetch;
-*/
-/*
-    logic _Ea=1'b0;
-    logic _Eb=1'b0;
-    logic [1:0] Aa;
-    logic [1:0] Ab='0;
-    wire [3:0] _Ya;
-    wire [3:0] _Yb;
+    if (1)    
+    always @ * begin;
+         $display("%9t ADDRMODE_DECODE", $time,
+            " ctrl=%3b", ctrl, 
+            " phase(FDE=%1b%1b%1b) ", phaseFetch, phaseDecode, phaseExec, 
+            "    _addrmode(pc=%b,reg=%b,imm=%b)", _addrmode_pc, _addrmode_register, _addrmode_immediate,
+            " _amode=%3s", control_decoding.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate)
+            );
+    end
 
-    hct74139 #(.LOG(1)) demux(
-                    ._Ea,
-                    ._Eb,
-                    .Aa,
-                    .Ab,
-                    ._Ya,
-                    ._Yb
-                    );
+
+endmodule : address_mode_decoder
+
+module op_decoder #(parameter LOG=1) 
+(
+    input [7:0] data_hi, data_mid, data_lo,
+
+    output tri [3:0] rbus_dev,
+    output tri [3:0] lbus_dev,
+    output tri [4:0] targ_dev,
+    output tri [4:0] aluop
+);
+
+    wire [23:0] rom_data = {data_hi, data_mid, data_lo};
+    wire [2:0] ctrl = rom_data[23:21];
+
+    hct74138 op_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(ctrl));
+
+    wire _op_dev_eq_xy_alu;
+    wire _op_dev_eq_const8;
+    wire _op_dev_eq_const16;
+    wire _op_3_unused;
+    wire _op_dev_eq_rom_immed;
+    wire _op_dev_eq_ram_immed;
+    wire _op_ram_immed_eq_dev;
+    wire _op_7_unused;
+    assign {
+        _op_7_unused,
+        _op_ram_immed_eq_dev,
+        _op_dev_eq_ram_immed,
+        _op_dev_eq_rom_immed,
+        _op_3_unused,
+        _op_dev_eq_const16,
+        _op_dev_eq_const8,
+        _op_dev_eq_xy_alu
+    } = op_demux.Y;
+
     
-    assign Aa={_phaseFetch, rom_hi[7]};
-    assign _addrmode_register = _Ya[1];
-    assign _addrmode_immediate = _Ya[2];
-    assign _addrmode_pc = _phaseFetch;
-*/
+     // target device sel
+    tri [7:0] targ_dev_out; 
+    hct74245ab tdev_from_instruction(.A({3'bz, rom_data[20:16]}), .B(targ_dev_out), .nOE(!_op_ram_immed_eq_dev));   // NOT GATE (or a NOR gate)
+    hct74245ab tdev_eq_ram(.A({3'b0, control_params.TDEV_ram}), .B(targ_dev_out), .nOE(_op_ram_immed_eq_dev)); // only op_ram_immed_eq_dev has targ forced to RAM
+    assign targ_dev = targ_dev_out[4:0];
+
+    // l device sel
+    assign lbus_dev = rom_data[12:9];  // << THIS WORKS OK TOO BUT PUTTING A BUFFER HERE MEANS I GET A ZZZ IN THE TEST 
+    // tri [7:0] lbus_dev_out; 
+    // hct74245ab ldev_from_instruction(.A({4'bz, rom_data[12:9]}), .B(lbus_dev_out), .nOE(_op_dev_eq_xy_alu)); 
+    // assign lbus_dev = lbus_dev_out[3:0];
+
+    // r device sel
+    tri [7:0] rbus_dev_out;
+    hct74245ab rdev_from_instruction_aluop(.A({4'b0, rom_data[8:5]}), .B(rbus_dev_out), .nOE(_op_dev_eq_xy_alu));
+    hct74245ab rdev_from_instruction_ramimmed(.A({4'b0, rom_data[19:16]}), .B(rbus_dev_out), .nOE(_op_ram_immed_eq_dev));
+    hct74245ab rdev_eq_ram(.A({4'b0, control_params.DEV_ram}), .B(rbus_dev_out), .nOE(_op_dev_eq_ram_immed));
+    hct74245ab rdev_eq_rom(.A({4'b0, control_params.DEV_rom}), .B(rbus_dev_out), .nOE(_op_dev_eq_const8 &  _op_dev_eq_const16 &  _op_dev_eq_rom_immed));  // AND GATE  (or a TRIPLE INPUT NOR)
+    assign rbus_dev = rbus_dev_out[3:0]; 
+
+    // aluop
+    tri [7:0] aluop_out;
+    hct74245ab aluopfrom_instruction(.A({3'b0, rom_data[4:0]}), .B(aluop_out), .nOE(_op_dev_eq_xy_alu));
+    hct74245ab aluop_eq_passr(.A({3'b0, alu_func.ALUOP_PASSL}), .B(aluop_out), .nOE(_op_ram_immed_eq_dev));
+    hct74245ab aluop_eq_passl(.A({3'b0, alu_func.ALUOP_PASSR}), .B(aluop_out), .nOE(_op_dev_eq_const8 &  _op_dev_eq_const16 &  _op_dev_eq_rom_immed & _op_dev_eq_ram_immed));  // AND GATE  (or a TRIPLE INPUT NOR)
+    assign aluop = aluop_out[4:0];
 
     if (1)    
-    always @ * 
-         $display("%9t CTRL_SEL", $time,
-            " clk=%1b", clk, 
-            "    hibit=%b", ctrl[2], 
-            //" phase FDE=%3b _phaseFetch=%b", {phaseFetch, phaseDecode, phaseExec}, _phaseFetch,
-            " phase FDE=%3b ", {phaseFetch, phaseDecode, phaseExec}, 
-//            "    _programPhase=%1b", _programPhase,  
-//            " isReg=%b isImm=%b",isReg, isImm,
-            "    _addrmode pri=%1b/%1b/%1b", _addrmode_pc, _addrmode_register, _addrmode_immediate,
-            //" phase=%-s", sPhase,
-            " _amode=%-3s", aAddrMode
+    always @ *  begin
+         $display("%9t OP_DECODER", $time,
+                " data=%8b:%8b:%8b", data_hi, data_mid, data_lo,
+                " ctrl=%3b (%s)", ctrl, control_decoding.opName(ctrl),
+                " _decodedOp=%8b", op_demux.Y,
+                " tdev=%5b", targ_dev,
+                " ldev=%4b", lbus_dev,
+                " rdev=%4b", rbus_dev,
+                " aluop=%5b(%s)", aluop, alu_func.aluopName(aluop),
+                " _op_ram_immed_eq_dev=%b", _op_ram_immed_eq_dev
             );
+    end
 
 
-endmodule : control
-// verilator lint_on ASSIGNDLY
+endmodule : op_decoder
 
 `endif
 
+// verilator lint_on ASSIGNDLY
+// verilator lint_on ASSIGNDLY

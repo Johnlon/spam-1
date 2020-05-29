@@ -1,0 +1,38 @@
+#! /usr/local/bin/vvp
+:ivl_version "11.0 (devel)" "(s20150603-819-g462ee62f)";
+:ivl_delay_selection "TYPICAL";
+:vpi_time_precision - 9;
+:vpi_module "/usr/local/lib/ivl/system.vpi";
+:vpi_module "/usr/local/lib/ivl/vhdl_sys.vpi";
+:vpi_module "/usr/local/lib/ivl/vhdl_textio.vpi";
+:vpi_module "/usr/local/lib/ivl/v2005_math.vpi";
+:vpi_module "/usr/local/lib/ivl/va_math.vpi";
+:vpi_module "/usr/local/lib/ivl/v2009.vpi";
+S_0x7fffca1d4670 .scope package, "$unit" "$unit" 2 1;
+ .timescale 0 0;
+S_0x7fffca1d4800 .scope module, "control_params" "control_params" 3 7;
+ .timescale -9 -9;
+P_0x7fffca1c29f0 .param/l "ALUOP_PASSL" 1 3 33, C4<00000>;
+P_0x7fffca1c2a30 .param/l "ALUOP_PASSR" 1 3 34, C4<00001>;
+P_0x7fffca1c2a70 .param/l "DEV_marhi" 1 3 23, C4<0011>;
+P_0x7fffca1c2ab0 .param/l "DEV_marlo" 1 3 22, C4<0010>;
+P_0x7fffca1c2af0 .param/l "DEV_ram" 1 3 20, C4<0000>;
+P_0x7fffca1c2b30 .param/l "DEV_rom" 1 3 21, C4<0001>;
+P_0x7fffca1c2b70 .param/l "OP_3_unused" 1 3 13, +C4<00000000000000000000000000000011>;
+P_0x7fffca1c2bb0 .param/l "OP_7_unused" 1 3 17, +C4<00000000000000000000000000000111>;
+P_0x7fffca1c2bf0 .param/l "OP_dev_eq_const16" 1 3 12, +C4<00000000000000000000000000000010>;
+P_0x7fffca1c2c30 .param/l "OP_dev_eq_const8" 1 3 11, +C4<00000000000000000000000000000001>;
+P_0x7fffca1c2c70 .param/l "OP_dev_eq_ram_immed" 1 3 15, +C4<00000000000000000000000000000101>;
+P_0x7fffca1c2cb0 .param/l "OP_dev_eq_rom_immed" 1 3 14, +C4<00000000000000000000000000000100>;
+P_0x7fffca1c2cf0 .param/l "OP_dev_eq_xy_alu" 1 3 10, +C4<00000000000000000000000000000000>;
+P_0x7fffca1c2d30 .param/l "OP_ram_immed_eq_dev" 1 3 16, +C4<00000000000000000000000000000110>;
+P_0x7fffca1c2d70 .param/l "TDEV_marhi" 1 3 29, C4<00011>;
+P_0x7fffca1c2db0 .param/l "TDEV_marlo" 1 3 28, C4<00010>;
+P_0x7fffca1c2df0 .param/l "TDEV_ram" 1 3 26, C4<00000>;
+P_0x7fffca1c2e30 .param/l "TDEV_rom" 1 3 27, C4<00001>;
+# The file index is used to find the file name in the following table.
+:file_names 4;
+    "N/A";
+    "<interactive>";
+    "-";
+    "control_params.v";

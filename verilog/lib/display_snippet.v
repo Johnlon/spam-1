@@ -2,7 +2,8 @@
 // adds this label to dumpfile and logging
 
 /* verilator lint_off UNUSED */
-reg [80*8:0] label;
+reg [80:0][7:0] label;
+//string label;
 
 `ifndef verilator
     `define DISPLAY(x) label=x; \
