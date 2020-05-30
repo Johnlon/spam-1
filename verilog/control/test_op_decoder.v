@@ -86,7 +86,7 @@ module test();
         `Equals( lbus_dev, 4'bxzxz) // passed thru but irrelevant for this operation as [15:0] go to the address bus 
         `Equals( rbus_dev, control_params.DEV_ram)
         `Equals( aluop, alu_func.ALUOP_PASSL)
-
+        
         d.display("test end");
 
     end

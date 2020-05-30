@@ -2,6 +2,7 @@
 This code generates a momentary conflict during propagation of the signals when transitioning back to fetch.
 Wasn't able to avoid it without a lot more h/w. 
 */
+
 /*
 // constants 
 // bit 23 can dictate addressing mode as we only have 6 op codes and only 3 use either mode
@@ -104,32 +105,32 @@ module op_decoder #(parameter LOG=1)
         _op_dev_eq_xy_alu
     } = op_demux.Y;
 
-    
+
      // target device sel
     tri [7:0] targ_dev_out; 
-    hct74245ab tdev_from_instruction(.A({3'bz, rom_data[20:16]}), .B(targ_dev_out), .nOE(!_op_ram_immed_eq_dev));   // NOT GATE (or a NOR gate)
+    wire #(10) op_ram_immed_eq_dev = ! _op_ram_immed_eq_dev;  // NOT GATE
+    hct74245ab tdev_from_instruction(.A({3'bz, rom_data[20:16]}), .B(targ_dev_out), .nOE(op_ram_immed_eq_dev));
     hct74245ab tdev_eq_ram(.A({3'b0, control_params.TDEV_ram}), .B(targ_dev_out), .nOE(_op_ram_immed_eq_dev)); // only op_ram_immed_eq_dev has targ forced to RAM
     assign targ_dev = targ_dev_out[4:0];
 
     // l device sel
-    assign lbus_dev = rom_data[12:9];  // << THIS WORKS OK TOO BUT PUTTING A BUFFER HERE MEANS I GET A ZZZ IN THE TEST 
-    // tri [7:0] lbus_dev_out; 
-    // hct74245ab ldev_from_instruction(.A({4'bz, rom_data[12:9]}), .B(lbus_dev_out), .nOE(_op_dev_eq_xy_alu)); 
-    // assign lbus_dev = lbus_dev_out[3:0];
+    assign lbus_dev = rom_data[12:9];
 
     // r device sel
     tri [7:0] rbus_dev_out;
+    wire #(10) _force_source_rom = _op_dev_eq_const8 &  _op_dev_eq_const16 &  _op_dev_eq_rom_immed; // 3 INPUT AND GATE
     hct74245ab rdev_from_instruction_aluop(.A({4'b0, rom_data[8:5]}), .B(rbus_dev_out), .nOE(_op_dev_eq_xy_alu));
     hct74245ab rdev_from_instruction_ramimmed(.A({4'b0, rom_data[19:16]}), .B(rbus_dev_out), .nOE(_op_ram_immed_eq_dev));
     hct74245ab rdev_eq_ram(.A({4'b0, control_params.DEV_ram}), .B(rbus_dev_out), .nOE(_op_dev_eq_ram_immed));
-    hct74245ab rdev_eq_rom(.A({4'b0, control_params.DEV_rom}), .B(rbus_dev_out), .nOE(_op_dev_eq_const8 &  _op_dev_eq_const16 &  _op_dev_eq_rom_immed));  // AND GATE  (or a TRIPLE INPUT NOR)
+    hct74245ab rdev_eq_rom(.A({4'b0, control_params.DEV_rom}), .B(rbus_dev_out), .nOE(_force_source_rom));
     assign rbus_dev = rbus_dev_out[3:0]; 
 
     // aluop
     tri [7:0] aluop_out;
+    wire #(10) _force_passr = _force_source_rom & _op_dev_eq_ram_immed; // source ram or rom means passr : 2 INPUT AND GATE
     hct74245ab aluopfrom_instruction(.A({3'b0, rom_data[4:0]}), .B(aluop_out), .nOE(_op_dev_eq_xy_alu));
-    hct74245ab aluop_eq_passr(.A({3'b0, alu_func.ALUOP_PASSL}), .B(aluop_out), .nOE(_op_ram_immed_eq_dev));
-    hct74245ab aluop_eq_passl(.A({3'b0, alu_func.ALUOP_PASSR}), .B(aluop_out), .nOE(_op_dev_eq_const8 &  _op_dev_eq_const16 &  _op_dev_eq_rom_immed & _op_dev_eq_ram_immed));  // AND GATE  (or a TRIPLE INPUT NOR)
+    hct74245ab aluop_eq_passl(.A({3'b0, alu_func.ALUOP_PASSL}), .B(aluop_out), .nOE(_op_ram_immed_eq_dev));
+    hct74245ab aluop_eq_passr(.A({3'b0, alu_func.ALUOP_PASSR}), .B(aluop_out), .nOE(_force_passr));
     assign aluop = aluop_out[4:0];
 
     if (1)    
