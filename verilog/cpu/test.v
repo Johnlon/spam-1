@@ -82,19 +82,14 @@ module test();
          .Q(control_byte) // FIXME WIRE TO CONTROL LOGIC
     );
 
-    op_decoder #(.LOG(0)) decoder( .data_hi(control_byte), .data_mid(rom_mid.D), .data_lo(rom_lo.D), .rbus_dev, .lbus_dev, .targ_dev, .aluop);
+    op_decoder #(.LOG(1)) op_decode(.data_hi(control_byte), .data_mid(rom_mid.D), .data_lo(rom_lo.D), .rbus_dev, .lbus_dev, .targ_dev, .aluop);
 
-
-    address_mode_decoder #(.LOG(1)) addr_ctrl( 
+    address_mode_decoder #(.LOG(1)) addr_decode( 
         .ctrl(control_byte[7:5]), 
         .phaseFetch, ._phaseFetch, .phaseDecode, .phaseExec, 
         ._addrmode_pc, ._addrmode_register, ._addrmode_immediate 
     );
 
-    op_decoder #(.LOG(1)) op_decode(
-        .data_hi(control_byte), .data_mid(rom_mid.D), .data_lo(rom_lo.D),
-        .rbus_dev, .lbus_dev, .targ_dev, .aluop
-    );
 
     // control lines for bufs need better names
     logic _rdev_rom; // put rom on rbus
@@ -207,7 +202,7 @@ module test();
 
     always @(PCHI or PCLO) begin
       $display("");
-      $display("%9t", $time, " PC=%-d >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", {PCHI, PCLO});
+      $display("%9t ", $time, "INCREMENTED PC=%-d ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", {PCHI, PCLO});
     end
 
     task DUMP;
@@ -220,21 +215,21 @@ module test();
                  " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus,
                  " rdev=%04b ldev=%04b targ=%05b aluop=%05b ", rbus_dev, lbus_dev, targ_dev, aluop,
                  " PC=%02h:%02h", PCHI, PCLO,
-                 "      %-s", label
+                 "     : %-s", label
                  );
     endtask 
 
     task CLK_UP; 
     begin
-        $display("setting clk +");
-        DUMP;
         clk = 1;
     end
     endtask
 
     task CLK_DN; 
     begin
-        $display("setting clk -");
+        $display("end of + phase");
+        op_decode.DUMP();
+        addr_decode.DUMP();
         DUMP;
         clk = 0;
     end
@@ -250,7 +245,7 @@ module test();
                  " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus,
                  " rdev=%04b ldev=%04b targ=%05b aluop=%05b ", rbus_dev, lbus_dev, targ_dev, aluop,
                  " PC=%02h:%02h", PCHI, PCLO,
-                 "      %-s", label
+                 "     : %-s", label
                  );
     end
 
@@ -281,15 +276,15 @@ module test();
     integer instCount = 0;
     always @(posedge phaseFetch) begin
         instCount ++;
-        $display("\n%9t", $time, " PHASE: FETCH  INTRUCTION=%4d FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", instCount); 
+        $display("\n%9t", $time, " PHASE: FETCH  INTRUCTION#=%-d", instCount); 
     end
 
     always @(posedge phaseDecode) begin
-        $display("\n%9t", $time, " PHASE: DECODE DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"); 
+        $display("\n%9t", $time, " PHASE: DECODE"); 
     end
 
     always @(posedge phaseExec) begin
-        $display("\n%9t", $time, " PHASE: EXEC  EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"); 
+        $display("\n%9t", $time, " PHASE: EXECUTE"); 
     end
 
     if (0) always @* 

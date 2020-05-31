@@ -38,6 +38,7 @@ parameter [2:0] op_RAM_ABS_eq_DEV_sel   = 6; // == RBUSDEV=[19:16]     LBUSDEV=X
 // verilator lint_off STMTDLY
 // verilator lint_off MULTITOP
 // verilator lint_off DECLFILENAME
+// verilator lint_off UNUSED
 
 module control;
  
@@ -210,7 +211,7 @@ module address_mode_decoder #(parameter LOG=1)
     nand #(10) o2(_addrmode_immediate , _phaseFetch , isImm);
     assign _addrmode_pc = _phaseFetch;
 
-    if (1)    
+    if (0)    
     always @ * begin;
          $display("%9t ADDRMODE_DECODE", $time,
             " ctrl=%3b", ctrl, 
@@ -219,6 +220,15 @@ module address_mode_decoder #(parameter LOG=1)
             " _amode=%3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate)
             );
     end
+
+    task DUMP; 
+     $display("%9t AMODE_DECODER", $time,
+            " ctrl=%3b", ctrl, 
+            " phase(FDE=%1b%1b%1b) ", phaseFetch, phaseDecode, phaseExec, 
+            "    _addrmode(pc=%b,reg=%b,imm=%b)", _addrmode_pc, _addrmode_register, _addrmode_immediate,
+            " _amode=%3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate)
+            );
+    endtask
 
 
 endmodule : address_mode_decoder
@@ -285,11 +295,11 @@ module op_decoder #(parameter LOG=1)
     hct74245ab aluop_eq_passr(.A({3'b0, alu_func.ALUOP_PASSR}), .B(aluop_out), .nOE(_force_passr));
     assign aluop = aluop_out[4:0];
 
-    if (LOG)    
+    if (0)    
     always @ *  begin
          $display("%9t OP_DECODER", $time,
                 " data=%8b:%8b:%8b", data_hi, data_mid, data_lo,
-                " ctrl=%3b(%s)", ctrl, control.opName(ctrl),
+                " ctrl=%3b (%s)", ctrl, control.opName(ctrl),
                 " _decodedOp=%8b", op_demux.Y,
                 " tdev=%5b(%s)", targ_dev, control.tdevname(targ_dev),
                 " ldev=%4b(%s)", lbus_dev, control.devname(lbus_dev),
@@ -298,6 +308,18 @@ module op_decoder #(parameter LOG=1)
             );
     end
 
+    task DUMP; begin
+        $display("%9t OP_DECODER", $time,
+                " data=%8b:%8b:%8b", data_hi, data_mid, data_lo,
+                " ctrl=%3b (%s)", ctrl, control.opName(ctrl),
+                " _decodedOp=%8b", op_demux.Y,
+                " tdev=%5b(%s)", targ_dev, control.tdevname(targ_dev),
+                " ldev=%4b(%s)", lbus_dev, control.devname(lbus_dev),
+                " rdev=%4b(%s)", rbus_dev,control.devname(rbus_dev),
+                " aluop=%5b(%s)", aluop, alu_func.aluopName(aluop)
+            );
+    end 
+    endtask
 
 endmodule : op_decoder
 
