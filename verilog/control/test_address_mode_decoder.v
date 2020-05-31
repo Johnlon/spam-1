@@ -1,6 +1,5 @@
 
 `include "./control.v"
-`include "./control_decoding.v"
 `include "../lib/assertion.v"
 `include "../lib/display.v"
 
@@ -8,7 +7,6 @@
 // verilator lint_off STMTDLY
 
 `timescale 1ns/1ns
-
 
 module test();
 

@@ -1,6 +1,7 @@
 
 //#!/usr/bin/iverilog -Ttyp -Wall -g2012 -gspecify -o test.vvp 
 `include "../control/control.v"
+`include "../phaser/phaser.v"
 `include "../pc/pc.v"
 `include "../lib/assertion.v"
 `include "../74245/hct74245.v"
@@ -9,7 +10,6 @@
 `include "../74377/hct74377.v"
 `include "../rom/rom.v"
 `include "../ram/ram.v"
-`include "../phaser/phaser.v"
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
@@ -21,7 +21,6 @@ module test();
     localparam SETTLE_TOLERANCE=50;
 
     `include "../lib/display_snippet.v"
-    `include "../control/control_params.v"
     
     tri [15:0] address_bus;
 
@@ -30,17 +29,9 @@ module test();
     wire [4:0] targ_dev;
     wire [4:0] aluop;
 
-    localparam _AMODE_NONE=3'b111;
-    localparam _AMODE_PC=3'b011;
-    localparam _AMODE_REG=3'b101;
-    localparam _AMODE_IMM=3'b110;
     wire _addrmode_register, _addrmode_pc, _addrmode_immediate;
     wire [2:0] _addrmode = {_addrmode_pc, _addrmode_register, _addrmode_immediate}; 
 
-    localparam PHASE_NONE = 3'b000;
-    localparam PHASE_FETCH = 3'b100;
-    localparam PHASE_DECODE = 3'b010;
-    localparam PHASE_EXEC = 3'b001;
     wire phaseFetch, phaseDecode, phaseExec, _phaseFetch;
     wire [2:0] phase = {phaseFetch, phaseDecode, phaseExec};
 
@@ -62,7 +53,7 @@ module test();
 
     wire mrPC, _mrPC;
 
-    hct7474 #(.BLOCKS(1), .LOG(1)) resetPCFF(
+    hct7474 #(.BLOCKS(1), .LOG(0)) resetPCFF(
           ._SD(1'b1),
           ._RD(_RESET_SWITCH),
           .D(1'b1),
@@ -76,7 +67,7 @@ module test();
     wire [9:0] seq;
     `define SEQ(x) (10'd2 ** (x-1))
 
-    phaser #(.LOG(1)) ph(.clk, .mr(RESET_SWITCH), .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec);
+    phaser #(.LOG(0)) ph(.clk, .mr(RESET_SWITCH), .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec);
 
     // CONTROL ===========================================================================================
    
@@ -91,45 +82,26 @@ module test();
          .Q(control_byte) // FIXME WIRE TO CONTROL LOGIC
     );
 
-    op_decoder #(.LOG(1)) op_ctrl( 
-                    .ctrl(control_byte[7:5]), 
-                    .phaseFetch, ._phaseFetch, .phaseDecode, .phaseExec, 
-                    ._addrmode_pc, ._addrmode_register, ._addrmode_immediate, 
-                    );
+    op_decoder #(.LOG(0)) decoder( .data_hi(control_byte), .data_mid(rom_mid.D), .data_lo(rom_lo.D), .rbus_dev, .lbus_dev, .targ_dev, .aluop);
+
 
     address_mode_decoder #(.LOG(1)) addr_ctrl( 
-                    .clk, 
-                    ._mr(_mrPC), 
-                    .ctrl(control_byte[7:5]), 
-                    .phaseFetch, ._phaseFetch, .phaseDecode, .phaseExec, 
-                    ._addrmode_pc, ._addrmode_register, ._addrmode_immediate, 
-                    .rbus_dev, .lbus_dev, .targ_dev, .aluop
-                    );
+        .ctrl(control_byte[7:5]), 
+        .phaseFetch, ._phaseFetch, .phaseDecode, .phaseExec, 
+        ._addrmode_pc, ._addrmode_register, ._addrmode_immediate 
+    );
 
-    logic op =0;
+    op_decoder #(.LOG(1)) op_decode(
+        .data_hi(control_byte), .data_mid(rom_mid.D), .data_lo(rom_lo.D),
+        .rbus_dev, .lbus_dev, .targ_dev, .aluop
+    );
 
-    // target device sel
-    wire [7:0] targ_dev_out = {3'bz, targ_dev};
-    hct74245ab tdev_from_instruction(.A({3'bz, rom_data[20:16]}), .B(targ_dev_out), .nOE(! op == OP_ram_immed_eq_dev));
-    hct74245ab tdev_eq_ram(.A({3'b0, tdev_ram}), .B(targ_dev_out), .nOE(! op == OP_ram_immed_eq_dev));
-
-    // l device sel
-    assign lbus_dev = rom_data[12:9];
-    
-    // r device sel
-    wire [7:0] lbus_dev_out = {4'bz, lbus_dev};
-    hct74245ab rdev_from_instruction_aluop(.A({4'bz, rom_data[8:5]}), .B(lbus_dev_out), .nOE( !op == OP_dev_eq_xy_alu));
-    hct74245ab rdev_from_instruction_ramimmed(.A({4'bz, rom_data[19:16]}), .B(lbus_dev_out), .nOE(! op == OP_ram_immed_eq_dev));
-    hct74245ab rdev_eq_ram(.A(rdev_eq_ram_in), .B(lbus_dev_out), .nOE(!op == OP_dev_eq_ram_immed));
-    hct74245ab rdev_eq_rom(.A(rdev_eq_rom_in), .B(lbus_dev_out), .nOE(! (op == OP_dev_eq_const8 | op == OP_dev_eq_const16 | op == OP_dev_eq_rom_immed)));
-  
-  
     // control lines for bufs need better names
-    logic _rdev_rom=1; // put rom on rbus
-    logic _ldev_marlo=1;
-    logic _ldev_marhi=1;
-    logic _rdev_marlo=1;
-    logic _rdev_marhi=1;
+    logic _rdev_rom; // put rom on rbus
+    logic _ldev_marlo;
+    logic _ldev_marhi;
+    logic _rdev_marlo;
+    logic _rdev_marhi;
 
     // control lines to write registers
     wire _pclo_in=1;
@@ -138,13 +110,21 @@ module test();
     wire _marhi_in=1;
     wire _marlo_in=1;
                     
+    assign _rdev_rom = !(rbus_dev == control.DEV_rom);
+
+    assign _rdev_marlo = !(rbus_dev == control.DEV_marlo);
+    assign _rdev_marhi = !(rbus_dev == control.DEV_marhi);
+
+    assign _ldev_marlo = !(lbus_dev == control.DEV_marlo);
+    assign _ldev_marhi = !(lbus_dev == control.DEV_marhi);
+
 
     // PROGRAM COUNTER ======================================================================================
 
     wire [7:0] PCHI, PCLO; // output of PC
     
     // PC reset is sync with +ve edge of clock
-    pc #(.LOG(1))  PC (
+    pc #(.LOG(0))  PC (
         .clk(phaseFetch),
         ._MR(_mrPC),
         ._pc_in(_pc_in),
@@ -234,15 +214,45 @@ module test();
             $display ("%9t ", $time,  "DUMP     ",
                  "rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
                  " seq=%-2d", $clog2(seq)+1,
-                 " amode=%-3s", sAddrMode(),
+                 " amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate),
                  " addrbus=0x%4x", address_bus,
-                 " FDE=%-s  %1b%1b%1b", sPhase(), phaseFetch, phaseDecode, phaseExec,
+                 " FDE=%-s  %1b%1b%1b", control.fPhase(phaseFetch, phaseDecode, phaseExec), phaseFetch, phaseDecode, phaseExec,
                  " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus,
                  " rdev=%04b ldev=%04b targ=%05b aluop=%05b ", rbus_dev, lbus_dev, targ_dev, aluop,
                  " PC=%02h:%02h", PCHI, PCLO,
                  "      %-s", label
                  );
     endtask 
+
+    task CLK_UP; 
+    begin
+        $display("setting clk +");
+        DUMP;
+        clk = 1;
+    end
+    endtask
+
+    task CLK_DN; 
+    begin
+        $display("setting clk -");
+        DUMP;
+        clk = 0;
+    end
+    endtask
+
+    if (0) always @* begin
+        $display ("%9t ", $time,  "MON     ",
+                 "rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
+                 " seq=%-2d", $clog2(seq)+1,
+                 " amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate),
+                 " addrbus=0x%4x", address_bus,
+                 " FDE=%-s  %1b%1b%1b", control.fPhase(phaseFetch, phaseDecode, phaseExec), phaseFetch, phaseDecode, phaseExec,
+                 " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus,
+                 " rdev=%04b ldev=%04b targ=%05b aluop=%05b ", rbus_dev, lbus_dev, targ_dev, aluop,
+                 " PC=%02h:%02h", PCHI, PCLO,
+                 "      %-s", label
+                 );
+    end
 
     always @* 
         if (_RESET_SWITCH)  
@@ -258,12 +268,14 @@ module test();
 
 
     
-    always @(*) begin
-        $display("%9t", $time, " PHASE: FDE=%-s  %1b%1b%1b seq=%10b", sPhase(), phaseFetch, phaseDecode, phaseExec, seq); 
+    if (0) always @(*) begin
+        $display("%9t", $time, " PHASE: FDE=%-s  %1b%1b%1b seq=%10b", control.fPhase(phaseFetch, phaseDecode, phaseExec), 
+                                                        phaseFetch, phaseDecode, phaseExec, seq); 
     end
 
-    always @(*) begin
-        $display("%9t", $time, " _AMODE: PRI=%-s  %1b%1b%1b seq=%10b", sAddrMode(), _addrmode_pc, _addrmode_register, _addrmode_immediate, seq); 
+    if (0) always @(*) begin
+        $display("%9t", $time, " control._AMODE: PRI=%-s  %1b%1b%1b seq=%10b", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate), 
+                                                        _addrmode_pc, _addrmode_register, _addrmode_immediate, seq); 
     end
 
     integer instCount = 0;
@@ -280,15 +292,15 @@ module test();
         $display("\n%9t", $time, " PHASE: EXEC  EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"); 
     end
 
-    always @* 
+    if (0) always @* 
         $display ("%9t ", $time,  "ROM      rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
-                " amode=%s", sAddrMode(),
+                " amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate),
                 " addrbus=0x%4x", address_bus);
         
-    always @* 
+    if (0) always @* 
         $display("%9t ... seq=%-2d  %8b................", $time, $clog2(seq)+1, seq); 
         
-    always @* 
+    if (0) always @* 
         $display("%9t ", $time, "ROMBUFFS rom_addrbuslo_buf=0x%-2x", rom_addrbuslo_buf.data, 
             " rom_addrbus_hi_buf=0x%-2x", rom_addrbushi_buf.data,
             " rom_inst_reg=%8b", rom_inst_reg.data,
@@ -296,12 +308,12 @@ module test();
             ); 
 
                 
-    always @* 
-        $display("%9t ", $time, "DEVICE       ", 
+    if (0) always @* 
+        $display("%9t ", $time, "DEVICE-SEL ", 
                     "rdev=%04b ldev=%04b targ=%05b aluop=%05b ", rbus_dev, lbus_dev, targ_dev, aluop
         ); 
 
-    always @* 
+    if (0) always @* 
         $display("%9t ", $time, "ALU BUS ",
             " rbus=0x%-2x", rbus, 
             " lbus=0x%-2x", lbus,
@@ -333,15 +345,16 @@ module test();
             if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_immediate === 1'bx) begin
                 $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b", _addrmode_pc , _addrmode_register , _addrmode_immediate );
                 #SETTLE_TOLERANCE
+            // only one may be low at a time
                 if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_immediate === 1'bx) begin
                     DUMP;
                     $display("\n\n%9t ", $time, " ABORT");
                     $finish();
                 end
             end
-            // only one may be low at a time
             if (_addrmode_pc + _addrmode_register + _addrmode_immediate < 2) begin
-                $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b sAddrMode=%-s", _addrmode_pc , _addrmode_register , _addrmode_immediate, sAddrMode());
+                $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b sAddrMode=%-s", _addrmode_pc , _addrmode_register , _addrmode_immediate,
+                                            control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate));
                 #SETTLE_TOLERANCE
                 if (_addrmode_pc + _addrmode_register + _addrmode_immediate < 2) begin
                     DUMP;
@@ -354,14 +367,14 @@ module test();
 
     // tests
     initial begin
-        localparam T=1000;   // clock cycle
+        localparam TCLK=1000;   // clock cycle
 
         `DISPLAY("init : _RESET_SWITCH=0")
         _RESET_SWITCH <= 0;
-        clk <= 0;
+        CLK_DN;
 
-        #T
-        `Equals( phase, PHASE_NONE)
+        #TCLK
+        `Equals( phase, control.PHASE_NONE)
 
         `Equals( seq, `SEQ(1))
         `Equals( _addrmode, 3'b1xx)
@@ -371,18 +384,19 @@ module test();
 
         `Equals(address_bus, 16'bx);
 
-        #T
+        #TCLK
         `DISPLAY("_mrPC=0  - so clocking is ineffective = stay in PC addressing mode")
         `Equals( _mrPC, 0);
 
         count = 0;
-        while (count++ < 3) begin
-            #T
-            clk <= 1;
-            #T
-            clk <= 0;
+        while (count < 3) begin
+            count++; 
+            #TCLK
+            CLK_UP; //CLK_UP;
+            #TCLK
+            CLK_DN;
         end
-        #T
+        #TCLK
         `Equals(PCHI, 8'bx)
         `Equals(PCLO, 8'bx)
         
@@ -390,10 +404,10 @@ module test();
         `DISPLAY("_RESET_SWITCH released : still in PC addressing mode after settle and PC=0")
         _RESET_SWITCH <= 1;
         `Equals( _mrPC, 0);
-        `Equals( phase, PHASE_NONE)
-        #T
-        `Equals( phase, PHASE_FETCH)
-        `Equals( _addrmode, _AMODE_PC);
+        `Equals( phase, control.PHASE_NONE)
+        #TCLK
+        `Equals( phase, control.PHASE_FETCH)
+        `Equals( _addrmode, control._AMODE_PC);
         `Equals( _mrPC, 1'b1); // +clock due to phaseFetch on SR plus the release of the reset on the SR
         `Equals(PCHI, 8'b0) 
         `Equals(PCLO, 8'b0)
@@ -401,245 +415,245 @@ module test();
         `Equals( seq, `SEQ(1));
         
         `DISPLAY("clock 1")
-        clk <= 1;
-        #T
-        clk <= 0;
-        #T
-        `Equals( phase, PHASE_FETCH)
+        CLK_UP;
+        #TCLK
+        CLK_DN;
+        #TCLK
+        `Equals( phase, control.PHASE_FETCH)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, _AMODE_PC);
+        `Equals( _addrmode, control._AMODE_PC);
         `Equals(address_bus, 16'h0000);
         `Equals( seq, `SEQ(2));
 
         `DISPLAY("clock 2")
-        clk <= 1;
-        #T
-        clk <= 0;
-        #T
-        `Equals( phase, PHASE_FETCH)
+        CLK_UP;
+        #TCLK
+        CLK_DN;
+        #TCLK
+        `Equals( phase, control.PHASE_FETCH)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, _AMODE_PC);
+        `Equals( _addrmode, control._AMODE_PC);
         `Equals(address_bus, 16'h0000);
         `Equals( seq, `SEQ(3));
 
         `DISPLAY("clock 3")
-        clk <= 1;
-        #T
-        clk <= 0;
-        #T
-        `Equals( phase, PHASE_FETCH)
+        CLK_UP;
+        #TCLK
+        CLK_DN;
+        #TCLK
+        `Equals( phase, control.PHASE_FETCH)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, _AMODE_PC);
+        `Equals( _addrmode, control._AMODE_PC);
         `Equals(address_bus, 16'h0000);
         `Equals( seq, `SEQ(4));
 
         `DISPLAY("clock 4")
-        clk <= 1;
-        #T
-        clk <= 0;
-        #T
-        `Equals( phase, PHASE_DECODE)
+        CLK_UP;
+        #TCLK
+        CLK_DN;
+        #TCLK
+        `Equals( phase, control.PHASE_DECODE)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, _AMODE_IMM);
+        `Equals( _addrmode, control._AMODE_IMM);
         `Equals(address_bus, 16'h2211); // FROM ROM[15:0] 
         `Equals( seq, `SEQ(5));
 
         `DISPLAY("clock 5")
-        clk <= 1;
-        #T
-        clk <= 0;
-        #T
-        `Equals( phase, PHASE_DECODE)
+        CLK_UP;
+        #TCLK
+        CLK_DN;
+        #TCLK
+        `Equals( phase, control.PHASE_DECODE)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, _AMODE_IMM);
+        `Equals( _addrmode, control._AMODE_IMM);
         `Equals(address_bus, 16'h2211); // FROM ROM[15:0] 
         `Equals( seq, `SEQ(6));
 
         `DISPLAY("clock 6")
-        clk <= 1;
-        #T
-        clk <= 0;
-        #T
-        `Equals( phase, PHASE_DECODE)
+        CLK_UP;
+        #TCLK
+        CLK_DN;
+        #TCLK
+        `Equals( phase, control.PHASE_DECODE)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, _AMODE_IMM);
+        `Equals( _addrmode, control._AMODE_IMM);
         `Equals(address_bus, 16'h2211); // FROM ROM[15:0] 
         `Equals( seq, `SEQ(7));
 
         `DISPLAY("clock 7")
-        clk <= 1;
-        #T
-        clk <= 0;
-        #T
-        `Equals( phase, PHASE_DECODE)
+        CLK_UP;
+        #TCLK
+        CLK_DN;
+        #TCLK
+        `Equals( phase, control.PHASE_DECODE)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, _AMODE_IMM);
+        `Equals( _addrmode, control._AMODE_IMM);
         `Equals(address_bus, 16'h2211); // FROM ROM[15:0] 
         `Equals( seq, `SEQ(8));
 
         `DISPLAY("clock 8")
-        clk <= 1;
-        #T
-        clk <= 0;
-        #T
-        `Equals( phase, PHASE_EXEC)
+        CLK_UP;
+        #TCLK
+        CLK_DN;
+        #TCLK
+        `Equals( phase, control.PHASE_EXEC)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, _AMODE_IMM);
+        `Equals( _addrmode, control._AMODE_IMM);
         `Equals(address_bus, 16'h2211); // FROM ROM[15:0] 
         `Equals( seq, `SEQ(9));
 
         `DISPLAY("clock 9")
         #1
-        clk <= 1;
-        #T
-        `Equals( phase, PHASE_EXEC)
+        CLK_UP;
+        #TCLK
+        `Equals( phase, control.PHASE_EXEC)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, _AMODE_IMM);
+        `Equals( _addrmode, control._AMODE_IMM);
         `Equals(address_bus, 16'h2211); // FROM ROM[15:0] 
         `Equals( seq, `SEQ(10));
-        clk <= 0;
-        #T
+        CLK_DN;
+        #TCLK
 
         `DISPLAY("clock 10 ----- NEXT CYCLE STARTS")
-        clk <= 1;
-        #T
-        `Equals( phase, PHASE_FETCH)
+        CLK_UP;
+        #TCLK
+        `Equals( phase, control.PHASE_FETCH)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, _AMODE_PC);
+        `Equals( _addrmode, control._AMODE_PC);
         `Equals(address_bus, 16'h0001); // FROM PC
         `Equals( seq, `SEQ(1));
-        clk <= 0;
-        #T
+        CLK_DN;
+        #TCLK
 
         `DISPLAY("clock 11")
-        clk <= 1;
-        #T
-        `Equals( phase, PHASE_FETCH)
+        CLK_UP;
+        #TCLK
+        `Equals( phase, control.PHASE_FETCH)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, _AMODE_PC);
+        `Equals( _addrmode, control._AMODE_PC);
         `Equals(address_bus, 16'h0001); // FROM PC
         `Equals( seq, `SEQ(2));
-        clk <= 0;
-        #T
+        CLK_DN;
+        #TCLK
 
         `DISPLAY("clock 12")
-        clk <= 1;
-        #T
-        `Equals( phase, PHASE_FETCH)
+        CLK_UP;
+        #TCLK
+        `Equals( phase, control.PHASE_FETCH)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, _AMODE_PC);
+        `Equals( _addrmode, control._AMODE_PC);
         `Equals(address_bus, 16'h0001); // FROM PC
         `Equals( seq, `SEQ(3));
-        clk <= 0;
-        #T
+        CLK_DN;
+        #TCLK
 
         `DISPLAY("clock 13")
-        clk <= 1;
-        #T
-        `Equals( phase, PHASE_FETCH)
+        CLK_UP;
+        #TCLK
+        `Equals( phase, control.PHASE_FETCH)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, _AMODE_PC);
+        `Equals( _addrmode, control._AMODE_PC);
         `Equals(address_bus, 16'h0001); // FROM PC
         `Equals( seq, `SEQ(4));
-        clk <= 0;
-        #T
+        CLK_DN;
+        #TCLK
 
         `DISPLAY("clock 14")
-        clk <= 1;
-        #T
-        `Equals( phase, PHASE_DECODE)
+        CLK_UP;
+        #TCLK
+        `Equals( phase, control.PHASE_DECODE)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, _AMODE_REG);
+        `Equals( _addrmode, control._AMODE_REG);
         `Equals(address_bus, 16'hx); // FROM MAR -- WRITE TO MAR NOT IMPLE
         `Equals( seq, `SEQ(5));
-        clk <= 0;
-        #T
+        CLK_DN;
+        #TCLK
 
         `DISPLAY("clock 15")
-        clk <= 1;
-        #T
-        `Equals( phase, PHASE_DECODE)
+        CLK_UP;
+        #TCLK
+        `Equals( phase, control.PHASE_DECODE)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, _AMODE_REG);
+        `Equals( _addrmode, control._AMODE_REG);
         `Equals(address_bus, 16'hx); // FROM MAR ---- WRITE TO MAR NOT IMPL
         `Equals( seq, `SEQ(6));
-        clk <= 0;
-        #T
+        CLK_DN;
+        #TCLK
 
         `DISPLAY("clock 16")
-        clk <= 1;
-        #T
-        `Equals( phase, PHASE_DECODE)
+        CLK_UP;
+        #TCLK
+        `Equals( phase, control.PHASE_DECODE)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, _AMODE_REG);
+        `Equals( _addrmode, control._AMODE_REG);
         `Equals(address_bus, 16'hx); // FROM MAR ---- WRITE TO MAR NOT IMPL
         `Equals( seq, `SEQ(7));
-        clk <= 0;
-        #T
+        CLK_DN;
+        #TCLK
 
         `DISPLAY("clock 17")
-        clk <= 1;
-        #T
-        `Equals( phase, PHASE_DECODE)
+        CLK_UP;
+        #TCLK
+        `Equals( phase, control.PHASE_DECODE)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, _AMODE_REG);
+        `Equals( _addrmode, control._AMODE_REG);
         `Equals(address_bus, 16'hx); // FROM MAR ---- WRITE TO MAR NOT IMPL
         `Equals( seq, `SEQ(8));
-        clk <= 0;
-        #T
+        CLK_DN;
+        #TCLK
 
         `DISPLAY("clock 18")
-        clk <= 1;
-        #T
-        `Equals( phase, PHASE_EXEC)
+        CLK_UP;
+        #TCLK
+        `Equals( phase, control.PHASE_EXEC)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, _AMODE_REG);
+        `Equals( _addrmode, control._AMODE_REG);
         `Equals(address_bus, 16'hx); // FROM MAR
         `Equals( seq, `SEQ(9));
-        clk <= 0;
-        #T
+        CLK_DN;
+        #TCLK
 
         `DISPLAY("clock 18")
-        clk <= 1;
-        #T
-        `Equals( phase, PHASE_EXEC)
+        CLK_UP;
+        #TCLK
+        `Equals( phase, control.PHASE_EXEC)
         `Equals(PCHI, 8'b0)
         `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, _AMODE_REG);
+        `Equals( _addrmode, control._AMODE_REG);
         `Equals(address_bus, 16'hx); // FROM MAR
         `Equals( seq, `SEQ(10));
-        clk <= 0;
-        #T
+        CLK_DN;
+        #TCLK
 
 
 
 //`include "./generated_tests.v"
 /*
-        #T
+        #TCLK
         count=100;
         while (count -- > 0) begin
-            #T
-            clk <= 1;
-            #T
-            clk <= 0;
+            #TCLK
+            CLK_UP;
+            #TCLK
+            CLK_DN;
             $display("PC %2x:%2x !!!!!!!!!!!!!!!!!!!!!!!! CLK COUNT REMAINING=%-d", PCHI, PCLO, count);
         end
 */
