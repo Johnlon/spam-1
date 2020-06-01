@@ -67,21 +67,46 @@ module control;
     localparam [3:0] DEV_rom = 1;
     localparam [3:0] DEV_marlo = 2;
     localparam [3:0] DEV_marhi = 3;
-    localparam [3:0] DEV_uart = 6;
+    localparam [3:0] DEV_uart = 4;
+    localparam [3:0] DEV_rega = 5;
+    localparam [3:0] DEV_regb = 6;
+    localparam [3:0] DEV_regc = 7;
+    localparam [3:0] DEV_regd = 8;
+    localparam [3:0] DEV_rege = 9;
+    localparam [3:0] DEV_regf = 10;
+    localparam [3:0] DEV_regg = 11;
+    localparam [3:0] DEV_regh = 12;
+    localparam [3:0] DEV_regi = 13;
+    localparam [3:0] DEV_regnu1 = 14;
+    localparam [3:0] DEV_regnu2 = 15;
 
     // targets
     function [4:0] TDEV([3:0] x);
         TDEV = {1'b0, x};
     endfunction
 
-    `define LT(DNAME) localparam [4:0] TDEV_``DNAME`` = {1'b0, DEV_``DNAME``};
+    `define TARG(DNAME) localparam [4:0] TDEV_``DNAME`` = {1'b0, DEV_``DNAME``};
+    `define TARGN(DNAME, N) localparam [4:0] TDEV_``DNAME`` = N;
 
-    localparam [4:0] TDEV_ram = {1'b0, DEV_ram};
-    localparam [4:0] TDEV_rom = {1'b0, DEV_rom};
-    localparam [4:0] TDEV_marlo = {1'b0, DEV_marlo};
-    localparam [4:0] TDEV_marhi = {1'b0, DEV_marhi};
-    //localparam [4:0] TDEV_uart = TDEV(DEV_uart);
-    `LT(uart)
+    `TARG(ram)
+    `TARG(rom)
+    `TARG(marlo)
+    `TARG(marhi)
+    `TARG(uart)
+    `TARG(rega)
+    `TARG(regb)
+    `TARG(regc)
+    `TARG(regd)
+    // 9-15 - todo
+    `TARGN(pchitmp, 16)
+    `TARGN(pclo, 17)
+    `TARGN(pc, 18)
+    `TARGN(jmpo, 19)
+    `TARGN(jmpz, 20)
+    `TARGN(jmpc, 21)
+    `TARGN(jmpdi, 22)
+    `TARGN(jmpdo, 23)
+    // 24-32 - todo
 
     function string devname([3:0] dev); 
     begin
@@ -222,12 +247,16 @@ module address_mode_decoder #(parameter LOG=1)
     end
 
     task DUMP; 
-     $display("%9t AMODE_DECODER", $time,
+    begin
+         $display("%9t AMODE_DECODER", $time,
+            " phase(FDE=%1b%1b%1b) ", phaseFetch, phaseDecode, phaseExec
+            );
+         $display("%9t AMODE_DECODER", $time,
             " ctrl=%3b", ctrl, 
-            " phase(FDE=%1b%1b%1b) ", phaseFetch, phaseDecode, phaseExec, 
-            "    _addrmode(pc=%b,reg=%b,imm=%b)", _addrmode_pc, _addrmode_register, _addrmode_immediate,
+            " _addrmode(pc=%b,reg=%b,imm=%b)", _addrmode_pc, _addrmode_register, _addrmode_immediate,
             " _amode=%3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate)
             );
+    end
     endtask
 
 
@@ -295,7 +324,7 @@ module op_decoder #(parameter LOG=1)
     hct74245ab aluop_eq_passr(.A({3'b0, alu_func.ALUOP_PASSR}), .B(aluop_out), .nOE(_force_passr));
     assign aluop = aluop_out[4:0];
 
-    if (0)    
+    if (1)    
     always @ *  begin
          $display("%9t OP_DECODER", $time,
                 " data=%8b:%8b:%8b", data_hi, data_mid, data_lo,
@@ -312,7 +341,9 @@ module op_decoder #(parameter LOG=1)
         $display("%9t OP_DECODER", $time,
                 " data=%8b:%8b:%8b", data_hi, data_mid, data_lo,
                 " ctrl=%3b (%s)", ctrl, control.opName(ctrl),
-                " _decodedOp=%8b", op_demux.Y,
+                " _decodedOp=%8b", op_demux.Y
+            );
+        $display("%9t OP_DECODER", $time,
                 " tdev=%5b(%s)", targ_dev, control.tdevname(targ_dev),
                 " ldev=%4b(%s)", lbus_dev, control.devname(lbus_dev),
                 " rdev=%4b(%s)", rbus_dev,control.devname(rbus_dev),

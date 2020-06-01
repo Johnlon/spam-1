@@ -31,24 +31,26 @@ module phaser #(parameter LOG=0)
     wire _co; 
 
     // MR=H is async reset
-    hc744017 decade(.cp0(clk), ._cp1(1'b0), .mr(mr), .q(seq), ._co);
+    hc744017 decade(.cp0(clk), ._cp1(1'b0), .mr(mr | seq[3]), .q(seq), ._co);
+    //hc744017 decade(.cp0(clk), ._cp1(1'b0), .mr(mr), .q(seq), ._co);
 
     // construct using 3 input nor gates so we can OR mr into the trigger
     // first clock (seq=1) does nothing - used to allow fetch +ve edge once cycle AFTER MR released otherwise that edge is missed
+/*
     wire phaseFetch_begin = !mr & seq[0]; // 3 clocks 
     wire phaseFetch_end = mr | seq[4];
     wire phaseDecode_begin = seq[4]; // 4 clocks
     wire phaseDecode_end = mr |seq[8]; // ensure phase is reset when MR triggers
     wire phaseExec_begin = seq[8];   // 2 clock
     wire phaseExec_end = mr |seq[0]; // ensure phase is reset when MR triggers
-/*
-    wire phaseFetch_begin = seq[1]; // 3 clocks 
-    wire phaseFetch_end = mr | seq[4];
-    wire phaseDecode_begin = seq[4]; // 4 clocks
-    wire phaseDecode_end = mr |seq[8]; // ensure phase is reset when MR triggers
-    wire phaseExec_begin = seq[8];   // 1 clock
-    wire phaseExec_end = mr |seq[9]; // ensure phase is reset when MR triggers
 */
+    wire phaseFetch_begin = !mr & seq[0]; // 3 clocks 
+    wire phaseFetch_end = mr | seq[1];
+    wire phaseDecode_begin = seq[1]; // 4 clocks
+    wire phaseDecode_end = mr |seq[2]; // ensure phase is reset when MR triggers
+    wire phaseExec_begin = seq[2];   // 2 clock
+    wire phaseExec_end = mr |seq[0]; // ensure phase is reset when MR triggers
+
     sr phase1(.s(phaseFetch_begin), .r(phaseFetch_end), .q(phaseFetch));
     sr phase2(.s(phaseDecode_begin), .r(phaseDecode_end), .q(phaseDecode));
     sr phase3(.s(phaseExec_begin), .r(phaseExec_end), .q(phaseExec));

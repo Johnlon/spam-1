@@ -83,6 +83,14 @@ counterReg HI
 );
 
 
+always @(posedge clk)
+begin
+  if (~_MR)
+  begin
+    $display("%9t ", $time, "PC RESET ");
+  end
+end
+
 if (LOG) always @(*) begin
   $display("%9t ", $time, "PC       ",
       "PC=%2x:%2x PCHITMP=%2x ",
