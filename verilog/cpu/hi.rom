@@ -1,1 +1,11 @@
-8a 02 03 04 05 06
+82 // dev_eq_rom_immed tdev=00010(MARLO)
+02 // dev_eq_xy_alu tdev=00010(MARLO)
+03 
+04 
+05 
+06
+00 
+00 
+00 
+00
+00 // merely data for instuction 0 to immed add point to

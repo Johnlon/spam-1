@@ -1,1 +1,11 @@
-11 62 03 04 05 06
+0a // low immediate address 
+62 
+33 
+04 
+05 
+06
+00
+00
+00
+00
+aa // merely data for instruction 0 to point 

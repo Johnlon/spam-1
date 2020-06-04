@@ -30,6 +30,8 @@ module test();
     wire [4:0] targ_dev;
     wire [4:0] aluop;
 
+    assign alu_result_bus = rbus; // FIXME - IMPLEMENT ALU
+
     wire _addrmode_register, _addrmode_pc, _addrmode_immediate;
     wire [2:0] _addrmode = {_addrmode_pc, _addrmode_register, _addrmode_immediate}; 
 
@@ -88,20 +90,34 @@ module test();
 
     // CONTROL ===========================================================================================
    
-    wire [7:0] control_byte;
+    wire [7:0] instruction_hi, instruction_mid, instruction_lo;
 
     // instruction reg buffer
-    hct74573 rom_inst_reg(
+    hct74573 rom_hi_inst_reg(
          .LE(phaseFetch), // data latches when fetch ends
          ._OE(1'b0),
          .D(rom_hi.D),
-         .Q(control_byte) 
+         .Q(instruction_hi) 
     );
 
-    op_decoder #(.LOG(0)) op_decode(.data_hi(control_byte), .data_mid(rom_mid.D), .data_lo(rom_lo.D), .rbus_dev, .lbus_dev, .targ_dev, .aluop);
+    hct74573 rom_mid_inst_reg(
+         .LE(phaseFetch), // data latches when fetch ends
+         ._OE(1'b0),
+         .D(rom_mid.D),
+         .Q(instruction_mid) 
+    );
+
+    hct74573 rom_lo_inst_reg(
+         .LE(phaseFetch), // data latches when fetch ends
+         ._OE(1'b0),
+         .D(rom_lo.D),
+         .Q(instruction_lo) 
+    );
+
+    op_decoder #(.LOG(0)) op_decode(.data_hi(instruction_hi), .data_mid(instruction_mid), .data_lo(instruction_lo), .rbus_dev, .lbus_dev, .targ_dev, .aluop);
 
     address_mode_decoder #(.LOG(1)) addr_decode( 
-        .ctrl(control_byte[7:5]), 
+        .ctrl(instruction_hi[7:5]), 
         .phaseFetch, ._phaseFetch, .phaseDecode, .phaseExec, 
         ._addrmode_pc, ._addrmode_register, ._addrmode_immediate 
     );
@@ -115,10 +131,10 @@ module test();
 
     wire [3:0] _targ_sel, un4; 
     hct74139 targ_demux(._Ea(1'b0), ._Eb(1'b0), .Aa(targ_dev[4:3]), .Ab(2'b0), ._Ya(_targ_sel), ._Yb(un4));
-    hct74138 targ_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_sel[0]), .A(rbus_dev[2:0]));
-    hct74138 targ_dev_16_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_sel[1]), .A(rbus_dev[2:0]));
-    hct74138 targ_dev_24_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_sel[2]), .A(rbus_dev[2:0]));
-    hct74138 targ_dev_32_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_sel[3]), .A(rbus_dev[2:0]));
+    hct74138 targ_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_sel[0]), .A(targ_dev[2:0]));
+    hct74138 targ_dev_16_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_sel[1]), .A(targ_dev[2:0]));
+    hct74138 targ_dev_24_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_sel[2]), .A(targ_dev[2:0]));
+    hct74138 targ_dev_32_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_sel[3]), .A(targ_dev[2:0]));
 
     wire [31:0] tset = {targ_dev_32_demux.Y, targ_dev_24_demux.Y, targ_dev_16_demux.Y, targ_dev_08_demux.Y};
     wire [15:0] lset = {lbus_dev_16_demux.Y, lbus_dev_08_demux.Y};
@@ -177,35 +193,39 @@ module test();
 
     rom #(.AWIDTH(16), .Filename("hi.rom"))   rom_hi(._CS(1'b0), ._OE(1'b0), .A(address_bus));
     rom #(.AWIDTH(16), .Filename("mid.rom")) rom_mid(._CS(1'b0), ._OE(1'b0), .A(address_bus));
-    rom #(.AWIDTH(16), .Filename("lo.rom"))   rom_lo(._CS(1'b0), ._OE(1'b0), .A(address_bus)); 
+    rom #(.AWIDTH(16), .Filename("lo.rom"), .LOG(1))   rom_lo(._CS(1'b0), ._OE(1'b0), .A(address_bus)); 
     
     hct74245ab rom_rbus_buf(.A(rom_lo.D), .B(rbus), .nOE(_rdev_rom));
 
-    // immediate addressing buffer
+    // immediate addressing buffer - FIXME USE 74245
+    /*
     hct74573 rom_addrbushi_buf(
          .LE(phaseFetch), // data latches when fetch ends
          ._OE(_addrmode_immediate),
-         .D(rom_mid.D),
+         .D(instruction_mid),
          .Q(address_bus[15:8])
     );
 
     hct74573 rom_addrbuslo_buf(
          .LE(phaseFetch), // data latches when fetch ends
          ._OE(_addrmode_immediate), // outputs turn on when 
-         .D(rom_lo.D),
+         .D(instruction_lo),
          .Q(address_bus[7:0])
     );
+    */
 
+    hct74245ab rom_addrbuslo_buf(.A(instruction_lo), .B(address_bus[7:0]), .nOE(_addrmode_immediate)); // optional - needed for immed addressing
+    hct74245ab rom_addrbushi_buf(.A(instruction_mid), .B(address_bus[15:8]), .nOE(_addrmode_immediate)); // optional - needed for immed addressing
 
     // MAR =============================================================================================
-    hct74377 MARLO(._EN(_marlo_in), .CP(clk), .D(alu_result_bus));    
-    hct74377 MARHI(._EN(_marhi_in), .CP(clk), .D(alu_result_bus));
+    hct74377 #(.LOG(1)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
+    hct74377 #(.LOG(1)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
 
-    hct74245ab marlo_lbus_buf(.A(MARLO.Q), .B(lbus), .nOE(_ldev_marlo)); // optional
-    hct74245ab marlo_rbus_buf(.A(MARLO.Q), .B(rbus), .nOE(_rdev_marlo)); // optional
+    hct74245ab marlo_lbus_buf(.A(MARLO.Q), .B(lbus), .nOE(_ldev_marlo)); // optional - needed for marlo arith
+    hct74245ab marlo_rbus_buf(.A(MARLO.Q), .B(rbus), .nOE(_rdev_marlo)); // optional - needed for marlo arith
 
-    hct74245ab marhi_lbus_buf(.A(MARHI.Q), .B(lbus), .nOE(_ldev_marhi)); // optional
-    hct74245ab marhi_rbus_buf(.A(MARHI.Q), .B(rbus), .nOE(_rdev_marhi)); // optional
+    hct74245ab marhi_lbus_buf(.A(MARHI.Q), .B(lbus), .nOE(_ldev_marhi)); // optional - needed for marlo arith
+    hct74245ab marhi_rbus_buf(.A(MARHI.Q), .B(rbus), .nOE(_rdev_marhi)); // optional - needed for marlo arith
 
     hct74245ab marhi_addrbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .nOE(_addrmode_register));
     hct74245ab marlo_addrbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register));
@@ -236,8 +256,9 @@ module test();
     end
 
     integer count;
-    integer p1count=3;
-    integer p2count=5;
+    integer phaseFetchLen=1;
+    integer phaseDecodeLen=1;
+    integer phaseExecLen=1;
 
     always @(PCHI or PCLO) begin
       $display("%9t ", $time, "INCREMENTED PC=%-d ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", {PCHI, PCLO});
@@ -248,8 +269,9 @@ module test();
                  ": %-s", label
                  );
             $display ("%9t ", $time,  "DUMP  ",
-                 " rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
                  " seq=%-2d", $clog2(seq)+1);
+            $display ("%9t ", $time,  "DUMP  ",
+                 " instruction=%08b:%08b:%08b", instruction_hi, instruction_mid, instruction_lo);
             $display ("%9t ", $time,  "DUMP  ",
                 " op=%d(%-s)", rom_hi.D[7:5], control.opName(rom_hi.D[7:5]),
                  " FDE=%1b%1b%1b(%-s)", phaseFetch, phaseDecode, phaseExec, control.fPhase(phaseFetch, phaseDecode, phaseExec));
@@ -258,6 +280,8 @@ module test();
                  " addrbus=0x%4x", address_bus);
             $display ("%9t ", $time,  "DUMP  ",
                  " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus);
+            $display ("%9t ", $time,  "DUMP  ",
+                 " rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D);
             $display ("%9t ", $time,  "DUMP  ",
                 " tdev=%5b(%s)", targ_dev, control.tdevname(targ_dev),
                 " ldev=%4b(%s)", lbus_dev, control.devname(lbus_dev),
@@ -278,7 +302,7 @@ module test();
 
     task CLK_DN; 
     begin
-        $display("\n%9t", $time, " END STATE"); 
+        $display("\n%9t", $time, " END CLOCK STATE"); 
         // op_decode.DUMP();
         // addr_decode.DUMP();
         DUMP;
@@ -339,6 +363,9 @@ module test();
         $display("%9t", $time, " PHASE: EXECUTE"); 
     end
 
+    if (1) always @* 
+        $display ("%9t ", $time,  "ADDRESSING      amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate), " addrbus=0x%4x", address_bus);
+
     if (0) always @* 
         $display ("%9t ", $time,  "ROM      rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
                 " amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate),
@@ -360,6 +387,12 @@ module test();
                     "rdev=%04b ldev=%04b targ=%05b aluop=%05b ", rbus_dev, lbus_dev, targ_dev, aluop
         ); 
 
+    if (1) always @* 
+        $display("%9t ", $time, "MAR  %02x:%02x    _marhi_in=%b _marlo_in=%b", MARHI.Q, MARLO.Q, _marhi_in, _marlo_in);
+
+    if (1) always @* 
+        $display("%9t ", $time, "tset=%032b  lset=%016b rset=%016b", tset, lset, rset);
+
     if (0) always @* 
         $display("%9t ", $time, "ALU BUS ",
             " rbus=0x%-2x", rbus, 
@@ -370,9 +403,9 @@ module test();
         
     // constraints
     always @(*) begin
-        if (phaseDecode & control_byte === 'x) begin
+        if (phaseDecode & instruction_hi === 'x) begin
             $display("rom_hi.D", rom_hi.D); 
-            $display("control_byte", control_byte); 
+            $display("instruction_hi", instruction_hi); 
             DUMP;
             $display("END OF PROGRAM - CONTROL BYTE = XX "); 
             $finish();
@@ -407,9 +440,25 @@ module test();
         end
     end
 
+    task INIT_ROM;
+    begin
+        `define ROM(A) {rom_hi.Mem[A], rom_mid.Mem[A], rom_lo.Mem[A]}
+
+        // CODE
+        // dev_eq_rom_immed tdev=00010(MARLO), address=ffaa
+        `ROM(0)= { 8'b100_00010, 8'hff, 8'haa }; 
+
+
+        // DATA 
+        // initialise rom[ffaa] = 0x42
+        `ROM(16'hffaa) = { 8'b0, 8'b0, 8'h42 }; 
+    end
+    endtask : INIT_ROM
+
     // tests
     initial begin
         localparam TCLK=1000;   // clock cycle
+        INIT_ROM();
 
         `DISPLAY("init : _RESET_SWITCH=0")
         _RESET_SWITCH <= 0;
@@ -430,8 +479,7 @@ module test();
         `DISPLAY("_mrPC=0  - so clocking is ineffective = stay in PC addressing mode")
         `Equals( _mrPC, 0);
 
-        count = 0;
-        while (count < 3) begin
+        for (count =0; count < 3; count++) begin
             count++; 
             #TCLK
             CLK_UP; //CLK_UP;
@@ -449,270 +497,93 @@ module test();
         `Equals( phase, control.PHASE_NONE)
 
         #TCLK
-        CLK_UP;
-        #TCLK
-        CLK_DN;
-        #TCLK
 
+        `DISPLAY("clock fetch")
+        for (count =0; count < phaseFetchLen; count++) begin
+            CLK_UP;
+            #TCLK
+            CLK_DN;
+            #TCLK
+            `Equals( phase, control.PHASE_FETCH)
+            `Equals( _addrmode, control._AMODE_PC);
+            `Equals( _mrPC, 1'b1); // +clock due to phaseFetch on SR plus the release of the reset on the SR
+            `Equals(PCHI, 8'b0) 
+            `Equals(PCLO, 8'b0)
+            `Equals(address_bus, 16'h0000);
+            `Equals( seq, `SEQ(count+1));
+        end
 
-        CLK_UP;
-        #TCLK
-        CLK_DN;
-        #TCLK
+        `DISPLAY("clock decode")
+        for (count =0; count < phaseDecodeLen; count++) begin
+            CLK_UP;
+            #TCLK
+            CLK_DN;
+            #TCLK
+            `Equals( phase, control.PHASE_DECODE)
+            `Equals(PCHI, 8'b0)
+            `Equals(PCLO, 8'b0)
+            `Equals( _addrmode, control._AMODE_IMM);
+            `Equals(address_bus, 16'hffaa); // FROM ROM[15:0] 
+            `Equals( seq, `SEQ(count+1+phaseFetchLen));
+        end
 
-        
-        CLK_UP;
-        #TCLK
-        CLK_DN;
-        #TCLK
+        `DISPLAY("clock exec")
+        for (count =0; count < phaseExecLen; count++) begin
+            CLK_UP;
+            #TCLK
+            `Equals( phase, control.PHASE_EXEC)
+            `Equals(PCHI, 8'b0)
+            `Equals(PCLO, 8'b0)
+            `Equals( _addrmode, control._AMODE_IMM);
+            `Equals(address_bus, 16'hffaa); // FROM ROM[15:0] 
+            `Equals(MARLO.Q, 8'h42)
+            `Equals(MARHI.Q, 8'hxx)
+            CLK_DN;
+            #TCLK
+            `Equals( seq, `SEQ(count+1+phaseFetchLen+phaseExecLen));
+        end
 
-        CLK_UP;
-        #TCLK
-        CLK_DN;
-        #TCLK
-
-
-
-//        `Equals( phase, control.PHASE_FETCH)
-  //      `Equals( _addrmode, control._AMODE_PC);
-     //   `Equals( _mrPC, 1'b1); // +clock due to phaseFetch on SR plus the release of the reset on the SR
-    //    `Equals(PCHI, 8'b0) 
-      //  `Equals(PCLO, 8'b0)
-      //  `Equals(address_bus, 16'h0000);
-        `Equals( seq, `SEQ(1));
-/*        
-        `DISPLAY("clock 1")
-        CLK_UP;
-        #TCLK
-        CLK_DN;
-        #TCLK
-        `Equals( phase, control.PHASE_FETCH)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, control._AMODE_PC);
-        `Equals(address_bus, 16'h0000);
-        `Equals( seq, `SEQ(2));
-
-        `DISPLAY("clock 2")
-        CLK_UP;
-        #TCLK
-        CLK_DN;
-        #TCLK
-        `Equals( phase, control.PHASE_FETCH)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, control._AMODE_PC);
-        `Equals(address_bus, 16'h0000);
-        `Equals( seq, `SEQ(3));
-
-        `DISPLAY("clock 3")
-        CLK_UP;
-        #TCLK
-        CLK_DN;
-        #TCLK
-        `Equals( phase, control.PHASE_FETCH)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, control._AMODE_PC);
-        `Equals(address_bus, 16'h0000);
-        `Equals( seq, `SEQ(4));
-*/
-        `DISPLAY("clock 4")
-        CLK_UP;
-        #TCLK
-        CLK_DN;
-        #TCLK
-        `Equals( phase, control.PHASE_DECODE)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, control._AMODE_IMM);
-        `Equals(address_bus, 16'h2211); // FROM ROM[15:0] 
-        `Equals( seq, `SEQ(1));
-
-/*
-        `DISPLAY("clock 5")
-        CLK_UP;
-        #TCLK
-        CLK_DN;
-        #TCLK
-        `Equals( phase, control.PHASE_DECODE)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, control._AMODE_IMM);
-        `Equals(address_bus, 16'h2211); // FROM ROM[15:0] 
-        `Equals( seq, `SEQ(6));
-
-        `DISPLAY("clock 6")
-        CLK_UP;
-        #TCLK
-        CLK_DN;
-        #TCLK
-        `Equals( phase, control.PHASE_DECODE)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, control._AMODE_IMM);
-        `Equals(address_bus, 16'h2211); // FROM ROM[15:0] 
-        `Equals( seq, `SEQ(7));
-
-        `DISPLAY("clock 7")
-        CLK_UP;
-        #TCLK
-        CLK_DN;
-        #TCLK
-        `Equals( phase, control.PHASE_DECODE)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, control._AMODE_IMM);
-        `Equals(address_bus, 16'h2211); // FROM ROM[15:0] 
-        `Equals( seq, `SEQ(8));
-*/
-        `DISPLAY("clock 8")
-        CLK_UP;
-        #TCLK
-        CLK_DN;
-        #TCLK
-        `Equals( phase, control.PHASE_EXEC)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, control._AMODE_IMM);
-        `Equals(address_bus, 16'h2211); // FROM ROM[15:0] 
-        `Equals( seq, `SEQ(3));
-
-/*
-        `DISPLAY("clock 9")
-        #1
-        CLK_UP;
-        #TCLK
-        `Equals( phase, control.PHASE_EXEC)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b0)
-        `Equals( _addrmode, control._AMODE_IMM);
-        `Equals(address_bus, 16'h2211); // FROM ROM[15:0] 
-        `Equals( seq, `SEQ(10));
-        CLK_DN;
-        #TCLK
-*/
         `DISPLAY("clock 10 ----- NEXT CYCLE STARTS")
-        CLK_UP;
-        #TCLK
-        `Equals( phase, control.PHASE_FETCH)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, control._AMODE_PC);
-        `Equals(address_bus, 16'h0001); // FROM PC
-        `Equals( seq, `SEQ(1));
-        CLK_DN;
-        #TCLK
+        for (count =0; count < phaseFetchLen; count++) begin
+            CLK_UP;
+            #TCLK
+            `Equals( phase, control.PHASE_FETCH)
+            `Equals(PCHI, 8'b0)
+            `Equals(PCLO, 8'b1)
+            `Equals( _addrmode, control._AMODE_PC);
+            `Equals(address_bus, 16'h0001); // FROM PC
+            CLK_DN;
+            #TCLK
+            `Equals( seq, `SEQ(count+1));
+        end
 
-/*
-        `DISPLAY("clock 11")
-        CLK_UP;
-        #TCLK
-        `Equals( phase, control.PHASE_FETCH)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, control._AMODE_PC);
-        `Equals(address_bus, 16'h0001); // FROM PC
-        `Equals( seq, `SEQ(2));
-        CLK_DN;
-        #TCLK
-
-        `DISPLAY("clock 12")
-        CLK_UP;
-        #TCLK
-        `Equals( phase, control.PHASE_FETCH)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, control._AMODE_PC);
-        `Equals(address_bus, 16'h0001); // FROM PC
-        `Equals( seq, `SEQ(3));
-        CLK_DN;
-        #TCLK
-
-        `DISPLAY("clock 13")
-        CLK_UP;
-        #TCLK
-        `Equals( phase, control.PHASE_FETCH)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, control._AMODE_PC);
-        `Equals(address_bus, 16'h0001); // FROM PC
-        `Equals( seq, `SEQ(4));
-        CLK_DN;
-        #TCLK
-*/
         `DISPLAY("clock 14")
-        CLK_UP;
-        #TCLK
-        `Equals( phase, control.PHASE_DECODE)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, control._AMODE_REG);
-        `Equals(address_bus, 16'hx); // FROM MAR -- WRITE TO MAR NOT IMPLE
-        `Equals( seq, `SEQ(2));
-        CLK_DN;
-        #TCLK
-/*
-        `DISPLAY("clock 15")
-        CLK_UP;
-        #TCLK
-        `Equals( phase, control.PHASE_DECODE)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, control._AMODE_REG);
-        `Equals(address_bus, 16'hx); // FROM MAR ---- WRITE TO MAR NOT IMPL
-        `Equals( seq, `SEQ(6));
-        CLK_DN;
-        #TCLK
+        for (count =0; count < phaseDecodeLen; count++) begin
+            CLK_UP;
+            #TCLK
+            `Equals( phase, control.PHASE_DECODE)
+            `Equals(PCHI, 8'b0)
+            `Equals(PCLO, 8'b1)
+            `Equals( _addrmode, control._AMODE_REG);
+            `Equals(address_bus, 16'hx); // FROM MAR -- WRITE TO MAR NOT IMPLE
+            CLK_DN;
+            #TCLK
+            `Equals( seq, `SEQ(count+1+phaseFetchLen));
+        end
 
-        `DISPLAY("clock 16")
-        CLK_UP;
-        #TCLK
-        `Equals( phase, control.PHASE_DECODE)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, control._AMODE_REG);
-        `Equals(address_bus, 16'hx); // FROM MAR ---- WRITE TO MAR NOT IMPL
-        `Equals( seq, `SEQ(7));
-        CLK_DN;
-        #TCLK
-
-        `DISPLAY("clock 17")
-        CLK_UP;
-        #TCLK
-        `Equals( phase, control.PHASE_DECODE)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, control._AMODE_REG);
-        `Equals(address_bus, 16'hx); // FROM MAR ---- WRITE TO MAR NOT IMPL
-        `Equals( seq, `SEQ(8));
-        CLK_DN;
-        #TCLK
-*/
         `DISPLAY("clock 18")
-        CLK_UP;
-        #TCLK
-        `Equals( phase, control.PHASE_EXEC)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, control._AMODE_REG);
-        `Equals(address_bus, 16'hx); // FROM MAR
-        `Equals( seq, `SEQ(3));
-        CLK_DN;
-        #TCLK
-/*
-        `DISPLAY("clock 18")
-        CLK_UP;
-        #TCLK
-        `Equals( phase, control.PHASE_EXEC)
-        `Equals(PCHI, 8'b0)
-        `Equals(PCLO, 8'b1)
-        `Equals( _addrmode, control._AMODE_REG);
-        `Equals(address_bus, 16'hx); // FROM MAR
-        `Equals( seq, `SEQ(10));
-        CLK_DN;
-        #TCLK
-*/
+        for (count =0; count < phaseExecLen; count++) begin
+            CLK_UP;
+            #TCLK
+            `Equals( phase, control.PHASE_EXEC)
+            `Equals(PCHI, 8'b0)
+            `Equals(PCLO, 8'b1)
+            `Equals( _addrmode, control._AMODE_REG);
+            `Equals(address_bus, 16'hx); // FROM MAR
+            CLK_DN;
+            #TCLK
+            `Equals( seq, `SEQ(3));
+        end
 
 
 //`include "./generated_tests.v"

@@ -15,9 +15,10 @@ module hct74377 #(parameter WIDTH = 8, LOG = 0)
   output [WIDTH-1:0] Q
 );
 
-if (LOG) always @* begin
-    $display("%9t", $time, " REGISTER    CP=%1b _EN=%1b D=%08b Q=%08b", CP, _EN, D, Q);
-end
+if (LOG)  
+  always @* begin
+      $display("%9t", $time, " REGISTER %m   CP=%1b _EN=%1b D=%08b Q=%08b (Q_current=%08b)", CP, _EN, D, Q, Q_current);
+  end
 
 //------------------------------------------------//
 reg [WIDTH-1:0] Q_current='x;
@@ -25,6 +26,7 @@ reg [WIDTH-1:0] Q_current='x;
 always @(posedge CP)
 begin
   if (!_EN) begin
+      $display("%9t", $time, " REGISTER %m   ASSIGNING D=%08b to Q_current", D);
     Q_current <= D;
   end
 end

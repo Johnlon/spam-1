@@ -328,7 +328,7 @@ module op_decoder #(parameter LOG=1)
     always @ *  begin
          $display("%9t OP_DECODER", $time,
                 " data=%8b:%8b:%8b", data_hi, data_mid, data_lo,
-                " ctrl=%3b (%s)", ctrl, control.opName(ctrl),
+                " ctrl=%3b (%s)\t ", ctrl, control.opName(ctrl),
                 " _decodedOp=%8b", op_demux.Y,
                 " tdev=%5b(%s)", targ_dev, control.tdevname(targ_dev),
                 " ldev=%4b(%s)", lbus_dev, control.devname(lbus_dev),

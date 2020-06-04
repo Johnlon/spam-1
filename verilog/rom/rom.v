@@ -12,7 +12,8 @@
 module rom (A, D, _CS, _OE);
 
   parameter DWIDTH=8,AWIDTH=16, DEPTH= 1 << AWIDTH;
-  parameter Filename = "data.rom";
+  localparam DEFAULT_FILENAME = "data.rom";
+  parameter FILENAME = DEFAULT_FILENAME;
   parameter DELAY_RISE = 45;
   parameter DELAY_FALL = 45;
   parameter DELAY = 150;
@@ -28,7 +29,8 @@ module rom (A, D, _CS, _OE);
     initial begin
 //  always @(_CS)
  //   if (!_CS) 
-      $readmemh(Filename, Mem);
+    if (DEFAULT_FILENAME != FILENAME)
+        $readmemh(FILENAME , Mem);
     end
 
 /* verilator lint_off ASSIGNDLY */
