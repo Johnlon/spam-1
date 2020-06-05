@@ -227,10 +227,10 @@ module address_mode_decoder #(parameter LOG=1)
     wire [7:0] _decoded;
     hct74138 decode_op( .Enable1_bar(1'b0), .Enable2_bar(1'b0), .Enable3(_phaseFetch), .A(ctrl), .Y(_decoded)); 
 
-    and #(10) a1(_addrmode_pc, _phaseFetch , _decoded[1]);
+    assign _addrmode_pc = _phaseFetch;
 
-    // op 3 not defined yet
-    and #(10) o1(_addrmode_register, _decoded[0], _decoded[2]); 
+    // op 3 & 7 not defined yet
+    and #(10) o1(_addrmode_register, _decoded[0], _decoded[1], _decoded[2]); 
     and #(10) o2(_addrmode_immediate , _decoded[4], _decoded[5], _decoded[6]);
 
 

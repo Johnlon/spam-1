@@ -114,10 +114,10 @@ module test();
             #T
             `Equals( _addr_mode, 3'b101)
 
-            d.display("op 1=pc");
+            d.display("op 1=reg");
             ctrl = 1;
             #T
-            `Equals( _addr_mode, 3'b011)
+            `Equals( _addr_mode, 3'b101)
 
             d.display("op 2=reg");
             ctrl = 2;
