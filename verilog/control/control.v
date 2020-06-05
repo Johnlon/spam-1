@@ -1,5 +1,5 @@
 /*
-This code generates a momentary conflict during propagation of the signals when transitioning back to fetch.
+This code generates a momentary address mode conflict during propagation of the signals when transitioning back to fetch.
 Wasn't able to avoid it without a lot more h/w. 
 */
 
@@ -222,24 +222,25 @@ module address_mode_decoder #(parameter LOG=1)
     output _addrmode_immediate // enable ROM[15:0] onto address bus, needs an IR in implementation - direct addressing
 );
 
-
-    // `DECODE_PHASE
-    // `DECODE_ADDRMODE
-    
     // ADDRESS MODE DECODING =====    
-    // as organised above then OPS0/1/2 are all REGISTER and OPS 4/5/6 are all IMMEDIATE 
+    // as organised above then OPS0/2 are all REGISTER and OPS 4/5/6 are all IMMEDIATE and OP 1 is PC
+    wire [7:0] _decoded;
+    hct74138 decode_op( .Enable1_bar(1'b0), .Enable2_bar(1'b0), .Enable3(_phaseFetch), .A(ctrl), .Y(_decoded)); 
 
-    wire isImm, isReg;
-    assign isImm = ctrl[2];
-    nand #(10) o0(isReg, ctrl[2], ctrl[2]);
-    nand #(10) o1(_addrmode_register , _phaseFetch , isReg);
-    nand #(10) o2(_addrmode_immediate , _phaseFetch , isImm);
-    assign _addrmode_pc = _phaseFetch;
+    and #(10) a1(_addrmode_pc, _phaseFetch , _decoded[1]);
 
-    if (0)    
+    // op 3 not defined yet
+    and #(10) o1(_addrmode_register, _decoded[0], _decoded[2]); 
+    and #(10) o2(_addrmode_immediate , _decoded[4], _decoded[5], _decoded[6]);
+
+
+    if (1)    
     always @ * begin;
          $display("%9t ADDRMODE_DECODE", $time,
-            " ctrl=%3b", ctrl, 
+            " ctrl=%3b _decoded=%08b", ctrl, _decoded,
+    "_addrmode_pc=%1b, _phaseFetch=%1b , _decoded[1]=%1b", _addrmode_pc, _phaseFetch , _decoded[1],
+//            " isImm=%b ", isImm,
+ //           " isReg=%b ", isReg,
             " phase(FDE=%1b%1b%1b) ", phaseFetch, phaseDecode, phaseExec, 
             "    _addrmode(pc=%b,reg=%b,imm=%b)", _addrmode_pc, _addrmode_register, _addrmode_immediate,
             " _amode=%3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate)
@@ -252,7 +253,9 @@ module address_mode_decoder #(parameter LOG=1)
             " phase(FDE=%1b%1b%1b) ", phaseFetch, phaseDecode, phaseExec
             );
          $display("%9t AMODE_DECODER", $time,
-            " ctrl=%3b", ctrl, 
+  //          " isImm=%b ", isImm,
+   //         " isReg=%b ", isReg,
+            " ctrl=%3b _decoded=%08b", ctrl, _decoded,
             " _addrmode(pc=%b,reg=%b,imm=%b)", _addrmode_pc, _addrmode_register, _addrmode_immediate,
             " _amode=%3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate)
             );

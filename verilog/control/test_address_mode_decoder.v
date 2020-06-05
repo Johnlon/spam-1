@@ -49,20 +49,25 @@ module test();
         if ($time > T) begin
          // only one may be high at a time
          if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_immediate === 1'bx) begin
-            $display("%9t ", $time, "!!!! ERROR INDETERMINATE AMODE  PRI %b/%b/%b", _addrmode_pc, _addrmode_register, _addrmode_immediate);
+            $display("%9t ", $time, "!!!! WARNING INDETERMINATE AMODE  PRI %b/%b/%b", _addrmode_pc, _addrmode_register, _addrmode_immediate);
             #SETTLE_TOLERANCE
              if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_immediate === 1'bx) begin
-                $display("-- ABORT");
+                $display("INDETERMINATE STATE PERSISTED -- ABORT");
                  $finish();
             end
+            else
+                $display("%9t ", $time, "!!!! RESOLVED INDETERMINATE AMODE  PRI %b/%b/%b", _addrmode_pc, _addrmode_register, _addrmode_immediate);
+
          end
          if ( _addrmode_register + _addrmode_pc + _addrmode_immediate < 2) begin
-            $display("%9t ", $time, "!!!! ERROR CONFLICTING AMODE  PRI %b/%b/%b", _addrmode_pc, _addrmode_register, _addrmode_immediate);
+            $display("%9t ", $time, "!!!! WARNING CONFLICTING AMODE  PRI %b/%b/%b", _addrmode_pc, _addrmode_register, _addrmode_immediate);
             #SETTLE_TOLERANCE
              if ( _addrmode_register + _addrmode_pc + _addrmode_immediate < 2) begin
-                $display("-- ABORT");
+                $display("CONFLICT PERSISTED -- ABORT");
                  $finish();
              end
+            else
+                $display("%9t ", $time, "!!!! RESOLVED CONFLICTING AMODE PRI %b/%b/%b", _addrmode_pc, _addrmode_register, _addrmode_immediate);
          end
          end
     end
@@ -70,63 +75,78 @@ module test();
    
     wire [2:0] _addr_mode = {_addrmode_pc, _addrmode_register, _addrmode_immediate}; 
     
+    integer count;
+
     initial begin
 
         d.display("fetch forces addrmode PC");
-        ctrl = 3'b1xx;
-        phaseFetch = 1;
-        phaseDecode = 0;
-        phaseExec = 0;
-        #T
-        `Equals( _addr_mode, 3'b011)
+        for (count = 0; count < 8; count++) begin
+            d.display("fetch forces addrmode PC");
+            $display("fetch forces addrmode PC, op=%d", count);
+            ctrl = count;
+            phaseFetch = 1;
+            phaseDecode = 0;
+            phaseExec = 0;
+            #T
+            `Equals( _addr_mode, 3'b011)
+        end
 
-        d.display("fetch forces addrmode PC");
-        ctrl = 3'b0xx;
-        phaseFetch = 1;
-        phaseDecode = 0;
-        phaseExec = 0;
-        #T
-        `Equals( _addr_mode, 3'b011)
+        for (count = 0; count < 2; count ++)
+        begin
+            if (count == 0) begin
+                d.display("decode tests");
+                $display("decode tests, op=%d", count);
+                phaseFetch = 0;
+                phaseDecode = 1;
+                phaseExec = 0;
+            end 
+            else 
+            begin
+                d.display("exec tests");
+                $display("exec tests, op=%d", count);
+                phaseFetch = 0;
+                phaseDecode = 0;
+                phaseExec = 1;
+            end
+            
+            d.display("op 0=reg");
+            ctrl = 0;
+            #T
+            `Equals( _addr_mode, 3'b101)
 
-        d.display("decode sets addrmode IMM or REG depending on top bit of rom");
-        ctrl = 3'b1xx;
-        phaseFetch = 0;
-        phaseDecode = 1;
-        phaseExec = 0;
-        #T
-        `Equals( _addr_mode, 3'b110)
+            d.display("op 1=pc");
+            ctrl = 1;
+            #T
+            `Equals( _addr_mode, 3'b011)
 
-        d.display("decode sets addrmode IMM or REG depending on top bit of rom");
-        ctrl = 3'b0xx;
-        phaseFetch = 0;
-        phaseDecode = 1;
-        phaseExec = 0;
-        #T
-        `Equals( _addr_mode, 3'b101)
+            d.display("op 2=reg");
+            ctrl = 2;
+            #T
+            `Equals( _addr_mode, 3'b101)
 
-        d.display("exec sets addrmode IMM or REG depending on top bit of rom");
-        ctrl = 3'b1xx;
-        phaseFetch = 0;
-        phaseDecode = 0;
-        phaseExec = 1;
-        #T
-        `Equals( _addr_mode, 3'b110)
+            d.display("op 3=not defined yet");
+            ctrl = 3;
+            #T
 
-        d.display("exec sets addrmode IMM or REG depending on top bit of rom");
-        ctrl = 3'b0xx;
-        phaseFetch = 0;
-        phaseDecode = 0;
-        phaseExec = 1;
-        #T
-        `Equals( _addr_mode, 3'b101)
+            d.display("op 4=imm");
+            ctrl = 4;
+            #T
+            `Equals( _addr_mode, 3'b110)
 
-        d.display("fetch sets addrmode PC");
-        ctrl = 3'b0xx;
-        phaseFetch = 1;
-        phaseDecode = 0;
-        phaseExec = 0;
-        #T
-        `Equals( _addr_mode, 3'b011)
+            d.display("op 5=imm");
+            ctrl = 5;
+            #T
+            `Equals( _addr_mode, 3'b110)
+
+            d.display("op 6=imm");
+            ctrl = 6;
+            #T
+            `Equals( _addr_mode, 3'b110)
+
+            d.display("op 7=not defined yet");
+            ctrl = 7;
+            
+        end
 
 
         $display("testing end");
