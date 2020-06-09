@@ -68,17 +68,17 @@ module control;
     localparam [3:0] DEV_marlo = 2;
     localparam [3:0] DEV_marhi = 3;
     localparam [3:0] DEV_uart = 4;
-    localparam [3:0] DEV_rega = 5;
-    localparam [3:0] DEV_regb = 6;
-    localparam [3:0] DEV_regc = 7;
-    localparam [3:0] DEV_regd = 8;
-    localparam [3:0] DEV_rege = 9;
-    localparam [3:0] DEV_regf = 10;
-    localparam [3:0] DEV_regg = 11;
-    localparam [3:0] DEV_regh = 12;
-    localparam [3:0] DEV_regi = 13;
-    localparam [3:0] DEV_regnu1 = 14;
-    localparam [3:0] DEV_regnu2 = 15;
+    localparam [3:0] DEV_rega = 5; // 1
+    localparam [3:0] DEV_regb = 6; // 2
+    localparam [3:0] DEV_regc = 7; // 3
+    localparam [3:0] DEV_regd = 8; // 4
+    localparam [3:0] DEV_rege = 9; // 5
+    localparam [3:0] DEV_regf = 10; // 6
+    localparam [3:0] DEV_regg = 11; // 7
+    localparam [3:0] DEV_regh = 12; // 8
+    localparam [3:0] DEV_flags = 13;
+    localparam [3:0] DEV_reg_not_used_1 = 14;
+    localparam [3:0] DEV_instreg = 15;
 
     // targets
     function [4:0] TDEV([3:0] x);
@@ -97,6 +97,7 @@ module control;
     `TARG(regb)
     `TARG(regc)
     `TARG(regd)
+
     // 9-15 - todo
     `TARGN(pchitmp, 16)
     `TARGN(pclo, 17)
@@ -115,17 +116,18 @@ module control;
             01: devname = "ROM";
             02: devname = "MARLO";
             03: devname = "MARHI";
-            04: devname = "REGA";
-            05: devname = "REGB";
-            06: devname = "REGC";
-            07: devname = "REGD";
-            08: devname = "REGE";
-            09: devname = "REGF";
-            10: devname = "REGF";
-            11: devname = "REGH";
-            13: devname = "REGI";
-            14: devname = "REGJ";
-            15: devname = "FLAGS";
+            04: devname = "UART";
+            05: devname = "REGA"; // 1
+            06: devname = "REGB"; // 2
+            07: devname = "REGC"; // 3
+            08: devname = "REGD"; // 4
+            09: devname = "REGE"; // 5
+            10: devname = "REGF"; // 6
+            11: devname = "REGG"; // 7
+            12: devname = "REGH"; // 8
+            13: devname = "FLAGS";
+            14: devname = "NOT_USED_1";
+            15: devname = "INSTREG";
             default: begin
                 string n; 
                 $sformat(n,"??(unknown %4b)", dev);
@@ -312,11 +314,13 @@ module op_decoder #(parameter LOG=1)
 
     // r device sel
     tri [7:0] rbus_dev_out;
-    wire #(10) _force_source_rom = _op_dev_eq_const8 &  _op_dev_eq_const16 &  _op_dev_eq_rom_immed; // 3 INPUT AND GATE
-    hct74245ab rdev_from_instruction_aluop(.A({4'b0, rom_data[8:5]}), .B(rbus_dev_out), .nOE(_op_dev_eq_xy_alu));
-    hct74245ab rdev_from_instruction_ramimmed(.A({4'b0, rom_data[19:16]}), .B(rbus_dev_out), .nOE(_op_ram_immed_eq_dev));
+    wire _force_source_rom = _op_dev_eq_rom_immed; // WIRE
+    wire #(10) _force_source_instreg = _op_dev_eq_const8 &  _op_dev_eq_const16; // 2 INPUT AND GATE
+    hct74245ab rdev_from_instruction_for_aluop(.A({4'b0, rom_data[8:5]}), .B(rbus_dev_out), .nOE(_op_dev_eq_xy_alu));
+    hct74245ab rdev_from_instruction_ramimmed_eq_dev(.A({4'b0, rom_data[19:16]}), .B(rbus_dev_out), .nOE(_op_ram_immed_eq_dev));
     hct74245ab rdev_eq_ram(.A({4'b0, control.DEV_ram}), .B(rbus_dev_out), .nOE(_op_dev_eq_ram_immed));
     hct74245ab rdev_eq_rom(.A({4'b0, control.DEV_rom}), .B(rbus_dev_out), .nOE(_force_source_rom));
+    hct74245ab rdev_eq_instreg(.A({4'b0, control.DEV_instreg}), .B(rbus_dev_out), .nOE(_force_source_instreg));
     assign rbus_dev = rbus_dev_out[3:0]; 
 
     // aluop

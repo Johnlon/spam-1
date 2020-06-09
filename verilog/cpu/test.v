@@ -140,34 +140,54 @@ module test();
     wire [15:0] lset = {lbus_dev_16_demux.Y, lbus_dev_08_demux.Y};
     wire [15:0] rset = {rbus_dev_16_demux.Y, rbus_dev_08_demux.Y};
 
-    `define WIRE_LBUS(DNAME, B) wire _ldev_``DNAME`` = lset[control.DEV_``DNAME``];
-    `define WIRE_RBUS(DNAME, B) wire _rdev_``DNAME`` = rset[control.DEV_``DNAME``];
-    `define WIRE_TBUS(DNAME, B) wire _``DNAME``_in = tset[control.TDEV_``DNAME``];
+    `define WIRE_LBUS(DNAME) wire _ldev_``DNAME`` = lset[control.DEV_``DNAME``];
+    `define WIRE_RBUS(DNAME) wire _rdev_``DNAME`` = rset[control.DEV_``DNAME``];
+    `define WIRE_TBUS(DNAME) wire _``DNAME``_in = tset[control.TDEV_``DNAME``];
 
     // control lines for bufs need better names
-    `define WIRE_TLRBUS(DNAME, B) `WIRE_TBUS(DNAME, B) `WIRE_LBUS(DNAME, B) `WIRE_RBUS(DNAME, B)
-    
-    //wire _rdev_``DNAME`` = lbus_dev_``B``_demux.Y[control.DEV_``DNAME``]; wire _ldev_``DNAME`` = rbus_dev_``B``_demux.Y[control.DEV_``DNAME``]; `WIRE_TBUS(DNAME, B)
 
-    `WIRE_TLRBUS(ram, 08)
-    `WIRE_TLRBUS(rom, 08)
-    `WIRE_TLRBUS(marlo, 08)
-    `WIRE_TLRBUS(marhi, 08)
-    `WIRE_TLRBUS(uart, 08)
-    `WIRE_TLRBUS(rega, 08)
-    `WIRE_TLRBUS(regb, 08)
-    `WIRE_TLRBUS(regc, 08)
-    `WIRE_TLRBUS(regd, 16)
-    //9-15 todo
+    `WIRE_TBUS(ram)
+    `WIRE_RBUS(ram)
+
+    `WIRE_RBUS(rom)
+
+    `WIRE_LBUS(marlo)
+    `WIRE_RBUS(marlo)
+    `WIRE_TBUS(marlo)
+
+    `WIRE_LBUS(marhi)
+    `WIRE_RBUS(marhi)
+    `WIRE_TBUS(marhi)
+
+    `WIRE_LBUS(rega)
+    `WIRE_RBUS(rega)
+    `WIRE_TBUS(rega)
+
+    `WIRE_LBUS(regb)
+    `WIRE_RBUS(regb)
+    `WIRE_TBUS(regb)
+
+    `WIRE_LBUS(regc)
+    `WIRE_RBUS(regc)
+    `WIRE_TBUS(regc)
+
+    `WIRE_LBUS(regd)
+    `WIRE_RBUS(regd)
+    `WIRE_TBUS(regd)
+
+    `WIRE_LBUS(uart)
+    `WIRE_TBUS(uart)
+
+    `WIRE_RBUS(instreg)
    
-    `WIRE_TBUS(pchitmp, 16)
-    `WIRE_TBUS(pclo, 16)
-    `WIRE_TBUS(pc, 16)
-    `WIRE_TBUS(jmpo, 16)
-    `WIRE_TBUS(jmpz, 16)
-    `WIRE_TBUS(jmpc, 16)
-    `WIRE_TBUS(jmpdi, 16)
-    `WIRE_TBUS(jmpdo, 16)
+    `WIRE_TBUS(pchitmp)
+    `WIRE_TBUS(pclo)
+    `WIRE_TBUS(pc)
+    `WIRE_TBUS(jmpo)
+    `WIRE_TBUS(jmpz)
+    `WIRE_TBUS(jmpc)
+    `WIRE_TBUS(jmpdi)
+    `WIRE_TBUS(jmpdo)
      
     // PROGRAM COUNTER ======================================================================================
 
@@ -191,11 +211,15 @@ module test();
 
     // ROM =============================================================================================
 
-    rom #(.AWIDTH(16), .Filename("hi.rom"))   rom_hi(._CS(1'b0), ._OE(1'b0), .A(address_bus));
-    rom #(.AWIDTH(16), .Filename("mid.rom")) rom_mid(._CS(1'b0), ._OE(1'b0), .A(address_bus));
-    rom #(.AWIDTH(16), .Filename("lo.rom"), .LOG(1))   rom_lo(._CS(1'b0), ._OE(1'b0), .A(address_bus)); 
+    rom #(.AWIDTH(16)) rom_hi(._CS(1'b0), ._OE(1'b0), .A(address_bus));
+    rom #(.AWIDTH(16)) rom_mid(._CS(1'b0), ._OE(1'b0), .A(address_bus));
+    rom #(.AWIDTH(16)) rom_lo(._CS(1'b0), ._OE(1'b0), .A(address_bus)); 
     
-    hct74245ab rom_rbus_buf(.A(rom_lo.D), .B(rbus), .nOE(_rdev_rom));
+    // ROM OUT when direct rom addressing is being used
+    hct74245ab rom_rom_rbus_buf(.A(rom_lo.D), .B(rbus), .nOE(_rdev_rom));
+
+    // ROM OUT TO RBUS VIA IR PERMITS SIMULTANEOUS REG ADDRESSING OF RAM
+    hct74245ab rom_instreg_rbus_buf(.A(instruction_lo), .B(rbus), .nOE(_rdev_instreg));
 
     // immediate addressing buffer - FIXME USE 74245
     /*
@@ -445,8 +469,14 @@ module test();
         `define ROM(A) {rom_hi.Mem[A], rom_mid.Mem[A], rom_lo.Mem[A]}
 
         // CODE
-        // dev_eq_rom_immed tdev=00010(MARLO), address=ffaa
-        `ROM(0)= { 8'b100_00010, 8'hff, 8'haa }; 
+        // dev_eq_rom_immed tdev=00010(MARLO), address=ffaa     
+        `ROM(0)= { 8'b100_00010, 8'hff, 8'haa };                // MARLO=whats at address FFaa
+
+        // dev_eq_const8 tdev=00011(MARHI), const8=0           
+        `ROM(1)= { 8'b001_00011, 8'hx, 8'h0 };                  // MARHI=const 0
+
+        // dev_eq_xy_alu tdev=00010(MARLO) ldev=0010(MARLO) rdev=0010(MARLO) alu=00010(0)
+        `ROM(2)= { 8'b000_00010, 16'bzzz_0010_0010_00010 };     // MARLO=0 (ALUOP=0)
 
 
         // DATA 
@@ -468,12 +498,12 @@ module test();
         `Equals( phase, control.PHASE_NONE)
 
         `Equals( seq, `SEQ(1))
-        `Equals( _addrmode, 3'b1xx)
+        `Equals( _addrmode, 3'b111)
 
         `Equals(PCHI, 8'bx)
         `Equals(PCLO, 8'bx)
 
-        `Equals(address_bus, 16'bx);
+        `Equals(address_bus, 16'bz); // noone providing address
 
         #TCLK
         `DISPLAY("_mrPC=0  - so clocking is ineffective = stay in PC addressing mode")
@@ -536,14 +566,17 @@ module test();
             `Equals(PCLO, 8'b0)
             `Equals( _addrmode, control._AMODE_IMM);
             `Equals(address_bus, 16'hffaa); // FROM ROM[15:0] 
-            `Equals(MARLO.Q, 8'h42)
-            `Equals(MARHI.Q, 8'hxx)
             CLK_DN;
             #TCLK
             `Equals( seq, `SEQ(count+1+phaseFetchLen+phaseExecLen));
         end
 
-        `DISPLAY("clock 10 ----- NEXT CYCLE STARTS")
+        // operation result 
+        `Equals(MARLO.Q, 8'h42)
+        `Equals(MARHI.Q, 8'hxx)
+
+        `DISPLAY("NEXT CYCLE STARTS")
+        `DISPLAY("clock fetch")
         for (count =0; count < phaseFetchLen; count++) begin
             CLK_UP;
             #TCLK
@@ -557,32 +590,75 @@ module test();
             `Equals( seq, `SEQ(count+1));
         end
 
-        `DISPLAY("clock 14")
+        `DISPLAY("clock decode")
         for (count =0; count < phaseDecodeLen; count++) begin
             CLK_UP;
             #TCLK
             `Equals( phase, control.PHASE_DECODE)
             `Equals(PCHI, 8'b0)
             `Equals(PCLO, 8'b1)
-            `Equals( _addrmode, control._AMODE_REG);
-            `Equals(address_bus, 16'hx); // FROM MAR -- WRITE TO MAR NOT IMPLE
             CLK_DN;
             #TCLK
             `Equals( seq, `SEQ(count+1+phaseFetchLen));
         end
 
-        `DISPLAY("clock 18")
+        `DISPLAY("clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
             #TCLK
             `Equals( phase, control.PHASE_EXEC)
             `Equals(PCHI, 8'b0)
             `Equals(PCLO, 8'b1)
-            `Equals( _addrmode, control._AMODE_REG);
-            `Equals(address_bus, 16'hx); // FROM MAR
             CLK_DN;
             #TCLK
-            `Equals( seq, `SEQ(3));
+            `Equals( seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
+        end
+
+        // operation result 
+        `Equals(MARLO.Q, 8'h42)
+        `Equals(MARHI.Q, 8'h00)
+
+        `DISPLAY("NEXT CYCLE STARTS")
+        `DISPLAY("clock fetch")
+        for (count =0; count < phaseFetchLen; count++) begin
+            CLK_UP;
+            #TCLK
+            `Equals( phase, control.PHASE_FETCH)
+            `Equals(PCHI, 8'b0)
+            `Equals(PCLO, 8'd2)
+            `Equals( _addrmode, control._AMODE_PC);
+            `Equals(address_bus, 16'd2); // FROM PC
+            CLK_DN;
+            #TCLK
+            `Equals( seq, `SEQ(count+1));
+        end
+
+        `DISPLAY("clock decode")
+        for (count =0; count < phaseDecodeLen; count++) begin
+            CLK_UP;
+            #TCLK
+            `Equals( phase, control.PHASE_DECODE)
+            `Equals(PCHI, 8'b0)
+            `Equals(PCLO, 8'd2)
+            `Equals( _addrmode, control._AMODE_REG);
+            `Equals(address_bus, 16'h0042); // FROM MAR
+            CLK_DN;
+            #TCLK
+            `Equals( seq, `SEQ(count+1+phaseFetchLen));
+        end
+
+        `DISPLAY("clock exec")
+        for (count =0; count < phaseExecLen; count++) begin
+            CLK_UP;
+            #TCLK
+            `Equals( phase, control.PHASE_EXEC)
+            `Equals(PCHI, 8'b0)
+            `Equals(PCLO, 8'd2)
+            `Equals( _addrmode, control._AMODE_REG);
+            `Equals(address_bus, 16'h0042); // FROM MAR
+            CLK_DN;
+            #TCLK
+            `Equals( seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
         end
 
 
