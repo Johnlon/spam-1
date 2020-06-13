@@ -229,7 +229,7 @@ module test();
     // RAM =============================================================================================
 
     wire #(8) _gated_ram_in = _phaseExec | _ram_in;
-    ram #(.AWIDTH(16)) ram64(._WE(!phaseExec | _ram_in), ._OE(_rdev_ram), .A(address_bus));
+    ram #(.AWIDTH(16)) ram64(._WE(!phaseExec | _ram_in), ._OE(1'b0), .A(address_bus));
     
     hct74245ab ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in));
     hct74245ab ram_rbus_buf(.A(ram64.D), .B(rbus), .nOE(_rdev_ram));
@@ -248,9 +248,9 @@ module test();
     hct74245ab marlo_addrbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register));
 
     // ALU ==============================================================================================
-    logic _flag_cin=1; // 1 = not cin
-    wire _flag_cout=1;
-    wire _flag_z=1;
+    logic _flag_cin=1; // 1 = not cin TODO
+    wire _flag_cout=1; // TODO
+    wire _flag_z=1; // TODO
 
 	alu #(.LOG(1)) Alu(
         .o(alu_result_bus), 
@@ -262,7 +262,25 @@ module test();
         ._flag_z
     );
 
-
+    // REGISTER FILE =====================================================================================
+    /*
+    syncRegisterFile #(.LOG(1)) regFile(
+    _MR,
+    clk,
+    _wr_en,
+    wr_addr,
+    wr_data,
+    
+    _rdL_en,
+    rdL_addr,
+    rdL_data,
+    
+    _rdR_en,
+    rdR_addr,
+    rdR_data
+    );
+    */
+    
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     // TESTS ===========================================================================================
@@ -287,7 +305,10 @@ module test();
         `ROM(3)= { 8'b001_00000, 8'hx, 8'h22 };                  // RAM[MAR=0043]=const h22      implies ALUOP=R
 
         // dev_eq_ram_immed tdev=00010(MARLO), address=ffaa     
-        `ROM(4)= { 8'b101_00010, 16'h0043 };                // MARLO=RAM[MAR=0043]     implies ALUOP=R
+        `ROM(4)= { 8'b101_00010, 16'h0043 };                // MARLO=RAM[MAR=0043]=h22     implies ALUOP=R
+
+        // ram_immed_eq_dev tdev=00001(RAM), rdev=MARLO  address=abcd     
+        `ROM(5)= { 8'b110_00010, 16'habcd };                // RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R
 
         // DATA 
         // initialise rom[ffaa] = 0x42
@@ -510,6 +531,22 @@ module test();
         `Equals(MARLO.Q, 8'h22)
         `Equals(MARHI.Q, 8'h00)
 
+        `DISPLAY("init 6 - // RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R")
+        // dev_eq_ram_immed tdev=00010(REGA), address=ffaa     
+        for (count =0; count < 1* (phaseFetchLen+phaseDecodeLen); count++) begin
+            #TCLK
+            CLK_UP;
+            #TCLK
+            CLK_DN;
+        end
+        for (count =0; count < phaseExecLen; count++) begin
+            #TCLK
+            CLK_UP;
+            #TCLK
+            CLK_DN;
+        end
+        `Equals(`RAM(16'habcd), 8'h22);
+
 /*
 */
 
@@ -548,7 +585,7 @@ module test();
             $display ("%9t ", $time,  "DUMP  ",
                  " instruction=%08b:%08b:%08b", instruction_hi, instruction_mid, instruction_lo);
             $display ("%9t ", $time,  "DUMP  ",
-                " op=%d(%-s)", rom_hi.D[7:5], control.opName(rom_hi.D[7:5]),
+                " op=%d(%-s)", instruction_hi[7:5], control.opName(instruction_hi[7:5]),
                  " FDE=%1b%1b%1b(%-s)", phaseFetch, phaseDecode, phaseExec, control.fPhase(phaseFetch, phaseDecode, phaseExec));
             $display ("%9t ", $time,  "DUMP  ",
                  " amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate),
@@ -557,6 +594,8 @@ module test();
                  " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus);
             $display ("%9t ", $time,  "DUMP  ",
                  " rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D);
+            $display ("%9t ", $time,  "DUMP  ",
+                 " ram=%08b", ram64.D);
             $display ("%9t ", $time,  "DUMP  ",
                 " tdev=%5b(%s)", targ_dev, control.tdevname(targ_dev),
                 " ldev=%4b(%s)", lbus_dev, control.devname(lbus_dev),
