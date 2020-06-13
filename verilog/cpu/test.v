@@ -232,7 +232,7 @@ module test();
     ram #(.AWIDTH(16)) ram64(._WE(!phaseExec | _ram_in), ._OE(_rdev_ram), .A(address_bus));
     
     hct74245ab ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in));
-    hct74245ab ram_rbus_buf(.A(ram64.D), .B(rbus), .nOE(_rdev_rom));
+    hct74245ab ram_rbus_buf(.A(ram64.D), .B(rbus), .nOE(_rdev_ram));
 
     // MAR =============================================================================================
     hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
@@ -275,19 +275,19 @@ module test();
 
         // CODE
         // dev_eq_rom_immed tdev=00010(MARLO), address=ffaa     
-        `ROM(0)= { 8'b100_00010, 8'hff, 8'haa };                // MARLO=whats at address FFaa
+        `ROM(0)= { 8'b100_00010, 16'hffaa };                // MARLO=whats at ROM address ffaa ie 42
 
         // dev_eq_const8 tdev=00011(MARHI), const8=0           
         `ROM(1)= { 8'b001_00011, 8'hx, 8'h0 };                  // MARHI=const 0      implies ALUOP=R
 
-        // dev_eq_xy_alu tdev=00010(MARLO) ldev=0010(MARLO) rdev=0010(MARLO) alu=00010(0)
-        `ROM(2)= { 8'b000_00010, 16'bzzz_0010_0010_00010 };     // MARLO=0 (ALUOP=0)
+        // dev_eq_xy_alu tdev=00010(MARLO) ldev=0010(MARLO) rdev=0010(MARLO) alu=00101(5=A+1)
+        `ROM(2)= { 8'b000_00010, 16'bzzz_0010_0010_00101 };     // MARLO=MARLO+1 = 43 (ALUOP=A+1)
 
         // dev_eq_const8 tdev=00000(RAM[MAR]), const8=0x22           
-        `ROM(3)= { 8'b001_00000, 8'hx, 8'h22 };                  // RAM[MAR=0000]=const h22      implies ALUOP=R
+        `ROM(3)= { 8'b001_00000, 8'hx, 8'h22 };                  // RAM[MAR=0043]=const h22      implies ALUOP=R
 
-        // dev_eq_ram_immed tdev=00010(REGA), address=ffaa     
-        `ROM(4)= { 8'b101_00101, 8'hff, 8'haa };                // MARLO=whats at address FFaa
+        // dev_eq_ram_immed tdev=00010(MARLO), address=ffaa     
+        `ROM(4)= { 8'b101_00010, 16'h0043 };                // MARLO=RAM[MAR=0043]     implies ALUOP=R
 
         // DATA 
         // initialise rom[ffaa] = 0x42
@@ -465,16 +465,16 @@ module test();
             `Equals(PCHI, 8'b0)
             `Equals(PCLO, 8'd2)
             `Equals( _addrmode, control._AMODE_REG);
-            `Equals(address_bus, 16'h0000); // FROM MAR - NOT MATERIAL TO THE TEST BUT A SIDE EFFECT OF SETTING MAR=0000
+            //`Equals(address_bus, 16'h0000); // FROM MAR - NOT MATERIAL TO THE TEST BUT A SIDE EFFECT OF SETTING MAR=0000
             CLK_DN;
             #TCLK
             `Equals( seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
         end
         
-        `Equals(MARLO.Q, 8'h00)
+        `Equals(MARLO.Q, 8'h43)
         `Equals(MARHI.Q, 8'h00)
 
-        `DISPLAY("init 4 - RAM[MAR=0x0000]=0x22 ==== ")
+        `DISPLAY("init 4 - RAM[MAR=0x0043]=0x22 ")
         // fetch/decode
         for (count =0; count < 1* (phaseFetchLen+phaseDecodeLen); count++) begin
             #TCLK
@@ -491,13 +491,24 @@ module test();
             #TCLK
             CLK_DN;
         end
-        `Equals(`RAM(16'h0000), 8'h22);
+        `Equals(`RAM(16'h0043), 8'h22);
 
-        `DISPLAY("init 5 - RAM[0x0042]=0x22 ==== ")
-        #TCLK
-        CLK_UP;
-        #TCLK
-        CLK_DN;
+        `DISPLAY("init 5 - MARLO=RAM[MAR=0x0043]=0x22")
+        // dev_eq_ram_immed tdev=00010(REGA), address=ffaa     
+        for (count =0; count < 1* (phaseFetchLen+phaseDecodeLen); count++) begin
+            #TCLK
+            CLK_UP;
+            #TCLK
+            CLK_DN;
+        end
+        for (count =0; count < phaseExecLen; count++) begin
+            #TCLK
+            CLK_UP;
+            #TCLK
+            CLK_DN;
+        end
+        `Equals(MARLO.Q, 8'h22)
+        `Equals(MARHI.Q, 8'h00)
 
 /*
 */
@@ -552,6 +563,8 @@ module test();
                 " rdev=%4b(%s)", rbus_dev,control.devname(rbus_dev),
                 " aluop=%5b(%s)", aluop, alu_func.aluopName(aluop)
             );            
+            $display ("%9t ", $time,  "DUMP  ",
+                 " MAR=%8b:%8b (0x%2x:%2x)", MARHI.Q, MARLO.Q, MARHI.Q, MARLO.Q);
             $display ("%9t ", $time,  "DUMP  ",
                  " PC=%02h:%02h", PCHI, PCLO);
     endtask 
