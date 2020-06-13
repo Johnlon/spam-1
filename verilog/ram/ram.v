@@ -13,8 +13,7 @@ inout [DWIDTH-1:0] D;
 parameter DWIDTH=8,AWIDTH=16, DEPTH= 1 << AWIDTH;
 parameter LOG=0;
 
-reg [DWIDTH-1:0] mem [DEPTH-1:0];
-reg [DWIDTH-1:0] oldD;
+reg [DWIDTH-1:0] Mem [DEPTH-1:0];
 logic [7:0] dout;
 
 assign D = _OE? {DWIDTH{1'bz}}: dout;
@@ -22,7 +21,7 @@ assign D = _OE? {DWIDTH{1'bz}}: dout;
   if (LOG)
     always @(_WE or _OE or A or D)
         if (!_WE || !_OE)
-            $display("%9t ", $time, "RAM : _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, mem[0], mem[1], mem[2]);
+            $display("%9t ", $time, "RAM : _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, Mem[0], Mem[1], Mem[2]);
 
   if (LOG) 
     always @(_WE or _OE or A or D)
@@ -38,14 +37,14 @@ assign D = _OE? {DWIDTH{1'bz}}: dout;
    begin
      if (!_WE) begin
         dout = {DWIDTH{1'bz}};
-        mem[A] = D;
+        Mem[A] = D;
      end
    end
 
   always @(_OE or A)
    begin
       if (!_OE && _WE) 
-        dout = mem[A];
+        dout = Mem[A];
 
         if (dout == 8'bxxxxxxxx) dout=99; // MARKER VALUE FOR UNASSIGNED - TEMPORARY
    end
@@ -53,7 +52,7 @@ assign D = _OE? {DWIDTH{1'bz}}: dout;
   integer i;
   initial begin
     for(i=0;i<DEPTH;i=i+1)
-       mem[i]={DWIDTH{1'bx}};
+       Mem[i]={DWIDTH{1'bx}};
   end
 
 endmodule

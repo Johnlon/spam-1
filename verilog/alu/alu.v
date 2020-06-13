@@ -18,8 +18,6 @@ module alu #(parameter LOG=0) (
     input  [7:0] x,
     input  [7:0] y,
     input  [4:0] alu_op,
-    input  force_alu_op_to_passx,
-    input  force_x_val_to_zero,
     input  _flag_cin,
     output [8*8:0] OP_OUT
 );
@@ -64,46 +62,27 @@ module alu #(parameter LOG=0) (
     logic [8:0] tmp = 0;
     assign _flag_cout = ! tmp[8];
     assign _flag_z = o != 0;
-//     always @(*) 
- //        $display("alu  : x=%-8b y=%-8b o=%-8b xin=%8b xout=%8b forcepassx=%1b aluopin=%b opeff=%d", x,y,o,xin,xout, force_alu_op_to_passx, aluopin, alu_op_effective);
 
     localparam AtoB=1'b1;
 
-    //tri [7:0] xout;
-    tri0 [7:0] xout;
-    wire [7:0] xin = x;
-    hct74245 #(.NAME("F_X_to_0")) bufX(.A(xin), .B(xout), .dir(AtoB), .nOE(force_x_val_to_zero)); 
-    //pulldown pullXToZero[7:0](xout);
-
-    tri0 [7:0] alu_op_out;
-    wire [7:0] alu_op_in = {3'b0, alu_op};
-    wire [4:0] alu_op_effective;
-    assign alu_op_effective = alu_op_out[4:0];
-
-    hct74245 #(.NAME("F_OP_PASSX")) bufOp(.A(alu_op_in), .B(alu_op_out), .dir(AtoB), .nOE(force_alu_op_to_passx)); 
-    //pulldown pullOpToZero[7:0](alu_op_out);
-    
     wire [7:0] cin8 = {7'b0, !_flag_cin};
 
     if (LOG) always @(*) 
          $display("%9t ALU", $time,
-         " aluop=(%d) %-s ", alu_op, OP_NAME, 
+         " aluop=(%d) '%1s' ", alu_op, OP_NAME, // %1s causes string to lose trailing space
          " result=%08b(%3d) ", o, o,
-         " x=%08b(%3d) ", xout, xout,
+         " x=%08b(%3d) ", x, x,
          " y=%08b(%3d) ", y, y,
-         " xin=%08b(%3d) ", x, x,
-         "  passx=%1b", force_alu_op_to_passx, 
-         "  x_to_0=%1b", force_x_val_to_zero, 
-         "   _cin=%1b ", _flag_cin,
+         " _cin=%1b ", _flag_cin,
          " _cout=%1b ", _flag_cout,
          );
 
 
     always @* begin
-        case (alu_op_effective)
+        case (alu_op)
             OP_A: begin
                 OP_NAME = "A";
-                ALU_Result = xout;
+                ALU_Result = x;
                 tmp=0;
             end
             OP_B: begin
@@ -118,8 +97,8 @@ module alu #(parameter LOG=0) (
             end
             OP_MINUS_A: begin
                 OP_NAME = "-A";
-                ALU_Result = -xout;
-                tmp = -{1'b0,xout};
+                ALU_Result = -x;
+                tmp = -{1'b0,x};
             end
             OP_MINUS_B: begin
                 OP_NAME = "-B";
@@ -128,8 +107,8 @@ module alu #(parameter LOG=0) (
             end
             OP_A_PLUS_1: begin
                 OP_NAME = "A+1";
-                ALU_Result = xout+1;
-                tmp = {1'b0,xout}+1;
+                ALU_Result = x+1;
+                tmp = {1'b0,x}+1;
             end
             OP_B_PLUS_1: begin
                 OP_NAME = "B+1";
@@ -138,8 +117,8 @@ module alu #(parameter LOG=0) (
             end
             OP_A_MINUS_1: begin
                 OP_NAME = "A-1";
-                ALU_Result = xout-1;
-                tmp = {1'b0,xout}-1;
+                ALU_Result = x-1;
+                tmp = {1'b0,x}-1;
             end
             OP_B_MINUS_1: begin
                 OP_NAME = "B-1";
@@ -148,35 +127,35 @@ module alu #(parameter LOG=0) (
             end
             OP_A_OR_B: begin
                 OP_NAME = "OR";
-                ALU_Result = xout | y;
+                ALU_Result = x | y;
                 tmp=0;
             end
             OP_A_AND_B: begin
                 OP_NAME = "AND";
-                ALU_Result = xout & y;
+                ALU_Result = x & y;
                 tmp=0;
             end
             OP_A_PLUS_B: begin 
                 OP_NAME = "PLUS";
-                ALU_Result = xout + y + cin8;
-                tmp = {1'b0,xout} + {1'b0,y} + cin8;
+                ALU_Result = x + y + cin8;
+                tmp = {1'b0,x} + {1'b0,y} + cin8;
             end
             OP_A_MINUS_B: begin
                 OP_NAME = "MINUS";
-                ALU_Result = xout - y - cin8;
-                tmp = {1'b0,xout} - {1'b0,y} - cin8;
+                ALU_Result = x - y - cin8;
+                tmp = {1'b0,x} - {1'b0,y} - cin8;
             end
 
             OP_A_TIMES_B_HI: begin
                 OP_NAME = "*HI";
-                TimesResult = (xout * y);
+                TimesResult = (x * y);
                 ALU_Result = TimesResult[15:8];
                 tmp=0;
             end
 
             OP_A_TIMES_B_LO: begin
                 OP_NAME = "*LO";
-                TimesResult = (xout * y);
+                TimesResult = (x * y);
                 ALU_Result = TimesResult[7:0];
                 tmp=0;
             end
@@ -184,7 +163,7 @@ module alu #(parameter LOG=0) (
             default: begin
                 //ALU_Result = 8'b11111111;
                 ALU_Result = 8'bxzxzxzxz;
-                $sformat(OP_NAME,"? %02x ?",alu_op_effective);
+                $sformat(OP_NAME,"? %02x ?",alu_op);
                 $display("%9t !!!!!!!!!!!!!!!!!!!!!!!!!!!! RANDOM ALU OUT !!!!!!!!!!!!!!!!!!!!!!", $time);
             end
 

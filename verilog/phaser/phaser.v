@@ -25,7 +25,7 @@ module phaser #(parameter LOG=0)
 
     output [9:0] seq,
 
-    output _phaseFetch, phaseFetch , phaseDecode , phaseExec
+    output _phaseFetch, phaseFetch , phaseDecode , _phaseExec, phaseExec
 );
 
     wire _co; 
@@ -56,6 +56,7 @@ module phaser #(parameter LOG=0)
     sr phase3(.s(phaseExec_begin), .r(phaseExec_end), .q(phaseExec));
 
     assign #(9) _phaseFetch = !phaseFetch; // INVERTER : dont use _Q as this is NOT guaranteed to be invcerse of Q
+    assign #(9) _phaseExec = !phaseExec; // INVERTER : dont use _Q as this is NOT guaranteed to be invcerse of Q
     
     if (LOG)    
     always @* 

@@ -236,7 +236,7 @@ module address_mode_decoder #(parameter LOG=1)
     and #(10) o2(_addrmode_immediate , _decoded[4], _decoded[5], _decoded[6]);
 
 
-    if (1)    
+    if (0)    
     always @ * begin;
          $display("%9t ADDRMODE_DECODE", $time,
             " ctrl=%3b _decoded=%08b", ctrl, _decoded,
@@ -309,7 +309,7 @@ module op_decoder #(parameter LOG=1)
     hct74245ab tdev_eq_ram(.A({3'b0, control.TDEV_ram}), .B(targ_dev_out), .nOE(_op_ram_immed_eq_dev)); // only op_ram_immed_eq_dev has targ forced to RAM
     assign targ_dev = targ_dev_out[4:0];
 
-    // l device sel
+    // l device sel - not always meaningful but hard wired as it doesn't move around on instruction
     assign lbus_dev = rom_data[12:9];
 
     // r device sel
@@ -325,7 +325,7 @@ module op_decoder #(parameter LOG=1)
 
     // aluop
     tri [7:0] aluop_out;
-    wire #(10) _force_passr = _force_source_rom & _op_dev_eq_ram_immed; // source ram or rom means passr : 2 INPUT AND GATE
+    wire #(10) _force_passr = _force_source_rom & _op_dev_eq_ram_immed & _force_source_instreg; // source ram or rom or ireg means passr : 3 INPUT AND GATE
     hct74245ab aluopfrom_instruction(.A({3'b0, rom_data[4:0]}), .B(aluop_out), .nOE(_op_dev_eq_xy_alu));
     hct74245ab aluop_eq_passl(.A({3'b0, alu_func.ALUOP_PASSL}), .B(aluop_out), .nOE(_op_ram_immed_eq_dev));
     hct74245ab aluop_eq_passr(.A({3'b0, alu_func.ALUOP_PASSR}), .B(aluop_out), .nOE(_force_passr));
