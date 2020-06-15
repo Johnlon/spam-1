@@ -567,7 +567,7 @@ module test();
 
     end
 
- integer count;
+    integer count;
     integer phaseFetchLen=1;
     integer phaseDecodeLen=1;
     integer phaseExecLen=1;
