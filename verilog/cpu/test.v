@@ -1,5 +1,5 @@
 // ADDRESSING TERMINOLOGY
-//  IMMEDIATE ADDRESSING = INSTRUCITON CONTAINS THE DATA TO USE
+//  IMMEDIATE ADDRESSING = INSTRUCTION CONTAINS THE CONSTANT VALUE DATA TO USE
 //  DIRECT ADDRESSING = INSTRUCTION CONTAINS THE ADDRESS IN MEMORY OF THE DATA TO USE
 //  REGISTER ADDRESSING = INSTRUCTION CONTAINS THE NAME OF THE REGISTER FROM WHICH TO FETCH THE DATA
 
@@ -121,7 +121,7 @@ module test();
 
     op_decoder #(.LOG(0)) op_decode(.data_hi(instruction_hi), .data_mid(instruction_mid), .data_lo(instruction_lo), .rbus_dev, .lbus_dev, .targ_dev, .aluop);
 
-    address_mode_decoder #(.LOG(1)) addr_decode( 
+    memory_address_mode_decoder #(.LOG(1)) addr_decode( 
         .ctrl(instruction_hi[7:5]), 
         .phaseFetch, ._phaseFetch, .phaseDecode, .phaseExec, 
         ._addrmode_pc, ._addrmode_register, ._addrmode_direct 

@@ -210,7 +210,7 @@ module control;
 
 endmodule: control
 
-module address_mode_decoder #(parameter LOG=1) 
+module memory_address_mode_decoder #(parameter LOG=1) 
 (
     input [2:0] ctrl,
 
@@ -265,7 +265,7 @@ module address_mode_decoder #(parameter LOG=1)
     endtask
 
 
-endmodule : address_mode_decoder
+endmodule : memory_address_mode_decoder
 
 module op_decoder #(parameter LOG=1) 
 (

@@ -17,7 +17,7 @@ module test();
 
     wire _addrmode_register, _addrmode_pc, _addrmode_direct;
 
-    address_mode_decoder #(.LOG(0)) amode_decoder( .ctrl, 
+    memory_address_mode_decoder #(.LOG(0)) amode_decoder( .ctrl, 
                                 .phaseFetch, .phaseDecode, .phaseExec, ._phaseFetch, 
                                 ._addrmode_pc, ._addrmode_register, ._addrmode_direct);
 
