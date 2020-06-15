@@ -10,9 +10,9 @@ parameter [2:0] op_DEV_eq_ALU_sel       = 0; // == RBUSDEV=ROM[8:5]    LBUSDEV=R
 parameter [2:0] op_DEV_eq_CONST8_sel    = 1; // == RBUSDEV='ROM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=REGISTER  
 parameter [2:0] op_DEVP_eq_CONST16_sel  = 2; // == RBUSDEV='ROM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=REGISTER  // stretch objective - load some fixed reg pair (eg if A is targ then A*B, if MARLO then its MARLO+HI)
 // op 3 unused
-parameter [2:0] op_DEV_eq_ROM_ABS_sel   = 4; // == RBUSDEV='ROM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=IMMEDIATE // MUST BE VIA IR for all 3 bytes otherwise indexing the ROM using ROM[15:0] will change the logic mid exec
-parameter [2:0] op_DEV_eq_RAM_ABS_sel   = 5; // == RBUSDEV='RAM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=IMMEDIATE 
-parameter [2:0] op_RAM_ABS_eq_DEV_sel   = 6; // == RBUSDEV=[19:16]     LBUSDEV=XXXX        ALUOP='PASSL'    TARG='RAM'      ADDRMODE=IMMEDIATE // LBUS WILL TRANSMIT A REGISTER
+parameter [2:0] op_DEV_eq_ROM_ABS_sel   = 4; // == RBUSDEV='ROM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=DIRECT // MUST BE VIA IR for all 3 bytes otherwise indexing the ROM using ROM[15:0] will change the logic mid exec
+parameter [2:0] op_DEV_eq_RAM_ABS_sel   = 5; // == RBUSDEV='RAM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=DIRECT 
+parameter [2:0] op_RAM_ABS_eq_DEV_sel   = 6; // == RBUSDEV=[19:16]     LBUSDEV=XXXX        ALUOP='PASSL'    TARG='RAM'      ADDRMODE=DIRECT // LBUS WILL TRANSMIT A REGISTER
 // op 7 unused
 */
 
@@ -31,7 +31,7 @@ parameter [2:0] op_RAM_ABS_eq_DEV_sel   = 6; // == RBUSDEV=[19:16]     LBUSDEV=X
 `define DECODE_PHASE   logic [6*8-1:0] sPhase; assign sPhase = `DECODE_PHASES;
 
 // unlike an assign this executes instantaneously but not referentially transparent
-`define DECODE_ADDRMODES (!_addrmode_pc ? "pc" : !_addrmode_register?  "reg" : !_addrmode_immediate? "imm": "---") 
+`define DECODE_ADDRMODES (!_addrmode_pc ? "pc" : !_addrmode_register?  "reg" : !_addrmode_direct? "dir": "---") 
 `define DECODE_ADDRMODE  logic [3*8-1:0] sAddrMode; assign sAddrMode = `DECODE_ADDRMODES;
 
 // verilator lint_off ASSIGNDLY
@@ -50,16 +50,16 @@ module control;
     localparam _AMODE_NONE=3'b111;
     localparam _AMODE_PC=3'b011;
     localparam _AMODE_REG=3'b101;
-    localparam _AMODE_IMM=3'b110;
+    localparam _AMODE_DIR=3'b110;
 
     // ops
     localparam [2:0] OP_dev_eq_xy_alu =0;
     localparam [2:0] OP_dev_eq_const8 =1;
     localparam [2:0] OP_dev_eq_const16 =2;
     localparam [2:0] OP_3_unused =3;
-    localparam [2:0] OP_dev_eq_rom_immed =4;
-    localparam [2:0] OP_dev_eq_ram_immed =5;
-    localparam [2:0] OP_ram_immed_eq_dev =6;
+    localparam [2:0] OP_dev_eq_rom_direct =4;
+    localparam [2:0] OP_dev_eq_ram_direct =5;
+    localparam [2:0] OP_ram_direct_eq_dev =6;
     localparam [2:0] OP_7_unused =7;
 
     // sources
@@ -177,7 +177,7 @@ module control;
     end
     endfunction
 
-    function string fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate); 
+    function string fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct); 
     begin
             fAddrMode = `DECODE_ADDRMODES;
     end
@@ -194,9 +194,9 @@ module control;
                  control.OP_dev_eq_const8 : opName = "dev_eq_const8";
                  control.OP_dev_eq_const16 : opName = "dev_eq_const16";
                  control.OP_3_unused : opName = "3_unused";
-                 control.OP_dev_eq_rom_immed : opName = "dev_eq_rom_immed";
-                 control.OP_dev_eq_ram_immed : opName = "dev_eq_ram_immed";
-                 control.OP_ram_immed_eq_dev : opName = "ram_immed_eq_dev";
+                 control.OP_dev_eq_rom_direct : opName = "dev_eq_rom_direct";
+                 control.OP_dev_eq_ram_direct : opName = "dev_eq_ram_direct";
+                 control.OP_ram_direct_eq_dev : opName = "ram_direct_eq_dev";
                  control.OP_7_unused : opName = "7_unused";
 
                  default: begin
@@ -221,11 +221,11 @@ module address_mode_decoder #(parameter LOG=1)
 
     output _addrmode_pc, // enable PC onto address bus
     output _addrmode_register, // enable MAR onto address bus - register direct addressing - op 0
-    output _addrmode_immediate // enable ROM[15:0] onto address bus, needs an IR in implementation - direct addressing
+    output _addrmode_direct // enable ROM[15:0] onto address bus, needs an IR in implementation - direct addressing
 );
 
     // ADDRESS MODE DECODING =====    
-    // as organised above then OPS0/2 are all REGISTER and OPS 4/5/6 are all IMMEDIATE and OP 1 is PC
+    // as organised above then OPS0/2 are all REGISTER and OPS 4/5/6 are all DIRECT and OP 1 is PC
     wire [7:0] _decoded;
     hct74138 decode_op( .Enable1_bar(1'b0), .Enable2_bar(1'b0), .Enable3(_phaseFetch), .A(ctrl), .Y(_decoded)); 
 
@@ -233,7 +233,7 @@ module address_mode_decoder #(parameter LOG=1)
 
     // op 3 & 7 not defined yet
     and #(10) o1(_addrmode_register, _decoded[0], _decoded[1], _decoded[2]); 
-    and #(10) o2(_addrmode_immediate , _decoded[4], _decoded[5], _decoded[6]);
+    and #(10) o2(_addrmode_direct , _decoded[4], _decoded[5], _decoded[6]);
 
 
     if (0)    
@@ -241,11 +241,11 @@ module address_mode_decoder #(parameter LOG=1)
          $display("%9t ADDRMODE_DECODE", $time,
             " ctrl=%3b _decoded=%08b", ctrl, _decoded,
     "_addrmode_pc=%1b, _phaseFetch=%1b , _decoded[1]=%1b", _addrmode_pc, _phaseFetch , _decoded[1],
-//            " isImm=%b ", isImm,
+//            " isDir=%b ", isDir,
  //           " isReg=%b ", isReg,
             " phase(FDE=%1b%1b%1b) ", phaseFetch, phaseDecode, phaseExec, 
-            "    _addrmode(pc=%b,reg=%b,imm=%b)", _addrmode_pc, _addrmode_register, _addrmode_immediate,
-            " _amode=%3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate)
+            "    _addrmode(pc=%b,reg=%b,dir=%b)", _addrmode_pc, _addrmode_register, _addrmode_direct,
+            " _amode=%3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct)
             );
     end
 
@@ -255,11 +255,11 @@ module address_mode_decoder #(parameter LOG=1)
             " phase(FDE=%1b%1b%1b) ", phaseFetch, phaseDecode, phaseExec
             );
          $display("%9t AMODE_DECODER", $time,
-  //          " isImm=%b ", isImm,
+  //          " isDir=%b ", isDir,
    //         " isReg=%b ", isReg,
             " ctrl=%3b _decoded=%08b", ctrl, _decoded,
-            " _addrmode(pc=%b,reg=%b,imm=%b)", _addrmode_pc, _addrmode_register, _addrmode_immediate,
-            " _amode=%3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate)
+            " _addrmode(pc=%b,reg=%b,dir=%b)", _addrmode_pc, _addrmode_register, _addrmode_direct,
+            " _amode=%3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct)
             );
     end
     endtask
@@ -286,15 +286,15 @@ module op_decoder #(parameter LOG=1)
     wire _op_dev_eq_const8;
     wire _op_dev_eq_const16;
     wire _op_3_unused;
-    wire _op_dev_eq_rom_immed;
-    wire _op_dev_eq_ram_immed;
-    wire _op_ram_immed_eq_dev;
+    wire _op_dev_eq_rom_direct;
+    wire _op_dev_eq_ram_direct;
+    wire _op_ram_direct_eq_dev;
     wire _op_7_unused;
     assign {
         _op_7_unused,
-        _op_ram_immed_eq_dev,
-        _op_dev_eq_ram_immed,
-        _op_dev_eq_rom_immed,
+        _op_ram_direct_eq_dev,
+        _op_dev_eq_ram_direct,
+        _op_dev_eq_rom_direct,
         _op_3_unused,
         _op_dev_eq_const16,
         _op_dev_eq_const8,
@@ -304,33 +304,33 @@ module op_decoder #(parameter LOG=1)
 
      // target device sel
     tri [7:0] targ_dev_out; 
-    wire #(10) op_ram_immed_eq_dev = ! _op_ram_immed_eq_dev;  // NOT GATE
-    hct74245ab tdev_from_instruction(.A({3'bz, rom_data[20:16]}), .B(targ_dev_out), .nOE(op_ram_immed_eq_dev)); // ie when NOT a ram immed then user the 20:16
-    hct74245ab tdev_eq_ram(.A({3'b0, control.TDEV_ram}), .B(targ_dev_out), .nOE(_op_ram_immed_eq_dev)); // only op_ram_immed_eq_dev has targ forced to RAM
+    wire #(10) op_ram_direct_eq_dev = ! _op_ram_direct_eq_dev;  // NOT GATE
+    hct74245ab tdev_from_instruction(.A({3'bz, rom_data[20:16]}), .B(targ_dev_out), .nOE(op_ram_direct_eq_dev)); // ie when NOT a ram direct then user the 20:16
+    hct74245ab tdev_eq_ram(.A({3'b0, control.TDEV_ram}), .B(targ_dev_out), .nOE(_op_ram_direct_eq_dev)); // only op_ram_direct_eq_dev has targ forced to RAM
     assign targ_dev = targ_dev_out[4:0];
 
     // l device sel - not always meaningful but hard wired as it doesn't move around on instruction
     tri [7:0] lbus_dev_out;
-    hct74245ab ldev_from_instruction(.A({4'b0, rom_data[12:9]}), .B(lbus_dev_out), .nOE(op_ram_immed_eq_dev));
-    hct74245ab ldev_from_instruction_ramimmed_eq_dev(.A({4'b0, rom_data[19:16]}), .B(lbus_dev_out), .nOE(_op_ram_immed_eq_dev));
+    hct74245ab ldev_from_instruction(.A({4'b0, rom_data[12:9]}), .B(lbus_dev_out), .nOE(op_ram_direct_eq_dev));
+    hct74245ab ldev_from_instruction_ramdirect_eq_dev(.A({4'b0, rom_data[19:16]}), .B(lbus_dev_out), .nOE(_op_ram_direct_eq_dev));
     assign lbus_dev = lbus_dev_out[3:0];
 
     // r device sel
     tri [7:0] rbus_dev_out;
-    wire _force_source_rom = _op_dev_eq_rom_immed; // WIRE
+    wire _force_source_rom = _op_dev_eq_rom_direct; // WIRE
     wire #(10) _force_source_instreg = _op_dev_eq_const8 &  _op_dev_eq_const16; // 2 INPUT AND GATE
     hct74245ab rdev_from_instruction_for_aluop(.A({4'b0, rom_data[8:5]}), .B(rbus_dev_out), .nOE(_op_dev_eq_xy_alu));
-//    hct74245ab rdev_from_instruction_ramimmed_eq_dev(.A({4'b0, rom_data[19:16]}), .B(rbus_dev_out), .nOE(_op_ram_immed_eq_dev));
-    hct74245ab rdev_eq_ram(.A({4'b0, control.DEV_ram}), .B(rbus_dev_out), .nOE(_op_dev_eq_ram_immed));
+//    hct74245ab rdev_from_instruction_ramdirect_eq_dev(.A({4'b0, rom_data[19:16]}), .B(rbus_dev_out), .nOE(_op_ram_direct_eq_dev));
+    hct74245ab rdev_eq_ram(.A({4'b0, control.DEV_ram}), .B(rbus_dev_out), .nOE(_op_dev_eq_ram_direct));
     hct74245ab rdev_eq_rom(.A({4'b0, control.DEV_rom}), .B(rbus_dev_out), .nOE(_force_source_rom));
     hct74245ab rdev_eq_instreg(.A({4'b0, control.DEV_instreg}), .B(rbus_dev_out), .nOE(_force_source_instreg));
     assign rbus_dev = rbus_dev_out[3:0]; 
 
     // aluop
     tri [7:0] aluop_out;
-    wire #(10) _force_passr = _force_source_rom & _op_dev_eq_ram_immed & _force_source_instreg; // source ram or rom or ireg means passr : 3 INPUT AND GATE
+    wire #(10) _force_passr = _force_source_rom & _op_dev_eq_ram_direct & _force_source_instreg; // source ram or rom or ireg means passr : 3 INPUT AND GATE
     hct74245ab aluopfrom_instruction(.A({3'b0, rom_data[4:0]}), .B(aluop_out), .nOE(_op_dev_eq_xy_alu));
-    hct74245ab aluop_eq_passl(.A({3'b0, alu_func.ALUOP_PASSL}), .B(aluop_out), .nOE(_op_ram_immed_eq_dev));
+    hct74245ab aluop_eq_passl(.A({3'b0, alu_func.ALUOP_PASSL}), .B(aluop_out), .nOE(_op_ram_direct_eq_dev));
     hct74245ab aluop_eq_passr(.A({3'b0, alu_func.ALUOP_PASSR}), .B(aluop_out), .nOE(_force_passr));
     assign aluop = aluop_out[4:0];
 

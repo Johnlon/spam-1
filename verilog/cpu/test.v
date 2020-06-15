@@ -1,4 +1,7 @@
-// FIXME  : CORRECT THE IMMED/DIRECT/REGISTER ADDRESSING TERMINOLOGY
+// ADDRESSING TERMINOLOGY
+//  IMMEDIATE ADDRESSING = INSTRUCITON CONTAINS THE DATA TO USE
+//  DIRECT ADDRESSING = INSTRUCTION CONTAINS THE ADDRESS IN MEMORY OF THE DATA TO USE
+//  REGISTER ADDRESSING = INSTRUCTION CONTAINS THE NAME OF THE REGISTER FROM WHICH TO FETCH THE DATA
 
 //#!/usr/bin/iverilog -Ttyp -Wall -g2012 -gspecify -o test.vvp 
 `include "../control/control.v"
@@ -34,8 +37,8 @@ module test();
     wire [4:0] targ_dev;
     wire [4:0] aluop;
 
-    wire _addrmode_register, _addrmode_pc, _addrmode_immediate;
-    wire [2:0] _addrmode = {_addrmode_pc, _addrmode_register, _addrmode_immediate}; 
+    wire _addrmode_register, _addrmode_pc, _addrmode_direct;
+    wire [2:0] _addrmode = {_addrmode_pc, _addrmode_register, _addrmode_direct}; 
 
     wire phaseFetch, phaseDecode, phaseExec, _phaseFetch, _phaseExec;
     wire [2:0] phase = {phaseFetch, phaseDecode, phaseExec};
@@ -121,7 +124,7 @@ module test();
     address_mode_decoder #(.LOG(1)) addr_decode( 
         .ctrl(instruction_hi[7:5]), 
         .phaseFetch, ._phaseFetch, .phaseDecode, .phaseExec, 
-        ._addrmode_pc, ._addrmode_register, ._addrmode_immediate 
+        ._addrmode_pc, ._addrmode_register, ._addrmode_direct 
     );
 
 
@@ -223,8 +226,8 @@ module test();
     // ROM OUT TO RBUS VIA IR PERMITS SIMULTANEOUS REG ADDRESSING OF RAM
     hct74245ab rom_instreg_rbus_buf(.A(instruction_lo), .B(rbus), .nOE(_rdev_instreg));
 
-    hct74245ab rom_addrbuslo_buf(.A(instruction_lo), .B(address_bus[7:0]), .nOE(_addrmode_immediate)); // optional - needed for immed addressing
-    hct74245ab rom_addrbushi_buf(.A(instruction_mid), .B(address_bus[15:8]), .nOE(_addrmode_immediate)); // optional - needed for immed addressing
+    hct74245ab rom_addrbuslo_buf(.A(instruction_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
+    hct74245ab rom_addrbushi_buf(.A(instruction_mid), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
 
     // RAM =============================================================================================
 
@@ -292,7 +295,8 @@ module test();
         `define RAM(A) ram64.Mem[A]
 
         // CODE
-        // dev_eq_rom_immed tdev=00010(MARLO), address=ffaa     
+
+        // dev_eq_rom_direct tdev=00010(MARLO), address=ffaa     
         `ROM(0)= { 8'b100_00010, 16'hffaa };                // MARLO=whats at ROM address ffaa ie 42
 
         // dev_eq_const8 tdev=00011(MARHI), const8=0           
@@ -304,10 +308,10 @@ module test();
         // dev_eq_const8 tdev=00000(RAM[MAR]), const8=0x22           
         `ROM(3)= { 8'b001_00000, 8'hx, 8'h22 };                  // RAM[MAR=0043]=const h22      implies ALUOP=R
 
-        // dev_eq_ram_immed tdev=00010(MARLO), address=ffaa     
+        // dev_eq_ram_direct tdev=00010(MARLO), address=ffaa     
         `ROM(4)= { 8'b101_00010, 16'h0043 };                // MARLO=RAM[MAR=0043]=h22     implies ALUOP=R
 
-        // ram_immed_eq_dev tdev=00001(RAM), rdev=MARLO  address=abcd     
+        // ram_direct_eq_dev tdev=00001(RAM), rdev=MARLO  address=abcd     
         `ROM(5)= { 8'b110_00010, 16'habcd };                // RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R
 
         // DATA 
@@ -383,7 +387,7 @@ module test();
             `Equals( phase, control.PHASE_DECODE)
             `Equals(PCHI, 8'b0)
             `Equals(PCLO, 8'b0)
-            `Equals( _addrmode, control._AMODE_IMM);
+            `Equals( _addrmode, control._AMODE_DIR);
             `Equals(address_bus, 16'hffaa); // FROM ROM[15:0] 
             `Equals( seq, `SEQ(count+1+phaseFetchLen));
         end
@@ -395,7 +399,7 @@ module test();
             `Equals( phase, control.PHASE_EXEC)
             `Equals(PCHI, 8'b0)
             `Equals(PCLO, 8'b0)
-            `Equals( _addrmode, control._AMODE_IMM);
+            `Equals( _addrmode, control._AMODE_DIR);
             `Equals(address_bus, 16'hffaa); // FROM ROM[15:0] 
             CLK_DN;
             #TCLK
@@ -515,7 +519,7 @@ module test();
         `Equals(`RAM(16'h0043), 8'h22);
 
         `DISPLAY("init 5 - MARLO=RAM[MAR=0x0043]=0x22")
-        // dev_eq_ram_immed tdev=00010(REGA), address=ffaa     
+        // dev_eq_ram_direct tdev=00010(REGA), address=ffaa     
         for (count =0; count < 1* (phaseFetchLen+phaseDecodeLen); count++) begin
             #TCLK
             CLK_UP;
@@ -532,7 +536,7 @@ module test();
         `Equals(MARHI.Q, 8'h00)
 
         `DISPLAY("init 6 - // RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R")
-        // dev_eq_ram_immed tdev=00010(REGA), address=ffaa     
+        // dev_eq_ram_direct tdev=00010(REGA), address=ffaa     
         for (count =0; count < 1* (phaseFetchLen+phaseDecodeLen); count++) begin
             #TCLK
             CLK_UP;
@@ -588,7 +592,7 @@ module test();
                 " op=%d(%-s)", instruction_hi[7:5], control.opName(instruction_hi[7:5]),
                  " FDE=%1b%1b%1b(%-s)", phaseFetch, phaseDecode, phaseExec, control.fPhase(phaseFetch, phaseDecode, phaseExec));
             $display ("%9t ", $time,  "DUMP  ",
-                 " amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate),
+                 " amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
                  " addrbus=0x%4x", address_bus);
             $display ("%9t ", $time,  "DUMP  ",
                  " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus);
@@ -630,7 +634,7 @@ module test();
         $display ("%9t ", $time,  "MON     ",
                  "rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
                  " seq=%-2d", $clog2(seq)+1,
-                 " amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate),
+                 " amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
                  " addrbus=0x%4x", address_bus,
                  " FDE=%-s  %1b%1b%1b", control.fPhase(phaseFetch, phaseDecode, phaseExec), phaseFetch, phaseDecode, phaseExec,
                  " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus,
@@ -661,8 +665,8 @@ module test();
     end
 
     if (0) always @(*) begin
-        $display("%9t", $time, " control._AMODE: PRI=%-s  %1b%1b%1b seq=%10b", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate), 
-                                                        _addrmode_pc, _addrmode_register, _addrmode_immediate, seq); 
+        $display("%9t", $time, " control._AMODE: PRI=%-s  %1b%1b%1b seq=%10b", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct), 
+                                                        _addrmode_pc, _addrmode_register, _addrmode_direct, seq); 
     end
 
     integer instCount = 0;
@@ -680,16 +684,16 @@ module test();
     end
 
     if (0) always @* 
-        $display ("%9t ", $time,  "ADDRESSING      amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate), " addrbus=0x%4x", address_bus);
+        $display ("%9t ", $time,  "ADDRESSING      amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct), " addrbus=0x%4x", address_bus);
 
     if (0) always @* 
         $display ("%9t ", $time,  "ROM      rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
-                " amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate),
+                " amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
                 " addrbus=0x%4x", address_bus);
         
     if (1) always @* 
         $display ("%9t ", $time,  "RAM      ram=%08b", ram64.D,
-                " amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate),
+                " amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
                 " addrbus=0x%4x", address_bus,
                 " _ram_in=%1b _gated_ram_in=%1b", _ram_in, _gated_ram_in,
                 );
@@ -701,7 +705,7 @@ module test();
         $display("%9t ", $time, "ROMBUFFS rom_addrbuslo_buf=0x%-2x", rom_addrbuslo_buf.B, 
             " rom_addrbus_hi_buf=0x%-2x", rom_addrbushi_buf.B,
             " instruction_hi=%8b", instruction_hi,
-            " _oe=%1b(_addrmode_immediate)", _addrmode_immediate
+            " _oe=%1b(_addrmode_direct)", _addrmode_direct
             ); 
 
                 
@@ -758,25 +762,25 @@ module test();
         // permits a situation where the control lines conflict.
         // this is ok as long as they settle quickly and are settled before exec phase.
         if (_RESET_SWITCH & phaseDecode) begin
-            if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_immediate === 1'bx) begin
-                $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b", _addrmode_pc , _addrmode_register , _addrmode_immediate );
+            if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_direct === 1'bx) begin
+                $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b", _addrmode_pc , _addrmode_register , _addrmode_direct );
                 $display("\n\n%9t ", $time, " ABORT");
                 $finish();
                 //#SETTLE_TOLERANCE
                 // only one may be low at a time
-                //if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_immediate === 1'bx) begin
+                //if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_direct === 1'bx) begin
                 //    DUMP;
                 //    $display("\n\n%9t ", $time, " ABORT");
                 //    $finish();
                 //end
             end
-            if (_addrmode_pc + _addrmode_register + _addrmode_immediate < 2) begin
-                $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b sAddrMode=%-s", _addrmode_pc , _addrmode_register , _addrmode_immediate,
-                                            control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_immediate));
+            if (_addrmode_pc + _addrmode_register + _addrmode_direct < 2) begin
+                $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b sAddrMode=%-s", _addrmode_pc , _addrmode_register , _addrmode_direct,
+                                            control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct));
                 $display("\n\n%9t ", $time, " ABORT");
                 $finish();
                 //#SETTLE_TOLERANCE
-                //if (_addrmode_pc + _addrmode_register + _addrmode_immediate < 2) begin
+                //if (_addrmode_pc + _addrmode_register + _addrmode_direct < 2) begin
                 //    DUMP;
                 //    $display("\n\n%9t ", $time, " ABORT");
                 //    $finish();
