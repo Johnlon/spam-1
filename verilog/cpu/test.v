@@ -1,3 +1,4 @@
+
 // ADDRESSING TERMINOLOGY
 //  IMMEDIATE ADDRESSING = INSTRUCTION CONTAINS THE CONSTANT VALUE DATA TO USE
 //  DIRECT ADDRESSING = INSTRUCTION CONTAINS THE ADDRESS IN MEMORY OF THE DATA TO USE
@@ -288,6 +289,8 @@ module test();
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     // TESTS ===========================================================================================
     ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // PSEUDO ASSEMBLER
     function [3:0] to4([3:0] IN);
         to4 = IN;
     endfunction  
@@ -306,10 +309,11 @@ module test();
 
     `define DEV_EQ_ROM_DIRECT(TARGET, ADDRESS) { control.OP_dev_eq_rom_direct, to5(`toDEV(TARGET)), to16(ADDRESS) }
     `define DEV_EQ_CONST8(TARGET, CONST8) { control.OP_dev_eq_const8, to5(`toDEV(TARGET)), 8'hx, to8(CONST8) }
-    `define DEV_EQ_XY_ALU(TARGET, SRCA, SRCB, ALUOP) { control.OP_dev_eq_xy_alu, to5(`toDEV(TARGET)), 3'bzzz, to4(`toDEV(SRCA)), to4(`toDEV(SRCB)), to5(`toALUOP(ALUOP))}     // MARLO=MARLO+1 = 43 (ALUOP=A+1)
+    `define DEV_EQ_XY_ALU(TARGET, SRCA, SRCB, ALUOP) { control.OP_dev_eq_xy_alu, to5(`toDEV(TARGET)), 3'bzzz, to4(`toDEV(SRCA)), to4(`toDEV(SRCB)), to5(`toALUOP(ALUOP))}
     `define DEV_EQ_RAM_DIRECT(TARGET, ADDRESS) { control.OP_dev_eq_ram_direct, to5(control.DEV_``TARGET``), to16(ADDRESS) }
     `define RAM_DIRECT_EQ_DEV(ADDRESS, SRC) { control.OP_ram_direct_eq_dev, to5(`toDEV(SRC)), to16(ADDRESS) }
 
+    // SETUP ROM
     task INIT_ROM;
     begin
         `define ROM(A) {rom_hi.Mem[A], rom_mid.Mem[A], rom_lo.Mem[A]}
@@ -346,7 +350,7 @@ module test();
     end
     endtask : INIT_ROM
 
-    // tests
+    // TESTS
     initial begin
         localparam TCLK=1000;   // clock cycle
         INIT_ROM();
