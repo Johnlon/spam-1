@@ -1,3 +1,5 @@
+// FIXME MAKE ALL THE tri WIRES tri0
+
 /*
 This code generates a momentary address mode conflict during propagation of the signals when transitioning back to fetch.
 Wasn't able to avoid it without a lot more h/w. 
@@ -62,7 +64,7 @@ module control;
     localparam [2:0] OP_ram_direct_eq_dev =6;
     localparam [2:0] OP_7_unused =7;
 
-    // sources
+    // sources or dests
     localparam [3:0] DEV_ram = 0;
     localparam [3:0] DEV_rom = 1;
     localparam [3:0] DEV_marlo = 2;
@@ -80,33 +82,46 @@ module control;
     localparam [3:0] DEV_reg_not_used_1 = 14;
     localparam [3:0] DEV_instreg = 15;
 
+    // dests only
+    localparam [4:0] DEV_pchitmp = 16;
+    localparam [4:0] DEV_pclo= 17;
+    localparam [4:0] DEV_pc= 18;
+    localparam [4:0] DEV_jmpo= 19;
+    localparam [4:0] DEV_jmpz= 20;
+    localparam [4:0] DEV_jmpc= 21;
+    localparam [4:0] DEV_jmpdi= 22;
+    localparam [4:0] DEV_jmpdo= 23;
+
     // targets
     function [4:0] TDEV([3:0] x);
         TDEV = {1'b0, x};
     endfunction
 
-    `define TARG(DNAME) localparam [4:0] TDEV_``DNAME`` = {1'b0, DEV_``DNAME``};
-    `define TARGN(DNAME, N) localparam [4:0] TDEV_``DNAME`` = N;
+    // these can be src or dest
+    `define TARGL(DNAME) localparam [4:0] TDEV_``DNAME`` = {1'b0, DEV_``DNAME``};
 
-    `TARG(ram)
-    `TARG(rom)
-    `TARG(marlo)
-    `TARG(marhi)
-    `TARG(uart)
-    `TARG(rega)
-    `TARG(regb)
-    `TARG(regc)
-    `TARG(regd)
+    // dest only
+    `define TARGH(DNAME) localparam [4:0] TDEV_``DNAME`` = DEV_``DNAME``;
+
+    `TARGL(ram)
+    `TARGL(rom)
+    `TARGL(marlo)
+    `TARGL(marhi)
+    `TARGL(uart)
+    `TARGL(rega)
+    `TARGL(regb)
+    `TARGL(regc)
+    `TARGL(regd)
 
     // 9-15 - todo
-    `TARGN(pchitmp, 16)
-    `TARGN(pclo, 17)
-    `TARGN(pc, 18)
-    `TARGN(jmpo, 19)
-    `TARGN(jmpz, 20)
-    `TARGN(jmpc, 21)
-    `TARGN(jmpdi, 22)
-    `TARGN(jmpdo, 23)
+    `TARGH(pchitmp)
+    `TARGH(pclo)
+    `TARGH(pc)
+    `TARGH(jmpo)
+    `TARGH(jmpz)
+    `TARGH(jmpc)
+    `TARGH(jmpdi)
+    `TARGH(jmpdo)
     // 24-32 - todo
 
     function string devname([3:0] dev); 

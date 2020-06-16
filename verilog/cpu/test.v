@@ -220,10 +220,10 @@ module test();
     rom #(.AWIDTH(16)) rom_mid(._CS(1'b0), ._OE(1'b0), .A(address_bus));
     rom #(.AWIDTH(16)) rom_lo(._CS(1'b0), ._OE(1'b0), .A(address_bus)); 
     
-    // ROM OUT when direct rom addressing is being used
+    // ROM OUT to RBUS when direct rom addressing is being used
     hct74245ab rom_rbus_buf(.A(rom_lo.D), .B(rbus), .nOE(_rdev_rom));
 
-    // ROM OUT TO RBUS VIA IR PERMITS SIMULTANEOUS REG ADDRESSING OF RAM
+    // ROM OUT TO RBUS VIA IR is immediate addressing of that operand, and we can be simultaneously register (MAR) addressing the RAM
     hct74245ab rom_instreg_rbus_buf(.A(instruction_lo), .B(rbus), .nOE(_rdev_instreg));
 
     hct74245ab rom_addrbuslo_buf(.A(instruction_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
@@ -241,11 +241,11 @@ module test();
     hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
     hct74377 #(.LOG(0)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
 
-    hct74245ab marlo_lbus_buf(.A(MARLO.Q), .B(lbus), .nOE(_ldev_marlo)); // optional - needed for marlo arith
-    hct74245ab marlo_rbus_buf(.A(MARLO.Q), .B(rbus), .nOE(_rdev_marlo)); // optional - needed for marlo arith
+    hct74245ab marlo_lbus_buf(.A(MARLO.Q), .B(lbus), .nOE(_ldev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
+    hct74245ab marlo_rbus_buf(.A(MARLO.Q), .B(rbus), .nOE(_rdev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
 
-    hct74245ab marhi_lbus_buf(.A(MARHI.Q), .B(lbus), .nOE(_ldev_marhi)); // optional - needed for marlo arith
-    hct74245ab marhi_rbus_buf(.A(MARHI.Q), .B(rbus), .nOE(_rdev_marhi)); // optional - needed for marlo arith
+    hct74245ab marhi_lbus_buf(.A(MARHI.Q), .B(lbus), .nOE(_ldev_marhi)); // optional - needed for marlo arith so MAR appears as a GP register
+    hct74245ab marhi_rbus_buf(.A(MARHI.Q), .B(rbus), .nOE(_rdev_marhi)); // optional - needed for marlo arith so MAR appears as a GP register
 
     hct74245ab marhi_addrbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .nOE(_addrmode_register));
     hct74245ab marlo_addrbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register));
@@ -288,35 +288,61 @@ module test();
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     // TESTS ===========================================================================================
     ////////////////////////////////////////////////////////////////////////////////////////////////////
+    function [3:0] to4([3:0] IN);
+        to4 = IN;
+    endfunction  
+    function [4:0] to5([4:0] IN);
+        to5 = IN;
+    endfunction  
+    function [7:0] to8([7:0] IN);
+        to8 = IN;
+    endfunction  
+    function [15:0] to16([15:0] IN);
+        to16 = IN;
+    endfunction  
+
+    `define toDEV(DEVNAME) control.DEV_``DEVNAME``
+    `define toALUOP(OPNAME) alu_ops.OP_``OPNAME``
+
+    `define DEV_EQ_ROM_DIRECT(TARGET, ADDRESS) { control.OP_dev_eq_rom_direct, to5(`toDEV(TARGET)), to16(ADDRESS) }
+    `define DEV_EQ_CONST8(TARGET, CONST8) { control.OP_dev_eq_const8, to5(`toDEV(TARGET)), 8'hx, to8(CONST8) }
+    `define DEV_EQ_XY_ALU(TARGET, SRCA, SRCB, ALUOP) { control.OP_dev_eq_xy_alu, to5(`toDEV(TARGET)), 3'bzzz, to4(`toDEV(SRCA)), to4(`toDEV(SRCB)), to5(`toALUOP(ALUOP))}     // MARLO=MARLO+1 = 43 (ALUOP=A+1)
+    `define DEV_EQ_RAM_DIRECT(TARGET, ADDRESS) { control.OP_dev_eq_ram_direct, to5(control.DEV_``TARGET``), to16(ADDRESS) }
+    `define RAM_DIRECT_EQ_DEV(ADDRESS, SRC) { control.OP_ram_direct_eq_dev, to5(`toDEV(SRC)), to16(ADDRESS) }
 
     task INIT_ROM;
     begin
         `define ROM(A) {rom_hi.Mem[A], rom_mid.Mem[A], rom_lo.Mem[A]}
         `define RAM(A) ram64.Mem[A]
 
-        // CODE
-
-        // dev_eq_rom_direct tdev=00010(MARLO), address=ffaa     
-        `ROM(0)= { 8'b100_00010, 16'hffaa };                // MARLO=whats at ROM address ffaa ie 42
+        // CODE SEGMENT
+        `ROM(0)= `DEV_EQ_ROM_DIRECT(marlo, 'hffaa);
 
         // dev_eq_const8 tdev=00011(MARHI), const8=0           
-        `ROM(1)= { 8'b001_00011, 8'hx, 8'h0 };                  // MARHI=const 0      implies ALUOP=R
+        //`ROM(1)= { 8'b001_00011, 8'hx, 8'h0 };                  // MARHI=const 0      implies ALUOP=R
+        `ROM(1)= `DEV_EQ_CONST8(marhi, 0);                  // MARHI=const 0      implies ALUOP=R
 
         // dev_eq_xy_alu tdev=00010(MARLO) ldev=0010(MARLO) rdev=0010(MARLO) alu=00101(5=A+1)
-        `ROM(2)= { 8'b000_00010, 16'bzzz_0010_0010_00101 };     // MARLO=MARLO+1 = 43 (ALUOP=A+1)
+        //`ROM(2)= { 8'b000_00010, 16'bzzz_0010_0010_00101 };     // MARLO=MARLO+1 = 43 (ALUOP=A+1)
+        `ROM(2)= `DEV_EQ_XY_ALU(marlo, marlo, marlo, A_PLUS_1); 
 
         // dev_eq_const8 tdev=00000(RAM[MAR]), const8=0x22           
-        `ROM(3)= { 8'b001_00000, 8'hx, 8'h22 };                  // RAM[MAR=0043]=const h22      implies ALUOP=R
+        //`ROM(3)= { 8'b001_00000, 8'hx, 8'h22 };                  // RAM[MAR=0043]=const h22      implies ALUOP=R
+        `ROM(3)= `DEV_EQ_CONST8(ram, 'h22);
 
         // dev_eq_ram_direct tdev=00010(MARLO), address=ffaa     
-        `ROM(4)= { 8'b101_00010, 16'h0043 };                // MARLO=RAM[MAR=0043]=h22     implies ALUOP=R
+        //`ROM(4)= { 8'b101_00010, 16'h0043 };                // MARLO=RAM[MAR=0043]=h22     implies ALUOP=R
+        `ROM(4)= `DEV_EQ_RAM_DIRECT(marlo, 'h43);
 
         // ram_direct_eq_dev tdev=00001(RAM), rdev=MARLO  address=abcd     
-        `ROM(5)= { 8'b110_00010, 16'habcd };                // RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R
+        //`ROM(5)= { 8'b110_00010, 16'habcd };                // RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R
+        `ROM(5)= `RAM_DIRECT_EQ_DEV('habcd, marlo);
 
-        // DATA 
+        // DATA SEGMENT - ONLY LOWER 8 BITS ACCESSIBLE AT THE MOMENT AS ITS AN 8 BITS OF DATA CPU
         // initialise rom[ffaa] = 0x42
-        `ROM(16'hffaa) = { 8'b0, 8'b0, 8'h42 }; 
+        //`ROM(16'hffaa) = { 8'b0, 8'b0, 8'h42 }; 
+        `ROM('hffaa) = 'h42; 
+
     end
     endtask : INIT_ROM
 
