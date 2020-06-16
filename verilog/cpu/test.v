@@ -7,6 +7,7 @@
 //#!/usr/bin/iverilog -Ttyp -Wall -g2012 -gspecify -o test.vvp 
 `include "../control/control.v"
 `include "../phaser/phaser.v"
+`include "../registerFile/syncRegisterFile.v"
 `include "../pc/pc.v"
 `include "../lib/assertion.v"
 `include "../74245/hct74245.v"
@@ -144,13 +145,14 @@ module test();
     hct74138 targ_dev_32_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_dev_block_sel[3]), .A(targ_dev[2:0]));
 
     // control lines for device selection
-    wire [31:0] tset = {targ_dev_32_demux.Y, targ_dev_24_demux.Y, targ_dev_16_demux.Y, targ_dev_08_demux.Y};
-    wire [15:0] lset = {lbus_dev_16_demux.Y, lbus_dev_08_demux.Y};
-    wire [15:0] rset = {rbus_dev_16_demux.Y, rbus_dev_08_demux.Y};
+    wire [31:0] tsel = {targ_dev_32_demux.Y, targ_dev_24_demux.Y, targ_dev_16_demux.Y, targ_dev_08_demux.Y};
+    wire [15:0] lsel = {lbus_dev_16_demux.Y, lbus_dev_08_demux.Y};
+    wire [15:0] rsel = {rbus_dev_16_demux.Y, rbus_dev_08_demux.Y};
 
-    `define WIRE_LDEV_SEL(DNAME) wire _ldev_``DNAME`` = lset[control.DEV_``DNAME``];
-    `define WIRE_RDEV_SEL(DNAME) wire _rdev_``DNAME`` = rset[control.DEV_``DNAME``];
-    `define WIRE_TDEV_SEL(DNAME) wire _``DNAME``_in = tset[control.TDEV_``DNAME``];
+    // selection wires
+    `define WIRE_LDEV_SEL(DNAME) wire _ldev_``DNAME`` = lsel[control.DEV_``DNAME``];
+    `define WIRE_RDEV_SEL(DNAME) wire _rdev_``DNAME`` = rsel[control.DEV_``DNAME``];
+    `define WIRE_TDEV_SEL(DNAME) wire _``DNAME``_in = tsel[control.TDEV_``DNAME``];
 
     `WIRE_TDEV_SEL(ram)
     `WIRE_RDEV_SEL(ram)
@@ -233,7 +235,7 @@ module test();
     // RAM =============================================================================================
 
     wire #(8) _gated_ram_in = _phaseExec | _ram_in;
-    ram #(.AWIDTH(16)) ram64(._WE(!phaseExec | _ram_in), ._OE(1'b0), .A(address_bus));
+    ram #(.AWIDTH(16)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus));
     
     hct74245ab ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in));
     hct74245ab ram_rbus_buf(.A(ram64.D), .B(rbus), .nOE(_rdev_ram));
@@ -252,7 +254,7 @@ module test();
     hct74245ab marlo_addrbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register));
 
     // ALU ==============================================================================================
-    logic _flag_cin=1; // 1 = not cin TODO
+    logic _flag_cin=1; // 1 means no CIN TODO
     wire _flag_cout=1; // TODO
     wire _flag_z=1; // TODO
 
@@ -267,23 +269,44 @@ module test();
     );
 
     // REGISTER FILE =====================================================================================
-    /*
-    syncRegisterFile #(.LOG(1)) regFile(
-    _MR,
-    clk,
-    _wr_en,
-    wr_addr,
-    wr_data,
-    
-    _rdL_en,
-    rdL_addr,
-    rdL_data,
-    
-    _rdR_en,
-    rdR_addr,
-    rdR_data
+    wire #(8) _gated_regfile_in = _phaseExec | (_rega_in & _regb_in & _regc_in & _regd_in);
+    wire #(8) _regfile_rdL_en = _ldev_rega &_ldev_regb &_ldev_regc &_ldev_regd ;
+    wire #(8) _regfile_rdR_en = _rdev_rega &_rdev_regb &_rdev_regc &_rdev_regd ;
+
+    // FIXME IMPL
+    wire [1:0] regfile_rdL_addr = {
+            _ldev_rega & _ldev_regb,
+            _ldev_rega & _ldev_regc 
+            };
+    wire [1:0] regfile_rdR_addr = {
+            _rdev_rega & _rdev_regb,
+            _rdev_rega & _rdev_regc 
+            };
+
+    wire [1:0] regfile_wr_addr = {
+            _rega_in & _regb_in,
+            _rega_in & _regc_in 
+            };
+
+    if (0) always @* $display("RF gated in=", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
+    if (0) always @* $display("RF l out   =", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _ldev_rega , _ldev_regb , _ldev_regc , _ldev_regd);
+    if (0) always @* $display("RF r out   =", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _rdev_rega , _rdev_regb , _rdev_regc , _rdev_regd);
+
+
+    syncRegisterFile #(.LOG(0)) regFile(
+        .clk,
+        ._wr_en(_gated_regfile_in),
+        .wr_addr(regfile_wr_addr),
+        .wr_data(alu_result_bus),
+        
+        ._rdL_en(_regfile_rdL_en),
+        .rdL_addr(regfile_rdL_addr),
+        .rdL_data(lbus),
+        
+        ._rdR_en(_regfile_rdR_en),
+        .rdR_addr(regfile_rdR_addr),
+        .rdR_data(rbus)
     );
-    */
     
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -336,11 +359,37 @@ module test();
 
         // dev_eq_ram_direct tdev=00010(MARLO), address=ffaa     
         //`ROM(4)= { 8'b101_00010, 16'h0043 };                // MARLO=RAM[MAR=0043]=h22     implies ALUOP=R
-        `ROM(4)= `DEV_EQ_RAM_DIRECT(marlo, 'h43);
+        `ROM(4)= `DEV_EQ_RAM_DIRECT(marlo, 'h0043);
 
         // ram_direct_eq_dev tdev=00001(RAM), rdev=MARLO  address=abcd     
         //`ROM(5)= { 8'b110_00010, 16'habcd };                // RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R
         `ROM(5)= `RAM_DIRECT_EQ_DEV('habcd, marlo);
+
+        // write RAM into regb
+        `ROM(6)= `DEV_EQ_RAM_DIRECT(regb, 'h0043);
+
+        // write regb into RAM
+        `ROM(7)= `RAM_DIRECT_EQ_DEV('hdcba, regb);
+
+        // test all registers read write
+        `ROM(8)= `DEV_EQ_CONST8(rega, 1);
+        `ROM(9)= `DEV_EQ_CONST8(regb, 2);
+        `ROM(10)= `DEV_EQ_CONST8(regc, 3);
+        `ROM(11)= `DEV_EQ_CONST8(regd, 4);
+        `ROM(12)= `RAM_DIRECT_EQ_DEV('h0001, rega);
+        `ROM(13)= `RAM_DIRECT_EQ_DEV('h0002, regb);
+        `ROM(14)= `RAM_DIRECT_EQ_DEV('h0003, regc);
+        `ROM(15)= `RAM_DIRECT_EQ_DEV('h0004, regd);
+
+        // test all registers on L and R channel into ALU
+        `ROM(16)= `DEV_EQ_XY_ALU(marlo, rega, rom, A);  // rom is a noop here
+        `ROM(17)= `DEV_EQ_XY_ALU(marhi, rom, rega, B);  // rom is a noop here
+        `ROM(18)= `DEV_EQ_XY_ALU(marlo, regb, rom, A);  // rom is a noop here
+        `ROM(19)= `DEV_EQ_XY_ALU(marhi, rom, regb, B);  // rom is a noop here
+        `ROM(20)= `DEV_EQ_XY_ALU(marlo, regc, rom, A);  // rom is a noop here
+        `ROM(21)= `DEV_EQ_XY_ALU(marhi, rom, regc, B);  // rom is a noop here
+        `ROM(22)= `DEV_EQ_XY_ALU(marlo, regd, rom, A);  // rom is a noop here
+        `ROM(23)= `DEV_EQ_XY_ALU(marhi, rom, regd, B);  // rom is a noop here
 
         // DATA SEGMENT - ONLY LOWER 8 BITS ACCESSIBLE AT THE MOMENT AS ITS AN 8 BITS OF DATA CPU
         // initialise rom[ffaa] = 0x42
@@ -352,6 +401,8 @@ module test();
 
     // TESTS
     initial begin
+        `define EXECUTE_CYCLE(N) for (count =0; count < N*(phaseFetchLen+phaseDecodeLen+phaseExecLen); count++) begin #TCLK CLK_UP; #TCLK CLK_DN; end
+
         localparam TCLK=1000;   // clock cycle
         INIT_ROM();
 
@@ -393,7 +444,7 @@ module test();
 
         #TCLK
 
-        `DISPLAY("inst 1 - clock fetch")
+        `DISPLAY("instruction 1 - clock fetch")
         for (count =0; count < phaseFetchLen; count++) begin
             CLK_UP;
             #TCLK
@@ -408,7 +459,7 @@ module test();
             `Equals( seq, `SEQ(count+1));
         end
 
-        `DISPLAY("inst 1 - clock decode")
+        `DISPLAY("instruction 1 - clock decode")
         for (count =0; count < phaseDecodeLen; count++) begin
             CLK_UP;
             #TCLK
@@ -422,7 +473,7 @@ module test();
             `Equals( seq, `SEQ(count+1+phaseFetchLen));
         end
 
-        `DISPLAY("inst 1 - clock exec")
+        `DISPLAY("instruction 1 - clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
             #TCLK
@@ -441,7 +492,7 @@ module test();
         `Equals(MARHI.Q, 8'hxx)
 
         `DISPLAY("NEXT CYCLE STARTS")
-        `DISPLAY("inst 2 - clock fetch")
+        `DISPLAY("instruction 2 - clock fetch")
         for (count =0; count < phaseFetchLen; count++) begin
             CLK_UP;
             #TCLK
@@ -455,7 +506,7 @@ module test();
             `Equals( seq, `SEQ(count+1));
         end
 
-        `DISPLAY("inst 2 - clock decode")
+        `DISPLAY("instruction 2 - clock decode")
         for (count =0; count < phaseDecodeLen; count++) begin
             CLK_UP;
             #TCLK
@@ -467,7 +518,7 @@ module test();
             `Equals( seq, `SEQ(count+1+phaseFetchLen));
         end
 
-        `DISPLAY("inst 2 - clock exec")
+        `DISPLAY("instruction 2 - clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
             #TCLK
@@ -484,7 +535,7 @@ module test();
         `Equals(MARHI.Q, 8'h00)
 
         `DISPLAY("NEXT CYCLE STARTS")
-        `DISPLAY("inst 3 - clock fetch")
+        `DISPLAY("instruction 3 - clock fetch")
         for (count =0; count < phaseFetchLen; count++) begin
             CLK_UP;
             #TCLK
@@ -498,7 +549,7 @@ module test();
             `Equals( seq, `SEQ(count+1));
         end
 
-        `DISPLAY("inst 3 - clock decode")
+        `DISPLAY("instruction 3 - clock decode")
         for (count =0; count < phaseDecodeLen; count++) begin
             CLK_UP;
             #TCLK
@@ -512,7 +563,7 @@ module test();
             `Equals( seq, `SEQ(count+1+phaseFetchLen));
         end
 
-        `DISPLAY("inst 3 - clock exec")
+        `DISPLAY("instruction 3 - clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
             #TCLK
@@ -529,7 +580,7 @@ module test();
         `Equals(MARLO.Q, 8'h43)
         `Equals(MARHI.Q, 8'h00)
 
-        `DISPLAY("init 4 - RAM[MAR=0x0043]=0x22 ")
+        `DISPLAY("instruction 4 - RAM[MAR=0x0043]=0x22 ")
         // fetch/decode
         for (count =0; count < 1* (phaseFetchLen+phaseDecodeLen); count++) begin
             #TCLK
@@ -548,39 +599,66 @@ module test();
         end
         `Equals(`RAM(16'h0043), 8'h22);
 
-        `DISPLAY("init 5 - MARLO=RAM[MAR=0x0043]=0x22")
-        // dev_eq_ram_direct tdev=00010(REGA), address=ffaa     
-        for (count =0; count < 1* (phaseFetchLen+phaseDecodeLen); count++) begin
-            #TCLK
-            CLK_UP;
-            #TCLK
-            CLK_DN;
-        end
-        for (count =0; count < phaseExecLen; count++) begin
-            #TCLK
-            CLK_UP;
-            #TCLK
-            CLK_DN;
-        end
+        `DISPLAY("instruction 5 - MARLO=RAM[MAR=0x0043]=0x22")
+        `EXECUTE_CYCLE(1)
         `Equals(MARLO.Q, 8'h22)
         `Equals(MARHI.Q, 8'h00)
 
-        `DISPLAY("init 6 - // RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R")
-        // dev_eq_ram_direct tdev=00010(REGA), address=ffaa     
-        for (count =0; count < 1* (phaseFetchLen+phaseDecodeLen); count++) begin
-            #TCLK
-            CLK_UP;
-            #TCLK
-            CLK_DN;
-        end
-        for (count =0; count < phaseExecLen; count++) begin
-            #TCLK
-            CLK_UP;
-            #TCLK
-            CLK_DN;
-        end
+        `DISPLAY("instruction 6 - RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R")
+        `EXECUTE_CYCLE(1)
         `Equals(`RAM(16'habcd), 8'h22);
 
+
+        `DISPLAY("instruction 7 - DEV_EQ_RAM_DIRECT(regb, 'habcd) write to Register File");
+        `EXECUTE_CYCLE(1)
+        `Equals( regFile.get(1), 8'h22);
+
+        `DISPLAY("instruction 8 - RAM_DIRECT_EQ_DEV('hdcba, regb) read from Register File");
+        `EXECUTE_CYCLE(1)
+        `Equals(`RAM(16'hdcba), 8'h22);
+
+        `DISPLAY("instruction 9 to 16 - REGA=1 / B=2 / C=3 / E=4 round trip const to reg to ram");
+        `EXECUTE_CYCLE(8)
+        `Equals( regFile.get(0), 8'h1);
+        `Equals( regFile.get(1), 8'h2);
+        `Equals( regFile.get(2), 8'h3);
+        `Equals( regFile.get(3), 8'h4);
+        `Equals(`RAM(1), 1);
+        `Equals(`RAM(2), 2);
+        `Equals(`RAM(3), 3);
+        `Equals(`RAM(4), 4);
+
+        `DISPLAY("instruction - REG A ON L and R CHANNELS");
+        `EXECUTE_CYCLE(1)
+        `Equals(MARLO.Q, 8'd1)
+        `Equals(MARHI.Q, 8'd0)
+        `EXECUTE_CYCLE(1)
+        `Equals(MARLO.Q, 8'd1)
+        `Equals(MARHI.Q, 8'd1)
+
+        `DISPLAY("instruction - REG B ON L and R CHANNELS");
+        `EXECUTE_CYCLE(1)
+        `Equals(MARLO.Q, 8'd2)
+        `Equals(MARHI.Q, 8'd1)
+        `EXECUTE_CYCLE(1)
+        `Equals(MARLO.Q, 8'd2)
+        `Equals(MARHI.Q, 8'd2)
+
+        `DISPLAY("instruction - REG C ON L and R CHANNELS");
+        `EXECUTE_CYCLE(1)
+        `Equals(MARLO.Q, 8'd3)
+        `Equals(MARHI.Q, 8'd2)
+        `EXECUTE_CYCLE(1)
+        `Equals(MARLO.Q, 8'd3)
+        `Equals(MARHI.Q, 8'd3)
+
+        `DISPLAY("instruction - REG D ON L and R CHANNELS");
+        `EXECUTE_CYCLE(1)
+        `Equals(MARLO.Q, 8'd4)
+        `Equals(MARHI.Q, 8'd3)
+        `EXECUTE_CYCLE(1)
+        `Equals(MARLO.Q, 8'd4)
+        `Equals(MARHI.Q, 8'd4)
 /*
 */
 
@@ -596,6 +674,15 @@ module test();
             $display("PC %2x:%2x !!!!!!!!!!!!!!!!!!!!!!!! CLK COUNT REMAINING=%-d", PCHI, PCLO, count);
         end
 */
+
+        // consume any remaining code
+        // while (1==1) begin
+        //     #TCLK
+        //     CLK_UP;
+        //     #TCLK
+        //     CLK_DN;
+        // end
+
         $display("END OF TEST");
         $finish();
 
@@ -614,6 +701,8 @@ module test();
             $display ("%9t ", $time,  "DUMP  ",
                  ": %-s", label
                  );
+            $display ("%9t ", $time,  "DUMP  ",
+                 " phase=%-6s", control.fPhase(phaseFetch, phaseDecode, phaseExec));
             $display ("%9t ", $time,  "DUMP  ",
                  " seq=%-2d", $clog2(seq)+1);
             $display ("%9t ", $time,  "DUMP  ",
@@ -640,6 +729,12 @@ module test();
                  " MAR=%8b:%8b (0x%2x:%2x)", MARHI.Q, MARLO.Q, MARHI.Q, MARLO.Q);
             $display ("%9t ", $time,  "DUMP  ",
                  " PC=%02h:%02h", PCHI, PCLO);
+            $display("%9t", $time, " DUMP:",
+                 "  REGA:%08b", regFile.get(0),
+                 "  REGB:%08b", regFile.get(1),
+                 "  REGC:%08b", regFile.get(2),
+                 "  REGD:%08b", regFile.get(3)
+                 );
     endtask 
 
     task CLK_UP; 
@@ -655,23 +750,23 @@ module test();
         // op_decode.DUMP();
         // addr_decode.DUMP();
         DUMP;
-        $display("\n%9t", $time, " CLK  -----------------------------------------------------------------------\n"); 
+        $display("\n%9t", $time, " CLK  -----------------------------------------------------------------------"); 
         clk = 0;
     end
     endtask
 
-    if (1) always @* begin
+    if (0) always @* begin
         $display ("%9t ", $time,  "MON     ",
                  "rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
                  " seq=%-2d", $clog2(seq)+1,
                  " amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
                  " addrbus=0x%4x", address_bus,
-                 " FDE=%-s  %1b%1b%1b", control.fPhase(phaseFetch, phaseDecode, phaseExec), phaseFetch, phaseDecode, phaseExec,
+                 " FDE=%-6s (%1b%1b%1b)", control.fPhase(phaseFetch, phaseDecode, phaseExec), phaseFetch, phaseDecode, phaseExec,
                  " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus,
-                 " rdev=%04b ldev=%04b targ=%05b aluop=%05b ", rbus_dev, lbus_dev, targ_dev, aluop,
-                 " tset=%32b ", tset,
+                 " rdev=%04b ldev=%04b targ=%05b aluop=%05b (%1s)", rbus_dev, lbus_dev, targ_dev, aluop, alu_func.aluopName(aluop),
+                 " tsel=%32b ", tsel,
                  " PC=%02h:%02h", PCHI, PCLO,
-                 "     : %-s", label
+                 "     : %1s", label
                  );
     end
 
@@ -690,7 +785,7 @@ module test();
 
     
     if (0) always @(*) begin
-        $display("%9t", $time, " PHASE: FDE=%-s  %1b%1b%1b seq=%10b", control.fPhase(phaseFetch, phaseDecode, phaseExec), 
+        $display("%9t", $time, " PHASE CHANGE: FDE=%-s  %1b%1b%1b seq=%10b", control.fPhase(phaseFetch, phaseDecode, phaseExec), 
                                                         phaseFetch, phaseDecode, phaseExec, seq); 
     end
 
@@ -721,8 +816,8 @@ module test();
                 " amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
                 " addrbus=0x%4x", address_bus);
         
-    if (1) always @* 
-        $display ("%9t ", $time,  "RAM      ram=%08b", ram64.D,
+    if (0) always @* 
+        $display ("%9t ", $time,  "RAM     ram=%08b", ram64.D,
                 " amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
                 " addrbus=0x%4x", address_bus,
                 " _ram_in=%1b _gated_ram_in=%1b", _ram_in, _gated_ram_in,
@@ -748,7 +843,7 @@ module test();
         $display("%9t ", $time, "MAR  %02x:%02x    _marhi_in=%b _marlo_in=%b", MARHI.Q, MARLO.Q, _marhi_in, _marlo_in);
 
     if (0) always @* 
-        $display("%9t ", $time, "tset=%032b  lset=%016b rset=%016b", tset, lset, rset);
+        $display("%9t ", $time, "tsel=%032b  lsel=%016b rsel=%016b", tsel, lsel, rsel);
 
     if (0) always @* 
         $display("%9t ", $time, "ALU BUS ",

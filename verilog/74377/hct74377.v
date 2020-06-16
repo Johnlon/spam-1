@@ -26,7 +26,7 @@ reg [WIDTH-1:0] Q_current='x;
 always @(posedge CP)
 begin
   if (!_EN) begin
-      $display("%9t", $time, " REGISTER %m   ASSIGNING D=%08b to Q_current", D);
+    if (LOG)  $display("%9t", $time, " REGISTER %m   ASSIGNING D=%08b to Q_current", D);
     Q_current <= D;
   end
 end

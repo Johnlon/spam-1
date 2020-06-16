@@ -12,8 +12,8 @@ output [7:0] Q
 );
     parameter LOG=0;
 
-    if (LOG) always @* begin
-        $display("%9t", $time, " LATCH    CLK=%1b _OE=%1b D=%08b Q=%08b", CLK, _OE, D, Q);
+    if (LOG) begin : log
+        always @* $display("%9t", $time, " REGISTER %m   CLK=%1b _OE=%1b D=%08b Q=%08b", CLK, _OE, D, Q);
     end
 
     reg [8:0] data;
