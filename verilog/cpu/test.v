@@ -269,13 +269,30 @@ module test();
     );
 
     // REGISTER FILE =====================================================================================
-    // DIODE LOGIC
+    // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
+    // 23 DIODE LOGIC
+    /*
+    wire #(8) _l_a_and_b = _ldev_rega & _ldev_regb;
+    wire #(8) _l_a_and_c = _ldev_rega & _ldev_regc;
+    wire #(8) _r_a_and_b = _rdev_rega & _rdev_regb;
+    wire #(8) _r_a_and_c = _rdev_rega & _rdev_regc;
+    wire #(8) _a_and_b_in = _rega_in & _regb_in;
+    wire #(8) _a_and_c_in = _rega_in & _regc_in;
+
+    wire #(8) _is_regfile_in = _a_and_b_in & _a_and_c_in & _regd_in;
+    wire #(8) _gated_regfile_in = _phaseExec | _is_regfile_in;
+    wire #(8) _regfile_rdL_en = _l_a_and_b & _l_a_and_c &_ldev_regd ;
+    wire #(8) _regfile_rdR_en = _r_a_and_b & _r_a_and_c &_rdev_regd ;
+
+    wire [1:0] regfile_rdL_addr = { _l_a_and_b, _l_a_and_c };
+    wire [1:0] regfile_rdR_addr = { _r_a_and_b, _r_a_and_c };
+    wire [1:0] regfile_wr_addr = { _a_and_b_in, _a_and_c_in};
+    */
+    // TTL LOGIC
+
     wire #(8) _gated_regfile_in = _phaseExec | (_rega_in & _regb_in & _regc_in & _regd_in);
     wire #(8) _regfile_rdL_en = _ldev_rega &_ldev_regb &_ldev_regc &_ldev_regd ;
     wire #(8) _regfile_rdR_en = _rdev_rega &_rdev_regb &_rdev_regc &_rdev_regd ;
-
-    // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - AS A SIMPLIFIED DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS LOGIC FOR THE ADDRESSING
-    // DIODE LOGIC
     wire [1:0] regfile_rdL_addr = {
             _ldev_rega & _ldev_regb,
             _ldev_rega & _ldev_regc 
@@ -289,6 +306,9 @@ module test();
             _rega_in & _regb_in,
             _rega_in & _regc_in 
             };
+//.    wire [1:0] regfile_rdL_addr = ldev[1:0];
+  //.  wire [1:0] regfile_rdR_addr = rdev[1:0];
+    //.wire [1:0] regfile_wr_addr = tdev[1:0];
 
     if (0) always @* $display("RF gated in=", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
     if (0) always @* $display("RF l out   =", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _ldev_rega , _ldev_regb , _ldev_regc , _ldev_regd);
@@ -332,11 +352,11 @@ module test();
     `define toDEV(DEVNAME) control.DEV_``DEVNAME``
     `define toALUOP(OPNAME) alu_ops.OP_``OPNAME``
 
-    `define DEV_EQ_ROM_DIRECT(TARGET, ADDRESS) { control.OP_dev_eq_rom_direct, to5(`toDEV(TARGET)), to16(ADDRESS) }
-    `define DEV_EQ_CONST8(TARGET, CONST8) { control.OP_dev_eq_const8, to5(`toDEV(TARGET)), 8'hx, to8(CONST8) }
+    `define DEV_EQ_ROM_DIRECT(TARGET, ADDRESS)       { control.OP_dev_eq_rom_direct, to5(`toDEV(TARGET)), to16(ADDRESS) }
+    `define DEV_EQ_CONST8(TARGET, CONST8)            { control.OP_dev_eq_const8, to5(`toDEV(TARGET)), 8'hx, to8(CONST8) }
     `define DEV_EQ_XY_ALU(TARGET, SRCA, SRCB, ALUOP) { control.OP_dev_eq_xy_alu, to5(`toDEV(TARGET)), 3'bzzz, to4(`toDEV(SRCA)), to4(`toDEV(SRCB)), to5(`toALUOP(ALUOP))}
-    `define DEV_EQ_RAM_DIRECT(TARGET, ADDRESS) { control.OP_dev_eq_ram_direct, to5(control.DEV_``TARGET``), to16(ADDRESS) }
-    `define RAM_DIRECT_EQ_DEV(ADDRESS, SRC) { control.OP_ram_direct_eq_dev, to5(`toDEV(SRC)), to16(ADDRESS) }
+    `define DEV_EQ_RAM_DIRECT(TARGET, ADDRESS)       { control.OP_dev_eq_ram_direct, to5(control.DEV_``TARGET``), to16(ADDRESS) }
+    `define RAM_DIRECT_EQ_DEV(ADDRESS, SRC)          { control.OP_ram_direct_eq_dev, to5(`toDEV(SRC)), to16(ADDRESS) }
 
     // SETUP ROM
     task INIT_ROM;
@@ -348,19 +368,15 @@ module test();
         `ROM(0)= `DEV_EQ_ROM_DIRECT(marlo, 'hffaa);
 
         // dev_eq_const8 tdev=00011(MARHI), const8=0           
-        //`ROM(1)= { 8'b001_00011, 8'hx, 8'h0 };                  // MARHI=const 0      implies ALUOP=R
         `ROM(1)= `DEV_EQ_CONST8(marhi, 0);                  // MARHI=const 0      implies ALUOP=R
 
         // dev_eq_xy_alu tdev=00010(MARLO) ldev=0010(MARLO) rdev=0010(MARLO) alu=00101(5=A+1)
-        //`ROM(2)= { 8'b000_00010, 16'bzzz_0010_0010_00101 };     // MARLO=MARLO+1 = 43 (ALUOP=A+1)
         `ROM(2)= `DEV_EQ_XY_ALU(marlo, marlo, marlo, A_PLUS_1); 
 
         // dev_eq_const8 tdev=00000(RAM[MAR]), const8=0x22           
-        //`ROM(3)= { 8'b001_00000, 8'hx, 8'h22 };                  // RAM[MAR=0043]=const h22      implies ALUOP=R
         `ROM(3)= `DEV_EQ_CONST8(ram, 'h22);
 
         // dev_eq_ram_direct tdev=00010(MARLO), address=ffaa     
-        //`ROM(4)= { 8'b101_00010, 16'h0043 };                // MARLO=RAM[MAR=0043]=h22     implies ALUOP=R
         `ROM(4)= `DEV_EQ_RAM_DIRECT(marlo, 'h0043);
 
         // ram_direct_eq_dev tdev=00001(RAM), rdev=MARLO  address=abcd     
