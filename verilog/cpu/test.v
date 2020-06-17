@@ -269,11 +269,13 @@ module test();
     );
 
     // REGISTER FILE =====================================================================================
+    // DIODE LOGIC
     wire #(8) _gated_regfile_in = _phaseExec | (_rega_in & _regb_in & _regc_in & _regd_in);
     wire #(8) _regfile_rdL_en = _ldev_rega &_ldev_regb &_ldev_regc &_ldev_regd ;
     wire #(8) _regfile_rdR_en = _rdev_rega &_rdev_regb &_rdev_regc &_rdev_regd ;
 
-    // FIXME IMPL
+    // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - AS A SIMPLIFIED DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS LOGIC FOR THE ADDRESSING
+    // DIODE LOGIC
     wire [1:0] regfile_rdL_addr = {
             _ldev_rega & _ldev_regb,
             _ldev_rega & _ldev_regc 
