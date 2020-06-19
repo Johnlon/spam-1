@@ -32,7 +32,7 @@ module syncRegisterFile #(parameter LOG=0, PulseWidth=100) (
 	wire [7:0] wr_data_latched;
 	//wire _pulse;
 
-    hct74574 #(.LOG(LOG)) register( .D(wr_data), .Q(wr_data_latched), .CLK(clk), ._OE(1'b0)); // registers data on clk +ve & _pulse goes low slightly later.
+    hct74574 #(.LOG(LOG)) input_register( .D(wr_data), .Q(wr_data_latched), .CLK(clk), ._OE(1'b0)); // registers data on clk +ve & _pulse goes low slightly later.
 
     // MONOSTABLE MULTIVIBRATOR 
     // Make delay long enough the internal settling of the latch and register file has had time,
