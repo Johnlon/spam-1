@@ -43,7 +43,7 @@ module hct74245(
 endmodule: hct74245
 
 
-module alu(
+module alu_demo(
     output [7:0] o,
     input  [7:0] x,
     input  [7:0] y,
@@ -65,7 +65,7 @@ module alu(
     
     assign o = xout | y;
 
-endmodule: alu
+endmodule: alu_demo
 
 
 module test();
@@ -75,7 +75,7 @@ module test();
 	logic [7:0] y;
 	logic force_to_zero;
 
-	alu Alu(.o, .x, .y, .force_to_zero);
+	alu_demo Alu(.o, .x, .y, .force_to_zero);
 
     initial begin
         `ifndef verilator
