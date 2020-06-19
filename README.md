@@ -159,7 +159,9 @@ I've built the assembler in Google Sheets, which I think might be a pretty uniqu
 
 # Architecture
 
-####### THIS DOCUMENTATION NEEDS UPDATING
+
+
+####### FIXME THIS DOCUMENTATION NEEDS UPDATING FOR 24 and 42 bit - KEEP REFERENCES TO THE OLDER BRANCHES OF THE CODE.
 
 ## CPU Phases
 
@@ -435,7 +437,7 @@ the output of the ALU then perhaps I could get a lot more flexibility. Dunno.
 Alternatively I could do something like add an 8 bit register for the ALU config, eg giving me 256 possible ALU operations. Or I could organise the 8 bit register 
  as 4 bits for multiplexing the inputs and output of the ALU, and 4 bits for the selection of the ALU operation. If I multiplex the inputs and outputs 
  of the ALU then I could do something like having a 4x8bit register file rather than just A and B and I could multiplex the RAM or ROM or whatever into the 
- ALU overcoming the register trashing  problem mentioned earlier.
+ALU overcoming the register trashing  problem mentioned earlier.
 
 Or perhaps the variable length instruction idea could yield benefits by giving me another 8 bits for control logic.
 
