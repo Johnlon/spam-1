@@ -12,10 +12,6 @@ output [7:0] Q
 );
     parameter LOG=0;
 
-    if (LOG) begin : log
-        always @* $display("%9t", $time, " REGISTER %m   CLK=%1b _OE=%1b D=%08b Q=%08b", CLK, _OE, D, Q);
-    end
-
     reg [8:0] data;
     
     specify
@@ -23,8 +19,10 @@ output [7:0] Q
     (_OE *> Q) = (19);
     endspecify
     
-    always @(posedge CLK)
+    always @(posedge CLK) begin
+        $display("%9t", $time, " REGISTER %m   CLK=%1b _OE=%1b D=%08b Q=%08b", CLK, _OE, D, Q);
         data <= D;
+    end
     
     assign #(19) Q = _OE ? 8'bz: data;
     
