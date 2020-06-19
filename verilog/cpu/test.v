@@ -37,7 +37,7 @@ module test();
     tri [7:0] rbus, lbus, alu_result_bus;
     wire [3:0] rbus_dev, lbus_dev;
     wire [4:0] targ_dev;
-    wire [4:0] aluop;
+    wire [4:0] alu_op;
 
     wire _addrmode_register, _addrmode_pc, _addrmode_direct;
     wire [2:0] _addrmode = {_addrmode_pc, _addrmode_register, _addrmode_direct}; 
@@ -121,7 +121,7 @@ module test();
          .Q(instruction_lo) 
     );
 
-    op_decoder #(.LOG(0)) op_decode(.data_hi(instruction_hi), .data_mid(instruction_mid), .data_lo(instruction_lo), .rbus_dev, .lbus_dev, .targ_dev, .aluop);
+    op_decoder #(.LOG(0)) op_decode(.data_hi(instruction_hi), .data_mid(instruction_mid), .data_lo(instruction_lo), .rbus_dev, .lbus_dev, .targ_dev, .alu_op);
 
     memory_address_mode_decoder #(.LOG(1)) addr_decode( 
         .ctrl(instruction_hi[7:5]), 
@@ -254,65 +254,56 @@ module test();
     hct74245ab marlo_addrbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register));
 
     // ALU ==============================================================================================
-    logic _flag_cin=1; // 1 means no CIN TODO
-    wire _flag_cout=1; // TODO
-    wire _flag_z=1; // TODO
+    wire _flag_c_out; // carry/shiftout
+    wire _flag_z_out; // zero
+    wire _flag_o_out; // overflow
+    wire _flag_n_out; // negative
+    wire _flag_gt_out; // > comparator
+    wire _flag_lt_out; // < comparator
+    wire _flag_eq_out; // = comparator
+    wire _flag_ne_out; // != comparator
+
+    wire [7:0] _flags_out;
+    wire _flag_c= _flags_out[0];
+    wire _flag_z= _flags_out[1];
+    wire _flag_n= _flags_out[2];
+    wire _flag_o= _flags_out[3];
+    wire _flag_gt= _flags_out[4];
+    wire _flag_lt= _flags_out[5];
+    wire _flag_eq= _flags_out[6];
+    wire _flag_ne= _flags_out[7];
 
 	alu #(.LOG(1)) Alu(
         .o(alu_result_bus), 
         .x(lbus),
         .y(rbus),
-        .alu_op(aluop),
-        ._flag_cin,
-        ._flag_cout,
-        ._flag_z
+        .alu_op(alu_op),
+        ._flag_c_in(_flag_c),
+        ._flag_c(_flag_c_out),
+        ._flag_z(_flag_z_out),
+        ._flag_o(_flag_o_out),
+        ._flag_n(_flag_n_out),
+        ._flag_gt(_flag_gt_out),
+        ._flag_lt(_flag_lt_out),
+        ._flag_eq(_flag_eq_out),
+        ._flag_ne(_flag_ne_out)
     );
+
+    wire [7:0] _flags_to_reg = { _flag_ne_out, _flag_eq_out, _flag_lt_out, _flag_gt_out, _flag_n_out, _flag_o_out, _flag_z_out, _flag_c_out };
+    hct74574 #(.LOG(1)) flags_register( .D(_flags_to_reg), .Q(_flags_out), .CLK(phaseExec), ._OE(1'b0)); 
 
     // REGISTER FILE =====================================================================================
     // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
-    // 23 DIODE LOGIC
-    /*
-    wire #(8) _l_a_and_b = _ldev_rega & _ldev_regb;
-    wire #(8) _l_a_and_c = _ldev_rega & _ldev_regc;
-    wire #(8) _r_a_and_b = _rdev_rega & _rdev_regb;
-    wire #(8) _r_a_and_c = _rdev_rega & _rdev_regc;
-    wire #(8) _a_and_b_in = _rega_in & _regb_in;
-    wire #(8) _a_and_c_in = _rega_in & _regc_in;
-
-    wire #(8) _is_regfile_in = _a_and_b_in & _a_and_c_in & _regd_in;
-    wire #(8) _gated_regfile_in = _phaseExec | _is_regfile_in;
-    wire #(8) _regfile_rdL_en = _l_a_and_b & _l_a_and_c &_ldev_regd ;
-    wire #(8) _regfile_rdR_en = _r_a_and_b & _r_a_and_c &_rdev_regd ;
-
-    wire [1:0] regfile_rdL_addr = { _l_a_and_b, _l_a_and_c };
-    wire [1:0] regfile_rdR_addr = { _r_a_and_b, _r_a_and_c };
-    wire [1:0] regfile_wr_addr = { _a_and_b_in, _a_and_c_in};
-    */
-    // TTL LOGIC
-
     wire #(8) _gated_regfile_in = _phaseExec | (_rega_in & _regb_in & _regc_in & _regd_in);
     wire #(8) _regfile_rdL_en = _ldev_rega &_ldev_regb &_ldev_regc &_ldev_regd ;
     wire #(8) _regfile_rdR_en = _rdev_rega &_rdev_regb &_rdev_regc &_rdev_regd ;
-    wire [1:0] regfile_rdL_addr = {
-            _ldev_rega & _ldev_regb,
-            _ldev_rega & _ldev_regc 
-            };
-    wire [1:0] regfile_rdR_addr = {
-            _rdev_rega & _rdev_regb,
-            _rdev_rega & _rdev_regc 
-            };
+    wire [1:0] regfile_rdL_addr = lbus_dev[1:0];
+    wire [1:0] regfile_rdR_addr = rbus_dev[1:0];
+    wire [1:0] regfile_wr_addr = targ_dev[1:0];
 
-    wire [1:0] regfile_wr_addr = {
-            _rega_in & _regb_in,
-            _rega_in & _regc_in 
-            };
-//.    wire [1:0] regfile_rdL_addr = ldev[1:0];
-  //.  wire [1:0] regfile_rdR_addr = rdev[1:0];
-    //.wire [1:0] regfile_wr_addr = tdev[1:0];
-
-    if (0) always @* $display("RF gated in=", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
-    if (0) always @* $display("RF l out   =", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _ldev_rega , _ldev_regb , _ldev_regc , _ldev_regd);
-    if (0) always @* $display("RF r out   =", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _rdev_rega , _rdev_regb , _rdev_regc , _rdev_regd);
+    if (0) always @* $display("regfile gated in=", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
+    if (0) always @* $display("regfile lbus out=", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _ldev_rega , _ldev_regb , _ldev_regc , _ldev_regd);
+    if (0) always @* $display("regfile rbus out=", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _rdev_rega , _rdev_regb , _rdev_regc , _rdev_regd);
 
 
     syncRegisterFile #(.LOG(0)) regFile(
@@ -741,7 +732,7 @@ module test();
                 " tdev=%5b(%s)", targ_dev, control.tdevname(targ_dev),
                 " ldev=%4b(%s)", lbus_dev, control.devname(lbus_dev),
                 " rdev=%4b(%s)", rbus_dev,control.devname(rbus_dev),
-                " aluop=%5b(%s)", aluop, alu_func.aluopName(aluop)
+                " alu_op=%5b(%s)", alu_op, alu_func.aluopName(alu_op)
             );            
             $display ("%9t ", $time,  "DUMP  ",
                  " MAR=%8b:%8b (0x%2x:%2x)", MARHI.Q, MARLO.Q, MARHI.Q, MARLO.Q);
@@ -781,7 +772,7 @@ module test();
                  " addrbus=0x%4x", address_bus,
                  " FDE=%-6s (%1b%1b%1b)", control.fPhase(phaseFetch, phaseDecode, phaseExec), phaseFetch, phaseDecode, phaseExec,
                  " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus,
-                 " rdev=%04b ldev=%04b targ=%05b aluop=%05b (%1s)", rbus_dev, lbus_dev, targ_dev, aluop, alu_func.aluopName(aluop),
+                 " rdev=%04b ldev=%04b targ=%05b alu_op=%05b (%1s)", rbus_dev, lbus_dev, targ_dev, alu_op, alu_func.aluopName(alu_op),
                  " tsel=%32b ", tsel,
                  " PC=%02h:%02h", PCHI, PCLO,
                  "     : %1s", label
@@ -854,7 +845,7 @@ module test();
                 
     if (0) always @* 
         $display("%9t ", $time, "DEVICE-SEL ", 
-                    "rdev=%04b ldev=%04b targ=%05b aluop=%05b ", rbus_dev, lbus_dev, targ_dev, aluop
+                    "rdev=%04b ldev=%04b targ=%05b alu_op=%05b ", rbus_dev, lbus_dev, targ_dev, alu_op
         ); 
 
     if (0) always @* 
@@ -944,7 +935,7 @@ module test();
         //         // " amode=%-3s", sAddrMode,
         //         // " addrbus=0x%4x", address_bus,
         //         " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus,
-        //         " rdev=%04b ldev=%04b targ=%05b aluop=%05b ", rbus_dev, lbus_dev, targ_dev, aluop,
+        //         " rdev=%04b ldev=%04b targ=%05b alu_op=%05b ", rbus_dev, lbus_dev, targ_dev, alu_op,
         //         " PC=%02h:%02h", PCHI, PCLO,
         //         //"      %-s", label
         //         );

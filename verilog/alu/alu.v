@@ -32,14 +32,37 @@ module alu_ops;
 
 endmodule
 
+/* 
+    Inputs to arithmentic must be two's complement.
+
+    The comparator outputs GT/LT are only valid for logical values (not twos complement).
+    For contrast: 74AS885 permits selection of logical or arithmetic magnitude comparison https://www.ti.com/lit/ds/symlink/sn74as885.pdf?ts=1592517566383&ref_url=https%253A%252F%252Fwww.google.com%252F
+
+    If I wanted to do a signed magnitude check then I have to do maths. 
+    If do A-B with carry-cleared and then look at the Z and C flags. 
+    
+    Z set means they were equal, 
+    if Overflow is not set and
+    C set means B>A, 
+    Z and C unset means A>B  
+    ... but only as long as O is not set
+    what about -2 and 3 which will become -5 which is not Z and not C
+*/
+
 module alu #(parameter LOG=0) (
     output [7:0] o,
-    output _flag_cout,
+    output _flag_c,
     output _flag_z,
+    output _flag_n,
+    output _flag_o,
+    output _flag_gt,
+    output _flag_lt,
+    output _flag_eq,
+    output _flag_ne,
     input  [7:0] x,
     input  [7:0] y,
     input  [4:0] alu_op,
-    input  _flag_cin,
+    input  _flag_c_in,
     output [8*8:0] OP_OUT
 );
 // A           | B-1               | A*B (high bits)   | A ROR B       |
@@ -62,22 +85,43 @@ module alu #(parameter LOG=0) (
     logic [15:0] TimesResult;
     assign o = ALU_Result;
 
+/*
+- No overflow when adding a +ve and a -ve number
+- No overflow when signs are the same for subtraction (because -- means a +)
+
+Overflow occurs when the value affects the sign:
+- overflow when adding two +ves yields a -ve
+- or, adding two -ves gives a +ve
+- or, subtract a -ve from a +ve and get a -ve
+- or, subtract a +ve from a -ve and get a +ve
+
+Can Overflow double as a divide / 0 flag ?
+*/
     logic [8:0] tmp = 0;
-    assign _flag_cout = ! tmp[8];
-    assign _flag_z = o != 0;
+    assign _flag_c = ! tmp[8];
+    assign _flag_n = !ALU_Result[7]; // top bit set indicates negative in signed arith
+    assign _flag_z = !(o == 8'b0);
+    assign _flag_o = (x[7] == y[7]) & (x[7] != o[7]); // fixme
+    assign _flag_eq = !(x == y);    
+    assign _flag_ne = !(x != y);    
+    // unsigned magnitude comparison of the input values.
+    // if the bytes are eg two complement signed then this will produce incorrect results.
+    // if this is the case then use a subtract operation instead
+    assign _flag_gt = !(x > y);
+    assign _flag_lt = !(x < y);
 
     localparam AtoB=1'b1;
 
-    wire [7:0] cin8 = {7'b0, !_flag_cin};
+    wire [7:0] cin8 = {7'b0, !_flag_c_in};
 
     if (LOG) always @(*) 
          $display("%9t ALU", $time,
-         " aluop=(%d) '%1s' ", alu_op, OP_NAME, // %1s causes string to lose trailing space
+         " aluop=(%1d) '%1s' ", alu_op, OP_NAME, // %1s causes string to lose trailing space
          " result=%08b(%3d) ", o, o,
          " x=%08b(%3d) ", x, x,
          " y=%08b(%3d) ", y, y,
-         " _cin=%1b ", _flag_cin,
-         " _cout=%1b ", _flag_cout,
+         " _cin=%1b ", _flag_c_in,
+         " _cout=%1b ", _flag_c,
          );
 
 

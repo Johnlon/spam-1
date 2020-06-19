@@ -65,22 +65,22 @@ module control;
     localparam [2:0] OP_7_unused =7;
 
     // sources or dests
-    localparam [3:0] DEV_ram = 0;
-    localparam [3:0] DEV_rom = 1;
-    localparam [3:0] DEV_marlo = 2;
-    localparam [3:0] DEV_marhi = 3;
-    localparam [3:0] DEV_uart = 4;
-    localparam [3:0] DEV_rega = 5; // 1
-    localparam [3:0] DEV_regb = 6; // 2
-    localparam [3:0] DEV_regc = 7; // 3
-    localparam [3:0] DEV_regd = 8; // 4
-    localparam [3:0] DEV_rege = 9; // 5
-    localparam [3:0] DEV_regf = 10; // 6
-    localparam [3:0] DEV_regg = 11; // 7
-    localparam [3:0] DEV_regh = 12; // 8
-    localparam [3:0] DEV_flags = 13;
-    localparam [3:0] DEV_reg_not_used_1 = 14;
-    localparam [3:0] DEV_instreg = 15;
+    localparam [3:0] DEV_rega = 0; 
+    localparam [3:0] DEV_regb = 1; 
+    localparam [3:0] DEV_regc = 2; 
+    localparam [3:0] DEV_regd = 3; 
+    localparam [3:0] DEV_rege = 4; 
+    localparam [3:0] DEV_regf = 5; 
+    localparam [3:0] DEV_regg = 6; 
+    localparam [3:0] DEV_regh = 7; 
+    localparam [3:0] DEV_flags =8;
+    localparam [3:0] DEV_instreg = 9;
+    localparam [3:0] DEV_ram = 10;
+    localparam [3:0] DEV_rom = 11;
+    localparam [3:0] DEV_marlo = 12;
+    localparam [3:0] DEV_marhi = 13;
+    localparam [3:0] DEV_uart = 14;
+    localparam [3:0] DEV_reg_not_used_1 = 15;
 
     // dests only
     localparam [4:0] DEV_pchitmp = 16;
@@ -289,7 +289,7 @@ module op_decoder #(parameter LOG=1)
     output tri [3:0] rbus_dev,
     output tri [3:0] lbus_dev,
     output tri [4:0] targ_dev,
-    output tri [4:0] aluop
+    output tri [4:0] alu_op
 );
 
     wire [23:0] rom_data = {data_hi, data_mid, data_lo};
@@ -342,12 +342,12 @@ module op_decoder #(parameter LOG=1)
     assign rbus_dev = rbus_dev_out[3:0]; 
 
     // aluop
-    tri [7:0] aluop_out;
+    tri [7:0] alu_op_out;
     wire #(10) _force_passr = _force_source_rom & _op_dev_eq_ram_direct & _force_source_instreg; // source ram or rom or ireg means passr : 3 INPUT AND GATE
-    hct74245ab aluopfrom_instruction(.A({3'b0, rom_data[4:0]}), .B(aluop_out), .nOE(_op_dev_eq_xy_alu));
-    hct74245ab aluop_eq_passl(.A({3'b0, alu_func.ALUOP_PASSL}), .B(aluop_out), .nOE(_op_ram_direct_eq_dev));
-    hct74245ab aluop_eq_passr(.A({3'b0, alu_func.ALUOP_PASSR}), .B(aluop_out), .nOE(_force_passr));
-    assign aluop = aluop_out[4:0];
+    hct74245ab aluopfrom_instruction(.A({3'b0, rom_data[4:0]}), .B(alu_op_out), .nOE(_op_dev_eq_xy_alu));
+    hct74245ab aluop_eq_passl(.A({3'b0, alu_func.ALUOP_PASSL}), .B(alu_op_out), .nOE(_op_ram_direct_eq_dev));
+    hct74245ab aluop_eq_passr(.A({3'b0, alu_func.ALUOP_PASSR}), .B(alu_op_out), .nOE(_force_passr));
+    assign alu_op = alu_op_out[4:0];
 
     if (1)    
     always @ *  begin
@@ -358,7 +358,7 @@ module op_decoder #(parameter LOG=1)
                 " tdev=%5b(%s)", targ_dev, control.tdevname(targ_dev),
                 " ldev=%4b(%s)", lbus_dev, control.devname(lbus_dev),
                 " rdev=%4b(%s)", rbus_dev,control.devname(rbus_dev),
-                " aluop=%5b(%s)", aluop, alu_func.aluopName(aluop)
+                " alu_op=%5b(%s)", alu_op, alu_func.aluopName(alu_op)
             );
     end
 
@@ -372,7 +372,7 @@ module op_decoder #(parameter LOG=1)
                 " tdev=%5b(%s)", targ_dev, control.tdevname(targ_dev),
                 " ldev=%4b(%s)", lbus_dev, control.devname(lbus_dev),
                 " rdev=%4b(%s)", rbus_dev,control.devname(rbus_dev),
-                " aluop=%5b(%s)", aluop, alu_func.aluopName(aluop)
+                " alu_op=%5b(%s)", alu_op, alu_func.aluopName(alu_op)
             );
     end 
     endtask
