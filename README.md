@@ -1,12 +1,32 @@
 # SPAM-1 CPU - Simple Programmable and Massive
 
-A Simple 8 bit home brew CPU built using 1970's logic chips.
+An 8 bit home brew CPU built using 1970's logic chips.
 
-Currently in simulation phase using Logism Evolution with Google Sheets based assembler.
+This project is currently in it's 3rd incarnation. 
 
-Will move to hardware once the tool chain is resolved.
+## Version 1a
 
+You can see the first incarnation here on the [OriginalDesign branch](https://github.com/Johnlon/spam-1/tree/OriginalDesign)
+
+This version had a very simple arch that was easily implementable and for which I wrote a logisim simulation and also an assember in GoogleSheets that could be used to program the sim.
 :thumbsup: See the [SPAM-1 Assembler](https://docs.google.com/spreadsheets/d/1lYyPqYNF1dGDRP2n3ablaqkgZuxJ9x6T-ylut_nT1p4/edit?usp=sharing) implemented in Google Sheets.  
+
+However, once I got that far I decided it was rather too simple and limited for me to build. I wanted more of a challenge.
+It's now months later and the challence is still brewing, which is a bit of a disappointment.
+
+## Verson 1b
+
+This was a pretty massive increase in complexity and capability however, while this was definitely more of a challenge I felt the trade off between added compexity and added capability wasn't favourable, so I decided what was needed was a little bit more technical complexity for a lot more capability.
+
+## Version 1c 
+
+I'm currently working on what I hope is the final version.
+
+This has a 24 bit instruction word spread across 3 ROM's as I couldn't be bothered with the logic to drive this off a single ROM (plus it's faster that way). The other big change is that I've included a bunch of features that are intended for exploration and learning such as a register file and having basically 5 buses!
+
+![Block Diagram](draft-v3-block-diagram.png)
+
+# Documentation Links
 
 See also:
  - [ALU Design](docs/alu_with_carry_in.md)
@@ -16,7 +36,7 @@ See also:
  - [Hardware Components](docs/components.md)
  - [Digital Simulators](docs/digital-simulators.md)
 
-## Motivation
+# Motivation
 
 A bit of fun!
 
@@ -28,36 +48,49 @@ own CPU. Back in 1980 even the relatively few parts needed would probably have b
 
 However, back in the 1980's I would have been building more or less blind. I still don't have an oscilloscope but what I do have is a simulator.   
 
-Having spent the last few weeks getting to know [Logisim Evolution](https://github.com/reds-heig/logisim-evolution)  and having hours trying to figure out the fine details of my simulated processor
+Having spent a few weeks getting to know [Logisim Evolution](https://github.com/reds-heig/logisim-evolution)  and having hours trying to figure out the fine details of my simulated processor
 it's clear that if I had attempted to build a CPU back in 1980 then I'd have fallen flat on my face.
 It's been a great learning experience, if frustrating at times.
 
 So I've decided to build an 8 bit CPU for myself, for the sheer joy and nostalgia, sweat and tears.
 
+Since then I've extended the design extensively and have chosen to simulate the whole thing in Verilog with accurate propagation delays to hopefully tease out timing errors (I don't own an oscilloscope!).
+
+Leaning verilog and reworking most of the design has taken months, but as of Jun 2020, I'm on the verge fo finalising the verilog and will have a go at writing various programs to prove out the design and test it's capabilities.
+
 # Objectives
 
-- I want to be able to run at least the typical demo programs like Fibonacci 
-- It will have an assembly language and assembler
-- I want to simulate it first
-- I want to build it physically, or a more likely a  derivative
-- Attach some output device - eg a UART / tty that respects VT codes (or Graphics??)
-- I might port or other higher level language to it for curiosity (which one and where to start?)
+- I want to build something non-trivial with direct and immediate addressing capabilites for variety
+- I want to use it as a vehicle for learning about lots of stuff including register files and other curiosities as well as instruction set design, some lesser known chips, and so on
+- I originally wanted to be able to run at least the typical demo programs like Fibonacci, but that proved pretty trivial and was done in version 1a as a program on the logisim version - I want more than that now as h/w with out sofware is nothing
+- It will have an assembly language and assembler and hopefully some kind of higher language compilere
+- I want to simulate it first - verilog
+- I want to build it physically, or a more likely a derivative (update 2020: it has turned out to be a distant derivative fo the original design)
+- Attach some output devices - eg a UART / tty that respects VT codes (or Graphics??)
 - I would like to extend it to play some kind of basic game (tbd)
+- I want to finally complete it during 2020 (please!!!)
 
-:star: But I wanted to do things a little differently to some of the other efforts on the internet! I want the assembler and any other code I write to 
-to be more readily accessible and instantly usable to others (like you) without installing python or perl or whatever first, so I've written the assembler in google sheets! 
+:star: Initially I wanted to do the tool chain a little differently to some of the other efforts on the internet! I want the assembler and any other code I write to to be more readily accessible and instantly usable to others without installing python or perl or whatever first, so I've wrote an assembler in google sheets! 
+
+However, further development of the design really required more powerful tooling such as Icarus Verilog as well as Python after all.
+
+My development environment is still pretty accessible as I use Windows 10 running the Windows Subsystem for Linux. So I have a full Linux environment without the need to install a virtualisation software like VirtualBox and it all just works very sweet. The integration between Windows 10 and WSL is brilliant and I use the same environment for any opensource coding I do these days. I wish I could use it at work frankly.
+
+I will at some point do a video on setting up the tooling as it's generally useful I feel and shouldn't put folk off trying this kind of thing themselves. I use VSCode for the verilog and documentation. I use IntelliJ profressionally but the verilog plugins for intelliJ as commercial only so no thanks to that. I'll include the VSCode setup in whatever video I do and I'll probably write it up here and/or in the [Hackaday project](https://hackaday.io/project/166922-spam-1-8-bit-cpu).
 
 # Architecture Summary
 
-- Single bus
+- Five ~~Single~~ bus
 - 8 bits data
-- 8 bits address
-- 16 bit instruction
-- 8 bit ALU - right now just add/subtract with and without carry (and eventally other arithmetic and logical operations)
+- 16 ~~8~~ bits address
+- 24 ~~16~~ bit instruction
+- 8 bit ALU - full complement of arithmentic and logical ops (approx 32) and magnitude comparisons
 - Separate RAM and ROM (for no particular reason - could have been all RAM or a single address space)
-- One instruction per clock cycle (effectively "Fetch/Decode" on one edge of clock and "Execute" on the other edge of the clock)
-- Uses horizontal microcode style instructions, not "microcoded" instructions, ie each instruction is at microcode level and directly enables the necessary control lines.
- Therefore control logic is trivial so unlike some other systems there is no PROM for control decoding and there is no Instruction Register (yet) either.
+- Fetch/Decode/Execute. Was originally Fetch/Decode on one edge of clock and Execute on the other but this was limiting in terms of being able to implement a direct addressing mode. I might still build it as a single cycle machine and then add in direct addressing incrementally. Direct addressing also requires me to introduct a 24 bit instruction register.
+- The original design was to use horizontal microcode style instructions, not "microcoded" instructions, ie each instruction is at microcode level and directly enables the necessary control lines.
+ Therefore control logic would be trivial. However, as the number of devices in the design increased this approach became less feasible. The design now uses a four bit addressing scheme encoded into the instruictons to select the devices that will participate in the operation. I would dearly liek to go back to a simple horizontal encoding approach and mighe at some point rip up my control logic and base the design on 5 or 10 program roms so that I can directly drive all the control lines with almost no additional logic. I quite like the idea that it would be rather like a hand cranked music box.
+
+ ![Hand cranked music box](Hand-Cranked-Musical-Box.jpg)
 - Registers
   - A and B general purpose registers (GPR) - These are not symmetrical because "A" always comes first in arithmetic ie "=A+B" and "=A-B"
   - Memory Address Register (MAR)
