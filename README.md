@@ -24,7 +24,7 @@ I'm currently working on what I hope is the final version.
 
 This has a 24 bit instruction word spread across 3 ROM's as I couldn't be bothered with the logic to drive this off a single ROM (plus it's faster that way). The other big change is that I've included a bunch of features that are intended for exploration and learning such as a register file and having basically 5 buses!
 
-![Block Diagram](draft-v3-block-diagram.png)
+![Block Diagram](docs/draft-v3-block-diagram.png)
 
 # Documentation Links
 
@@ -88,33 +88,61 @@ I will at some point do a video on setting up the tooling as it's generally usef
 - Separate RAM and ROM (for no particular reason - could have been all RAM or a single address space)
 - Fetch/Decode/Execute. Was originally Fetch/Decode on one edge of clock and Execute on the other but this was limiting in terms of being able to implement a direct addressing mode. I might still build it as a single cycle machine and then add in direct addressing incrementally. Direct addressing also requires me to introduct a 24 bit instruction register.
 - The original design was to use horizontal microcode style instructions, not "microcoded" instructions, ie each instruction is at microcode level and directly enables the necessary control lines.
- Therefore control logic would be trivial. However, as the number of devices in the design increased this approach became less feasible. The design now uses a four bit addressing scheme encoded into the instruictons to select the devices that will participate in the operation. I would dearly liek to go back to a simple horizontal encoding approach and mighe at some point rip up my control logic and base the design on 5 or 10 program roms so that I can directly drive all the control lines with almost no additional logic. I quite like the idea that it would be rather like a hand cranked music box.
+Therefore control logic would be trivial. However, as the number of devices in the design increased this approach became less feasible. The design now uses a four bit addressing scheme encoded into the instruictons to select the devices that will participate in the operation. I would dearly liek to go back to a simple horizontal encoding approach and mighe at some point rip up my control logic and base the design on 6 or 10 program roms so that I can directly drive all the control lines with almost no additional logic. I quite like the idea that it would be rather like a hand cranked music box. 
 
- ![Hand cranked music box](Hand-Cranked-Musical-Box.jpg)
+   ![Hand cranked music box](docs/Hand-Cranked-Musical-Box-small.jpg)
+
 - Registers
-  - A and B general purpose registers (GPR) - These are not symmetrical because "A" always comes first in arithmetic ie "=A+B" and "=A-B"
-  - Memory Address Register (MAR)
+  - Register file : registers A/B/C/D
+  - Memory Address Register : MARHI and MARLO
   - Program Counter (PC)
-  - Status (flags) register - Zero,  Carry, Equals
-  - Display register (also use for input?)
-- Instructions for load most registers from most other registers, jump and branch, addition and subtraction - there's a surprising lot you can do with this and even without complex microcoded instructions
+  - Status (flags) register - Zero,  Carry, Equals, Overflow plus comparator flags
+  - UART for output and input
 
-The initial design below is what I've currently simulated in Logism.
+- Instruction set is phrased around moving data from device to device and all transfers go via the ALU.
 
-![Block diagram](docs/blocks-orig.png)
+
+
 
 # Progress
 
-I've spent a couple of weeks building the sim for a CPU. It's 8 bit and based on ideas from various places but kind of grew by itself with a little planning.
-It's a fairly primitive one in that there is no microcoding of higher level instructions, or to put it another way every instruction is microcode. 
+## v1c
 
-It turns out that this approach means SPAM1 doesn't need an instruction register. This might change if I modify the design to include variable length instructions.
+In the final design I decided to push everything via the ALU.
 
-:star: The complete set of instruction and argument combinations are [here](docs/instructions.txt)
+The design is shown towards the top of this page.
 
-- The simulator works
-- The assembler and decoder work (see below) and I'm happy with the way the software turned out
-- My Fib program counts up and down in a loop
+The initial sketch was this ....
+
+![Initial all via ALU approach](docs/first-cut-all-via-alu.png)
+
+
+## v1b
+
+This version was a verilog and paper design. But as mentioned earlier it wasn't enough of an functional improvement so I let this continuie to evolve.
+
+I had started thinking about how to pass ROM or RAM output via the ALU as well as the registers, but I still had a data bus.
+
+![Initial via ALU approach](docs/design-via-alu-sketch.png)
+
+Prior to that I extended the address space to 16 bits and started thinking about other approaches to memory addressing.
+
+![Intermediate design](docs/initial-adaption-design.png)
+
+## v1a
+
+The first incarnnation.
+
+![Block diagram](docs/blocks-orig.png)
+
+I spent a couple of weeks building the sim for a CPU. It was 8 bit and based on ideas from various places but kind of grew by itself with a little planning. It's was fairly primitive one in that there is no microcoding of higher level instructions, or to put it another way every instruction is microcode. 
+It turned out that this approach means SPAM1 doesn't need an instruction register. This might change if I modify the design to include variable length instructions.
+
+:star: The complete set of instruction and argument combinations were [here](docs/instructions.txt)
+
+- The simulator worked
+- The assembler and decoder worked (see below) and I'm was happy with the way the software turned out
+- My Fib program counted up and down in a loop
 
 So all good !!
 
@@ -128,7 +156,10 @@ I've built the assembler in Google Sheets, which I think might be a pretty uniqu
 
 ![Assembler](docs/sheets-assembler.png) 
 
+
 # Architecture
+
+####### THIS DOCUMENTATION NEEDS UPDATING
 
 ## CPU Phases
 
