@@ -33,7 +33,7 @@ parameter [2:0] op_RAM_ABS_eq_DEV_sel   = 6; // == RBUSDEV=[19:16]     LBUSDEV=X
 `define DECODE_PHASE   logic [6*8-1:0] sPhase; assign sPhase = `DECODE_PHASES;
 
 // unlike an assign this executes instantaneously but not referentially transparent
-`define DECODE_ADDRMODES (!_addrmode_pc ? "pc" : !_addrmode_register?  "reg" : !_addrmode_direct? "dir": "---") 
+`define DECODE_ADDRMODES (!_addrmode_pc ? "pc" : !_addrmode_register?  "register" : !_addrmode_direct? "direct": "---") 
 `define DECODE_ADDRMODE  logic [3*8-1:0] sAddrMode; assign sAddrMode = `DECODE_ADDRMODES;
 
 // verilator lint_off ASSIGNDLY
@@ -91,6 +91,14 @@ module control;
     localparam [4:0] DEV_jmpc= 21;
     localparam [4:0] DEV_jmpdi= 22;
     localparam [4:0] DEV_jmpdo= 23;
+    localparam [4:0] DEV_jmpeq= 24;
+    localparam [4:0] DEV_jmpne= 25;
+    localparam [4:0] DEV_jmpgt= 26;
+    localparam [4:0] DEV_jmplt= 27;
+    localparam [4:0] DEV_nu1= 28;
+    localparam [4:0] DEV_nu2= 29;
+    localparam [4:0] DEV_nu3= 30;
+    localparam [4:0] DEV_nu4= 31;
 
     // targets
     function [4:0] TDEV([3:0] x);
@@ -122,27 +130,34 @@ module control;
     `TARGH(jmpc)
     `TARGH(jmpdi)
     `TARGH(jmpdo)
-    // 24-32 - todo
+    `TARGH(jmpeq)
+    `TARGH(jmpne)
+    `TARGH(jmpgt)
+    `TARGH(jmplt)
+    `TARGH(nu1)
+    `TARGH(nu2)
+    `TARGH(nu3)
+    `TARGH(nu4)
 
     function string devname([3:0] dev); 
     begin
         case (dev)
-            00: devname = "RAM";
-            01: devname = "ROM";
-            02: devname = "MARLO";
-            03: devname = "MARHI";
-            04: devname = "UART";
-            05: devname = "REGA"; // 1
-            06: devname = "REGB"; // 2
-            07: devname = "REGC"; // 3
-            08: devname = "REGD"; // 4
-            09: devname = "REGE"; // 5
-            10: devname = "REGF"; // 6
-            11: devname = "REGG"; // 7
-            12: devname = "REGH"; // 8
-            13: devname = "FLAGS";
-            14: devname = "NOT_USED_1";
-            15: devname = "INSTREG";
+            DEV_ram: devname = "RAM";
+            DEV_rom: devname = "ROM";
+            DEV_marlo: devname = "MARLO";
+            DEV_marhi: devname = "MARHI";
+            DEV_uart: devname = "UART";
+            DEV_rega: devname = "REGA"; // 1
+            DEV_regb: devname = "REGB"; // 2
+            DEV_regc: devname = "REGC"; // 3
+            DEV_regd: devname = "REGD"; // 4
+            DEV_rege: devname = "REGE"; // 5
+            DEV_regf: devname = "REGF"; // 6
+            DEV_regg: devname = "REGG"; // 7
+            DEV_regh: devname = "REGH"; // 8
+            DEV_flags: devname = "FLAGS";
+            DEV_reg_not_used_1: devname = "NOT_USED_1";
+            DEV_instreg: devname = "INSTREG";
             default: begin
                 string n; 
                 $sformat(n,"??(unknown %4b)", dev);
@@ -161,21 +176,22 @@ module control;
         else 
         begin
             case (tdev)
-                00: tdevname = "PCHITMP";
-                01: tdevname = "PCLO";
-                02: tdevname = "PC";
-                03: tdevname = "JMPO";
-                04: tdevname = "JMPZ";
-                05: tdevname = "JPMC";
-                06: tdevname = "JMPDI";
-                07: tdevname = "JMPDO";
-                08: tdevname = "JMPEQ";
-                09: tdevname = "JMPNE";
-                10: tdevname = "JMPGT";
-                11: tdevname = "JMPLT";
-                13: tdevname = "NU13";
-                14: tdevname = "NU14";
-                15: tdevname = "NU15";
+                TDEV_pchitmp: tdevname = "PCHITMP";
+                TDEV_pclo: tdevname = "PCLO";
+                TDEV_pc: tdevname = "PC";
+                TDEV_jmpo: tdevname = "JMPO";
+                TDEV_jmpz: tdevname = "JMPZ";
+                TDEV_jmpc: tdevname = "JPMC";
+                TDEV_jmpdi: tdevname = "JMPDI";
+                TDEV_jmpdo: tdevname = "JMPDO";
+                TDEV_jmpeq: tdevname = "JMPEQ";
+                TDEV_jmpne: tdevname = "JMPNE";
+                TDEV_jmpgt: tdevname = "JMPGT";
+                TDEV_jmplt: tdevname = "JMPLT";
+                TDEV_nu1: tdevname = "NU2";
+                TDEV_nu2: tdevname = "NU2";
+                TDEV_nu3: tdevname = "NU3";
+                TDEV_nu4: tdevname = "NU4";
                 default: begin
                     string n; 
                     $sformat(n,"??(unknown %5b)", tdev);
