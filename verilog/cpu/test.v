@@ -24,6 +24,144 @@
 
 `timescale 1ns/1ns
 
+`define CONTROL_WIRES(FN, SEP)  \
+    ```FN``_TDEV_SEL(ram) SEP \
+    ```FN``_RDEV_SEL(ram) SEP\
+    \
+    ```FN``_RDEV_SEL(rom)    SEP\
+    \
+    ```FN``_LDEV_SEL(marlo)    SEP\
+    ```FN``_RDEV_SEL(marlo)    SEP\
+    ```FN``_TDEV_SEL(marlo)    SEP\
+    \
+    ```FN``_LDEV_SEL(marhi)    SEP\
+    ```FN``_RDEV_SEL(marhi)    SEP\
+    ```FN``_TDEV_SEL(marhi)    SEP\
+    \
+    ```FN``_LDEV_SEL(rega)    SEP\
+    ```FN``_RDEV_SEL(rega)    SEP\
+    ```FN``_TDEV_SEL(rega)    SEP\
+    \
+    ```FN``_LDEV_SEL(regb)    SEP\
+    ```FN``_RDEV_SEL(regb)    SEP\
+    ```FN``_TDEV_SEL(regb)    SEP\
+    \
+    ```FN``_LDEV_SEL(regc)    SEP\
+    ```FN``_RDEV_SEL(regc)    SEP\
+    ```FN``_TDEV_SEL(regc)    SEP\
+    \
+    ```FN``_LDEV_SEL(regd)    SEP\
+    ```FN``_RDEV_SEL(regd)    SEP\
+    ```FN``_TDEV_SEL(regd)    SEP\
+    \
+    ```FN``_LDEV_SEL(uart)    SEP\
+    ```FN``_TDEV_SEL(uart)    SEP\
+    \
+    ```FN``_RDEV_SEL(instreg)    SEP\
+       \
+    ```FN``_TDEV_SEL(pchitmp)    SEP\
+    ```FN``_TDEV_SEL(pclo)    SEP\
+    ```FN``_TDEV_SEL(pc)    SEP\
+    ```FN``_TDEV_SEL(jmpo)    SEP\
+    ```FN``_TDEV_SEL(jmpz)    SEP\
+    ```FN``_TDEV_SEL(jmpc)    SEP\
+    ```FN``_TDEV_SEL(jmpdi)    SEP\
+    ```FN``_TDEV_SEL(jmpdo)    
+
+`define SEMICOLON ;
+`define COMMA ,
+
+`define OUT_LDEV_SEL(DNAME) output _ldev_``DNAME``
+`define OUT_RDEV_SEL(DNAME) output _rdev_``DNAME``
+`define OUT_TDEV_SEL(DNAME) output _``DNAME``_in
+
+module controller(
+    input phaseFetch, input phaseDecode, input phaseExec, input _phaseFetch, input _phaseExec,
+    input [15:0] address_bus,
+
+    output _addrmode_register, output _addrmode_pc, output _addrmode_direct,
+
+    // selection wires
+    `CONTROL_WIRES(OUT, `COMMA),
+    output [7:0] direct_address_lo, direct_address_hi,
+    output [7:0] direct8,
+    output [7:0] immed8,
+    output [4:0] alu_op,
+    output [3:0] rbus_dev, lbus_dev,
+    output [4:0] targ_dev
+);
+     
+    wire [7:0] instruction_hi, instruction_mid, instruction_lo;
+    wire [2:0] op_ctrl;
+
+    rom #(.AWIDTH(16)) rom_hi(._CS(1'b0), ._OE(1'b0), .A(address_bus));
+    rom #(.AWIDTH(16)) rom_mid(._CS(1'b0), ._OE(1'b0), .A(address_bus));
+    rom #(.AWIDTH(16)) rom_lo(._CS(1'b0), ._OE(1'b0), .A(address_bus)); 
+   
+    // instruction reg buffer
+    hct74573 rom_hi_inst_reg(
+         .LE(phaseFetch), // data latches when fetch ends
+         ._OE(1'b0),
+         .D(rom_hi.D),
+         .Q(instruction_hi) 
+    );
+
+    hct74573 rom_mid_inst_reg(
+         .LE(phaseFetch), // data latches when fetch ends
+         ._OE(1'b0),
+         .D(rom_mid.D),
+         .Q(instruction_mid) 
+    );
+
+    hct74573 rom_lo_inst_reg(
+         .LE(phaseFetch), // data latches when fetch ends
+         ._OE(1'b0),
+         .D(rom_lo.D),
+         .Q(instruction_lo) 
+    );
+
+    assign direct8 = rom_lo.D;
+    assign immed8 = instruction_lo;
+    assign direct_address_lo = instruction_lo;
+    assign direct_address_hi = instruction_mid;
+    assign op_ctrl = instruction_hi[7:5];
+
+    op_decoder #(.LOG(1)) op_decode(.data_hi(instruction_hi), .data_mid(instruction_mid), .data_lo(instruction_lo), .rbus_dev, .lbus_dev, .targ_dev, .alu_op);
+
+    memory_address_mode_decoder #(.LOG(1)) addr_decode( 
+        .ctrl(op_ctrl),
+        .phaseFetch, ._phaseFetch, .phaseDecode, .phaseExec, 
+        ._addrmode_pc, ._addrmode_register, ._addrmode_direct 
+    );
+
+
+    // device decoders
+    hct74138 lbus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(lbus_dev[3]), .A(lbus_dev[2:0]));
+    hct74138 lbus_dev_16_demux(.Enable3(lbus_dev[3]), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(lbus_dev[2:0]));
+    
+    hct74138 rbus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(rbus_dev[3]), .A(rbus_dev[2:0]));
+    hct74138 rbus_dev_16_demux(.Enable3(rbus_dev[3]), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(rbus_dev[2:0]));
+
+    wire [3:0] _targ_dev_block_sel, un4; 
+    hct74139 targ_dev_block_demux(._Ea(1'b0), ._Eb(1'b0), .Aa(targ_dev[4:3]), .Ab(2'b0), ._Ya(_targ_dev_block_sel), ._Yb(un4));
+    hct74138 targ_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_dev_block_sel[0]), .A(targ_dev[2:0]));
+    hct74138 targ_dev_16_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_dev_block_sel[1]), .A(targ_dev[2:0]));
+    hct74138 targ_dev_24_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_dev_block_sel[2]), .A(targ_dev[2:0]));
+    hct74138 targ_dev_32_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_dev_block_sel[3]), .A(targ_dev[2:0]));
+
+    // control lines for device selection
+    wire [31:0] tsel = {targ_dev_32_demux.Y, targ_dev_24_demux.Y, targ_dev_16_demux.Y, targ_dev_08_demux.Y};
+    wire [15:0] lsel = {lbus_dev_16_demux.Y, lbus_dev_08_demux.Y};
+    wire [15:0] rsel = {rbus_dev_16_demux.Y, rbus_dev_08_demux.Y};
+    
+    `define HOOKUP_LDEV_SEL(DNAME) wire _ldev_``DNAME`` = lsel[control.DEV_``DNAME``]
+    `define HOOKUP_RDEV_SEL(DNAME) wire _rdev_``DNAME`` = rsel[control.DEV_``DNAME``]
+    `define HOOKUP_TDEV_SEL(DNAME) wire _``DNAME``_in = tsel[control.TDEV_``DNAME``]
+    
+    `CONTROL_WIRES(HOOKUP, `SEMICOLON);
+
+endmodule: controller
+
 module test();
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
@@ -39,8 +177,6 @@ module test();
     wire [4:0] targ_dev;
     wire [4:0] alu_op;
 
-    wire _addrmode_register, _addrmode_pc, _addrmode_direct;
-    wire [2:0] _addrmode = {_addrmode_pc, _addrmode_register, _addrmode_direct}; 
 
     wire phaseFetch, phaseDecode, phaseExec, _phaseFetch, _phaseExec;
     wire [2:0] phase = {phaseFetch, phaseDecode, phaseExec};
@@ -96,107 +232,37 @@ module test();
     phaser #(.LOG(0)) ph(.clk, .mr(mrPH), .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec, ._phaseExec);
 
     // CONTROL ===========================================================================================
-   
+    wire _addrmode_register, _addrmode_pc, _addrmode_direct;
     wire [7:0] instruction_hi, instruction_mid, instruction_lo;
-
-    // instruction reg buffer
-    hct74573 rom_hi_inst_reg(
-         .LE(phaseFetch), // data latches when fetch ends
-         ._OE(1'b0),
-         .D(rom_hi.D),
-         .Q(instruction_hi) 
-    );
-
-    hct74573 rom_mid_inst_reg(
-         .LE(phaseFetch), // data latches when fetch ends
-         ._OE(1'b0),
-         .D(rom_mid.D),
-         .Q(instruction_mid) 
-    );
-
-    hct74573 rom_lo_inst_reg(
-         .LE(phaseFetch), // data latches when fetch ends
-         ._OE(1'b0),
-         .D(rom_lo.D),
-         .Q(instruction_lo) 
-    );
-
-    op_decoder #(.LOG(0)) op_decode(.data_hi(instruction_hi), .data_mid(instruction_mid), .data_lo(instruction_lo), .rbus_dev, .lbus_dev, .targ_dev, .alu_op);
-
-    memory_address_mode_decoder #(.LOG(1)) addr_decode( 
-        .ctrl(instruction_hi[7:5]), 
-        .phaseFetch, ._phaseFetch, .phaseDecode, .phaseExec, 
-        ._addrmode_pc, ._addrmode_register, ._addrmode_direct 
-    );
-
-
-    // device decoders
-    hct74138 lbus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(lbus_dev[3]), .A(lbus_dev[2:0]));
-    hct74138 lbus_dev_16_demux(.Enable3(lbus_dev[3]), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(lbus_dev[2:0]));
-    
-    hct74138 rbus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(rbus_dev[3]), .A(rbus_dev[2:0]));
-    hct74138 rbus_dev_16_demux(.Enable3(rbus_dev[3]), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(rbus_dev[2:0]));
-
-    wire [3:0] _targ_dev_block_sel, un4; 
-    hct74139 targ_dev_block_demux(._Ea(1'b0), ._Eb(1'b0), .Aa(targ_dev[4:3]), .Ab(2'b0), ._Ya(_targ_dev_block_sel), ._Yb(un4));
-    hct74138 targ_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_dev_block_sel[0]), .A(targ_dev[2:0]));
-    hct74138 targ_dev_16_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_dev_block_sel[1]), .A(targ_dev[2:0]));
-    hct74138 targ_dev_24_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_dev_block_sel[2]), .A(targ_dev[2:0]));
-    hct74138 targ_dev_32_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(_targ_dev_block_sel[3]), .A(targ_dev[2:0]));
-
-    // control lines for device selection
-    wire [31:0] tsel = {targ_dev_32_demux.Y, targ_dev_24_demux.Y, targ_dev_16_demux.Y, targ_dev_08_demux.Y};
-    wire [15:0] lsel = {lbus_dev_16_demux.Y, lbus_dev_08_demux.Y};
-    wire [15:0] rsel = {rbus_dev_16_demux.Y, rbus_dev_08_demux.Y};
+    wire [7:0] direct_address_hi, direct_address_lo;
+    wire [7:0] direct8;
+    wire [7:0] immed8;
 
     // selection wires
-    `define WIRE_LDEV_SEL(DNAME) wire _ldev_``DNAME`` = lsel[control.DEV_``DNAME``];
-    `define WIRE_RDEV_SEL(DNAME) wire _rdev_``DNAME`` = rsel[control.DEV_``DNAME``];
-    `define WIRE_TDEV_SEL(DNAME) wire _``DNAME``_in = tsel[control.TDEV_``DNAME``];
+    `define WIRE_LDEV_SEL(DNAME) wire _ldev_``DNAME``
+    `define WIRE_RDEV_SEL(DNAME) wire _rdev_``DNAME``
+    `define WIRE_TDEV_SEL(DNAME) wire _``DNAME``_in
 
-    `WIRE_TDEV_SEL(ram)
-    `WIRE_RDEV_SEL(ram)
+    `CONTROL_WIRES(WIRE, `SEMICOLON);
 
-    `WIRE_RDEV_SEL(rom)
+    `define BIND_LDEV_SEL(DNAME) ._ldev_``DNAME``
+    `define BIND_RDEV_SEL(DNAME) ._rdev_``DNAME``
+    `define BIND_TDEV_SEL(DNAME) ._``DNAME``_in
 
-    `WIRE_LDEV_SEL(marlo)
-    `WIRE_RDEV_SEL(marlo)
-    `WIRE_TDEV_SEL(marlo)
+    // FOO
+    controller ctrl(
+        .phaseFetch, .phaseDecode, .phaseExec, ._phaseFetch, ._phaseExec,
+        .address_bus,
 
-    `WIRE_LDEV_SEL(marhi)
-    `WIRE_RDEV_SEL(marhi)
-    `WIRE_TDEV_SEL(marhi)
+        ._addrmode_register, ._addrmode_pc, ._addrmode_direct,
+        `CONTROL_WIRES(BIND, `COMMA),
+        .direct_address_hi, .direct_address_lo,
+        .direct8,
+        .immed8,
+        .alu_op,
+        .rbus_dev, .lbus_dev, .targ_dev
+    );
 
-    `WIRE_LDEV_SEL(rega)
-    `WIRE_RDEV_SEL(rega)
-    `WIRE_TDEV_SEL(rega)
-
-    `WIRE_LDEV_SEL(regb)
-    `WIRE_RDEV_SEL(regb)
-    `WIRE_TDEV_SEL(regb)
-
-    `WIRE_LDEV_SEL(regc)
-    `WIRE_RDEV_SEL(regc)
-    `WIRE_TDEV_SEL(regc)
-
-    `WIRE_LDEV_SEL(regd)
-    `WIRE_RDEV_SEL(regd)
-    `WIRE_TDEV_SEL(regd)
-
-    `WIRE_LDEV_SEL(uart)
-    `WIRE_TDEV_SEL(uart)
-
-    `WIRE_RDEV_SEL(instreg)
-   
-    `WIRE_TDEV_SEL(pchitmp)
-    `WIRE_TDEV_SEL(pclo)
-    `WIRE_TDEV_SEL(pc)
-    `WIRE_TDEV_SEL(jmpo)
-    `WIRE_TDEV_SEL(jmpz)
-    `WIRE_TDEV_SEL(jmpc)
-    `WIRE_TDEV_SEL(jmpdi)
-    `WIRE_TDEV_SEL(jmpdo)
-     
     // PROGRAM COUNTER ======================================================================================
 
     wire [7:0] PCHI, PCLO; // output of PC
@@ -219,18 +285,15 @@ module test();
 
     // ROM =============================================================================================
 
-    rom #(.AWIDTH(16)) rom_hi(._CS(1'b0), ._OE(1'b0), .A(address_bus));
-    rom #(.AWIDTH(16)) rom_mid(._CS(1'b0), ._OE(1'b0), .A(address_bus));
-    rom #(.AWIDTH(16)) rom_lo(._CS(1'b0), ._OE(1'b0), .A(address_bus)); 
     
     // ROM OUT to RBUS when direct rom addressing is being used
-    hct74245ab rom_rbus_buf(.A(rom_lo.D), .B(rbus), .nOE(_rdev_rom));
+    hct74245ab rom_rbus_buf(.A(direct8), .B(rbus), .nOE(_rdev_rom));
 
     // ROM OUT TO RBUS VIA IR is immediate addressing of that operand, and we can be simultaneously register (MAR) addressing the RAM
-    hct74245ab rom_instreg_rbus_buf(.A(instruction_lo), .B(rbus), .nOE(_rdev_instreg));
+    hct74245ab rom_instreg_rbus_buf(.A(immed8), .B(rbus), .nOE(_rdev_instreg));
 
-    hct74245ab rom_addrbuslo_buf(.A(instruction_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
-    hct74245ab rom_addrbushi_buf(.A(instruction_mid), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
+    hct74245ab rom_addrbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
+    hct74245ab rom_addrbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
 
     // RAM =============================================================================================
 
@@ -352,7 +415,7 @@ module test();
     // SETUP ROM
     task INIT_ROM;
     begin
-        `define ROM(A) {rom_hi.Mem[A], rom_mid.Mem[A], rom_lo.Mem[A]}
+        `define ROM(A) {ctrl.rom_hi.Mem[A], ctrl.rom_mid.Mem[A], ctrl.rom_lo.Mem[A]}
         `define RAM(A) ram64.Mem[A]
 
         // CODE SEGMENT
@@ -407,6 +470,16 @@ module test();
 
     end
     endtask : INIT_ROM
+
+    wire [2:0] _addrmode = {_addrmode_pc, _addrmode_register, _addrmode_direct}; 
+
+    `define LOG_LDEV_SEL(DNAME) " _ldev_``DNAME``=%1b", _ldev_``DNAME``
+    `define LOG_RDEV_SEL(DNAME) " _rdev_``DNAME``=%1b", _rdev_``DNAME``
+    `define LOG_TDEV_SEL(DNAME) " _``DNAME``_in=%1b",  _``DNAME``_in
+
+    always @* begin
+        $display("%9t", $time, " WIRES  ", `CONTROL_WIRES(LOG, `COMMA));
+    end
 
     // TESTS
     initial begin
@@ -715,17 +788,18 @@ module test();
             $display ("%9t ", $time,  "DUMP  ",
                  " seq=%-2d", $clog2(seq)+1);
             $display ("%9t ", $time,  "DUMP  ",
-                 " instruction=%08b:%08b:%08b", instruction_hi, instruction_mid, instruction_lo);
+                 " instruction=%08b:%08b:%08b", ctrl.instruction_hi, ctrl.instruction_mid, ctrl.instruction_lo);
             $display ("%9t ", $time,  "DUMP  ",
-                " op=%d(%-s)", instruction_hi[7:5], control.opName(instruction_hi[7:5]),
+                " op=%d(%-s)", ctrl.op_ctrl, control.opName(ctrl.op_ctrl),
                  " FDE=%1b%1b%1b(%-s)", phaseFetch, phaseDecode, phaseExec, control.fPhase(phaseFetch, phaseDecode, phaseExec));
             $display ("%9t ", $time,  "DUMP  ",
-                 " amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
+                 " _amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
+                 " (%03b)", {_addrmode_pc, _addrmode_register, _addrmode_direct},
                  " addrbus=0x%4x", address_bus);
             $display ("%9t ", $time,  "DUMP  ",
-                 " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus);
+                 " rom=%08b:%08b:%08b", ctrl.rom_hi.D, ctrl.rom_mid.D, ctrl.rom_lo.D);
             $display ("%9t ", $time,  "DUMP  ",
-                 " rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D);
+                 " direct8=%08b", direct8);
             $display ("%9t ", $time,  "DUMP  ",
                  " ram=%08b", ram64.D);
             $display ("%9t ", $time,  "DUMP  ",
@@ -734,6 +808,8 @@ module test();
                 " rdev=%4b(%s)", rbus_dev,control.devname(rbus_dev),
                 " alu_op=%5b(%s)", alu_op, alu_func.aluopName(alu_op)
             );            
+            $display ("%9t ", $time,  "DUMP  ",
+                 " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus);
             $display ("%9t ", $time,  "DUMP  ",
                  " MAR=%8b:%8b (0x%2x:%2x)", MARHI.Q, MARLO.Q, MARHI.Q, MARLO.Q);
             $display ("%9t ", $time,  "DUMP  ",
@@ -768,7 +844,7 @@ module test();
         $display ("%9t ", $time,  "MON     ",
                  "rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
                  " seq=%-2d", $clog2(seq)+1,
-                 " amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
+                 " _amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
                  " addrbus=0x%4x", address_bus,
                  " FDE=%-6s (%1b%1b%1b)", control.fPhase(phaseFetch, phaseDecode, phaseExec), phaseFetch, phaseDecode, phaseExec,
                  " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus,
@@ -818,16 +894,16 @@ module test();
     end
 
     if (0) always @* 
-        $display ("%9t ", $time,  "ADDRESSING      amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct), " addrbus=0x%4x", address_bus);
+        $display ("%9t ", $time,  "ADDRESSING      _amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct), " addrbus=0x%4x", address_bus);
 
     if (0) always @* 
         $display ("%9t ", $time,  "ROM      rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
-                " amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
+                " _amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
                 " addrbus=0x%4x", address_bus);
         
     if (0) always @* 
         $display ("%9t ", $time,  "RAM     ram=%08b", ram64.D,
-                " amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
+                " _amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
                 " addrbus=0x%4x", address_bus,
                 " _ram_in=%1b _gated_ram_in=%1b", _ram_in, _gated_ram_in,
                 );
@@ -865,7 +941,7 @@ module test();
     // constraints
     always @(*) begin
         if (phaseDecode & instruction_hi === 'x) begin
-            $display("rom_hi.D", rom_hi.D); 
+            $display("rom_hi.D", ctrl.rom_hi.D); 
             $display("instruction_hi", instruction_hi); 
             DUMP;
             $display("END OF PROGRAM - CONTROL BYTE = XX "); 
@@ -932,7 +1008,7 @@ module test();
         // $monitor ("%9t ", $time,  "TEST     ",
         //         //"rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
         //         //" seq=%-2d", nSeq,
-        //         // " amode=%-3s", sAddrMode,
+        //         // " _amode=%-3s", sAddrMode,
         //         // " addrbus=0x%4x", address_bus,
         //         " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus,
         //         " rdev=%04b ldev=%04b targ=%05b alu_op=%05b ", rbus_dev, lbus_dev, targ_dev, alu_op,
