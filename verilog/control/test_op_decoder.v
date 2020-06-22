@@ -18,9 +18,9 @@ module test();
     wire [3:0] lbus_dev;
     wire [3:0] rbus_dev;
     wire [4:0] targ_dev;
-    wire [4:0] aluop;
+    wire [4:0] alu_op;
 
-	op_decoder #(.LOG(1)) decoder( .data_hi, .data_mid, .data_lo, .rbus_dev, .lbus_dev, .targ_dev, .aluop);
+	op_decoder #(.LOG(1)) decoder( .data_hi, .data_mid, .data_lo, .rbus_dev, .lbus_dev, .targ_dev, .alu_op);
 
     localparam T=100;   // clock cycle
     localparam SETTLE_TOLERANCE=20;
@@ -43,7 +43,7 @@ module test();
         `Equals( targ_dev, control.TDEV_uart)
         `Equals( lbus_dev, control.DEV_marlo)
         `Equals( rbus_dev, control.DEV_marhi)
-        `Equals( aluop, alu_func.ALUOP_ZERO)
+        `Equals( alu_op, alu_func.ALUOP_ZERO)
 
 
         d.display("1: OP_dev_eq_const8");
@@ -54,7 +54,7 @@ module test();
         `Equals( targ_dev, control.TDEV_marlo)
         `Equals( lbus_dev, 4'bxxxx)  // passed thru but irrelevant for this operation as [15:0] go to the address bus
         `Equals( rbus_dev, control.DEV_instreg)
-        `Equals( aluop, alu_func.ALUOP_PASSR)
+        `Equals( alu_op, alu_func.ALUOP_PASSR)
 
         d.display("4: OP_dev_eq_rom_direct");
         
@@ -64,7 +64,7 @@ module test();
         `Equals( targ_dev, control.TDEV_marlo) 
         `Equals( lbus_dev, 4'bxzxz)  // passed thru but irrelevant for this operation as [15:0] go to the address bus
         `Equals( rbus_dev, control.DEV_rom)
-        `Equals( aluop, alu_func.ALUOP_PASSR)
+        `Equals( alu_op, alu_func.ALUOP_PASSR)
 
         d.display("5: OP_dev_eq_ram_direct");
         
@@ -74,7 +74,7 @@ module test();
         `Equals( targ_dev, control.TDEV_marlo) 
         `Equals( lbus_dev, 4'bxzxz) // passed thru but irrelevant for this operation as [15:0] go to the address bus
         `Equals( rbus_dev, control.DEV_ram)
-        `Equals( aluop, alu_func.ALUOP_PASSR)
+        `Equals( alu_op, alu_func.ALUOP_PASSR)
 
         d.display("6: OP_ram_direct_eq_dev");
         
@@ -84,7 +84,7 @@ module test();
         `Equals( targ_dev, control.TDEV_ram) 
         `Equals( lbus_dev, control.DEV_marlo) // passed thru but irrelevant for this operation as [15:0] go to the address bus 
         `Equals( rbus_dev, 4'bzzzz)  // because the control logic at present doesn't set it at all in this case - but if we use tri0 then this will be 0
-        `Equals( aluop, alu_func.ALUOP_PASSL)
+        `Equals( alu_op, alu_func.ALUOP_PASSL)
         
         d.display("test end");
 
