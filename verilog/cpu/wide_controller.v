@@ -10,8 +10,6 @@
 `include "../rom/rom.v"
 `include "../alu/alu.v"
 `include "../control/control.v"
-//`include "../control/op_decoder.v"
-//`include "../control/memory_address_mode_decoder.v"
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
@@ -28,22 +26,20 @@
 `define REGISTER 1'b0
 
 // PSEUDO ASSEMBLER
-`define INSTRUCTION(TARGET, SRCA, SRCB, ALUOP, AMODE, IMMED, ADDRESS) { `toALUOP(ALUOP), cast.to5(`toDEV(TARGET)), cast.to4(`toDEV(SRCA)), cast.to4(`toDEV(SRCB)), 5'bz, AMODE, cast.to8(IMMED), cast.to16(ADDRESS) }
-
-`define DEV_EQ_XY_ALU(TARGET, SRCA, SRCB, ALUOP) `INSTRUCTION(TARGET, SRCA, SRCB, ALUOP, `REGISTER, 8'bz, 16'bz)
-`define DEV_EQ_ROM_DIRECT(TARGET, ADDRESS)       `INSTRUCTION(TARGET, not_used, rom, B, `DIRECT, 8'bz, ADDRESS)
-`define DEV_EQ_CONST8(TARGET, CONST8)            `INSTRUCTION(TARGET, not_used, instreg, B, `REGISTER, CONST8, 16'bz)
-`define DEV_EQ_RAM_DIRECT(TARGET, ADDRESS)       `INSTRUCTION(TARGET, not_used, ram, B, `DIRECT, 'z, ADDRESS)
-`define RAM_DIRECT_EQ_DEV(ADDRESS, SRC)          `INSTRUCTION(ram, not_used, SRC, B, `DIRECT, 'z, ADDRESS)
-
-/*
-`define DEV_EQ_ROM_DIRECT(TARGET, ADDRESS)       { control.OP_dev_eq_rom_direct, cast.to5(`toDEV(TARGET)), cast.to16(ADDRESS) }
-`define DEV_EQ_CONST8(TARGET, CONST8)            { control.OP_dev_eq_const8, cast.to5(`toDEV(TARGET)), 8'hx, cast.to8(CONST8) }
-`define DEV_EQ_RAM_DIRECT(TARGET, ADDRESS)       { control.OP_dev_eq_ram_direct, cast.to5(control.DEV_``TARGET``), cast.to16(ADDRESS) }
-`define RAM_DIRECT_EQ_DEV(ADDRESS, SRC)          { control.OP_ram_direct_eq_dev, cast.to5(`toDEV(SRC)), cast.to16(ADDRESS) }
-*/
-
 `define ROM(A) { ctrl.rom_6.Mem[A], ctrl.rom_5.Mem[A], ctrl.rom_4.Mem[A], ctrl.rom_3.Mem[A], ctrl.rom_2.Mem[A], ctrl.rom_1.Mem[A] }
+
+`define INSTRUCTION(INST, TARGET, SRCA, SRCB, ALUOP, AMODE, IMMED, ADDRESS) \
+    `ROM(INST) = { `toALUOP(ALUOP), cast.to5(`toDEV(TARGET)), cast.to4(`toDEV(SRCA)), cast.to4(`toDEV(SRCB)), 5'bz, AMODE, cast.to8(IMMED), cast.to16(ADDRESS) }; \
+    CODE[INST] = "INST: TARGET=SRCA(ALUOP)SRCB  amode AMODE immed8 IMMED addr ADDRESS"
+
+`define NA 'z
+
+`define DEV_EQ_XY_ALU(INST, TARGET, SRCA, SRCB, ALUOP) `INSTRUCTION(INST,TARGET, SRCA, SRCB, ALUOP, `REGISTER, `NA, `NA)
+`define DEV_EQ_ROM_DIRECT(INST,TARGET, ADDRESS)       `INSTRUCTION(INST,TARGET, not_used, rom, B, `DIRECT, `NA, ADDRESS)
+`define DEV_EQ_IMMED8(INST,TARGET, IMMED8)            `INSTRUCTION(INST,TARGET, not_used, instreg, B, `REGISTER, IMMED8, `NA)
+`define DEV_EQ_RAM_DIRECT(INST,TARGET, ADDRESS)       `INSTRUCTION(INST,TARGET, not_used, ram, B, `DIRECT, `NA, ADDRESS)
+`define RAM_DIRECT_EQ_DEV(INST,ADDRESS, SRC)          `INSTRUCTION(INST,ram, not_used, SRC, B, `DIRECT, `NA, ADDRESS)
+
 
 module wide_controller(
     input _mr,
@@ -101,12 +97,14 @@ module wide_controller(
     nand #(10) o2(_addrmode_direct , _phaseFetch, amode_direct); 
     assign _addrmode_pc = _phaseFetch;
 
+/*
     always @* begin
        $display("WC _phaseFetch=%1b amode_bit=%1b amode_register=%1b,amode_direct=%1b", _phaseFetch, amode_bit, amode_register, amode_direct);
        $display ("%9t ", $time,  "WC  ", " addr=%04h",  address_bus);
        $display ("%9t ", $time,  "WC  ", " rom=%08b:%08b:%08b:%08b:%08b:%08b",  ctrl.rom_6.D, ctrl.rom_5.D, ctrl.rom_4.D, ctrl.rom_3.D, ctrl.rom_2.D, ctrl.rom_1.D);
        $display ("%9t ", $time,  "WC  ", "  ir=%08b:%08b:%08b:%08b:%08b:%08b",  ctrl.instruction_6, ctrl.instruction_5, ctrl.instruction_4, ctrl.instruction_3, ctrl.instruction_2, ctrl.instruction_1);
     end
+*/
 
 
     // device decoders

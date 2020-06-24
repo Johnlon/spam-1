@@ -1,23 +1,7 @@
 // FIXME MAKE ALL THE tri WIRES tri0
-
-/*
-This code generates a momentary address mode conflict during propagation of the signals when transitioning back to fetch.
-Wasn't able to avoid it without a lot more h/w. 
-*/
-
-/*
-// constants 
-// bit 23 can dictate addressing mode as we only have 6 op codes and only 3 use either mode
-parameter [2:0] op_DEV_eq_ALU_sel       = 0; // == RBUSDEV=ROM[8:5]    LBUSDEV=ROM[12:9]   ALUOP=ROM[4:0]   TARG=IR[20:16]  ADDRMODE=REGISTER  // ie mar
-parameter [2:0] op_DEV_eq_CONST8_sel    = 1; // == RBUSDEV='ROM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=REGISTER  
-parameter [2:0] op_DEVP_eq_CONST16_sel  = 2; // == RBUSDEV='ROM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=REGISTER  // stretch objective - load some fixed reg pair (eg if A is targ then A*B, if MARLO then its MARLO+HI)
-// op 3 unused
-parameter [2:0] op_DEV_eq_ROM_ABS_sel   = 4; // == RBUSDEV='ROM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=DIRECT // MUST BE VIA IR for all 3 bytes otherwise indexing the ROM using ROM[15:0] will change the logic mid exec
-parameter [2:0] op_DEV_eq_RAM_ABS_sel   = 5; // == RBUSDEV='RAM'       LBUSDEV=XXXX        ALUOP='PASSR'    TARG=IR[20:16]  ADDRMODE=DIRECT 
-parameter [2:0] op_RAM_ABS_eq_DEV_sel   = 6; // == RBUSDEV=[19:16]     LBUSDEV=XXXX        ALUOP='PASSL'    TARG='RAM'      ADDRMODE=DIRECT // LBUS WILL TRANSMIT A REGISTER
-// op 7 unused
-*/
-
+//
+// CONSTANTS AND FUNCTIONS AND MACROS
+//
 
 `ifndef V_CONTROL
 `define V_CONTROL
@@ -35,7 +19,7 @@ parameter [2:0] op_RAM_ABS_eq_DEV_sel   = 6; // == RBUSDEV=[19:16]     LBUSDEV=X
 // verilator lint_off STMTDLY
 // verilator lint_off MULTITOP
 // verilator lint_off DECLFILENAME
-// verilator lint_off UNUSED
+// verilator lint_off DISABLED-UNUSED
 `timescale 1ns/1ns
 
 module control;

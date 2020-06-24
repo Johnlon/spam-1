@@ -1,5 +1,4 @@
 
-
 // ADDRESSING TERMINOLOGY
 //  IMMEDIATE ADDRESSING = INSTRUCTION CONTAINS THE CONSTANT VALUE DATA TO USE
 //  DIRECT ADDRESSING = INSTRUCTION CONTAINS THE ADDRESS IN MEMORY OF THE DATA TO USE
@@ -7,8 +6,8 @@
 
 //#!/usr/bin/iverilog -Ttyp -Wall -g2012 -gspecify -o test.vvp 
 //`include "../control/controller.v"
-`include "../cpu/wide_controller.v"
-//`include "../control/controller.v"
+//`include "../cpu/wide_controller.v"
+`include "../control/controller.v"
 `include "../phaser/phaser.v"
 `include "../registerFile/syncRegisterFile.v"
 `include "../pc/pc.v"
@@ -98,7 +97,7 @@ module test();
     `define SEQ(x) (10'd2 ** (x-1))
 
     // releasing reset allows phaser to go from 000 to 100 whilst _mrPC is low which resets the PC
-    phaser #(.LOG(0)) ph(.clk, .mr(mrPH), .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec, ._phaseExec);
+    phaser #(.LOG(1)) ph(.clk, .mr(mrPH), .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec, ._phaseExec);
 
     // CONTROL ===========================================================================================
     wire _addrmode_register, _addrmode_pc, _addrmode_direct;
@@ -118,7 +117,7 @@ module test();
     `define BIND_RDEV_SEL(DNAME) ._rdev_``DNAME``
     `define BIND_TDEV_SEL(DNAME) ._``DNAME``_in
 
-    wide_controller ctrl(
+    controller ctrl(
         ._mr(_mrPC),
         .phaseFetch, .phaseDecode, .phaseExec, ._phaseFetch, ._phaseExec,
         .address_bus,
@@ -205,7 +204,7 @@ module test();
         ._flag_ne(_flag_ne_out)
     );
 
-    hct74574 #(.LOG(1)) flags_czonGLEN( .D({_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out}),
+    hct74574 #(.LOG(1)) flags_register( .D({_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out}),
                                        .Q({_flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne}),
                                         .CLK(phaseExec), ._OE(1'b0)); 
 
@@ -243,72 +242,67 @@ module test();
     // TESTS ===========================================================================================
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     `define RAM(A) ram64.Mem[A]
-    `define DATA(D) {40'bz, D} /* padded to rom width with z */
 
-    `define DUMP_ROM(ADDR)    $display ("%9t ", $time,  "PROGRAM  ", " rom=%08b:%08b:%08b:%08b:%08b:%08b",  ctrl.rom_6.Mem[ADDR], ctrl.rom_5.Mem[ADDR], ctrl.rom_4.Mem[ADDR], ctrl.rom_3.Mem[ADDR], ctrl.rom_2.Mem[ADDR], ctrl.rom_1.Mem[ADDR]);
-//    `define DUMP_ROM(ADDR)    
-
-typedef reg[100:0][7:0] bbb ;
-    //string CODE [100];
-    bbb CODE [100];
+//    `define DUMP_ROM(ADDR)    $display ("%9t ", $time,  "PROGRAM  ", " rom=%08b:%08b:%08b:%08b:%08b:%08b",  ctrl.rom_6.Mem[ADDR], ctrl.rom_5.Mem[ADDR], ctrl.rom_4.Mem[ADDR], ctrl.rom_3.Mem[ADDR], ctrl.rom_2.Mem[ADDR], ctrl.rom_1.Mem[ADDR]);
+    `define DUMP_ROM(ADDR)    
 
     // SETUP ROM
     task INIT_ROM;
     begin
 
         // CODE SEGMENT
-        `DEV_EQ_ROM_DIRECT(0, marlo, 'hffaa);
+        `ROM(0)= `DEV_EQ_ROM_DIRECT(marlo, 'hffaa);
 
         `DUMP_ROM(0)
 
         // dev_eq_const8 tdev=00011(MARHI), const8=0           
-        `DEV_EQ_IMMED8(1, marhi, 0);                  // MARHI=const 0      implies ALUOP=R
+        `ROM(1)= `DEV_EQ_CONST8(marhi, 0);                  // MARHI=const 0      implies ALUOP=R
 
         `DUMP_ROM(1)
 
         // dev_eq_xy_alu tdev=00010(MARLO) ldev=0010(MARLO) rdev=0010(MARLO) alu=00101(5=A+1)
-        `DEV_EQ_XY_ALU(2, marlo, marlo, marlo, A_PLUS_1); 
+        `ROM(2)= `DEV_EQ_XY_ALU(marlo, marlo, marlo, A_PLUS_1); 
 
         // dev_eq_const8 tdev=00000(RAM[MAR]), const8=0x22           
-        `DEV_EQ_IMMED8(3, ram, 'h22);
+        `ROM(3)= `DEV_EQ_CONST8(ram, 'h22);
 
         // dev_eq_ram_direct tdev=00010(MARLO), address=ffaa     
-        `DEV_EQ_RAM_DIRECT(4, marlo, 'h0043);
+        `ROM(4)= `DEV_EQ_RAM_DIRECT(marlo, 'h0043);
 
         // ram_direct_eq_dev tdev=00001(RAM), rdev=MARLO  address=abcd     
         //`ROM(5)= { 8'b110_00010, 16'habcd };                // RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R
-        `RAM_DIRECT_EQ_DEV(5, 'habcd, marlo);
+        `ROM(5)= `RAM_DIRECT_EQ_DEV('habcd, marlo);
 
         // write RAM into regb
-        `DEV_EQ_RAM_DIRECT(6, regb, 'h0043);
+        `ROM(6)= `DEV_EQ_RAM_DIRECT(regb, 'h0043);
 
         // write regb into RAM
-        `RAM_DIRECT_EQ_DEV(7, 'hdcba, regb);
+        `ROM(7)= `RAM_DIRECT_EQ_DEV('hdcba, regb);
 
         // test all registers read write
-        `DEV_EQ_IMMED8(8, rega, 1);
-        `DEV_EQ_IMMED8(9, regb, 2);
-        `DEV_EQ_IMMED8(10, regc, 3);
-        `DEV_EQ_IMMED8(11, regd, 4);
-        `RAM_DIRECT_EQ_DEV(12, 'h0001, rega);
-        `RAM_DIRECT_EQ_DEV(13, 'h0002, regb);
-        `RAM_DIRECT_EQ_DEV(14, 'h0003, regc);
-        `RAM_DIRECT_EQ_DEV(15, 'h0004, regd);
+        `ROM(8)= `DEV_EQ_CONST8(rega, 1);
+        `ROM(9)= `DEV_EQ_CONST8(regb, 2);
+        `ROM(10)= `DEV_EQ_CONST8(regc, 3);
+        `ROM(11)= `DEV_EQ_CONST8(regd, 4);
+        `ROM(12)= `RAM_DIRECT_EQ_DEV('h0001, rega);
+        `ROM(13)= `RAM_DIRECT_EQ_DEV('h0002, regb);
+        `ROM(14)= `RAM_DIRECT_EQ_DEV('h0003, regc);
+        `ROM(15)= `RAM_DIRECT_EQ_DEV('h0004, regd);
 
         // test all registers on L and R channel into ALU
-        `DEV_EQ_XY_ALU(16, marlo, rega, rom, A);  // rom is a noop here
-        `DEV_EQ_XY_ALU(17, marhi, rom, rega, B);  // rom is a noop here
-        `DEV_EQ_XY_ALU(18, marlo, regb, rom, A);  // rom is a noop here
-        `DEV_EQ_XY_ALU(19, marhi, rom, regb, B);  // rom is a noop here
-        `DEV_EQ_XY_ALU(20, marlo, regc, rom, A);  // rom is a noop here
-        `DEV_EQ_XY_ALU(21, marhi, rom, regc, B);  // rom is a noop here
-        `DEV_EQ_XY_ALU(22, marlo, regd, rom, A);  // rom is a noop here
-        `DEV_EQ_XY_ALU(23, marhi, rom, regd, B);  // rom is a noop here
+        `ROM(16)= `DEV_EQ_XY_ALU(marlo, rega, rom, A);  // rom is a noop here
+        `ROM(17)= `DEV_EQ_XY_ALU(marhi, rom, rega, B);  // rom is a noop here
+        `ROM(18)= `DEV_EQ_XY_ALU(marlo, regb, rom, A);  // rom is a noop here
+        `ROM(19)= `DEV_EQ_XY_ALU(marhi, rom, regb, B);  // rom is a noop here
+        `ROM(20)= `DEV_EQ_XY_ALU(marlo, regc, rom, A);  // rom is a noop here
+        `ROM(21)= `DEV_EQ_XY_ALU(marhi, rom, regc, B);  // rom is a noop here
+        `ROM(22)= `DEV_EQ_XY_ALU(marlo, regd, rom, A);  // rom is a noop here
+        `ROM(23)= `DEV_EQ_XY_ALU(marhi, rom, regd, B);  // rom is a noop here
 
         // DATA SEGMENT - ONLY LOWER 8 BITS ACCESSIBLE AT THE MOMENT AS ITS AN 8 BITS OF DATA CPU
         // initialise rom[ffaa] = 0x42
         //`ROM(16'hffaa) = { 8'b0, 8'b0, 8'h42 }; 
-        `ROM('hffaa) = `DATA(8'h42);
+        `ROM('hffaa) = 'h42; 
 
     end
     endtask : INIT_ROM
@@ -319,6 +313,9 @@ typedef reg[100:0][7:0] bbb ;
     `define LOG_RDEV_SEL(DNAME) " _rdev_``DNAME``=%1b", _rdev_``DNAME``
     `define LOG_TDEV_SEL(DNAME) " _``DNAME``_in=%1b",  _``DNAME``_in
 
+    if (0) always @* begin
+        $display("%9t", $time, " WIRES  ", `CONTROL_WIRES(LOG, `COMMA));
+    end
 
     // TESTS
     initial begin
@@ -335,13 +332,13 @@ typedef reg[100:0][7:0] bbb ;
         `Equals( phase, control.PHASE_NONE)
 
         `Equals( seq, `SEQ(1))
-        `Equals( _addrmode, 3'b1xx)
         //HACK`Equals( _addrmode, 3'b111)
+        `Equals( _addrmode, 3'b1xx)
 
         `Equals(PCHI, 8'bx)
         `Equals(PCLO, 8'bx)
 
-        //HACK`Equals(address_bus, 16'bz); // noone providing address
+        // HACK`Equals(address_bus, 16'bz); // noone providing address
         `Equals(address_bus, 16'bx); // noone providing address
 
         #TCLK
@@ -615,23 +612,12 @@ typedef reg[100:0][7:0] bbb ;
     integer phaseFetchLen=1;
     integer phaseDecodeLen=1;
     integer phaseExecLen=1;
-    integer pcval;
-
-
-    assign pcval={PCHI, PCLO};
-    //string currentCode; // create field so it can appear in dump file
-    bbb currentCode; // create field so it can appear in dump file
-
 
     always @(PCHI or PCLO) begin
-        $display("%9t ", $time, "INCREMENTED PC=%-d ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", {PCHI, PCLO});
-        currentCode = bbb'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
+      $display("%9t ", $time, "INCREMENTED PC=%-d ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", {PCHI, PCLO});
     end
 
     task DUMP;
-            $display ("%9t ", $time,  "DUMP  ",
-                 ": CODE: %-s", currentCode,
-                 );
             $display ("%9t ", $time,  "DUMP  ",
                  ": %-s", label
                  );
@@ -640,8 +626,8 @@ typedef reg[100:0][7:0] bbb ;
             $display ("%9t ", $time,  "DUMP  ",
                  " seq=%-2d", $clog2(seq)+1);
             $display ("%9t ", $time,  "DUMP  ",
-//                 " instruction=%08b:%08b:%08b", ctrl.instruction_hi, ctrl.instruction_mid, ctrl.instruction_lo);
-                 " instruction=%08b:%08b:%08b:%08b:%08b:%08b", ctrl.instruction_6, ctrl.instruction_5, ctrl.instruction_4, ctrl.instruction_3, ctrl.instruction_2, ctrl.instruction_1);
+                 " instruction=%08b:%08b:%08b", ctrl.instruction_hi, ctrl.instruction_mid, ctrl.instruction_lo);
+ //                " instruction=%08b:%08b:%08b:%08b:%08b:%08b", ctrl.instruction_6, ctrl.instruction_5, ctrl.instruction_4, ctrl.instruction_3, ctrl.instruction_2, ctrl.instruction_1);
             $display ("%9t ", $time,  "DUMP  ",
                 " op=%d(%-s)", ctrl.op_ctrl, control.opName(ctrl.op_ctrl),
                  " FDE=%1b%1b%1b(%-s)", phaseFetch, phaseDecode, phaseExec, control.fPhase(phaseFetch, phaseDecode, phaseExec));
@@ -650,11 +636,10 @@ typedef reg[100:0][7:0] bbb ;
                  " (%03b)", {_addrmode_pc, _addrmode_register, _addrmode_direct},
                  " addrbus=0x%4x", address_bus);
             $display ("%9t ", $time,  "DUMP  ",
-                 //" rom=%08b:%08b:%08b", ctrl.rom_hi.D, ctrl.rom_mid.D, ctrl.rom_lo.D);
-                 " rom=%08b:%08b:%08b:%08b:%08b:%08b",  ctrl.rom_6.D, ctrl.rom_5.D, ctrl.rom_4.D, ctrl.rom_3.D, ctrl.rom_2.D, ctrl.rom_1.D);
+                 " rom=%08b:%08b:%08b", ctrl.rom_hi.D, ctrl.rom_mid.D, ctrl.rom_lo.D);
+                 //" rom=%08b:%08b:%08b:%08b:%08b:%08b",  ctrl.rom_6.D, ctrl.rom_5.D, ctrl.rom_4.D, ctrl.rom_3.D, ctrl.rom_2.D, ctrl.rom_1.D);
             $display ("%9t ", $time,  "DUMP  ",
-                 " direct8=%08b", direct8,
-                 " immed8=%08b", immed8);
+                 " direct8=%08b", direct8);
             $display ("%9t ", $time,  "DUMP  ",
                  " ram=%08b", ram64.D);
             $display ("%9t ", $time,  "DUMP  ",
@@ -663,7 +648,6 @@ typedef reg[100:0][7:0] bbb ;
                 " rdev=%4b(%s)", rbus_dev,control.devname(rbus_dev),
                 " alu_op=%5b(%s)", alu_op, alu_func.aluopName(alu_op)
             );            
-            $display("%9t", $time, " DUMP   WIRES ", `CONTROL_WIRES(LOG, `COMMA));
             $display ("%9t ", $time,  "DUMP  ",
                  " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus);
             $display ("%9t ", $time,  "DUMP  ",
@@ -687,7 +671,7 @@ typedef reg[100:0][7:0] bbb ;
 
     task CLK_DN; 
     begin
-        $display("\n%9t", $time, " END OF CLOCK STATE %d", clk); 
+        $display("\n%9t", $time, " END CLOCK STATE"); 
         // op_decode.DUMP();
         // addr_decode.DUMP();
         DUMP;
@@ -799,10 +783,10 @@ typedef reg[100:0][7:0] bbb ;
     // constraints
 
     always @(*) begin
-        if (phaseDecode & ctrl.instruction_6 === 'x) begin
-           $display("instruction_6", ctrl.instruction_6); 
-        //if (phaseDecode & ctrl.instruction_hi === 'x) begin
-         //   $display("instruction_6", ctrl.instruction_hi); 
+        //if (phaseDecode & ctrl.instruction_6 === 'x) begin
+         //   $display("instruction_6", ctrl.instruction_6); 
+        if (phaseDecode & ctrl.instruction_hi === 'x) begin
+            $display("instruction_6", ctrl.instruction_hi); 
             DUMP;
             $display("END OF PROGRAM - PROGRAM BYTE = XX "); 
             $finish();
