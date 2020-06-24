@@ -12,16 +12,20 @@ output [7:0] Q
 );
     parameter LOG=0;
 
-    reg [8:0] data;
+    reg [7:0] data;
+    wire [7:0] dSetup;
+
+    // setup time 
+    assign #(12) dSetup = D;
     
     specify
-    (CLK *> Q) = (15);
-    (_OE *> Q) = (19);
+        (CLK *> Q) = (15);
+        (_OE *> Q) = (19);
     endspecify
     
     always @(posedge CLK) begin
         if (0) $display("%9t", $time, " REGISTER %m   CLK=%1b _OE=%1b D=%08b Q=%08b", CLK, _OE, D, Q);
-        data <= D;
+        data <= dSetup;
     end
     
     assign #(19) Q = _OE ? 8'bz: data;
