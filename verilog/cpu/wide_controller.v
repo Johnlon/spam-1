@@ -28,9 +28,10 @@
 // PSEUDO ASSEMBLER
 `define ROM(A) { ctrl.rom_6.Mem[A], ctrl.rom_5.Mem[A], ctrl.rom_4.Mem[A], ctrl.rom_3.Mem[A], ctrl.rom_2.Mem[A], ctrl.rom_1.Mem[A] }
 
-`define INSTRUCTION(INST, TARGET, SRCA, SRCB, ALUOP, AMODE, IMMED, ADDRESS) \
-    `ROM(INST) = { `toALUOP(ALUOP), cast.to5(`toDEV(TARGET)), cast.to4(`toDEV(SRCA)), cast.to4(`toDEV(SRCB)), 5'bz, AMODE, cast.to8(IMMED), cast.to16(ADDRESS) }; \
-    CODE[INST] = "INST: TARGET=SRCA(ALUOP)SRCB  amode AMODE immed8 IMMED addr ADDRESS"
+// Instruction populates the ROM and adds a text version of the instruction to the CODE array
+`define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP, AMODE, IMMED, ADDRESS) \
+    `ROM(LOCN) = { `toALUOP(ALUOP), cast.to5(`toDEV(TARGET)), cast.to4(`toDEV(SRCA)), cast.to4(`toDEV(SRCB)), 5'bz, AMODE, cast.to8(IMMED), cast.to16(ADDRESS) }; \
+    CODE[LOCN] = "Code: TARGET=SRCA(ALUOP)SRCB  amode=AMODE immed8=IMMED addr=ADDRESS"
 
 `define NA 'z
 

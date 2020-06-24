@@ -248,9 +248,10 @@ module test();
     `define DUMP_ROM(ADDR)    $display ("%9t ", $time,  "PROGRAM  ", " rom=%08b:%08b:%08b:%08b:%08b:%08b",  ctrl.rom_6.Mem[ADDR], ctrl.rom_5.Mem[ADDR], ctrl.rom_4.Mem[ADDR], ctrl.rom_3.Mem[ADDR], ctrl.rom_2.Mem[ADDR], ctrl.rom_1.Mem[ADDR]);
 //    `define DUMP_ROM(ADDR)    
 
-typedef reg[100:0][7:0] bbb ;
-    //string CODE [100];
-    bbb CODE [100];
+    localparam MAX_INST_LEN=100;
+    localparam MAX_PC=100;
+    typedef reg[MAX_INST_LEN:0][7:0] string_bits ;
+    string_bits CODE [MAX_PC];
 
     // SETUP ROM
     task INIT_ROM;
@@ -617,13 +618,12 @@ typedef reg[100:0][7:0] bbb ;
 
 
     assign pcval={PCHI, PCLO};
-    //string currentCode; // create field so it can appear in dump file
-    bbb currentCode; // create field so it can appear in dump file
+    string_bits currentCode; // create field so it can appear in dump file
 
 
     always @(PCHI or PCLO) begin
         $display("%9t ", $time, "INCREMENTED PC=%-d ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", {PCHI, PCLO});
-        currentCode = bbb'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
+        currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
     end
 
     task DUMP;
