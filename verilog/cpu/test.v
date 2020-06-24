@@ -258,12 +258,10 @@ typedef reg[100:0][7:0] bbb ;
 
         // CODE SEGMENT
         `DEV_EQ_ROM_DIRECT(0, marlo, 'hffaa);
-
         `DUMP_ROM(0)
 
         // dev_eq_const8 tdev=00011(MARHI), const8=0           
         `DEV_EQ_IMMED8(1, marhi, 0);                  // MARHI=const 0      implies ALUOP=R
-
         `DUMP_ROM(1)
 
         // dev_eq_xy_alu tdev=00010(MARLO) ldev=0010(MARLO) rdev=0010(MARLO) alu=00101(5=A+1)

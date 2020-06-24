@@ -34,11 +34,11 @@
 
 `define NA 'z
 
-`define DEV_EQ_XY_ALU(INST, TARGET, SRCA, SRCB, ALUOP) `INSTRUCTION(INST,TARGET, SRCA, SRCB, ALUOP, `REGISTER, `NA, `NA)
-`define DEV_EQ_ROM_DIRECT(INST,TARGET, ADDRESS)       `INSTRUCTION(INST,TARGET, not_used, rom, B, `DIRECT, `NA, ADDRESS)
-`define DEV_EQ_IMMED8(INST,TARGET, IMMED8)            `INSTRUCTION(INST,TARGET, not_used, instreg, B, `REGISTER, IMMED8, `NA)
-`define DEV_EQ_RAM_DIRECT(INST,TARGET, ADDRESS)       `INSTRUCTION(INST,TARGET, not_used, ram, B, `DIRECT, `NA, ADDRESS)
-`define RAM_DIRECT_EQ_DEV(INST,ADDRESS, SRC)          `INSTRUCTION(INST,ram, not_used, SRC, B, `DIRECT, `NA, ADDRESS)
+`define DEV_EQ_XY_ALU(INST, TARGET, SRCA, SRCB, ALUOP) `INSTRUCTION(INST, TARGET, SRCA,     SRCB,    ALUOP, `REGISTER, `NA,    `NA)
+`define DEV_EQ_ROM_DIRECT(INST,TARGET, ADDRESS)        `INSTRUCTION(INST, TARGET, not_used, rom,     B,     `DIRECT,   `NA,    ADDRESS)
+`define DEV_EQ_IMMED8(INST,TARGET, IMMED8)             `INSTRUCTION(INST, TARGET, not_used, instreg, B,     `REGISTER, IMMED8, `NA)
+`define DEV_EQ_RAM_DIRECT(INST,TARGET, ADDRESS)        `INSTRUCTION(INST, TARGET, not_used, ram,     B,     `DIRECT,   `NA,    ADDRESS)
+`define RAM_DIRECT_EQ_DEV(INST,ADDRESS, SRC)           `INSTRUCTION(INST, ram,    not_used, SRC,     B,     `DIRECT,   `NA,    ADDRESS)
 
 
 module wide_controller(
@@ -87,12 +87,9 @@ module wide_controller(
     wire [4:0] alu_op   = {instruction_6[7:3]};
 
 
-    // wire in the Master reset to the selection logic otherwise we end up with an indeterminate value for the result due to amode_bit being indeterminate
     wire amode_bit = instruction_4[0];
     wire amode_direct = amode_bit; 
     wire #(10) amode_register = ! amode_bit;  // NAND GATE
-    ///nand #(10) o1(_addrmode_register, _mr,_phaseFetch, amode_register);  // _phaseFetch is high when NOT in fatch
-    ///nand #(10) o2(_addrmode_direct , _mr,_phaseFetch, amode_direct); 
     nand #(10) o1(_addrmode_register, _phaseFetch, amode_register);  // _phaseFetch is high when NOT in fatch
     nand #(10) o2(_addrmode_direct , _phaseFetch, amode_direct); 
     assign _addrmode_pc = _phaseFetch;
