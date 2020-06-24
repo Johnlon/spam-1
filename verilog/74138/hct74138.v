@@ -37,9 +37,17 @@ begin
   for (i = 0; i < WIDTH_OUT; i++)
   begin
 /* verilator lint_off WIDTH */
-    if (!Enable1_bar && !Enable2_bar && Enable3 && i == A)
-/* verilator lint_on WIDTH */
-      computed[i] = 1'b0;
+    // BUG FIX - ORIGINAL VERSION OF THIS CODE SKIRTS OVER A being x or z
+    if (!Enable1_bar && !Enable2_bar && Enable3) begin
+        if (A === 'z) computed[i] = 1'bz;
+        else if (A === 'x) computed[i] = 1'bx;
+        // END BUG FIX
+        else if (i == A)
+    /* verilator lint_on WIDTH */
+          computed[i] = 1'b0;
+        else
+          computed[i] = 1'b1;
+    end
     else
       computed[i] = 1'b1;
   end
