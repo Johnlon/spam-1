@@ -9,26 +9,28 @@
 // use a sip5 10k resistor pull down to get 0. 
 // else use mux use 74241 (2x4 with hi or low en) or 74244 (2x4 with low en) 
 //assign reg_x_addr = device_sel[3:0]; // top bit of device sel ignored
+
+`define toALUOP(OPNAME) alu_ops.OP_``OPNAME``
     
 module alu_ops;
-    localparam OP_A=0;
-    localparam OP_B=1;
-    localparam OP_0=2;
-    localparam OP_MINUS_A=3;
-    localparam OP_MINUS_B=4;
-    localparam OP_A_PLUS_1=5;
-    localparam OP_B_PLUS_1=6;
-    localparam OP_A_MINUS_1=7;
-    localparam OP_B_MINUS_1=8;
-    localparam OP_A_PLUS_B=9;
-    localparam OP_A_MINUS_B=10;
-    localparam OP_B_MINUS_A=11;
+    localparam [4:0] OP_A=0;
+    localparam [4:0] OP_B=1;
+    localparam [4:0] OP_0=2;
+    localparam [4:0] OP_MINUS_A=3;
+    localparam [4:0] OP_MINUS_B=4;
+    localparam [4:0] OP_A_PLUS_1=5;
+    localparam [4:0] OP_B_PLUS_1=6;
+    localparam [4:0] OP_A_MINUS_1=7;
+    localparam [4:0] OP_B_MINUS_1=8;
+    localparam [4:0] OP_A_PLUS_B=9;
+    localparam [4:0] OP_A_MINUS_B=10;
+    localparam [4:0] OP_B_MINUS_A=11;
 
-    localparam OP_A_TIMES_B_HI=16;
-    localparam OP_A_TIMES_B_LO=17;
+    localparam [4:0] OP_A_TIMES_B_HI=16;
+    localparam [4:0] OP_A_TIMES_B_LO=17;
 
-    localparam OP_A_AND_B=25;
-    localparam OP_A_OR_B=26;
+    localparam [4:0] OP_A_AND_B=25;
+    localparam [4:0] OP_A_OR_B=26;
 
 endmodule
 
