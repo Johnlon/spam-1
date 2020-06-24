@@ -63,7 +63,7 @@ module phaser #(parameter LOG=0)
          $display("%9t PHASER ", $time,
             //" clk=%1b", clk, 
             " seq=%10b", seq,
-            " phase(FDE=%3b) _phase(F=%b)", {phaseFetch, phaseDecode, phaseExec}, _phaseFetch ,
+            " phase(FDE=%3b) _phaseFetch=%1b", {phaseFetch, phaseDecode, phaseExec}, _phaseFetch ,
             " trigs(Fsr=%2b Dsr=%2b Esr=%2b) ",
                 {phaseFetch_begin, phaseFetch_end} ,
                 {phaseDecode_begin, phaseDecode_end} ,
