@@ -17,8 +17,8 @@ output [3:0] _Yb
     parameter LOG = 0;
 
     // HCT timings from https://assets.nexperia.com/documents/data-sheet/74HC_HCT139.pdf
-    parameter AY_PD = 123;
-    parameter EY_PD = 23;
+    parameter AY_PD = 13;
+    parameter EY_PD = 13;
 
     specify
       (_Ea *> _Ya) = (EY_PD);

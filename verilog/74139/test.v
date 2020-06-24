@@ -84,8 +84,10 @@ module test();
         timer=$time;
         _Ea <= 0; // b->a
         wait(_Ya === 4'b0111);
-        if ($time - timer != 13) 
+        if ($time - timer != 13) begin
             $display("BAD SPEED - EXPECTED 13ns - TOOK %-d", ($time - timer));
+            $finish();
+        end
         else
             $display("TOOK %-d", ($time - timer));
         
@@ -95,8 +97,10 @@ module test();
         timer=$time;
         Aa <= 0; // b->a
         wait(_Ya === 4'b1110);
-        if ($time - timer != 13) 
+        if ($time - timer != 13)  begin
             $display("BAD SPEED - EXPECTED 13ns - TOOK %-d", ($time - timer));
+            $finish();
+        end
         else
             $display("TOOK %-d", ($time - timer));
 
