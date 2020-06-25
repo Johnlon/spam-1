@@ -423,8 +423,8 @@ module test();
     end
 
     integer pcval;
-
     assign pcval={CPU.PCHI, CPU.PCLO};
+
     string_bits currentCode; // create field so it can appear in dump file
 
     always @(CPU.PCHI or CPU.PCLO) begin
@@ -448,10 +448,11 @@ module test();
             $display ("%9t ", $time,  "DUMP  ",
                  " seq=%-2d", $clog2(CPU.seq)+1);
             $display ("%9t ", $time,  "DUMP  ",
+                 " PC=%1d (0x%4h)", CPU.pc_addr, CPU.pc_addr);
+            $display ("%9t ", $time,  "DUMP  ",
 //                 " instruction=%08b:%08b:%08b", ctrl.instruction_hi, ctrl.instruction_mid, ctrl.instruction_lo);
                  " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
             $display ("%9t ", $time,  "DUMP  ",
-                " op=%d(%-s)", CPU.ctrl.op_ctrl, control.opName(CPU.ctrl.op_ctrl),
                  " FDE=%1b%1b%1b(%-s)", CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec, control.fPhase(CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec));
             $display ("%9t ", $time,  "DUMP  ",
                  " _amode=%-3s", control.fAddrMode(CPU._addrmode_pc, CPU._addrmode_register, CPU._addrmode_direct),
@@ -476,8 +477,6 @@ module test();
                  " rbus=%8b lbus=%8b alu_result_bus=%8b", CPU.rbus, CPU.lbus, CPU.alu_result_bus);
             $display ("%9t ", $time,  "DUMP  ",
                  " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);
-            $display ("%9t ", $time,  "DUMP  ",
-                 " PC=%02h:%02h", CPU.PCHI, CPU.PCLO);
             $display("%9t", $time, " DUMP:",
                  "  REGA:%08b", CPU.regFile.get(0),
                  "  REGB:%08b", CPU.regFile.get(1),

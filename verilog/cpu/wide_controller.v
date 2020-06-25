@@ -30,7 +30,7 @@
 
 // Instruction populates the ROM and adds a text version of the instruction to the CODE array
 `define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP, AMODE, IMMED, ADDRESS) \
-    `ROM(LOCN) = { `toALUOP(ALUOP), cast.to5(`toDEV(TARGET)), cast.to4(`toDEV(SRCA)), cast.to4(`toDEV(SRCB)), 5'bz, AMODE, cast.to8(IMMED), cast.to16(ADDRESS) }; \
+    `ROM(LOCN) = { `toALUOP(ALUOP), cast.to5(`toDEV(TARGET)), cast.to4(`toDEV(SRCA)), cast.to4(`toDEV(SRCB)), 5'bz, AMODE, cast.to16(ADDRESS), cast.to8(IMMED) }; \
     CODE[LOCN] = "Code: TARGET=SRCA(ALUOP)SRCB  amode=AMODE immed8=IMMED addr=ADDRESS"
 
 `define NA 'z
@@ -46,6 +46,7 @@ module wide_controller(
     input _mr,
     input phaseFetch, phaseDecode, phaseExec, _phaseFetch, _phaseExec,
     input [15:0] address_bus,
+    input [15:0] pc,
 
     output _addrmode_register, _addrmode_pc, _addrmode_direct,
 
@@ -59,28 +60,26 @@ module wide_controller(
     output [4:0] targ_dev
 );
      
-    wire [7:0] instruction_6, instruction_5, instruction_4, instruction_3, instruction_2, instruction_1;
-    wire [2:0] op_ctrl;
-
-    rom #(.AWIDTH(16)) rom_6(._CS(1'b0), ._OE(1'b0), .A(address_bus));
-    rom #(.AWIDTH(16)) rom_5(._CS(1'b0), ._OE(1'b0), .A(address_bus));
-    rom #(.AWIDTH(16)) rom_4(._CS(1'b0), ._OE(1'b0), .A(address_bus)); 
-    rom #(.AWIDTH(16)) rom_3(._CS(1'b0), ._OE(1'b0), .A(address_bus)); 
-    rom #(.AWIDTH(16)) rom_2(._CS(1'b0), ._OE(1'b0), .A(address_bus)); 
+    rom #(.AWIDTH(16)) rom_6(._CS(1'b0), ._OE(1'b0), .A(pc));
+    rom #(.AWIDTH(16)) rom_5(._CS(1'b0), ._OE(1'b0), .A(pc));
+    rom #(.AWIDTH(16)) rom_4(._CS(1'b0), ._OE(1'b0), .A(pc)); 
+    rom #(.AWIDTH(16)) rom_3(._CS(1'b0), ._OE(1'b0), .A(pc)); 
+    rom #(.AWIDTH(16)) rom_2(._CS(1'b0), ._OE(1'b0), .A(pc)); 
     rom #(.AWIDTH(16)) rom_1(._CS(1'b0), ._OE(1'b0), .A(address_bus)); 
    
-    // instruction reg buffer
-    hct74573 inst_reg_6( .LE(phaseFetch), ._OE(1'b0), .D(rom_6.D), .Q(instruction_6) );
-    hct74573 inst_reg_5( .LE(phaseFetch), ._OE(1'b0), .D(rom_5.D), .Q(instruction_5) );
-    hct74573 inst_reg_4( .LE(phaseFetch), ._OE(1'b0), .D(rom_4.D), .Q(instruction_4) );
-    hct74573 inst_reg_3( .LE(phaseFetch), ._OE(1'b0), .D(rom_3.D), .Q(instruction_3) );
-    hct74573 inst_reg_2( .LE(phaseFetch), ._OE(1'b0), .D(rom_2.D), .Q(instruction_2) );
-    hct74573 inst_reg_1( .LE(phaseFetch), ._OE(1'b0), .D(rom_1.D), .Q(instruction_1) );
+    wire [7:0] instruction_6 = rom_6.D; // aliases
+    wire [7:0] instruction_5 = rom_5.D;
+    wire [7:0] instruction_4 = rom_4.D;
+    wire [7:0] instruction_3 = rom_3.D;
+    wire [7:0] instruction_2 = rom_2.D;
+    wire [7:0] instruction_1;
+    hct74573 inst_reg_1( .LE(phaseFetch), ._OE(1'b0), .D(rom_1.D), .Q(instruction_1) ); // capture immediate value so still available despite direct addressing
+
 
     assign direct8 = rom_1.D;
-    assign immed8 = instruction_3;
-    assign direct_address_lo = instruction_1;
-    assign direct_address_hi = instruction_2;
+    assign immed8 = instruction_1;
+    assign direct_address_lo = instruction_2;
+    assign direct_address_hi = instruction_3;
 
     assign rbus_dev = {instruction_5[1:0], instruction_4[7:6]};
     assign lbus_dev = instruction_5[5:2];
@@ -94,16 +93,6 @@ module wide_controller(
     nand #(10) o1(_addrmode_register, _phaseFetch, amode_register);  // _phaseFetch is high when NOT in fatch
     nand #(10) o2(_addrmode_direct , _phaseFetch, amode_direct); 
     assign _addrmode_pc = _phaseFetch;
-
-/*
-    always @* begin
-       $display("WC _phaseFetch=%1b amode_bit=%1b amode_register=%1b,amode_direct=%1b", _phaseFetch, amode_bit, amode_register, amode_direct);
-       $display ("%9t ", $time,  "WC  ", " addr=%04h",  address_bus);
-       $display ("%9t ", $time,  "WC  ", " rom=%08b:%08b:%08b:%08b:%08b:%08b",  ctrl.rom_6.D, ctrl.rom_5.D, ctrl.rom_4.D, ctrl.rom_3.D, ctrl.rom_2.D, ctrl.rom_1.D);
-       $display ("%9t ", $time,  "WC  ", "  ir=%08b:%08b:%08b:%08b:%08b:%08b",  ctrl.instruction_6, ctrl.instruction_5, ctrl.instruction_4, ctrl.instruction_3, ctrl.instruction_2, ctrl.instruction_1);
-    end
-*/
-
 
     // device decoders
     hct74138 lbus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(lbus_dev[3]), .A(lbus_dev[2:0]));

@@ -120,6 +120,7 @@ module cpu(
     wide_controller ctrl(
         ._mr(_mrPC),
         .phaseFetch, .phaseDecode, .phaseExec, ._phaseFetch, ._phaseExec,
+        .pc(pc_addr),
         .address_bus,
 
         ._addrmode_register, ._addrmode_pc, ._addrmode_direct,
@@ -147,6 +148,7 @@ module cpu(
         .PCLO(PCLO),
         .PCHI(PCHI)
     );
+    wire [15:0] pc_addr = {PCHI, PCLO}; 
 
     hct74245ab pchi_addrbushi_buf(.A(PCHI), .B(address_bus[15:8]), .nOE(_addrmode_pc));
     hct74245ab pclo_addrbuslo_buf(.A(PCLO), .B(address_bus[7:0]), .nOE(_addrmode_pc));
