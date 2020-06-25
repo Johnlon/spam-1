@@ -581,5 +581,75 @@ module test();
             " alu_result_bus=%-2x", alu_result_bus
             ); 
         
+    
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// CONSTRAINTS
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        
+    // constraints
+
+    always @(*) begin
+        if (CPU.phaseDecode & CPU.ctrl.instruction_6 === 'x) begin
+           $display("instruction_6", CPU.ctrl.instruction_6); 
+            DUMP;
+            $display("END OF PROGRAM - PROGRAM BYTE = XX "); 
+            $finish();
+        end
+    end
+
+    logic [15:0] prev_address_bus;
+    logic [7:0] prev_alu_result_bus;
+
+    // constraints
+    always @* begin
+        // expect address and data to remain stable while ram write enabled
+        if (!CPU._gated_ram_in) begin
+            if (prev_address_bus != CPU.address_bus) begin
+                $display("\n\n%9t ", $time, " ADDRESS CHANGED WHILE GATED RAM WRITE ENABLED");
+                $display("\n\n%9t ", $time, " ABORT");
+                $finish();
+            end
+            if (prev_alu_result_bus != CPU.alu_result_bus) begin
+                $display("\n\n%9t ", $time, " DATA CHANGED WHILE GATED RAM WRITE ENABLED");
+                $display("\n\n%9t ", $time, " ABORT");
+                $finish();
+            end
+        end
+        prev_address_bus = CPU.address_bus;
+        prev_alu_result_bus = CPU.alu_result_bus;
+    end
+
+    always @* begin
+        // permits a situation where the control lines conflict.
+        // this is ok as long as they settle quickly and are settled before exec phase.
+        if (_RESET_SWITCH & CPU.phaseDecode) begin
+            if (CPU._addrmode_pc === 1'bx |  CPU._addrmode_register === 1'bx |  CPU._addrmode_direct === 1'bx) begin
+                $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b", CPU._addrmode_pc , CPU._addrmode_register , CPU._addrmode_direct );
+                $display("\n\n%9t ", $time, " ABORT");
+                $finish();
+                //#SETTLE_TOLERANCE
+                // only one may be low at a time
+                //if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_direct === 1'bx) begin
+                //    DUMP;
+                //    $display("\n\n%9t ", $time, " ABORT");
+                //    $finish();
+                //end
+            end
+            if (CPU._addrmode_pc + CPU._addrmode_register + CPU._addrmode_direct < 2) begin
+                $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b sAddrMode=%-s", CPU._addrmode_pc , CPU._addrmode_register , CPU._addrmode_direct,
+                                            control.fAddrMode(CPU._addrmode_pc, CPU._addrmode_register, CPU._addrmode_direct));
+                $display("\n\n%9t ", $time, " ABORT");
+                $finish();
+                //#SETTLE_TOLERANCE
+                //if (_addrmode_pc + _addrmode_register + _addrmode_direct < 2) begin
+                //    DUMP;
+                //    $display("\n\n%9t ", $time, " ABORT");
+                //    $finish();
+                //end
+            end
+        end
+    end
+
 
 endmodule : test

@@ -6,9 +6,7 @@
 //  REGISTER ADDRESSING = INSTRUCTION CONTAINS THE NAME OF THE REGISTER FROM WHICH TO FETCH THE DATA
 
 //#!/usr/bin/iverilog -Ttyp -Wall -g2012 -gspecify -o test.vvp 
-//`include "../control/controller.v"
 `include "../cpu/wide_controller.v"
-//`include "../control/controller.v"
 `include "../phaser/phaser.v"
 `include "../registerFile/syncRegisterFile.v"
 `include "../pc/pc.v"
@@ -45,8 +43,6 @@ module cpu(
 
     
     tri [15:0] address_bus;
-    logic [15:0] prev_address_bus;
-    logic [7:0] prev_alu_result_bus;
 
     tri [7:0] rbus, lbus, alu_result_bus;
     wire [3:0] rbus_dev, lbus_dev;
@@ -104,7 +100,6 @@ module cpu(
 
     // CONTROL ===========================================================================================
     wire _addrmode_register, _addrmode_pc, _addrmode_direct;
-    //wire [7:0] instruction_hi, instruction_mid, instruction_lo;
     wire [7:0] direct_address_hi, direct_address_lo;
     wire [7:0] direct8;
     wire [7:0] immed8;
@@ -239,238 +234,5 @@ module cpu(
         .rdR_addr(regfile_rdR_addr),
         .rdR_data(rbus)
     );
-    
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-// LOGGING
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/*
-    integer pcval;
-
-    assign pcval={PCHI, PCLO};
-    string_bits currentCode; // create field so it can appear in dump file
-
-    always @(PCHI or PCLO) begin
-        $display("%9t ", $time, "INCREMENTED PC=%-d ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", {PCHI, PCLO});
-        currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
-    end
-
-    `define LOG_LDEV_SEL(DNAME) " _ldev_``DNAME``=%1b", _ldev_``DNAME``
-    `define LOG_RDEV_SEL(DNAME) " _rdev_``DNAME``=%1b", _rdev_``DNAME``
-    `define LOG_TDEV_SEL(DNAME) " _``DNAME``_in=%1b",  _``DNAME``_in
-
-    task DUMP;
-            $display ("%9t ", $time,  "DUMP  ",
-                 ": CODE: %-s", currentCode,
-                 );
-            $display ("%9t ", $time,  "DUMP  ",
-                 ": %-s", label
-                 );
-            $display ("%9t ", $time,  "DUMP  ",
-                 " phase=%-6s", control.fPhase(phaseFetch, phaseDecode, phaseExec));
-            $display ("%9t ", $time,  "DUMP  ",
-                 " seq=%-2d", $clog2(seq)+1);
-            $display ("%9t ", $time,  "DUMP  ",
-//                 " instruction=%08b:%08b:%08b", ctrl.instruction_hi, ctrl.instruction_mid, ctrl.instruction_lo);
-                 " instruction=%08b:%08b:%08b:%08b:%08b:%08b", ctrl.instruction_6, ctrl.instruction_5, ctrl.instruction_4, ctrl.instruction_3, ctrl.instruction_2, ctrl.instruction_1);
-            $display ("%9t ", $time,  "DUMP  ",
-                " op=%d(%-s)", ctrl.op_ctrl, control.opName(ctrl.op_ctrl),
-                 " FDE=%1b%1b%1b(%-s)", phaseFetch, phaseDecode, phaseExec, control.fPhase(phaseFetch, phaseDecode, phaseExec));
-            $display ("%9t ", $time,  "DUMP  ",
-                 " _amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
-                 " (%03b)", {_addrmode_pc, _addrmode_register, _addrmode_direct},
-                 " addrbus=0x%4x", address_bus);
-            $display ("%9t ", $time,  "DUMP  ",
-                 //" rom=%08b:%08b:%08b", ctrl.rom_hi.D, ctrl.rom_mid.D, ctrl.rom_lo.D);
-                 " rom=%08b:%08b:%08b:%08b:%08b:%08b",  ctrl.rom_6.D, ctrl.rom_5.D, ctrl.rom_4.D, ctrl.rom_3.D, ctrl.rom_2.D, ctrl.rom_1.D);
-            $display ("%9t ", $time,  "DUMP  ",
-                 " direct8=%08b", direct8,
-                 " immed8=%08b", immed8);
-            $display ("%9t ", $time,  "DUMP  ",
-                 " ram=%08b", ram64.D);
-            $display ("%9t ", $time,  "DUMP  ",
-                " tdev=%5b(%s)", targ_dev, control.tdevname(targ_dev),
-                " ldev=%4b(%s)", lbus_dev, control.devname(lbus_dev),
-                " rdev=%4b(%s)", rbus_dev,control.devname(rbus_dev),
-                " alu_op=%5b(%s)", alu_op, alu_func.aluopName(alu_op)
-            );            
-            $display("%9t", $time, " DUMP   WIRES ", `CONTROL_WIRES(LOG, `COMMA));
-            $display ("%9t ", $time,  "DUMP  ",
-                 " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus);
-            $display ("%9t ", $time,  "DUMP  ",
-                 " MAR=%8b:%8b (0x%2x:%2x)", MARHI.Q, MARLO.Q, MARHI.Q, MARLO.Q);
-            $display ("%9t ", $time,  "DUMP  ",
-                 " PC=%02h:%02h", PCHI, PCLO);
-            $display("%9t", $time, " DUMP:",
-                 "  REGA:%08b", regFile.get(0),
-                 "  REGB:%08b", regFile.get(1),
-                 "  REGC:%08b", regFile.get(2),
-                 "  REGD:%08b", regFile.get(3)
-                 );
-    endtask 
-
-
-    if (0) always @* begin
-        $display ("%9t ", $time,  "MON     ",
-                 "rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
-                 " seq=%-2d", $clog2(seq)+1,
-                 " _amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
-                 " addrbus=0x%4x", address_bus,
-                 " FDE=%-6s (%1b%1b%1b)", control.fPhase(phaseFetch, phaseDecode, phaseExec), phaseFetch, phaseDecode, phaseExec,
-                 " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus,
-                 " rdev=%04b ldev=%04b targ=%05b alu_op=%05b (%1s)", rbus_dev, lbus_dev, targ_dev, alu_op, alu_func.aluopName(alu_op),
-                 " tsel=%32b ", tsel,
-                 " PC=%02h:%02h", PCHI, PCLO,
-                 "     : %1s", label
-                 );
-    end
-
-    always @* 
-        if (_RESET_SWITCH)  
-            $display("\n%9t RESET SWITCH RELEASE   _RESET_SWITCH=%1b  ======================================================================\n", $time, _RESET_SWITCH); 
-        else      
-            $display("\n%9t RESET SWITCH SET       _RESET_SWITCH=%1b  ======================================================================\n", $time, _RESET_SWITCH); 
-
-    always @* 
-        if (_mrPC)  
-            $display("\n%9t PC RESET RELEASE   _mrPC=%1b  ======================================================================\n", $time, _mrPC); 
-        else      
-            $display("\n%9t PC RESET SET       _mrPC=%1b  ======================================================================\n", $time, _mrPC); 
-
-
-    
-    if (0) always @(*) begin
-        $display("%9t", $time, " PHASE CHANGE: FDE=%-s  %1b%1b%1b seq=%10b", control.fPhase(phaseFetch, phaseDecode, phaseExec), 
-                                                        phaseFetch, phaseDecode, phaseExec, seq); 
-    end
-
-    if (0) always @(*) begin
-        $display("%9t", $time, " control._AMODE: PRI=%-s  %1b%1b%1b seq=%10b", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct), 
-                                                        _addrmode_pc, _addrmode_register, _addrmode_direct, seq); 
-    end
-
-    integer instCount = 0;
-    always @(posedge phaseFetch) begin
-        instCount ++;
-        $display("%9t", $time, " PHASE: FETCH  INTRUCTION#=%-d", instCount); 
-    end
-
-    always @(posedge phaseDecode) begin
-        $display("%9t", $time, " PHASE: DECODE"); 
-    end
-
-    always @(posedge phaseExec) begin
-        $display("%9t", $time, " PHASE: EXECUTE"); 
-    end
-
-    if (0) always @* 
-        $display ("%9t ", $time,  "ADDRESSING      _amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct), " addrbus=0x%4x", address_bus);
-
-    if (0) always @* 
-        $display ("%9t ", $time,  "ROM      rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
-                " _amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
-                " addrbus=0x%4x", address_bus);
-        
-    if (0) always @* 
-        $display ("%9t ", $time,  "RAM     ram=%08b", ram64.D,
-                " _amode=%s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
-                " addrbus=0x%4x", address_bus,
-                " _ram_in=%1b _gated_ram_in=%1b", _ram_in, _gated_ram_in,
-                );
-        
-    if (0) always @* 
-        $display("%9t ... seq=%-2d  %8b................", $time, $clog2(seq)+1, seq); 
-        
-    if (0) always @* 
-        $display("%9t ", $time, "ROMBUFFS rom_addrbuslo_buf=0x%-2x", rom_addrbuslo_buf.B, 
-            " rom_addrbus_hi_buf=0x%-2x", rom_addrbushi_buf.B,
-            " instruction_hi=%8b", instruction_hi,
-            " _oe=%1b(_addrmode_direct)", _addrmode_direct
-            ); 
-
-                
-    if (0) always @* 
-        $display("%9t ", $time, "DEVICE-SEL ", 
-                    "rdev=%04b ldev=%04b targ=%05b alu_op=%05b ", rbus_dev, lbus_dev, targ_dev, alu_op
-        ); 
-
-    if (0) always @* 
-        $display("%9t ", $time, "MAR  %02x:%02x    _marhi_in=%b _marlo_in=%b", MARHI.Q, MARLO.Q, _marhi_in, _marlo_in);
-
-    if (0) always @* 
-        $display("%9t ", $time, "tsel=%032b  lsel=%016b rsel=%016b", tsel, lsel, rsel);
-
-    if (0) always @* 
-        $display("%9t ", $time, "ALU BUS ",
-            " rbus=0x%-2x", rbus, 
-            " lbus=0x%-2x", lbus,
-            " alu_result_bus=%-2x", alu_result_bus
-            ); 
-        
-*/
-        
-    // constraints
-
-    always @(*) begin
-        if (phaseDecode & ctrl.instruction_6 === 'x) begin
-           $display("instruction_6", ctrl.instruction_6); 
-        //if (phaseDecode & ctrl.instruction_hi === 'x) begin
-         //   $display("instruction_6", ctrl.instruction_hi); 
-            DUMP;
-            $display("END OF PROGRAM - PROGRAM BYTE = XX "); 
-            $finish();
-        end
-    end
-
-    // constraints
-    always @* begin
-        // expect address and data to remain stable while ram write enabled
-        if (!_gated_ram_in) begin
-            if (prev_address_bus != address_bus) begin
-                $display("\n\n%9t ", $time, " ADDRESS CHANGED WHILE GATED RAM WRITE ENABLED");
-                $display("\n\n%9t ", $time, " ABORT");
-                $finish();
-            end
-            if (prev_alu_result_bus != alu_result_bus) begin
-                $display("\n\n%9t ", $time, " DATA CHANGED WHILE GATED RAM WRITE ENABLED");
-                $display("\n\n%9t ", $time, " ABORT");
-                $finish();
-            end
-        end
-        prev_address_bus = address_bus;
-        prev_alu_result_bus = alu_result_bus;
-    end
-
-    always @* begin
-        // permits a situation where the control lines conflict.
-        // this is ok as long as they settle quickly and are settled before exec phase.
-        if (_RESET_SWITCH & phaseDecode) begin
-            if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_direct === 1'bx) begin
-                $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b", _addrmode_pc , _addrmode_register , _addrmode_direct );
-                $display("\n\n%9t ", $time, " ABORT");
-                $finish();
-                //#SETTLE_TOLERANCE
-                // only one may be low at a time
-                //if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_direct === 1'bx) begin
-                //    DUMP;
-                //    $display("\n\n%9t ", $time, " ABORT");
-                //    $finish();
-                //end
-            end
-            if (_addrmode_pc + _addrmode_register + _addrmode_direct < 2) begin
-                $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b sAddrMode=%-s", _addrmode_pc , _addrmode_register , _addrmode_direct,
-                                            control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct));
-                $display("\n\n%9t ", $time, " ABORT");
-                $finish();
-                //#SETTLE_TOLERANCE
-                //if (_addrmode_pc + _addrmode_register + _addrmode_direct < 2) begin
-                //    DUMP;
-                //    $display("\n\n%9t ", $time, " ABORT");
-                //    $finish();
-                //end
-            end
-        end
-    end
-
 
 endmodule : cpu
