@@ -9,7 +9,7 @@ l
 **/*.v.out
 
 /verilog/_old/
-/venv*/
+**/venv*/
 **/old/
 */ll
 **/nohup*
