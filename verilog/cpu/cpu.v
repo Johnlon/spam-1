@@ -1,6 +1,7 @@
 
-// FIXME Implement jumps
-// FIXME Implement conditional instructions with 3 spare bits
+// FIXME Implement conditional jumps
+// FIXME Implement conditional instructions with spare ROM bits
+// FIXME option: If use 16 immediate then can do a direct jump - but needs an alternative route into the PC for that
 
 // ADDRESSING TERMINOLOGY
 //  IMMEDIATE ADDRESSING = INSTRUCTION CONTAINS THE CONSTANT VALUE DATA TO USE
@@ -117,6 +118,8 @@ module cpu(
     `define BIND_RDEV_SEL(DNAME) ._rdev_``DNAME``
     `define BIND_TDEV_SEL(DNAME) ._``DNAME``_in
 
+    wire [7:0] PCHI, PCLO; // output of PC
+    wire [15:0] pc_addr = {PCHI, PCLO}; 
     wide_controller ctrl(
         ._mr(_mrPC),
         .phaseFetch, .phaseDecode, .phaseExec, ._phaseFetch, ._phaseExec,
@@ -134,10 +137,9 @@ module cpu(
 
     // PROGRAM COUNTER ======================================================================================
 
-    wire [7:0] PCHI, PCLO; // output of PC
     
     // PC reset is sync with +ve edge of clock
-    pc #(.LOG(0))  PC (
+    pc #(.LOG(1))  PC (
         .clk(phaseFetch),
         ._MR(_mrPC),
         ._pc_in(_pc_in),
@@ -148,7 +150,6 @@ module cpu(
         .PCLO(PCLO),
         .PCHI(PCHI)
     );
-    wire [15:0] pc_addr = {PCHI, PCLO}; 
 
     hct74245ab pchi_addrbushi_buf(.A(PCHI), .B(address_bus[15:8]), .nOE(_addrmode_pc));
     hct74245ab pclo_addrbuslo_buf(.A(PCLO), .B(address_bus[7:0]), .nOE(_addrmode_pc));

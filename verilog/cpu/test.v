@@ -53,51 +53,56 @@ module test();
     begin
 
         // CODE SEGMENT
-        `DEV_EQ_ROM_DIRECT(0, marlo, 'hffaa);
+        `DEV_EQ_ROM_DIRECT(0, marlo, 'hffaa)
        // `DUMP_ROM(0)
 
         // dev_eq_const8 tdev=00011(CPU.MARHI), const8=0           
-        `DEV_EQ_IMMED8(1, marhi, 0);                  // MARHI=const 0      implies ALUOP=R
+        `DEV_EQ_IMMED8(1, marhi, 0)                  // MARHI=const 0      implies ALUOP=R
         //`DUMP_ROM(1)
 
         // dev_eq_xy_alu tdev=00010(CPU.MARLO) ldev=0010(MARLO) rdev=0010(MARLO) alu=00101(5=A+1)
-        `DEV_EQ_XY_ALU(2, marlo, marlo, marlo, A_PLUS_1); 
+        `DEV_EQ_XY_ALU(2, marlo, marlo, marlo, A_PLUS_1) 
 
         // dev_eq_const8 tdev=00000(RAM[MAR]), const8=0x22           
-        `DEV_EQ_IMMED8(3, ram, 'h22);
+        `DEV_EQ_IMMED8(3, ram, 'h22)
 
         // dev_eq_ram_direct tdev=00010(CPU.MARLO), address=ffaa     
-        `DEV_EQ_RAM_DIRECT(4, marlo, 'h0043);
+        `DEV_EQ_RAM_DIRECT(4, marlo, 'h0043)
 
         // ram_direct_eq_dev tdev=00001(RAM), rdev=MARLO  address=abcd     
-        //`ROM(5)= { 8'b110_00010, 16'habcd };                // RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R
-        `RAM_DIRECT_EQ_DEV(5, 'habcd, marlo);
+        //`ROM(5)= { 8'b110_00010, 16'habcd }                // RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R
+        `RAM_DIRECT_EQ_DEV(5, 'habcd, marlo)
 
         // write RAM into regb
-        `DEV_EQ_RAM_DIRECT(6, regb, 'h0043);
+        `DEV_EQ_RAM_DIRECT(6, regb, 'h0043)
 
         // write regb into RAM
-        `RAM_DIRECT_EQ_DEV(7, 'hdcba, regb);
+        `RAM_DIRECT_EQ_DEV(7, 'hdcba, regb)
 
         // test all registers read write
-        `DEV_EQ_IMMED8(8, rega, 1);
-        `DEV_EQ_IMMED8(9, regb, 2);
-        `DEV_EQ_IMMED8(10, regc, 3);
-        `DEV_EQ_IMMED8(11, regd, 4);
-        `RAM_DIRECT_EQ_DEV(12, 'h0001, rega);
-        `RAM_DIRECT_EQ_DEV(13, 'h0002, regb);
-        `RAM_DIRECT_EQ_DEV(14, 'h0003, regc);
-        `RAM_DIRECT_EQ_DEV(15, 'h0004, regd);
+        `DEV_EQ_IMMED8(8, rega, 1)
+        `DEV_EQ_IMMED8(9, regb, 2)
+        `DEV_EQ_IMMED8(10, regc, 3)
+        `DEV_EQ_IMMED8(11, regd, 4)
+        `RAM_DIRECT_EQ_DEV(12, 'h0001, rega)
+        `RAM_DIRECT_EQ_DEV(13, 'h0002, regb)
+        `RAM_DIRECT_EQ_DEV(14, 'h0003, regc)
+        `RAM_DIRECT_EQ_DEV(15, 'h0004, regd)
 
         // test all registers on L and R channel into ALU
-        `DEV_EQ_XY_ALU(16, marlo, rega, rom, A);  // rom is a noop here
-        `DEV_EQ_XY_ALU(17, marhi, rom, rega, B);  // rom is a noop here
-        `DEV_EQ_XY_ALU(18, marlo, regb, rom, A);  // rom is a noop here
-        `DEV_EQ_XY_ALU(19, marhi, rom, regb, B);  // rom is a noop here
-        `DEV_EQ_XY_ALU(20, marlo, regc, rom, A);  // rom is a noop here
-        `DEV_EQ_XY_ALU(21, marhi, rom, regc, B);  // rom is a noop here
-        `DEV_EQ_XY_ALU(22, marlo, regd, rom, A);  // rom is a noop here
-        `DEV_EQ_XY_ALU(23, marhi, rom, regd, B);  // rom is a noop here
+        `DEV_EQ_XY_ALU(16, marlo, rega, rom, A)  // rom is a noop here
+        `DEV_EQ_XY_ALU(17, marhi, rom, rega, B)  // rom is a noop here
+        `DEV_EQ_XY_ALU(18, marlo, regb, rom, A)  // rom is a noop here
+        `DEV_EQ_XY_ALU(19, marhi, rom, regb, B)  // rom is a noop here
+        `DEV_EQ_XY_ALU(20, marlo, regc, rom, A)  // rom is a noop here
+        `DEV_EQ_XY_ALU(21, marhi, rom, regc, B)  // rom is a noop here
+        `DEV_EQ_XY_ALU(22, marlo, regd, rom, A)  // rom is a noop here
+        `DEV_EQ_XY_ALU(23, marhi, rom, regd, B)  // rom is a noop here
+
+
+        //`JMP_IMMED16(24, 16'h0100)  // rom is a noop here
+        `JMP_IMMED16(24, 23)  // rom is a noop here
+        //`DEV_EQ_IMMED8(24, pchitmp, 10)
 
         // DATA SEGMENT - ONLY LOWER 8 BITS ACCESSIBLE AT THE MOMENT AS ITS AN 8 BITS OF DATA CPU
         // initialise rom[ffaa] = 0x42
@@ -118,7 +123,7 @@ module test();
 
     task CLK_DN; 
     begin
-        $display("\n%9t", $time, " END OF CLOCK STATE %d", clk); 
+        $display("\n%9t", $time, " END OF CLOCK STATE %s", clk ? "HI" : "LO"); 
         DUMP;
         $display("\n%9t", $time, " CLK  -----------------------------------------------------------------------"); 
         clk = 0;
@@ -342,7 +347,6 @@ module test();
         `EXECUTE_CYCLE(1)
         `Equals(`RAM(16'habcd), 8'h22);
 
-
         `DISPLAY("instruction 7 - DEV_EQ_RAM_DIRECT(regb, 'habcd) write to Register File");
         `EXECUTE_CYCLE(1)
         `Equals( CPU.regFile.get(1), 8'h22);
@@ -393,6 +397,25 @@ module test();
         `EXECUTE_CYCLE(1)
         `Equals(CPU.MARLO.Q, 8'd4)
         `Equals(CPU.MARHI.Q, 8'd4)
+        #1
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
+        $display("END OF TEST CASES ==============================================");
 /*
 */
 
@@ -410,12 +433,12 @@ module test();
 */
 
         // consume any remaining code
-        // while (1==1) begin
-        //     #TCLK
-        //     CLK_UP;
-        //     #TCLK
-        //     CLK_DN;
-        // end
+         while (1==1) begin
+             #TCLK
+             CLK_UP;
+             #TCLK
+             CLK_DN;
+         end
 
         $display("END OF TEST");
         $finish();
@@ -448,7 +471,7 @@ module test();
             $display ("%9t ", $time,  "DUMP  ",
                  " seq=%-2d", $clog2(CPU.seq)+1);
             $display ("%9t ", $time,  "DUMP  ",
-                 " PC=%1d (0x%4h)", CPU.pc_addr, CPU.pc_addr);
+                 " PC=%1d (0x%4h) PCHItmp=%d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             $display ("%9t ", $time,  "DUMP  ",
 //                 " instruction=%08b:%08b:%08b", ctrl.instruction_hi, ctrl.instruction_mid, ctrl.instruction_lo);
                  " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
@@ -472,7 +495,6 @@ module test();
                 " rdev=%4b(%s)", CPU.rbus_dev,control.devname(CPU.rbus_dev),
                 " alu_op=%5b(%s)", CPU.alu_op, alu_func.aluopName(CPU.alu_op)
             );            
-            $display("%9t", $time, " DUMP   WIRES ", `CONTROL_WIRES(LOG, `COMMA));
             $display ("%9t ", $time,  "DUMP  ",
                  " rbus=%8b lbus=%8b alu_result_bus=%8b", CPU.rbus, CPU.lbus, CPU.alu_result_bus);
             $display ("%9t ", $time,  "DUMP  ",
@@ -483,6 +505,7 @@ module test();
                  "  REGC:%08b", CPU.regFile.get(2),
                  "  REGD:%08b", CPU.regFile.get(3)
                  );
+            $display("%9t", $time, " DUMP   WIRES ", `CONTROL_WIRES(LOG, `COMMA));
     endtask 
 
 
@@ -592,8 +615,8 @@ module test();
         if (CPU.phaseDecode & CPU.ctrl.instruction_6 === 'x) begin
            $display("instruction_6", CPU.ctrl.instruction_6); 
             DUMP;
-            $display("END OF PROGRAM - PROGRAM BYTE = XX "); 
-            $finish();
+            $display("ERROR END OF PROGRAM - PROGRAM BYTE = XX "); 
+            $finish_and_return(1);
         end
     end
 

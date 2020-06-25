@@ -17,5 +17,15 @@ module cast();
         to16 = IN;
     endfunction  
 
+    function [7:0] hi8([15:0] IN);
+        hi8 = (IN >> 8) & 8'hff;
+    endfunction  
+
+    function [7:0] lo8([15:0] IN);
+        lo8 = IN & 8'hff;
+    endfunction  
+
+
+
 endmodule
 `endif

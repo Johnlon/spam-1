@@ -24,23 +24,41 @@
 `timescale 1ns/1ns
 `define DIRECT 1'b1
 `define REGISTER 1'b0
+`define NA_AMODE 1'b0
 
 // PSEUDO ASSEMBLER
 `define ROM(A) { CPU.ctrl.rom_6.Mem[A], CPU.ctrl.rom_5.Mem[A], CPU.ctrl.rom_4.Mem[A], CPU.ctrl.rom_3.Mem[A], CPU.ctrl.rom_2.Mem[A], CPU.ctrl.rom_1.Mem[A] }
 
 // Instruction populates the ROM and adds a text version of the instruction to the CODE array
-`define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP, AMODE, IMMED, ADDRESS) \
+`define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP, AMODE, ADDRESS, IMMED) \
     `ROM(LOCN) = { `toALUOP(ALUOP), cast.to5(`toDEV(TARGET)), cast.to4(`toDEV(SRCA)), cast.to4(`toDEV(SRCB)), 5'bz, AMODE, cast.to16(ADDRESS), cast.to8(IMMED) }; \
-    CODE[LOCN] = "Code: TARGET=SRCA(ALUOP)SRCB  amode=AMODE immed8=IMMED addr=ADDRESS"
+    CODE[LOCN] = "Code: TARGET=SRCA(ALUOP)SRCB  amode=AMODE immed8=IMMED addr=ADDRESS";
 
 `define NA 'z
 
-`define DEV_EQ_XY_ALU(INST, TARGET, SRCA, SRCB, ALUOP) `INSTRUCTION(INST, TARGET, SRCA,     SRCB,    ALUOP, `REGISTER, `NA,    `NA)
-`define DEV_EQ_ROM_DIRECT(INST,TARGET, ADDRESS)        `INSTRUCTION(INST, TARGET, not_used, rom,     B,     `DIRECT,   `NA,    ADDRESS)
-`define DEV_EQ_IMMED8(INST,TARGET, IMMED8)             `INSTRUCTION(INST, TARGET, not_used, instreg, B,     `REGISTER, IMMED8, `NA)
-`define DEV_EQ_RAM_DIRECT(INST,TARGET, ADDRESS)        `INSTRUCTION(INST, TARGET, not_used, ram,     B,     `DIRECT,   `NA,    ADDRESS)
-`define RAM_DIRECT_EQ_DEV(INST,ADDRESS, SRC)           `INSTRUCTION(INST, ram,    not_used, SRC,     B,     `DIRECT,   `NA,    ADDRESS)
+`define DEV_EQ_XY_ALU(INST, TARGET, SRCA, SRCB, ALUOP) `INSTRUCTION(INST, TARGET, SRCA,     SRCB,    ALUOP, `REGISTER, `NA,     `NA)
+`define DEV_EQ_ROM_DIRECT(INST,TARGET, ADDRESS)        `INSTRUCTION(INST, TARGET, not_used, rom,     B,     `DIRECT,   ADDRESS, `NA)
+`define DEV_EQ_IMMED8(INST,TARGET, IMMED8)             `INSTRUCTION(INST, TARGET, not_used, instreg, B,     `REGISTER, `NA,     IMMED8) // src is the immed8 but target if ram is via MAR
+`define DEV_EQ_RAM_DIRECT(INST,TARGET, ADDRESS)        `INSTRUCTION(INST, TARGET, not_used, ram,     B,     `DIRECT,   ADDRESS, `NA)
+`define RAM_DIRECT_EQ_DEV(INST,ADDRESS, SRC)           `INSTRUCTION(INST, ram,    not_used, SRC,     B,     `DIRECT,   ADDRESS, `NA)
 
+// prep jump sourcing the PCHI from the immed8
+`define JMP_PREP_IMMED(INST, ADDRESS_HI)    `INSTRUCTION(INST, pchitmp, not_used, instreg,    B,     `NA_AMODE, `NA, ADDRESS_HI) 
+// jump sourcing the PCLO from the immed8
+`define JMP_IMMED(INST, ADDRESS_LO)        `INSTRUCTION(INST, pc,      not_used, instreg,    B,     `NA_AMODE, `NA, ADDRESS_LO) 
+// conditional jump sourcing the PCLO from the immed8
+`define JMPZ_IMMED(INST, ADDRESS_LO)       `INSTRUCTION(INST, jmpz,    not_used, instreg,    B,     `NA_AMODE, `NA, ADDRESS_LO) 
+// conditional jump sourcing the PCLO from the immed8
+`define JMPC_IMMED(INST, ADDRESS_LO)       `INSTRUCTION(INST, jmpc,    not_used, instreg,    B,     `NA_AMODE, `NA, ADDRESS_LO) 
+
+`define JMP_IMMED16(INST, ADDRESS_LONG)       \
+  `JMP_PREP_IMMED(INST, ADDRESS_LONG >>  8) \
+  `JMP_IMMED(INST+1, ADDRESS_LONG & 8'hff)
+
+/*
+    `PREPJMP_IMMED(INST, cast.hi8(ADDRESS_LONG)) \
+    `JMP_IMMED(INST+1, cast.lo8(ADDRESS_LONG))
+*/
 
 module wide_controller(
     input _mr,
@@ -65,7 +83,7 @@ module wide_controller(
     rom #(.AWIDTH(16)) rom_4(._CS(1'b0), ._OE(1'b0), .A(pc)); 
     rom #(.AWIDTH(16)) rom_3(._CS(1'b0), ._OE(1'b0), .A(pc)); 
     rom #(.AWIDTH(16)) rom_2(._CS(1'b0), ._OE(1'b0), .A(pc)); 
-    rom #(.AWIDTH(16)) rom_1(._CS(1'b0), ._OE(1'b0), .A(address_bus)); 
+    rom #(.AWIDTH(16)) rom_1(._CS(1'b0), ._OE(1'b0), .A(address_bus));
    
     wire [7:0] instruction_6 = rom_6.D; // aliases
     wire [7:0] instruction_5 = rom_5.D;
