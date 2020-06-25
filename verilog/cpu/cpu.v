@@ -1,4 +1,6 @@
 
+// FIXME Implement jumps
+// FIXME Implement conditional instructions with 3 spare bits
 
 // ADDRESSING TERMINOLOGY
 //  IMMEDIATE ADDRESSING = INSTRUCTION CONTAINS THE CONSTANT VALUE DATA TO USE

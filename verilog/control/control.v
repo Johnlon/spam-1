@@ -66,19 +66,19 @@ module control;
     localparam [4:0] DEV_pchitmp = 16;
     localparam [4:0] DEV_pclo= 17;
     localparam [4:0] DEV_pc= 18;
-    localparam [4:0] DEV_jmpo= 19;
+    localparam [4:0] DEV_jmpc= 19;
     localparam [4:0] DEV_jmpz= 20;
-    localparam [4:0] DEV_jmpc= 21;
-    localparam [4:0] DEV_jmpdi= 22;
-    localparam [4:0] DEV_jmpdo= 23;
-    localparam [4:0] DEV_jmpeq= 24;
-    localparam [4:0] DEV_jmpne= 25;
-    localparam [4:0] DEV_jmpgt= 26;
-    localparam [4:0] DEV_jmplt= 27;
-    localparam [4:0] DEV_nu1= 28;
-    localparam [4:0] DEV_nu2= 29;
-    localparam [4:0] DEV_nu3= 30;
-    localparam [4:0] DEV_nu4= 31;
+    localparam [4:0] DEV_jmpo= 21;
+    localparam [4:0] DEV_jmpn= 22;
+    localparam [4:0] DEV_jmpgt= 23;
+    localparam [4:0] DEV_jmplt= 24;
+    localparam [4:0] DEV_jmpeq= 25;
+    localparam [4:0] DEV_jmpne= 26;
+    localparam [4:0] DEV_jmpdi= 27;
+    localparam [4:0] DEV_jmpdo= 28;
+    localparam [4:0] DEV_nu1= 29;
+    localparam [4:0] DEV_nu2= 30;
+    localparam [4:0] DEV_nu3= 31;
 
     // targets
     function [4:0] TDEV([3:0] x);
@@ -105,19 +105,19 @@ module control;
     `TARGH(pchitmp)
     `TARGH(pclo)
     `TARGH(pc)
-    `TARGH(jmpo)
-    `TARGH(jmpz)
     `TARGH(jmpc)
-    `TARGH(jmpdi)
-    `TARGH(jmpdo)
-    `TARGH(jmpeq)
-    `TARGH(jmpne)
+    `TARGH(jmpz)
+    `TARGH(jmpo)
+    `TARGH(jmpn)
     `TARGH(jmpgt)
     `TARGH(jmplt)
+    `TARGH(jmpeq)
+    `TARGH(jmpne)
+    `TARGH(jmpdi)
+    `TARGH(jmpdo)
     `TARGH(nu1)
     `TARGH(nu2)
     `TARGH(nu3)
-    `TARGH(nu4)
 
     function string devname([3:0] dev); 
     begin
@@ -159,19 +159,19 @@ module control;
                 TDEV_pchitmp: tdevname = "PCHITMP";
                 TDEV_pclo: tdevname = "PCLO";
                 TDEV_pc: tdevname = "PC";
+                TDEV_jmpc: tdevname = "JPMC";
+                TDEV_jmpn: tdevname = "JPMN";
                 TDEV_jmpo: tdevname = "JMPO";
                 TDEV_jmpz: tdevname = "JMPZ";
-                TDEV_jmpc: tdevname = "JPMC";
-                TDEV_jmpdi: tdevname = "JMPDI";
-                TDEV_jmpdo: tdevname = "JMPDO";
-                TDEV_jmpeq: tdevname = "JMPEQ";
-                TDEV_jmpne: tdevname = "JMPNE";
                 TDEV_jmpgt: tdevname = "JMPGT";
                 TDEV_jmplt: tdevname = "JMPLT";
+                TDEV_jmpeq: tdevname = "JMPEQ";
+                TDEV_jmpne: tdevname = "JMPNE";
+                TDEV_jmpdi: tdevname = "JMPDI";
+                TDEV_jmpdo: tdevname = "JMPDO";
                 TDEV_nu1: tdevname = "NU2";
                 TDEV_nu2: tdevname = "NU2";
                 TDEV_nu3: tdevname = "NU3";
-                TDEV_nu4: tdevname = "NU4";
                 default: begin
                     string n; 
                     $sformat(n,"??(unknown %5b)", tdev);
