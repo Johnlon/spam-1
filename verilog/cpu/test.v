@@ -27,7 +27,7 @@ module test();
     localparam PHASE_EXEC_LEN=2;
 
     // CLOCK ===================================================================================
-    localparam TCLK=25;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    localparam HALF_CLK=25;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;
@@ -153,12 +153,12 @@ module test();
     integer phaseDecodeLen=PHASE_DECODE_LEN;
     integer phaseExecLen=PHASE_EXEC_LEN;
 
-    function noop();
+    task noop;
         // do nothing - just for syntax
-    endfunction: noop
+    endtask: noop
 
     initial begin
-        `define EXECUTE_CYCLE(N) for (count =0; count < N*(phaseFetchLen+phaseDecodeLen+phaseExecLen); count++) begin #TCLK CLK_UP; #TCLK CLK_DN; end
+        `define EXECUTE_CYCLE(N) for (count =0; count < N*(phaseFetchLen+phaseDecodeLen+phaseExecLen); count++) begin #HALF_CLK CLK_UP; #HALF_CLK CLK_DN; end
 
         INIT_ROM();
 
@@ -179,18 +179,18 @@ module test();
         //HACK`Equals(CPU.address_bus, 16'bz); // noone providing address
         `Equals(CPU.address_bus, 16'bx); // noone providing address
 
-        #TCLK
+        #1000
         `DISPLAY("_mrPC=0  - so clocking is ineffective = stay in PC addressing mode")
         `Equals(CPU._mrPC, 0);
 
         for (count =0; count < phaseFetchLen+phaseDecodeLen+phaseExecLen; count++) begin
-            #TCLK
             CLK_UP; //CLK_UP;
-            #TCLK
+            #HALF_CLK
             CLK_DN;
+            #HALF_CLK
             noop();
         end
-        #TCLK
+        #1000
         `Equals(CPU.PCHI, 8'bx)
         `Equals(CPU.PCLO, 8'bx)
         
@@ -200,14 +200,14 @@ module test();
         `Equals(CPU._mrPC, 0);
         `Equals(CPU.phase, control.PHASE_NONE)
 
-        #TCLK
+        #HALF_CLK
 
         `DISPLAY("instruction 1 - clock fetch")
         for (count =0; count < phaseFetchLen; count++) begin
             CLK_UP;
-            #TCLK
+            #HALF_CLK
             CLK_DN;
-            #TCLK
+            #HALF_CLK
             noop();
         end
         `Equals(CPU.phase, control.PHASE_FETCH)
@@ -221,9 +221,9 @@ module test();
         `DISPLAY("instruction 1 - clock decode")
         for (count =0; count < phaseDecodeLen; count++) begin
             CLK_UP;
-            #TCLK
+            #HALF_CLK
             CLK_DN;
-            #TCLK
+            #HALF_CLK
             noop();
         end
         `Equals(CPU.phase, control.PHASE_DECODE)
@@ -236,9 +236,9 @@ module test();
         `DISPLAY("instruction 1 - clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
-            #TCLK
+            #HALF_CLK
             CLK_DN;
-            #TCLK
+            #HALF_CLK
             `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
         end
         `Equals(CPU.phase, control.PHASE_EXEC)
@@ -255,9 +255,9 @@ module test();
         `DISPLAY("instruction 2 - clock fetch")
         for (count =0; count < phaseFetchLen; count++) begin
             CLK_UP;
-            #TCLK
+            #HALF_CLK
             CLK_DN;
-            #TCLK
+            #HALF_CLK
             `Equals(CPU.seq, `SEQ(count+1));
         end
         `Equals(CPU.phase, control.PHASE_FETCH)
@@ -269,24 +269,24 @@ module test();
         `DISPLAY("instruction 2 - clock decode")
         for (count =0; count < phaseDecodeLen; count++) begin
             CLK_UP;
-            #TCLK
+            #HALF_CLK
             `Equals(CPU.phase, control.PHASE_DECODE)
             `Equals(CPU.PCHI, 8'b0)
             `Equals(CPU.PCLO, 8'b1)
             CLK_DN;
-            #TCLK
+            #HALF_CLK
             `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
         end
 
         `DISPLAY("instruction 2 - clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
-            #TCLK
+            #HALF_CLK
             `Equals(CPU.phase, control.PHASE_EXEC)
             `Equals(CPU.PCHI, 8'b0)
             `Equals(CPU.PCLO, 8'b1)
             CLK_DN;
-            #TCLK
+            #HALF_CLK
             `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
         end
 
@@ -298,9 +298,9 @@ module test();
         `DISPLAY("instruction 3 - clock fetch")
         for (count =0; count < phaseFetchLen; count++) begin
             CLK_UP;
-            #TCLK
+            #HALF_CLK
             CLK_DN;
-            #TCLK
+            #HALF_CLK
             `Equals(CPU.seq, `SEQ(count+1));
         end
         `Equals(CPU.phase, control.PHASE_FETCH)
@@ -312,9 +312,9 @@ module test();
         `DISPLAY("instruction 3 - clock decode")
         for (count =0; count < phaseDecodeLen; count++) begin
             CLK_UP;
-            #TCLK
+            #HALF_CLK
             CLK_DN;
-            #TCLK
+            #HALF_CLK
             `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
         end
         `Equals(CPU.phase, control.PHASE_DECODE)
@@ -326,9 +326,9 @@ module test();
         `DISPLAY("instruction 3 - clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
-            #TCLK
+            #HALF_CLK
             CLK_DN;
-            #TCLK
+            #HALF_CLK
             `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
         end
         `Equals(CPU.phase, control.PHASE_EXEC) 
@@ -343,9 +343,9 @@ module test();
         `DISPLAY("instruction 4 - RAM[MAR=0x0043]=0x22 ")
         // fetch/decode
         for (count =0; count < 1* (phaseFetchLen+phaseDecodeLen); count++) begin
-            #TCLK
+            #HALF_CLK
             CLK_UP;
-            #TCLK
+            #HALF_CLK
             CLK_DN;
             noop();
         end
@@ -353,9 +353,9 @@ module test();
 
         // exec
         for (count =0; count < phaseExecLen; count++) begin
-            #TCLK
+            #HALF_CLK
             CLK_UP;
-            #TCLK
+            #HALF_CLK
             CLK_DN;
             noop();
         end
@@ -445,12 +445,12 @@ module test();
 
 //`include "./generated_tests.v"
 /*
-        #TCLK
+        #HALF_CLK
         count=100;
         while (count -- > 0) begin
-            #TCLK
+            #HALF_CLK
             CLK_UP;
-            #TCLK
+            #HALF_CLK
             CLK_DN;
             $display("PC %2x:%2x !!!!!!!!!!!!!!!!!!!!!!!! CLK COUNT REMAINING=%-d", PCHI, PCLO, count);
         end
@@ -458,9 +458,9 @@ module test();
 
         // consume any remaining code
          while (1==1) begin
-             #TCLK
+             #HALF_CLK
              CLK_UP;
-             #TCLK
+             #HALF_CLK
              CLK_DN;
          end
 
