@@ -1,6 +1,7 @@
 
+// FIXME Implement conditional jumps for other conditions
+// FIXME Use Warrents ALU ROM and external logic
 // FIXME Implement uart
-// FIXME Implement conditional jumps
 // FIXME Implement conditional instructions with spare ROM bits
 // FIXME option: If use 16 immediate then can do a direct jump - but needs an alternative route into the PC for that
 
@@ -42,9 +43,9 @@ module cpu(
     input clk
 );
 
-
-    localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
-
+    parameter PHASE_FETCH_LEN=4;
+    parameter PHASE_DECODE_LEN=4;
+    parameter PHASE_EXEC_LEN=2;
     
     tri [15:0] address_bus;
 
@@ -59,7 +60,7 @@ module cpu(
     wire [2:0] phase = {phaseFetch, phaseDecode, phaseExec};
 
     // CLOCK ===================================================================================
-    localparam T=1000;
+    //localparam T=1000;
 
     //always begin
     //   #CLOCK_INTERVAL clk = !clk;
@@ -76,7 +77,7 @@ module cpu(
     // mrPH forces phase to 000 so clock to PC will be low.
     // at this point _mrPC will also be low so when the clock releases _mrPH then 
     // there will be a phase transition to 100 which the PC will see as a clock pulse that resets the PC   
-    hct7474 #(.BLOCKS(1), .LOG(0)) resetPH(
+    hct7474 #(.BLOCKS(1), .LOG(1)) resetPH(
           ._SD(1'b1),
           ._RD(_RESET_SWITCH),
           .D(1'b1),
@@ -85,7 +86,7 @@ module cpu(
           ._Q(mrPH)
         );
 
-    hct7474 #(.BLOCKS(1), .LOG(0)) resetPCFF(
+    hct7474 #(.BLOCKS(1), .LOG(1)) resetPCFF(
           ._SD(1'b1),
           ._RD(_mrPH), // reset released after clock on resetPH
           .D(1'b1),
@@ -101,7 +102,7 @@ module cpu(
     `define SEQ(x) (10'd2 ** (x-1))
 
     // releasing reset allows phaser to go from 000 to 100 whilst _mrPC is low which resets the PC
-    phaser #(.LOG(0)) ph(.clk, .mr(mrPH), .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec, ._phaseExec);
+    phaser #(.LOG(1), .PHASE_FETCH_LEN(PHASE_FETCH_LEN), .PHASE_DECODE_LEN(PHASE_DECODE_LEN), .PHASE_EXEC_LEN(PHASE_EXEC_LEN)) ph(.clk, .mr(mrPH), .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec, ._phaseExec);
 
     // CONTROL ===========================================================================================
     wire _addrmode_register, _addrmode_pc, _addrmode_direct;

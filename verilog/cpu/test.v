@@ -22,9 +22,12 @@ module test();
     `include "../lib/display_snippet.v"
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
+    localparam PHASE_FETCH_LEN=4;
+    localparam PHASE_DECODE_LEN=4;
+    localparam PHASE_EXEC_LEN=2;
 
     // CLOCK ===================================================================================
-    localparam TCLK=100;   // half clock cycle
+    localparam TCLK=25;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;
@@ -34,7 +37,7 @@ module test();
     //always begin
     //   #CLOCK_INTERVAL clk = !clk;
     //end
-    cpu CPU(_RESET_SWITCH, clk);
+    cpu #(.PHASE_FETCH_LEN(PHASE_FETCH_LEN), .PHASE_DECODE_LEN(PHASE_DECODE_LEN), .PHASE_EXEC_LEN(PHASE_EXEC_LEN)) CPU(_RESET_SWITCH, clk);
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -136,7 +139,8 @@ module test();
     task CLK_DN; 
     begin
         $display("\n%9t", $time, " END OF CLOCK STATE %s", clk ? "HI" : "LO"); 
-        if (CPU.phaseExec) DUMP;
+        DUMP;
+       // if (CPU.phaseExec) DUMP;
         $display("\n%9t", $time, " CLK  -----------------------------------------------------------------------"); 
         clk = 0;
     end
@@ -145,9 +149,13 @@ module test();
 
     // TESTS
     integer count;
-    integer phaseFetchLen=1;
-    integer phaseDecodeLen=1;
-    integer phaseExecLen=1;
+    integer phaseFetchLen=PHASE_FETCH_LEN;
+    integer phaseDecodeLen=PHASE_DECODE_LEN;
+    integer phaseExecLen=PHASE_EXEC_LEN;
+
+    function noop();
+        // do nothing - just for syntax
+    endfunction: noop
 
     initial begin
         `define EXECUTE_CYCLE(N) for (count =0; count < N*(phaseFetchLen+phaseDecodeLen+phaseExecLen); count++) begin #TCLK CLK_UP; #TCLK CLK_DN; end
@@ -158,7 +166,7 @@ module test();
         _RESET_SWITCH <= 0;
         CLK_DN;
 
-        #TCLK
+        #1000
         `Equals( CPU.phase, control.PHASE_NONE)
 
         `Equals( CPU.seq, `SEQ(1))
@@ -175,12 +183,12 @@ module test();
         `DISPLAY("_mrPC=0  - so clocking is ineffective = stay in PC addressing mode")
         `Equals(CPU._mrPC, 0);
 
-        for (count =0; count < 3; count++) begin
-            count++; 
+        for (count =0; count < phaseFetchLen+phaseDecodeLen+phaseExecLen; count++) begin
             #TCLK
             CLK_UP; //CLK_UP;
             #TCLK
             CLK_DN;
+            noop();
         end
         #TCLK
         `Equals(CPU.PCHI, 8'bx)
@@ -200,14 +208,15 @@ module test();
             #TCLK
             CLK_DN;
             #TCLK
-            `Equals(CPU.phase, control.PHASE_FETCH)
-            `Equals( _addrmode, control._AMODE_PC);
-            `Equals(CPU._mrPC, 1'b1); // +clock due to phaseFetch on SR plus the release of the reset on the SR
-            `Equals(CPU.PCHI, 8'b0) 
-            `Equals(CPU.PCLO, 8'b0)
-            `Equals(CPU.address_bus, 16'h0000);
-            `Equals(CPU.seq, `SEQ(count+1));
+            noop();
         end
+        `Equals(CPU.phase, control.PHASE_FETCH)
+        `Equals( _addrmode, control._AMODE_PC);
+        `Equals(CPU._mrPC, 1'b1); // +clock due to phaseFetch on SR plus the release of the reset on the SR
+        `Equals(CPU.PCHI, 8'b0) 
+        `Equals(CPU.PCLO, 8'b0)
+        `Equals(CPU.address_bus, 16'h0000);
+        `Equals(CPU.seq, `SEQ(count));
 
         `DISPLAY("instruction 1 - clock decode")
         for (count =0; count < phaseDecodeLen; count++) begin
@@ -215,27 +224,28 @@ module test();
             #TCLK
             CLK_DN;
             #TCLK
-            `Equals(CPU.phase, control.PHASE_DECODE)
-            `Equals(CPU.PCHI, 8'b0)
-            `Equals(CPU.PCLO, 8'b0)
-            `Equals( _addrmode, control._AMODE_DIR);
-            `Equals(CPU.address_bus, 16'hffaa); // FROM ROM[15:0] 
-            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
+            noop();
         end
+        `Equals(CPU.phase, control.PHASE_DECODE)
+        `Equals(CPU.PCHI, 8'b0)
+        `Equals(CPU.PCLO, 8'b0)
+        `Equals( _addrmode, control._AMODE_DIR);
+        `Equals(CPU.address_bus, 16'hffaa); // FROM ROM[15:0] 
+        `Equals(CPU.seq, `SEQ(count+phaseFetchLen));
 
         `DISPLAY("instruction 1 - clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
             #TCLK
-            `Equals(CPU.phase, control.PHASE_EXEC)
-            `Equals(CPU.PCHI, 8'b0)
-            `Equals(CPU.PCLO, 8'b0)
-            `Equals( _addrmode, control._AMODE_DIR);
-            `Equals(CPU.address_bus, 16'hffaa); // FROM ROM[15:0] 
             CLK_DN;
             #TCLK
-            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen+phaseExecLen));
+            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
         end
+        `Equals(CPU.phase, control.PHASE_EXEC)
+        `Equals(CPU.PCHI, 8'b0)
+        `Equals(CPU.PCLO, 8'b0)
+        `Equals( _addrmode, control._AMODE_DIR);
+        `Equals(CPU.address_bus, 16'hffaa); // FROM ROM[15:0] 
 
         // operation result 
         `Equals(CPU.MARLO.Q, 8'h42)
@@ -246,15 +256,15 @@ module test();
         for (count =0; count < phaseFetchLen; count++) begin
             CLK_UP;
             #TCLK
-            `Equals(CPU.phase, control.PHASE_FETCH)
-            `Equals(CPU.PCHI, 8'b0)
-            `Equals(CPU.PCLO, 8'b1)
-            `Equals( _addrmode, control._AMODE_PC);
-            `Equals(CPU.address_bus, 16'h0001); // FROM PC
             CLK_DN;
             #TCLK
             `Equals(CPU.seq, `SEQ(count+1));
         end
+        `Equals(CPU.phase, control.PHASE_FETCH)
+        `Equals(CPU.PCHI, 8'b0)
+        `Equals(CPU.PCLO, 8'b1)
+        `Equals( _addrmode, control._AMODE_PC);
+        `Equals(CPU.address_bus, 16'h0001); // FROM PC
 
         `DISPLAY("instruction 2 - clock decode")
         for (count =0; count < phaseDecodeLen; count++) begin
@@ -289,43 +299,43 @@ module test();
         for (count =0; count < phaseFetchLen; count++) begin
             CLK_UP;
             #TCLK
-            `Equals(CPU.phase, control.PHASE_FETCH)
-            `Equals(CPU.PCHI, 8'b0)
-            `Equals(CPU.PCLO, 8'd2)
-            `Equals( _addrmode, control._AMODE_PC);
-            `Equals(CPU.address_bus, 16'd2); // FROM PC
             CLK_DN;
             #TCLK
             `Equals(CPU.seq, `SEQ(count+1));
         end
+        `Equals(CPU.phase, control.PHASE_FETCH)
+        `Equals(CPU.PCHI, 8'b0)
+        `Equals(CPU.PCLO, 8'd2)
+        `Equals( _addrmode, control._AMODE_PC);
+        `Equals(CPU.address_bus, 16'd2); // FROM PC
 
         `DISPLAY("instruction 3 - clock decode")
         for (count =0; count < phaseDecodeLen; count++) begin
             CLK_UP;
             #TCLK
-            `Equals(CPU.phase, control.PHASE_DECODE)
-            `Equals(CPU.PCHI, 8'b0)
-            `Equals(CPU.PCLO, 8'd2)
-            `Equals( _addrmode, control._AMODE_REG);
-            `Equals(CPU.address_bus, 16'h0042); // FROM MAR
             CLK_DN;
             #TCLK
             `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
         end
+        `Equals(CPU.phase, control.PHASE_DECODE)
+        `Equals(CPU.PCHI, 8'b0)
+        `Equals(CPU.PCLO, 8'd2)
+        `Equals( _addrmode, control._AMODE_REG);
+        `Equals(CPU.address_bus, 16'h0042); // FROM MAR
 
         `DISPLAY("instruction 3 - clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
             #TCLK
-            `Equals(CPU.phase, control.PHASE_EXEC) 
-            `Equals(CPU.PCHI, 8'b0)
-            `Equals(CPU.PCLO, 8'd2)
-            `Equals( _addrmode, control._AMODE_REG);
-            //`Equals(CPU.address_bus, 16'h0000); // FROM MAR - NOT MATERIAL TO THE TEST BUT A SIDE EFFECT OF SETTING MAR=0000
             CLK_DN;
             #TCLK
             `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
         end
+        `Equals(CPU.phase, control.PHASE_EXEC) 
+        `Equals(CPU.PCHI, 8'b0)
+        `Equals(CPU.PCLO, 8'd2)
+        `Equals( _addrmode, control._AMODE_REG);
+        //`Equals(CPU.address_bus, 16'h0000); // FROM MAR - NOT MATERIAL TO THE TEST BUT A SIDE EFFECT OF SETTING MAR=0000
         
         `Equals(CPU.MARLO.Q, 8'h43)
         `Equals(CPU.MARHI.Q, 8'h00)
@@ -337,6 +347,7 @@ module test();
             CLK_UP;
             #TCLK
             CLK_DN;
+            noop();
         end
         `Equals(`RAM(16'h0000), 8'hxx); // Should still be XX as we've not entered EXECUTE yet
 
@@ -346,6 +357,7 @@ module test();
             CLK_UP;
             #TCLK
             CLK_DN;
+            noop();
         end
         `Equals(`RAM(16'h0043), 8'h22);
 
@@ -409,6 +421,7 @@ module test();
         `Equals(CPU.MARLO.Q, 8'd4)
         `Equals(CPU.MARHI.Q, 8'd4)
         #1
+
         $display("END OF TEST CASES ==============================================");
         $display("END OF TEST CASES ==============================================");
         $display("END OF TEST CASES ==============================================");

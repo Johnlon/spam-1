@@ -18,7 +18,8 @@ clock 10 is dead
 
 `timescale 1ns/1ns
 
-module phaser #(parameter LOG=0, PHASE_FETCH_LEN=1, PHASE_DECODE_LEN=1, PHASE_EXEC_LEN=1) 
+//module phaser #(parameter LOG=0, PHASE_FETCH_LEN=1, PHASE_DECODE_LEN=1, PHASE_EXEC_LEN=1) 
+module phaser #(parameter LOG=0, PHASE_FETCH_LEN=4, PHASE_DECODE_LEN=4, PHASE_EXEC_LEN=2) 
 (
     input clk, 
     input mr,
@@ -30,8 +31,12 @@ module phaser #(parameter LOG=0, PHASE_FETCH_LEN=1, PHASE_DECODE_LEN=1, PHASE_EX
 
     wire _co; 
 
-    // MR=H is async reset
-    hc744017 decade(.cp0(clk), ._cp1(1'b0), .mr(mr | seq[3]), .q(seq), ._co);
+    // MR=H is async reset ---- !!!! THE EXTRA "mr" based on seq is only needed in simulation where I want a shorter cycle than 10
+    if (PHASE_FETCH_LEN + PHASE_DECODE_LEN+ PHASE_EXEC_LEN != 10)
+    hc744017 decade(.cp0(clk), ._cp1(1'b0), .mr(mr | seq[PHASE_FETCH_LEN+PHASE_DECODE_LEN+PHASE_EXEC_LEN]), .q(seq), ._co);
+    else
+    hc744017 decade(.cp0(clk), ._cp1(1'b0), .mr(mr), .q(seq), ._co);
+
     //hc744017 decade(.cp0(clk), ._cp1(1'b0), .mr(mr), .q(seq), ._co);
 
     // construct using 3 input nor gates so we can OR mr into the trigger
@@ -45,10 +50,10 @@ module phaser #(parameter LOG=0, PHASE_FETCH_LEN=1, PHASE_DECODE_LEN=1, PHASE_EX
     wire phaseExec_end = mr |seq[0]; // ensure phase is reset when MR triggers
 */
     wire phaseFetch_begin = !mr & seq[0]; // 3 clocks 
-    wire phaseFetch_end = mr | seq[1];
-    wire phaseDecode_begin = seq[1]; // 4 clocks
-    wire phaseDecode_end = mr |seq[2]; // ensure phase is reset when MR triggers
-    wire phaseExec_begin = seq[2];   // 2 clock
+    wire phaseFetch_end = mr | seq[PHASE_FETCH_LEN];
+    wire phaseDecode_begin = seq[PHASE_FETCH_LEN]; // 4 clocks
+    wire phaseDecode_end = mr |seq[PHASE_FETCH_LEN+PHASE_DECODE_LEN]; // ensure phase is reset when MR triggers
+    wire phaseExec_begin = seq[PHASE_FETCH_LEN+PHASE_DECODE_LEN];   // 2 clock
     wire phaseExec_end = mr |seq[0]; // ensure phase is reset when MR triggers
 
     sr phase1(.s(phaseFetch_begin), .r(phaseFetch_end), .q(phaseFetch));
