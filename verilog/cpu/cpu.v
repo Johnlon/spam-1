@@ -1,4 +1,5 @@
 
+// FIXME Implement uart
 // FIXME Implement conditional jumps
 // FIXME Implement conditional instructions with spare ROM bits
 // FIXME option: If use 16 immediate then can do a direct jump - but needs an alternative route into the PC for that
@@ -51,6 +52,7 @@ module cpu(
     wire [3:0] rbus_dev, lbus_dev;
     wire [4:0] targ_dev;
     wire [4:0] alu_op;
+    wire [7:0] _flags;
 
 
     wire phaseFetch, phaseDecode, phaseExec, _phaseFetch, _phaseExec;
@@ -120,11 +122,13 @@ module cpu(
 
     wire [7:0] PCHI, PCLO; // output of PC
     wire [15:0] pc_addr = {PCHI, PCLO}; 
+
     wide_controller ctrl(
         ._mr(_mrPC),
         .phaseFetch, .phaseDecode, .phaseExec, ._phaseFetch, ._phaseExec,
         .pc(pc_addr),
         .address_bus,
+        ._flags(_flags),
 
         ._addrmode_register, ._addrmode_pc, ._addrmode_direct,
         `CONTROL_WIRES(BIND, `COMMA),
@@ -137,14 +141,18 @@ module cpu(
 
     // PROGRAM COUNTER ======================================================================================
 
+    wire #(8) _do_jmpc = _jmpc_in | _flag_c;
+    wire #(8) _do_jmpz = _jmpz_in | _flag_z;
+    wire #(8) _do_jmp = _pc_in & _do_jmpc & _do_jmpz; 
     
     // PC reset is sync with +ve edge of clock
-    pc #(.LOG(1))  PC (
+    pc #(.LOG(0))  PC (
         .clk(phaseFetch),
         ._MR(_mrPC),
-        ._pc_in(_pc_in),
-        ._pclo_in(_pclo_in),
-        ._pchitmp_in(_pchitmp_in),
+        //._pc_in(_pc_in), // load both
+        ._pc_in(_do_jmp),  // load both
+        ._pclo_in(_pclo_in), // load lo
+        ._pchitmp_in(_pchitmp_in), // load tmp
         .D(alu_result_bus),
 
         .PCLO(PCLO),
@@ -207,9 +215,15 @@ module cpu(
         ._flag_ne(_flag_ne_out)
     );
 
+    wire #(9) gated_flags_clk = phaseExec & _pclo_in & _pchitmp_in & _do_jmp;
+
     hct74574 #(.LOG(1)) flags_czonGLEN( .D({_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out}),
-                                       .Q({_flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne}),
-                                        .CLK(phaseExec), ._OE(1'b0)); 
+                                       .Q(_flags),
+                                        //.CLK(phaseExec), 
+                                        .CLK(gated_flags_clk), 
+                                        ._OE(1'b0)); 
+
+    assign {_flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne} = _flags;
 
     // REGISTER FILE =====================================================================================
     // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING

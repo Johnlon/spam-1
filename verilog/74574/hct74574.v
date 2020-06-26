@@ -24,7 +24,7 @@ output [7:0] Q
     endspecify
     
     always @(posedge CLK) begin
-        if (0) $display("%9t", $time, " REGISTER %m   CLK=%1b _OE=%1b D=%08b Q=%08b", CLK, _OE, D, Q);
+        if (LOG) $display("%9t", $time, " REGISTER %m   CLK=%1b _OE=%1b D=%08b Q=%08b", CLK, _OE, D, Q);
         data <= dSetup;
     end
     

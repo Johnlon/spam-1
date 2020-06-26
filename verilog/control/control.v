@@ -63,10 +63,10 @@ module control;
     localparam [3:0] DEV_not_used = 15;
 
     // dests only
-    localparam [4:0] DEV_pchitmp = 16;
-    localparam [4:0] DEV_pclo= 17;
-    localparam [4:0] DEV_pc= 18;
-    localparam [4:0] DEV_jmpc= 19;
+    localparam [4:0] DEV_pchitmp = 16; // only load pchitmp
+    localparam [4:0] DEV_pclo= 17; // only load pclo
+    localparam [4:0] DEV_pc= 18;   // load pclo from instruction and load pchi from pchitmp
+    localparam [4:0] DEV_jmpc= 19; // conditional version of "pc"
     localparam [4:0] DEV_jmpz= 20;
     localparam [4:0] DEV_jmpo= 21;
     localparam [4:0] DEV_jmpn= 22;

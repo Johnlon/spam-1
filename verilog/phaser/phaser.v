@@ -18,7 +18,7 @@ clock 10 is dead
 
 `timescale 1ns/1ns
 
-module phaser #(parameter LOG=0) 
+module phaser #(parameter LOG=0, PHASE_FETCH_LEN=1, PHASE_DECODE_LEN=1, PHASE_EXEC_LEN=1) 
 (
     input clk, 
     input mr,

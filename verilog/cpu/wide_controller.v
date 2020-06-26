@@ -55,6 +55,10 @@
   `JMP_PREP_IMMED(INST, ADDRESS_LONG >>  8) \
   `JMP_IMMED(INST+1, ADDRESS_LONG & 8'hff)
 
+`define JMPC_IMMED16(INST, ADDRESS_LONG)       \
+  `JMP_PREP_IMMED(INST, ADDRESS_LONG >>  8) \
+  `JMPC_IMMED(INST+1, ADDRESS_LONG & 8'hff)
+
 /*
     `PREPJMP_IMMED(INST, cast.hi8(ADDRESS_LONG)) \
     `JMP_IMMED(INST+1, cast.lo8(ADDRESS_LONG))
@@ -65,6 +69,7 @@ module wide_controller(
     input phaseFetch, phaseDecode, phaseExec, _phaseFetch, _phaseExec,
     input [15:0] address_bus,
     input [15:0] pc,
+    input [7:0] _flags,
 
     output _addrmode_register, _addrmode_pc, _addrmode_direct,
 

@@ -14,8 +14,8 @@
 module pc(
     input clk,
     input _MR,
-    input _pchitmp_in,
-    input _pclo_in,
+    input _pchitmp_in,  // load tmp
+    input _pclo_in,     // load lo
     input _pc_in,       // load hi and lo
     input [7:0] D,
 
