@@ -24,6 +24,13 @@ module syncRegisterFile #(parameter LOG=0, PulseWidth=100) (
         input [1:0] rdR_addr,
         output [7:0] rdR_data
 );
+    logic [31:0] binding_for_tests;
+    assign binding_for_tests = {
+                {regFile.bankR_hi.registers[0] , regFile.bankR_lo.registers[0]} ,
+                {regFile.bankR_hi.registers[1] , regFile.bankR_lo.registers[1]} ,
+                {regFile.bankR_hi.registers[2] , regFile.bankR_lo.registers[2]} ,
+                {regFile.bankR_hi.registers[3] , regFile.bankR_lo.registers[3]} };
+
     
     function [7:0] get([1:0] r);
         get = regFile.get(r);

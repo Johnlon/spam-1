@@ -4,6 +4,9 @@
 // FIXME Implement uart
 // FIXME Implement conditional instructions with spare ROM bits
 // FIXME option: If use 16 immediate then can do a direct jump - but needs an alternative route into the PC for that
+// FIXME ??? How come carry out is't interfering with B_PLUS_1 in loop test? and throwing it out
+// FIXME TODO Rewrite loop test to take advantage of carry out by using Hi=0+)+carryin to count rather than logic
+
 
 // ADDRESSING TERMINOLOGY
 //  IMMEDIATE ADDRESSING = INSTRUCTION CONTAINS THE CONSTANT VALUE DATA TO USE
@@ -77,7 +80,7 @@ module cpu(
     // mrPH forces phase to 000 so clock to PC will be low.
     // at this point _mrPC will also be low so when the clock releases _mrPH then 
     // there will be a phase transition to 100 which the PC will see as a clock pulse that resets the PC   
-    hct7474 #(.BLOCKS(1), .LOG(1)) resetPH(
+    hct7474 #(.BLOCKS(1), .LOG(0)) resetPH(
           ._SD(1'b1),
           ._RD(_RESET_SWITCH),
           .D(1'b1),
@@ -86,7 +89,7 @@ module cpu(
           ._Q(mrPH)
         );
 
-    hct7474 #(.BLOCKS(1), .LOG(1)) resetPCFF(
+    hct7474 #(.BLOCKS(1), .LOG(0)) resetPCFF(
           ._SD(1'b1),
           ._RD(_mrPH), // reset released after clock on resetPH
           .D(1'b1),
@@ -102,7 +105,7 @@ module cpu(
     `define SEQ(x) (10'd2 ** (x-1))
 
     // releasing reset allows phaser to go from 000 to 100 whilst _mrPC is low which resets the PC
-    phaser #(.LOG(1), .PHASE_FETCH_LEN(PHASE_FETCH_LEN), .PHASE_DECODE_LEN(PHASE_DECODE_LEN), .PHASE_EXEC_LEN(PHASE_EXEC_LEN)) ph(.clk, .mr(mrPH), .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec, ._phaseExec);
+    phaser #(.LOG(0), .PHASE_FETCH_LEN(PHASE_FETCH_LEN), .PHASE_DECODE_LEN(PHASE_DECODE_LEN), .PHASE_EXEC_LEN(PHASE_EXEC_LEN)) ph(.clk, .mr(mrPH), .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec, ._phaseExec);
 
     // CONTROL ===========================================================================================
     wire _addrmode_register, _addrmode_pc, _addrmode_direct;
@@ -218,7 +221,7 @@ module cpu(
 
     wire #(9) gated_flags_clk = phaseExec & _pclo_in & _pchitmp_in & _do_jmp;
 
-    hct74574 #(.LOG(1)) flags_czonGLEN( .D({_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out}),
+    hct74574 #(.LOG(0)) flags_czonGLEN( .D({_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out}),
                                        .Q(_flags),
                                         //.CLK(phaseExec), 
                                         .CLK(gated_flags_clk), 
@@ -241,7 +244,7 @@ module cpu(
 
 
     syncRegisterFile #(.LOG(0)) regFile(
-        .clk,
+        .clk(phaseExec), // only on the execute otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
         ._wr_en(_gated_regfile_in),
         .wr_addr(regfile_wr_addr),
         .wr_data(alu_result_bus),

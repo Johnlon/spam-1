@@ -17,6 +17,7 @@ module registerFile #(parameter LOG=0) (
                     input [1:0] rdR_addr,
                     output [7:0] rdR_data
 	    );
+
     
     wire [3:0] wr_data_hi, wr_data_lo;
     wire [3:0] rdL_data_hi, rdL_data_lo, rdR_data_hi, rdR_data_lo;
@@ -59,7 +60,6 @@ module registerFile #(parameter LOG=0) (
         rdR_data_hi
     );
     
-
     if (LOG) always @(negedge _wr_en) begin 
         $display("%9t REGFILE-A : BEGIN WRITE _wr_en=%1b,  write[%d]=%-3d     _rdX_en=%1b, X[%d]=>%-3d    _rdY_en=%1b, Y[%d]=>%-3d" , $time, 
                     _wr_en, wr_addr, wr_data, 
@@ -77,6 +77,7 @@ module registerFile #(parameter LOG=0) (
         get = {bankL_hi.registers[r], bankL_lo.registers[r]};
     endfunction
 
+    // only need to bind to L or R as they have the same value
     always @(
                 bankR_hi.registers[0] or bankR_lo.registers[0] or
                 bankR_hi.registers[1] or bankR_lo.registers[1] or
