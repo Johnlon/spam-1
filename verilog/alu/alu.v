@@ -1,4 +1,10 @@
 /// FIXME NEED TO USE CARRY IN CONSISTENTLY ON ARITH AND ROTATES (SHIFTS??)
+/// FIXME NEED TO USE XY/AB/LR consistently in design !!
+
+/// MANY OPS NOT REQUIRED IF R CAN BE IMMEDIATE eg "A+1" is same as "A+immediate 1" as long as both treat carry the same
+/// HMMMM .. But can't do "B+immediate 1" unless instreg is available on L bus too.
+
+// FIXME - see my notes on using lower range of A+/-B as no carry in and upper range as the shiftable ones taking cin into account.
 
 `ifndef  V_ALU
 `define  V_ALU
@@ -69,7 +75,7 @@ module alu #(parameter LOG=0) (
     input  _flag_c_in,
     output [8*8:0] OP_OUT
 );
-// A           | B-1               | A*B (high bits)   | A ROR B       |
+// | A           | B-1               | A*B (high bits)   | A ROR B       |
 // | B           | __A+B+Cin (0)__   | A*B (low bits)    | A AND B       |
 // | 0           | __A-B-Cin (0)__   | A/B               | A OR B        |
 // | -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
@@ -77,6 +83,17 @@ module alu #(parameter LOG=0) (
 // | A+1         | __A+B+Cin (1)__   | A >> B arithmetic | NOT B         |
 // | B+1         | __A-B-Cin (1)__   | A >> B logical    | A+B (BCD)     |
 // | A-1         | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
+
+// II items could be deleted due to immediates in any R side instruction
+// JJ could be deleted additionally if Immediate can be on L or R bus
+// | PASSA       | B-1   JJ          | A*B (high bits)   | A ROR B       |
+// | PASSB       | __A+B+Cin (0)__   | A*B (low bits)    | A AND B       |
+// | 0   II      | __A-B-Cin (0)__   | A/B               | A OR B        |
+// | -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
+// | -B          | A-B (special)     | A << B            | NOT A         |
+// | A+1 II      | __A+B+Cin (1)__   | A >> B arithmetic | NOT B         |
+// | B+1 JJ      | __A-B-Cin (1)__   | A >> B logical    | A+B (BCD)     |
+// | A-1 II      | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
 
     
     reg [8*8:0] OP_NAME;
@@ -101,13 +118,15 @@ Overflow occurs when the value affects the sign:
 
 Can Overflow double as a divide / 0 flag ?
 */
-    logic [8:0] tmp = 0;
+    logic [8:0] tmp = 0; // long enough for result and carry 
+
     assign _flag_c = ! tmp[8];
     assign _flag_n = !ALU_Result[7]; // top bit set indicates negative in signed arith
     assign _flag_z = !(o == 8'b0);
-    assign _flag_o = (x[7] == y[7]) & (x[7] != o[7]); // fixme
+    assign _flag_o = (x[7] == y[7]) & (x[7] != o[7]); //  FIXME !!!!!!! NOT IMPLEMENTED !!!
     assign _flag_eq = !(x == y);    
-    assign _flag_ne = !(x != y);    
+    assign _flag_ne = !(x != y);  
+
     // unsigned magnitude comparison of the input values.
     // if the bytes are eg two complement signed then this will produce incorrect results.
     // if this is the case then use a subtract operation instead
@@ -131,48 +150,48 @@ Can Overflow double as a divide / 0 flag ?
 
     always @* begin
         case (alu_op)
-            alu_ops.OP_A: begin
+            alu_ops.OP_A: begin // this is not the same as "A+0 immediate" because + takes carry into account and what we want is PASSA so maybe call it PASSA?
                 OP_NAME = "A";
                 ALU_Result = x;
                 tmp=0;
             end
-            alu_ops.OP_B: begin
+            alu_ops.OP_B: begin // same as "A"
                 OP_NAME = "B";
                 ALU_Result = y;
                 tmp=0;
             end
-            alu_ops.OP_0: begin
+            alu_ops.OP_0: begin // not needed anymore cos immed allows 0
                 OP_NAME = "0";
                 ALU_Result = 0;
                 tmp=0;
             end
-            alu_ops.OP_MINUS_A: begin
+            alu_ops.OP_MINUS_A: begin // should set overflow
                 OP_NAME = "-A";
-                ALU_Result = -x;
+                ALU_Result = -x; // TEST ME what does this do to eg to numbers over 127?
                 tmp = -{1'b0,x};
             end
-            alu_ops.OP_MINUS_B: begin
+            alu_ops.OP_MINUS_B: begin // should set overflow
                 OP_NAME = "-B";
-                ALU_Result = -y;
+                ALU_Result = -y; // TEST ME what does this do to eg to numbers over 127?
                 tmp = -{1'b0,y};
             end
-            alu_ops.OP_A_PLUS_1: begin
-                OP_NAME = "A+1";
+            alu_ops.OP_A_PLUS_1: begin // do I need this op given I can always add 1 immediate? 
+                OP_NAME = "A+1";    // should it consume carryin
                 ALU_Result = x+1;
                 tmp = {1'b0,x}+1;
             end
-            alu_ops.OP_B_PLUS_1: begin
-                OP_NAME = "B+1";
+            alu_ops.OP_B_PLUS_1: begin // do I need this op given I can always add 1 immediate?
+                OP_NAME = "B+1";// should it consume carryin
                 ALU_Result = y+1;
                 tmp = {1'b0,y}+1;
             end
-            alu_ops.OP_A_MINUS_1: begin
-                OP_NAME = "A-1";
+            alu_ops.OP_A_MINUS_1: begin // do I need this op given I can always minus 1 immediate?
+                OP_NAME = "A-1";// should it consume carryin
                 ALU_Result = x-1;
                 tmp = {1'b0,x}-1;
             end
-            alu_ops.OP_B_MINUS_1: begin
-                OP_NAME = "B-1";
+            alu_ops.OP_B_MINUS_1: begin // do I need this?
+                OP_NAME = "B-1";// should it consume carryin
                 ALU_Result = y-1;
                 tmp = {1'b0,y}-1;
             end
@@ -186,25 +205,29 @@ Can Overflow double as a divide / 0 flag ?
                 ALU_Result = x & y;
                 tmp=0;
             end
-            alu_ops.OP_A_PLUS_B: begin 
+            alu_ops.OP_A_PLUS_B: begin  // uses cin
+                if (x === 'x | x === 'z | y === 'x | y === 'z) begin
+                    $display(">>> ALU INVALID INPUT x=%8b y=%8b", x,y);
+                    //$finish_and_return(3);
+                end
                 OP_NAME = "PLUS";
                 ALU_Result = x + y + cin8;
                 tmp = {1'b0,x} + {1'b0,y} + cin8;
             end
-            alu_ops.OP_A_MINUS_B: begin
+            alu_ops.OP_A_MINUS_B: begin // uses cin
                 OP_NAME = "MINUS";
                 ALU_Result = x - y - cin8;
                 tmp = {1'b0,x} - {1'b0,y} - cin8;
             end
 
-            alu_ops.OP_A_TIMES_B_HI: begin
+            alu_ops.OP_A_TIMES_B_HI: begin // how do I do long multiplications?
                 OP_NAME = "*HI";
                 TimesResult = (x * y);
                 ALU_Result = TimesResult[15:8];
                 tmp=0;
             end
 
-            alu_ops.OP_A_TIMES_B_LO: begin
+            alu_ops.OP_A_TIMES_B_LO: begin // how do I do long multiplications?
                 OP_NAME = "*LO";
                 TimesResult = (x * y);
                 ALU_Result = TimesResult[7:0];

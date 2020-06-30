@@ -32,9 +32,12 @@
 // Instruction populates the ROM and adds a text version of the instruction to the CODE array
 `define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP, AMODE, ADDRESS, IMMED) \
     `ROM(LOCN) = { `toALUOP(ALUOP), cast.to5(`toDEV(TARGET)), cast.to4(`toDEV(SRCA)), cast.to4(`toDEV(SRCB)), 5'bz, AMODE, cast.to16(ADDRESS), cast.to8(IMMED) }; \
-    CODE[LOCN] = "Code: TARGET=SRCA(ALUOP)SRCB  amode=AMODE immed8=IMMED addr=ADDRESS";
+    CODE[LOCN] = "TARGET=SRCA(ALUOP)SRCB  amode=AMODE immed8=IMMED addr=ADDRESS";
 
 `define NA 'z
+
+// WARNING : instreg in the X position is High Impedance as its only attached to the R bus
+`define DEV_EQ_XI_ALU(INST, TARGET, SRCA, IMMED8, ALUOP) `INSTRUCTION(INST, TARGET, SRCA,    instreg,    ALUOP, `REGISTER, `NA,     IMMED8)
 
 `define DEV_EQ_XY_ALU(INST, TARGET, SRCA, SRCB, ALUOP) `INSTRUCTION(INST, TARGET, SRCA,     SRCB,    ALUOP, `REGISTER, `NA,     `NA)
 `define DEV_EQ_ROM_DIRECT(INST,TARGET, ADDRESS)        `INSTRUCTION(INST, TARGET, not_used, rom,     B,     `DIRECT,   ADDRESS, `NA)

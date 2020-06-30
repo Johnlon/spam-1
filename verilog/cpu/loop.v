@@ -57,27 +57,34 @@ module test();
     localparam MAX_PC=100;
     string_bits CODE [MAX_PC];
 
+    integer icount;
+
     // SETUP ROM
     task INIT_ROM;
     begin
 
 // init
- `define ADD_ONE 4
+ `define ADD_ONE 3
  `define DO_CARRY 30
-         `DEV_EQ_IMMED8(0, rega, '0);
-         `DEV_EQ_IMMED8(1, regb, '0);
-         `DEV_EQ_IMMED8(2, marlo, '0);
-         `DEV_EQ_IMMED8(3, marhi, '0);
+
+         icount = 0;
+         `DEV_EQ_IMMED8(icount, rega, '0); icount++;
+         `DEV_EQ_IMMED8(icount, regb, '0); icount++;
+         `DEV_EQ_IMMED8(icount, marlo, '0); icount++;
+
+         if (icount != `ADD_ONE) begin $display("ICOUNT ERROR %d != %d", icount, `ADD_ONE ); $finish_and_return(2); end
 
          // implement 16 bit counter
-         `DEV_EQ_XY_ALU(`ADD_ONE, rega, not_used, rega, B_PLUS_1)
-         `JMPC_IMMED16(`ADD_ONE+1, `DO_CARRY)
-         `DEV_EQ_XY_ALU(`ADD_ONE+3, marlo, not_used, rega, B_PLUS_1)
-         `JMP_IMMED16(`ADD_ONE+4, `ADD_ONE)
+         `DEV_EQ_IMMED8(icount, not_used, 0); icount++; // clear carry - noop 
+         `DEV_EQ_XI_ALU(icount, rega, rega, 1, A_PLUS_B); icount++;
+         `JMPC_IMMED16(icount, `DO_CARRY); icount+=2;
+         `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
+         `JMP_IMMED16(icount, `ADD_ONE); icount++;
 
-         `DEV_EQ_XY_ALU(`DO_CARRY, regb, not_used, regb, B_PLUS_1)
-         `DEV_EQ_XY_ALU(`DO_CARRY+1, marlo, not_used, rega, B_PLUS_1)
-         `JMP_IMMED16(`DO_CARRY+2, `ADD_ONE)
+        icount = `DO_CARRY;
+         `DEV_EQ_XY_ALU(icount, regb, not_used, regb, B_PLUS_1); icount++;
+         `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
+         `JMP_IMMED16(icount, `ADD_ONE); icount+=2;
  
 
     end
@@ -119,10 +126,14 @@ module test();
 
     string_bits currentCode; // create field so it can appear in dump file
 
+    always @( posedge CPU.phaseExec )
+       $display ("%9t ", $time,  "DUMP  ", " lbus=%8b rbus=%8b alu_result_bus=%8b", CPU.lbus, CPU.rbus, CPU.alu_result_bus);
+
     always @(CPU.PCHI or CPU.PCLO) begin
+        $display("");
         $display("%9t ", $time, "INCREMENTED PC=%-d ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", {CPU.PCHI, CPU.PCLO});
         currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
-        $display ("%9t ", $time,  "DUMP  ", ": CODE: %-s", currentCode);
+        $display ("%9t ", $time,  "OPERATION:  ", ": %-s", currentCode);
     end
 
     integer not_initialised = 16'hffff + 1;
@@ -137,17 +148,24 @@ module test();
 
         if (last_count !== not_initialised) begin
             if (last_count == 65535 && count != 0) begin 
-                $display("wrong MAR roll value : count=%d  last_count=%d", count , last_count);
+                $display("wrong count roll value : count=%d  last_count=%d", count , last_count);
                 $finish();
             end
             
             if (last_count != 65535 & count != last_count+1) begin 
-                $display("wrong MAR next +1 value : count=%d  last_count=%d", count , last_count);
+                $display("wrong count next +1 value : count=%d  last_count=%d", count , last_count);
+                $finish();
+            end
+        end
+        else 
+        begin
+            if (count != 0) begin 
+                $display("wrong initial count : count=%d", count);
                 $finish();
             end
     
-            $display("OK %4h", {CPU.regFile.get(1), CPU.regFile.get(0) });
         end
+        $display("OK %4h", {CPU.regFile.get(1), CPU.regFile.get(0) });
         last_count=count;
     end
 

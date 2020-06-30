@@ -518,7 +518,7 @@ module test();
                 " alu_op=%5b(%s)", CPU.alu_op, alu_func.aluopName(CPU.alu_op)
             );            
             $display ("%9t ", $time,  "DUMP  ",
-                 " rbus=%8b lbus=%8b alu_result_bus=%8b", CPU.rbus, CPU.lbus, CPU.alu_result_bus);
+                 " lbus=%8b rbus=%8b alu_result_bus=%8b", CPU.lbus, CPU.rbus, CPU.alu_result_bus);
             $display ("%9t ", $time,  "DUMP  ",
                  " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU.flags_czonGLEN.Q, CPU.gated_flags_clk);
             $display ("%9t ", $time,  "DUMP  ",

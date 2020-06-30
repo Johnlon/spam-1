@@ -221,7 +221,7 @@ module cpu(
 
     wire #(9) gated_flags_clk = phaseExec & _pclo_in & _pchitmp_in & _do_jmp;
 
-    hct74574 #(.LOG(0)) flags_czonGLEN( .D({_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out}),
+    hct74574 #(.LOG(1)) flags_czonGLEN( .D({_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out}),
                                        .Q(_flags),
                                         //.CLK(phaseExec), 
                                         .CLK(gated_flags_clk), 
