@@ -1,4 +1,6 @@
 
+//// RUN  and grep for OK to see counter incrementing
+// consider impl using carry in
 /*
 
 Unit number Time unit Unit number Time unit 
@@ -133,7 +135,6 @@ module test();
 
         $display("%9t", $time, " COUNT = %4h ", 16'(count));
 
-
         if (last_count !== not_initialised) begin
             if (last_count == 65535 && count != 0) begin 
                 $display("wrong MAR roll value : count=%d  last_count=%d", count , last_count);
@@ -144,6 +145,8 @@ module test();
                 $display("wrong MAR next +1 value : count=%d  last_count=%d", count , last_count);
                 $finish();
             end
+    
+            $display("OK %4h", {CPU.regFile.get(1), CPU.regFile.get(0) });
         end
         last_count=count;
     end
