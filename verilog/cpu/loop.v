@@ -58,33 +58,34 @@ module test();
     string_bits CODE [MAX_PC];
 
     integer icount;
+    integer ADD_ONE;
 
     // SETUP ROM
     task INIT_ROM;
     begin
 
-// init
- `define ADD_ONE 3
+// forward declare 
  `define DO_CARRY 30
+
+         // implement 16 bit counter
 
          icount = 0;
          `DEV_EQ_IMMED8(icount, rega, '0); icount++;
          `DEV_EQ_IMMED8(icount, regb, '0); icount++;
          `DEV_EQ_IMMED8(icount, marlo, '0); icount++;
 
-         if (icount != `ADD_ONE) begin $display("ICOUNT ERROR %d != %d", icount, `ADD_ONE ); $finish_and_return(2); end
+         ADD_ONE=icount;
 
-         // implement 16 bit counter
-         `DEV_EQ_IMMED8(icount, not_used, 0); icount++; // clear carry - noop 
+         `CLEAR_CARRY(icount); icount++; // clear carry optimisaton woul dbe to move after the higbn byte carry as that's where the pollution comes from 
          `DEV_EQ_XI_ALU(icount, rega, rega, 1, A_PLUS_B); icount++;
          `JMPC_IMMED16(icount, `DO_CARRY); icount+=2;
          `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
-         `JMP_IMMED16(icount, `ADD_ONE); icount++;
+         `JMP_IMMED16(icount, ADD_ONE); icount++;
 
-        icount = `DO_CARRY;
+         icount = `DO_CARRY;
          `DEV_EQ_XY_ALU(icount, regb, not_used, regb, B_PLUS_1); icount++;
-         `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
-         `JMP_IMMED16(icount, `ADD_ONE); icount+=2;
+         `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++; // just acts as a trigger for logging - not needed for calc
+         `JMP_IMMED16(icount, ADD_ONE); icount+=2;
  
 
     end

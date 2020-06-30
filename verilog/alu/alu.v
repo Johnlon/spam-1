@@ -180,7 +180,7 @@ Can Overflow double as a divide / 0 flag ?
                 ALU_Result = x+1;
                 tmp = {1'b0,x}+1;
             end
-            alu_ops.OP_B_PLUS_1: begin // do I need this op given I can always add 1 immediate?
+            alu_ops.OP_B_PLUS_1: begin // do I need this op given I can always add 1 immediate? - cant uses A+B unless A can be immediate
                 OP_NAME = "B+1";// should it consume carryin
                 ALU_Result = y+1;
                 tmp = {1'b0,y}+1;
@@ -190,7 +190,7 @@ Can Overflow double as a divide / 0 flag ?
                 ALU_Result = x-1;
                 tmp = {1'b0,x}-1;
             end
-            alu_ops.OP_B_MINUS_1: begin // do I need this?
+            alu_ops.OP_B_MINUS_1: begin // do I need this?  
                 OP_NAME = "B-1";// should it consume carryin
                 ALU_Result = y-1;
                 tmp = {1'b0,y}-1;

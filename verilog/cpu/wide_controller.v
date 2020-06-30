@@ -45,6 +45,9 @@
 `define DEV_EQ_RAM_DIRECT(INST,TARGET, ADDRESS)        `INSTRUCTION(INST, TARGET, not_used, ram,     B,     `DIRECT,   ADDRESS, `NA)
 `define RAM_DIRECT_EQ_DEV(INST,ADDRESS, SRC)           `INSTRUCTION(INST, ram,    not_used, SRC,     B,     `DIRECT,   ADDRESS, `NA)
 
+`define CLEAR_CARRY(INST)   `DEV_EQ_IMMED8(INST, not_used, 0);
+`define SET_CARRY(INST)     `DEV_EQ_XI_ALU(INST, not_used, not_used, 255, B_PLUS_1)  // FIXME BROKEN COS B_PLUS_1 doesn't add
+
 // prep jump sourcing the PCHI from the immed8
 `define JMP_PREP_IMMED(INST, ADDRESS_HI)    `INSTRUCTION(INST, pchitmp, not_used, instreg,    B,     `NA_AMODE, `NA, ADDRESS_HI) 
 // jump sourcing the PCLO from the immed8
