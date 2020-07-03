@@ -61,13 +61,13 @@ module registerFile #(parameter LOG=0) (
     );
     
     if (LOG) always @(negedge _wr_en) begin 
-        $display("%9t REGFILE-A : BEGIN WRITE _wr_en=%1b,  write[%d]=%-3d     _rdX_en=%1b, X[%d]=>%-3d    _rdY_en=%1b, Y[%d]=>%-3d" , $time, 
+        $display("%9t REGFILE : BEGIN WRITE _wr_en=%1b,  write[%d]=%-3d     _rdX_en=%1b, X[%d]=>%-3d    _rdY_en=%1b, Y[%d]=>%-3d" , $time, 
                     _wr_en, wr_addr, wr_data, 
                     _rdL_en, rdL_addr, rdL_data, 
                     _rdL_en, rdR_addr, rdR_data);
     end
     if (LOG) always @(posedge _wr_en) begin 
-        $display("%9t REGFILE-A : END WRITE _wr_en=%1b,  write[%d]=%-3d     _rdX_en=%1b, X[%d]=>%-3d    _rdY_en=%1b, Y[%d]=>%-3d" , $time, 
+        $display("%9t REGFILE : END WRITE _wr_en=%1b,  write[%d]=%-3d     _rdX_en=%1b, X[%d]=>%-3d    _rdY_en=%1b, Y[%d]=>%-3d" , $time, 
                     _wr_en, wr_addr, wr_data, 
                     _rdL_en, rdL_addr, rdL_data, 
                     _rdL_en, rdR_addr, rdR_data);
@@ -78,18 +78,29 @@ module registerFile #(parameter LOG=0) (
     endfunction
 
     // only need to bind to L or R as they have the same value
-    always @(
+    always @(   
+                    _wr_en//, wr_addr, wr_data, 
+                    //_rdL_en, rdL_addr, rdL_data, 
+                    //_rdL_en, rdR_addr, rdR_data
+    ) begin
+        $display("%9t ", $time, "REGFILE : _wr_en=%1b", //,  write[%d]=%-3d     _rdX_en=%1b, X[%d]=>%-3d    _rdY_en=%1b, Y[%d]=>%-3d" , 
+                    _wr_en//, wr_addr, wr_data, 
+                    //_rdL_en, rdL_addr, rdL_data, 
+                    //_rdL_en, rdR_addr, rdR_data
+                    );
+    end
+
+    always @(   
                 bankR_hi.registers[0] or bankR_lo.registers[0] or
                 bankR_hi.registers[1] or bankR_lo.registers[1] or
                 bankR_hi.registers[2] or bankR_lo.registers[2] or
                 bankR_hi.registers[3] or bankR_lo.registers[3]
     ) begin
-        $display("%9t ", $time, "REGFILE-A : DATA UPDATE A=%1d(%2x) B=%1d(%1x) C=%1d(%1x) D=%1d(%1x)", 
+        $display("%9t ", $time, "REGFILE : DATA UPDATE A=%-3d(%-2x) B=%-3d(%-2x) C=%-3d(%-2x) D=%-3d(%-2x)", 
                 get(0), get(0), 
                 get(1), get(1), 
                 get(2), get(2), 
-                get(3), get(3) 
-        );
+                get(3), get(3));
     end
 
 /*

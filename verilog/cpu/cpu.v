@@ -205,8 +205,8 @@ module cpu(
 
 	alu #(.LOG(0)) Alu(
         .o(alu_result_bus), 
-        .x(lbus),
-        .y(rbus),
+        .a(lbus),
+        .b(rbus),
         .alu_op(alu_op),
         ._flag_c_in(_flag_c),
         ._flag_c(_flag_c_out),
@@ -243,7 +243,7 @@ module cpu(
     if (0) always @* $display("regfile rbus out=", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _rdev_rega , _rdev_regb , _rdev_regc , _rdev_regd);
 
 
-    syncRegisterFile #(.LOG(0)) regFile(
+    syncRegisterFile #(.LOG(1)) regFile(
         .clk(phaseExec), // only on the execute otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
         ._wr_en(_gated_regfile_in),
         .wr_addr(regfile_wr_addr),

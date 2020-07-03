@@ -70,10 +70,10 @@ module op_decoder #(parameter LOG=1)
 
     // aluop
     tri [7:0] alu_op_out;
-    wire #(10) _force_passr = _force_source_rom & _op_dev_eq_ram_direct & _force_source_instreg; // source ram or rom or ireg means passr : 3 INPUT AND GATE
+    wire #(10) _force_passb = _force_source_rom & _op_dev_eq_ram_direct & _force_source_instreg; // source ram or rom or ireg means passb : 3 INPUT AND GATE
     hct74245ab aluopfrom_instruction(.A({3'b0, rom_data[4:0]}), .B(alu_op_out), .nOE(_op_dev_eq_xy_alu));
-    hct74245ab aluop_eq_passl(.A({3'b0, alu_func.ALUOP_PASSL}), .B(alu_op_out), .nOE(_op_ram_direct_eq_dev));
-    hct74245ab aluop_eq_passr(.A({3'b0, alu_func.ALUOP_PASSR}), .B(alu_op_out), .nOE(_force_passr));
+    hct74245ab aluop_eq_passa(.A({3'b0, alu_func.ALUOP_PASSA}), .B(alu_op_out), .nOE(_op_ram_direct_eq_dev));
+    hct74245ab aluop_eq_passb(.A({3'b0, alu_func.ALUOP_PASSB}), .B(alu_op_out), .nOE(_force_passb));
     assign alu_op = alu_op_out[4:0];
 
     if (LOG)    

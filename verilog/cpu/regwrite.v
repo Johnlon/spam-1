@@ -23,7 +23,6 @@ Unit number Time unit Unit number Time unit
 `timescale 1ns/1ns
 
 
-
 `define SEMICOLON ;
 `define COMMA ,
 
@@ -56,37 +55,23 @@ module test();
 
     localparam MAX_PC=100;
     string_bits CODE [MAX_PC];
-
     integer icount;
     integer ADD_ONE;
 
     // SETUP ROM
     task INIT_ROM;
     begin
-
-// forward declare 
- `define DO_CARRY 30
-
-         // implement 16 bit counter
-
          icount = 0;
-         `DEV_EQ_IMMED8(icount, rega, '0); icount++;
-         `DEV_EQ_IMMED8(icount, regb, '0); icount++;
-         `DEV_EQ_IMMED8(icount, marlo, '0); icount++;
-
-         ADD_ONE=icount;
-
-         `DEV_EQ_XY_ALU(icount, rega, rega, not_used, A_PLUS_1); icount++; // A+PLUS_1 - doesn't consume carry but does set it
-         `DEV_EQ_XI_ALU(icount, regb, regb, 0, A_PLUS_B); icount++; // B=B+0+Carryin   - sets and consumes carry 
-
-         `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
-         `JMP_IMMED16(icount, ADD_ONE); icount++;
+         `DEV_EQ_IMMED8(icount, rega, 1); icount++;
+         `DEV_EQ_IMMED8(icount, regb, 2); icount++;
+         `DEV_EQ_XY_ALU(icount, rega, rega, rega, A_PLUS_B); icount++;
+         `DEV_EQ_XY_ALU(icount, rega, rega, rega, A_PLUS_B); icount++;
 
     end
     endtask : INIT_ROM
 
     initial begin
-        $timeformat(-3, 0, "ms", 10);
+        $timeformat(-9, 0, "ns", 10);
 
         INIT_ROM();
 
@@ -116,12 +101,17 @@ module test();
             $display("\n%9t PC RESET SET       _mrPC=%1b  ======================================================================\n", $time, CPU._mrPC); 
     end
 
+    always @* 
+            $display ("%9t ", $time,  "DUMP  ",
+                 " phase=%-6s", control.fPhase(CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec));
+
     integer pcval;
     assign pcval={CPU.PCHI, CPU.PCLO};
 
     string_bits currentCode; // create field so it can appear in dump file
 
-    always @( posedge CPU.phaseExec )
+    //always @( posedge CPU.phaseExec )
+    always @(  * )
        $display ("%9t ", $time,  "DUMP  ", " lbus=%8b rbus=%8b alu_result_bus=%8b", CPU.lbus, CPU.rbus, CPU.alu_result_bus);
 
     always @(CPU.PCHI or CPU.PCLO) begin

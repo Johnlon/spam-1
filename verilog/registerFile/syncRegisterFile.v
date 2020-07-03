@@ -1,10 +1,17 @@
+/*
+    FOR 100% CORRECT OPERATION THE REGISTER MUST LATCH BEFORE THE _WE GOES LOW OTHERWISE THERE'S
+    A WINDOW FOR ERROR WHERE THE PREVIOUS UNRELATED VALUE OF THE INPUT REGISTER GETS WRITTEN
+    TO THE REG AND FLOWS THRU IF READING THE SAME LOCATION AND THIS MAY IMPACT DOWNSTREAM COMPONENTS.
+    REALISTICALLY IF THE DELTA ON 
+*/
+
 `ifndef V_SYNC_REGFILE
 `define V_SYNC_REGFILE
 /* 4x8 dual port register file
 * latches write data on postive edge, all other inputs remain async.
  */
 
-`include "../74423/hct74423.v"
+//`include "../74423/hct74423.v"
 `include "../registerFile/registerFile.v"
 `include "../74574/hct74574.v"
 `timescale 1ns/1ns
@@ -63,19 +70,21 @@ module syncRegisterFile #(parameter LOG=0, PulseWidth=100) (
     );
 
     if (LOG) always @(posedge clk) begin
-        $display("%9t ", $time, "REGFILE-S : REGISTERED input data %08b", wr_data);
+        $display("%9t ", $time, "REGFILE : REGISTERED input data %08b", wr_data);
     end
 
+/*
     if (LOG) always @(*) begin
         //$display("%9t ", $time, "REGFILE-S : ARGS : _wr_en=%1b _pulse=%1b write[%d]=%d     _rdX_en=%1b X[%d]=>%d    _rdY_en=%1b Y[%d]=>%d   (preletch=%d)  _MR=%1b" ,
          //    _wr_en, _pulse, wr_addr, wr_data, _rdL_en, rdL_addr, rdL_data, _rdL_en, rdR_addr, rdR_data, wr_data_latched, _MR);
 
-        if (!_wr_en) $display("%9t ", $time, "REGFILE-S : UPDATING write[%d] = %d", wr_addr, wr_data_latched);
+        if (!_wr_en) $display("%9t ", $time, "REGFILE : UPDATING write[%d] = %d", wr_addr, wr_data_latched);
     end
 
     if (LOG) always @(posedge _wr_en) begin
-        $display("%9t ", $time, "REGFILE-S : LATCHED write[%d]=%d", wr_addr, wr_data_latched);
+        $display("%9t ", $time, "REGFILE : LATCHED write[%d]=%d", wr_addr, wr_data_latched);
     end
+*/
 
     
 endmodule

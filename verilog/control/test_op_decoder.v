@@ -54,7 +54,7 @@ module test();
         `Equals( targ_dev, control.TDEV_marlo)
         `Equals( lbus_dev, 4'bxxxx)  // passed thru but irrelevant for this operation as [15:0] go to the address bus
         `Equals( rbus_dev, control.DEV_instreg)
-        `Equals( alu_op, alu_func.ALUOP_PASSR)
+        `Equals( alu_op, alu_func.ALUOP_PASSB)
 
         d.display("4: OP_dev_eq_rom_direct");
         
@@ -64,7 +64,7 @@ module test();
         `Equals( targ_dev, control.TDEV_marlo) 
         `Equals( lbus_dev, 4'bxzxz)  // passed thru but irrelevant for this operation as [15:0] go to the address bus
         `Equals( rbus_dev, control.DEV_rom)
-        `Equals( alu_op, alu_func.ALUOP_PASSR)
+        `Equals( alu_op, alu_func.ALUOP_PASSB)
 
         d.display("5: OP_dev_eq_ram_direct");
         
@@ -74,7 +74,7 @@ module test();
         `Equals( targ_dev, control.TDEV_marlo) 
         `Equals( lbus_dev, 4'bxzxz) // passed thru but irrelevant for this operation as [15:0] go to the address bus
         `Equals( rbus_dev, control.DEV_ram)
-        `Equals( alu_op, alu_func.ALUOP_PASSR)
+        `Equals( alu_op, alu_func.ALUOP_PASSB)
 
         d.display("6: OP_ram_direct_eq_dev");
         
@@ -84,7 +84,7 @@ module test();
         `Equals( targ_dev, control.TDEV_ram) 
         `Equals( lbus_dev, control.DEV_marlo) // passed thru but irrelevant for this operation as [15:0] go to the address bus 
         `Equals( rbus_dev, 4'bzzzz)  // because the control logic at present doesn't set it at all in this case - but if we use tri0 then this will be 0
-        `Equals( alu_op, alu_func.ALUOP_PASSL)
+        `Equals( alu_op, alu_func.ALUOP_PASSA)
         
         d.display("test end");
 
