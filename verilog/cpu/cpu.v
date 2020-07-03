@@ -52,8 +52,8 @@ module cpu(
     
     tri [15:0] address_bus;
 
-    tri [7:0] rbus, lbus, alu_result_bus;
-    wire [3:0] rbus_dev, lbus_dev;
+    tri [7:0] bbus, abus, alu_result_bus;
+    wire [3:0] bbus_dev, abus_dev;
     wire [4:0] targ_dev;
     wire [4:0] alu_op;
     wire [7:0] _flags;
@@ -114,14 +114,14 @@ module cpu(
     wire [7:0] immed8;
 
     // selection wires
-    `define WIRE_LDEV_SEL(DNAME) wire _ldev_``DNAME``
-    `define WIRE_RDEV_SEL(DNAME) wire _rdev_``DNAME``
+    `define WIRE_ADEV_SEL(DNAME) wire _adev_``DNAME``
+    `define WIRE_BDEV_SEL(DNAME) wire _bdev_``DNAME``
     `define WIRE_TDEV_SEL(DNAME) wire _``DNAME``_in
 
     `CONTROL_WIRES(WIRE, `SEMICOLON);
 
-    `define BIND_LDEV_SEL(DNAME) ._ldev_``DNAME``
-    `define BIND_RDEV_SEL(DNAME) ._rdev_``DNAME``
+    `define BIND_ADEV_SEL(DNAME) ._adev_``DNAME``
+    `define BIND_BDEV_SEL(DNAME) ._bdev_``DNAME``
     `define BIND_TDEV_SEL(DNAME) ._``DNAME``_in
 
     wire [7:0] PCHI, PCLO; // output of PC
@@ -140,7 +140,7 @@ module cpu(
         .direct8,
         .immed8,
         .alu_op,
-        .rbus_dev, .lbus_dev, .targ_dev // for regfile
+        .bbus_dev, .abus_dev, .targ_dev // for regfile
     );
 
     // PROGRAM COUNTER ======================================================================================
@@ -163,20 +163,20 @@ module cpu(
         .PCHI(PCHI)
     );
 
-    hct74245ab pchi_addrbushi_buf(.A(PCHI), .B(address_bus[15:8]), .nOE(_addrmode_pc));
-    hct74245ab pclo_addrbuslo_buf(.A(PCLO), .B(address_bus[7:0]), .nOE(_addrmode_pc));
+    hct74245ab pchi_addbbushi_buf(.A(PCHI), .B(address_bus[15:8]), .nOE(_addrmode_pc));
+    hct74245ab pclo_addbbuslo_buf(.A(PCLO), .B(address_bus[7:0]), .nOE(_addrmode_pc));
 
     // ROM =============================================================================================
 
     
-    // ROM OUT to RBUS when direct rom addressing is being used
-    hct74245ab rom_rbus_buf(.A(direct8), .B(rbus), .nOE(_rdev_rom));
+    // ROM OUT to BBUS when direct rom addressing is being used
+    hct74245ab rom_bbus_buf(.A(direct8), .B(bbus), .nOE(_bdev_rom));
 
-    // ROM OUT TO RBUS VIA IR is immediate addressing of that operand, and we can be simultaneously register (MAR) addressing the RAM
-    hct74245ab rom_instreg_rbus_buf(.A(immed8), .B(rbus), .nOE(_rdev_instreg));
+    // ROM OUT TO BBUS VIA IR is immediate addressing of that operand, and we can be simultaneously register (MAR) addressing the RAM
+    hct74245ab rom_instreg_bbus_buf(.A(immed8), .B(bbus), .nOE(_bdev_instreg));
 
-    hct74245ab rom_addrbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
-    hct74245ab rom_addrbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
+    hct74245ab rom_addbbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
+    hct74245ab rom_addbbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
 
     // RAM =============================================================================================
 
@@ -184,20 +184,20 @@ module cpu(
     ram #(.AWIDTH(16)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus));
     
     hct74245ab ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in));
-    hct74245ab ram_rbus_buf(.A(ram64.D), .B(rbus), .nOE(_rdev_ram));
+    hct74245ab ram_bbus_buf(.A(ram64.D), .B(bbus), .nOE(_bdev_ram));
 
     // MAR =============================================================================================
     hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
     hct74377 #(.LOG(0)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
 
-    hct74245ab marlo_lbus_buf(.A(MARLO.Q), .B(lbus), .nOE(_ldev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
-    hct74245ab marlo_rbus_buf(.A(MARLO.Q), .B(rbus), .nOE(_rdev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
+    hct74245ab marlo_abus_buf(.A(MARLO.Q), .B(abus), .nOE(_adev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
+    hct74245ab marlo_bbus_buf(.A(MARLO.Q), .B(bbus), .nOE(_bdev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
 
-    hct74245ab marhi_lbus_buf(.A(MARHI.Q), .B(lbus), .nOE(_ldev_marhi)); // optional - needed for marlo arith so MAR appears as a GP register
-    hct74245ab marhi_rbus_buf(.A(MARHI.Q), .B(rbus), .nOE(_rdev_marhi)); // optional - needed for marlo arith so MAR appears as a GP register
+    hct74245ab marhi_abus_buf(.A(MARHI.Q), .B(abus), .nOE(_adev_marhi)); // optional - needed for marlo arith so MAR appears as a GP register
+    hct74245ab marhi_bbus_buf(.A(MARHI.Q), .B(bbus), .nOE(_bdev_marhi)); // optional - needed for marlo arith so MAR appears as a GP register
 
-    hct74245ab marhi_addrbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .nOE(_addrmode_register));
-    hct74245ab marlo_addrbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register));
+    hct74245ab marhi_addbbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .nOE(_addrmode_register));
+    hct74245ab marlo_addbbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register));
 
     // ALU ==============================================================================================
     wire _flag_c_out, _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out;
@@ -205,8 +205,8 @@ module cpu(
 
 	alu #(.LOG(0)) Alu(
         .o(alu_result_bus), 
-        .a(lbus),
-        .b(rbus),
+        .a(abus),
+        .b(bbus),
         .alu_op(alu_op),
         ._flag_c_in(_flag_c),
         ._flag_c(_flag_c_out),
@@ -232,15 +232,15 @@ module cpu(
     // REGISTER FILE =====================================================================================
     // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
     wire #(8) _gated_regfile_in = _phaseExec | (_rega_in & _regb_in & _regc_in & _regd_in);
-    wire #(8) _regfile_rdL_en = _ldev_rega &_ldev_regb &_ldev_regc &_ldev_regd ;
-    wire #(8) _regfile_rdR_en = _rdev_rega &_rdev_regb &_rdev_regc &_rdev_regd ;
-    wire [1:0] regfile_rdL_addr = lbus_dev[1:0];
-    wire [1:0] regfile_rdR_addr = rbus_dev[1:0];
+    wire #(8) _regfile_rdL_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ;
+    wire #(8) _regfile_rdR_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ;
+    wire [1:0] regfile_rdL_addr = abus_dev[1:0];
+    wire [1:0] regfile_rdR_addr = bbus_dev[1:0];
     wire [1:0] regfile_wr_addr = targ_dev[1:0];
 
     if (0) always @* $display("regfile gated in=", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
-    if (0) always @* $display("regfile lbus out=", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _ldev_rega , _ldev_regb , _ldev_regc , _ldev_regd);
-    if (0) always @* $display("regfile rbus out=", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _rdev_rega , _rdev_regb , _rdev_regc , _rdev_regd);
+    if (0) always @* $display("regfile abus out=", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
+    if (0) always @* $display("regfile bbus out=", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
 
 
     syncRegisterFile #(.LOG(1)) regFile(
@@ -251,11 +251,11 @@ module cpu(
         
         ._rdL_en(_regfile_rdL_en),
         .rdL_addr(regfile_rdL_addr),
-        .rdL_data(lbus),
+        .rdL_data(abus),
         
         ._rdR_en(_regfile_rdR_en),
         .rdR_addr(regfile_rdR_addr),
-        .rdR_data(rbus)
+        .rdR_data(bbus)
     );
 
 endmodule : cpu

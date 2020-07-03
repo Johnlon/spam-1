@@ -122,7 +122,7 @@ module test();
     string_bits currentCode; // create field so it can appear in dump file
 
     always @( posedge CPU.phaseExec )
-       $display ("%9t ", $time,  "DUMP  ", " lbus=%8b rbus=%8b alu_result_bus=%8b", CPU.lbus, CPU.rbus, CPU.alu_result_bus);
+       $display ("%9t ", $time,  "DUMP  ", " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
 
     always @(CPU.PCHI or CPU.PCLO) begin
         $display("");

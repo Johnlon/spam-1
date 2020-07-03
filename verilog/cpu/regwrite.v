@@ -112,7 +112,7 @@ module test();
 
     //always @( posedge CPU.phaseExec )
     always @(  * )
-       $display ("%9t ", $time,  "DUMP  ", " lbus=%8b rbus=%8b alu_result_bus=%8b", CPU.lbus, CPU.rbus, CPU.alu_result_bus);
+       $display ("%9t ", $time,  "DUMP  ", " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
 
     always @(CPU.PCHI or CPU.PCLO) begin
         $display("");

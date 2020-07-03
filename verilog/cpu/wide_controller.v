@@ -17,8 +17,8 @@
 // verilator lint_off DECLFILENAME
 // verilator lint_off UNUSED
 
-`define OUT_LDEV_SEL(DNAME) output _ldev_``DNAME``
-`define OUT_RDEV_SEL(DNAME) output _rdev_``DNAME``
+`define OUT_ADEV_SEL(DNAME) output _adev_``DNAME``
+`define OUT_BDEV_SEL(DNAME) output _bdev_``DNAME``
 `define OUT_TDEV_SEL(DNAME) output _``DNAME``_in
 
 `timescale 1ns/1ns
@@ -85,7 +85,7 @@ module wide_controller(
     output [7:0] direct8,
     output [7:0] immed8,
     output [4:0] alu_op,
-    output [3:0] rbus_dev, lbus_dev,
+    output [3:0] bbus_dev, abus_dev,
     output [4:0] targ_dev
 );
      
@@ -110,8 +110,8 @@ module wide_controller(
     assign direct_address_lo = instruction_2;
     assign direct_address_hi = instruction_3;
 
-    assign rbus_dev = {instruction_5[1:0], instruction_4[7:6]};
-    assign lbus_dev = instruction_5[5:2];
+    assign bbus_dev = {instruction_5[1:0], instruction_4[7:6]};
+    assign abus_dev = instruction_5[5:2];
     assign targ_dev = {instruction_6[2:0],instruction_5[7:6]};
     wire [4:0] alu_op   = {instruction_6[7:3]};
 
@@ -124,11 +124,11 @@ module wide_controller(
     assign _addrmode_pc = _phaseFetch;
 
     // device decoders
-    hct74138 lbus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(lbus_dev[3]), .A(lbus_dev[2:0]));
-    hct74138 lbus_dev_16_demux(.Enable3(lbus_dev[3]), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(lbus_dev[2:0]));
+    hct74138 abus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(abus_dev[3]), .A(abus_dev[2:0]));
+    hct74138 abus_dev_16_demux(.Enable3(abus_dev[3]), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(abus_dev[2:0]));
     
-    hct74138 rbus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(rbus_dev[3]), .A(rbus_dev[2:0]));
-    hct74138 rbus_dev_16_demux(.Enable3(rbus_dev[3]), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(rbus_dev[2:0]));
+    hct74138 bbus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(bbus_dev[3]), .A(bbus_dev[2:0]));
+    hct74138 bbus_dev_16_demux(.Enable3(bbus_dev[3]), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(bbus_dev[2:0]));
 
     wire [3:0] _targ_dev_block_sel, un4; 
     hct74139 targ_dev_block_demux(._Ea(1'b0), ._Eb(1'b0), .Aa(targ_dev[4:3]), .Ab(2'b0), ._Ya(_targ_dev_block_sel), ._Yb(un4));
@@ -139,11 +139,11 @@ module wide_controller(
 
     // control lines for device selection
     wire [31:0] tsel = {targ_dev_32_demux.Y, targ_dev_24_demux.Y, targ_dev_16_demux.Y, targ_dev_08_demux.Y};
-    wire [15:0] lsel = {lbus_dev_16_demux.Y, lbus_dev_08_demux.Y};
-    wire [15:0] rsel = {rbus_dev_16_demux.Y, rbus_dev_08_demux.Y};
+    wire [15:0] lsel = {abus_dev_16_demux.Y, abus_dev_08_demux.Y};
+    wire [15:0] rsel = {bbus_dev_16_demux.Y, bbus_dev_08_demux.Y};
     
-    `define HOOKUP_LDEV_SEL(DNAME) wire _ldev_``DNAME`` = lsel[control.DEV_``DNAME``]
-    `define HOOKUP_RDEV_SEL(DNAME) wire _rdev_``DNAME`` = rsel[control.DEV_``DNAME``]
+    `define HOOKUP_ADEV_SEL(DNAME) wire _adev_``DNAME`` = lsel[control.DEV_``DNAME``]
+    `define HOOKUP_BDEV_SEL(DNAME) wire _bdev_``DNAME`` = rsel[control.DEV_``DNAME``]
     `define HOOKUP_TDEV_SEL(DNAME) wire _``DNAME``_in = tsel[control.TDEV_``DNAME``]
     
     `CONTROL_WIRES(HOOKUP, `SEMICOLON);

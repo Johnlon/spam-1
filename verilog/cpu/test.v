@@ -63,7 +63,7 @@ module test();
         `DEV_EQ_IMMED8(1, marhi, 0)                  // MARHI=const 0      implies ALUOP=R
         //`DUMP_ROM(1)
 
-        // dev_eq_xy_alu tdev=00010(CPU.MARLO) ldev=0010(MARLO) rdev=0010(MARLO) alu=00101(5=A+1)
+        // dev_eq_xy_alu tdev=00010(CPU.MARLO) adev=0010(MARLO) bdev=0010(MARLO) alu=00101(5=A+1)
         `DEV_EQ_XY_ALU(2, marlo, marlo, marlo, A_PLUS_1) 
 
         // dev_eq_const8 tdev=00000(RAM[MAR]), const8=0x22           
@@ -72,7 +72,7 @@ module test();
         // dev_eq_ram_direct tdev=00010(CPU.MARLO), address=ffaa     
         `DEV_EQ_RAM_DIRECT(4, marlo, 'h0043)
 
-        // ram_direct_eq_dev tdev=00001(RAM), rdev=MARLO  address=abcd     
+        // ram_direct_eq_dev tdev=00001(RAM), bdev=MARLO  address=abcd     
         //`ROM(5)= { 8'b110_00010, 16'habcd }                // RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R
         `RAM_DIRECT_EQ_DEV(5, 'habcd, marlo)
 
@@ -479,8 +479,8 @@ module test();
         currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
     end
 
-    `define LOG_LDEV_SEL(DNAME) " _ldev_``DNAME``=%1b", CPU._ldev_``DNAME``
-    `define LOG_RDEV_SEL(DNAME) " _rdev_``DNAME``=%1b", CPU._rdev_``DNAME``
+    `define LOG_ADEV_SEL(DNAME) " _adev_``DNAME``=%1b", CPU._adev_``DNAME``
+    `define LOG_BDEV_SEL(DNAME) " _bdev_``DNAME``=%1b", CPU._bdev_``DNAME``
     `define LOG_TDEV_SEL(DNAME) " _``DNAME``_in=%1b",  CPU._``DNAME``_in
 
     task DUMP;
@@ -503,7 +503,7 @@ module test();
             $display ("%9t ", $time,  "DUMP  ",
                  " _amode=%-3s", control.fAddrMode(CPU._addrmode_pc, CPU._addrmode_register, CPU._addrmode_direct),
                  " (%03b)", {CPU._addrmode_pc, CPU._addrmode_register, CPU._addrmode_direct},
-                 " addrbus=0x%4x", CPU.address_bus);
+                 " addbbus=0x%4x", CPU.address_bus);
             $display ("%9t ", $time,  "DUMP  ",
                  " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
             $display ("%9t ", $time,  "DUMP  ",
@@ -513,12 +513,12 @@ module test();
                  " ram=%08b", CPU.ram64.D);
             $display ("%9t ", $time,  "DUMP  ",
                 " tdev=%5b(%s)", CPU.targ_dev, control.tdevname(CPU.targ_dev),
-                " ldev=%4b(%s)", CPU.lbus_dev, control.devname(CPU.lbus_dev),
-                " rdev=%4b(%s)", CPU.rbus_dev,control.devname(CPU.rbus_dev),
+                " adev=%4b(%s)", CPU.abus_dev, control.devname(CPU.abus_dev),
+                " bdev=%4b(%s)", CPU.bbus_dev,control.devname(CPU.bbus_dev),
                 " alu_op=%5b(%s)", CPU.alu_op, alu_func.aluopName(CPU.alu_op)
             );            
             $display ("%9t ", $time,  "DUMP  ",
-                 " lbus=%8b rbus=%8b alu_result_bus=%8b", CPU.lbus, CPU.rbus, CPU.alu_result_bus);
+                 " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
             $display ("%9t ", $time,  "DUMP  ",
                  " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU.flags_czonGLEN.Q, CPU.gated_flags_clk);
             $display ("%9t ", $time,  "DUMP  ",
@@ -538,10 +538,10 @@ module test();
                  "rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
                  " seq=%-2d", $clog2(seq)+1,
                  " _amode=%-3s", control.fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
-                 " addrbus=0x%4x", address_bus,
+                 " addbbus=0x%4x", address_bus,
                  " FDE=%-6s (%1b%1b%1b)", control.fPhase(phaseFetch, phaseDecode, phaseExec), phaseFetch, phaseDecode, phaseExec,
-                 " rbus=%8b lbus=%8b alu_result_bus=%8b", rbus, lbus, alu_result_bus,
-                 " rdev=%04b ldev=%04b targ=%05b alu_op=%05b (%1s)", rbus_dev, lbus_dev, targ_dev, alu_op, alu_func.aluopName(alu_op),
+                 " bbus=%8b abus=%8b alu_result_bus=%8b", bbus, abus, alu_result_bus,
+                 " bdev=%04b adev=%04b targ=%05b alu_op=%05b (%1s)", bbus_dev, abus_dev, targ_dev, alu_op, alu_func.aluopName(alu_op),
                  " tsel=%32b ", tsel,
                  " PC=%02h:%02h", PCHI, PCLO,
                  "     : %1s", label
@@ -587,12 +587,12 @@ module test();
     end
 
     if (0) always @* 
-        $display ("%9t ", $time,  "ADDRESSING      _amode=%s", control.fAddrMode(CPU._addrmode_pc, CPU._addrmode_register, CPU._addrmode_direct), " addrbus=0x%4x", CPU.address_bus);
+        $display ("%9t ", $time,  "ADDRESSING      _amode=%s", control.fAddrMode(CPU._addrmode_pc, CPU._addrmode_register, CPU._addrmode_direct), " addbbus=0x%4x", CPU.address_bus);
 
     if (0) always @* 
         $display ("%9t ", $time,  "RAM     ram=%08b", CPU.ram64.D,
                 " _amode=%s", control.fAddrMode(CPU._addrmode_pc, CPU._addrmode_register, CPU._addrmode_direct),
-                " addrbus=0x%4x", CPU.address_bus,
+                " addbbus=0x%4x", CPU.address_bus,
                 " _ram_in=%1b _gated_ram_in=%1b", CPU._ram_in, CPU._gated_ram_in,
                 );
         
@@ -601,8 +601,8 @@ module test();
         
 /*
     if (0) always @* 
-        $display("%9t ", $time, "ROMBUFFS rom_addrbuslo_buf=0x%-2x", rom_addrbuslo_buf.B, 
-            " rom_addrbus_hi_buf=0x%-2x", rom_addrbushi_buf.B,
+        $display("%9t ", $time, "ROMBUFFS rom_addbbuslo_buf=0x%-2x", rom_addbbuslo_buf.B, 
+            " rom_addbbus_hi_buf=0x%-2x", rom_addbbushi_buf.B,
             " instruction_hi=%8b", instruction_hi,
             " _oe=%1b(_addrmode_direct)", _addrmode_direct
             ); 
@@ -611,7 +611,7 @@ module test();
                 
     if (0) always @* 
         $display("%9t ", $time, "DEVICE-SEL ", 
-                    "rdev=%04b ldev=%04b targ=%05b alu_op=%05b ", rbus_dev, lbus_dev, targ_dev, alu_op
+                    "bdev=%04b adev=%04b targ=%05b alu_op=%05b ", bbus_dev, abus_dev, targ_dev, alu_op
         ); 
 
     if (0) always @* 
@@ -622,8 +622,8 @@ module test();
 
     if (0) always @* 
         $display("%9t ", $time, "ALU BUS ",
-            " rbus=0x%-2x", rbus, 
-            " lbus=0x%-2x", lbus,
+            " bbus=0x%-2x", bbus, 
+            " abus=0x%-2x", abus,
             " alu_result_bus=%-2x", alu_result_bus
             ); 
         

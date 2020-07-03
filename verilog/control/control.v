@@ -224,38 +224,38 @@ endmodule: control
 
 `define CONTROL_WIRES(FN, SEP)  \
     ```FN``_TDEV_SEL(ram) SEP \
-    ```FN``_RDEV_SEL(ram) SEP\
+    ```FN``_BDEV_SEL(ram) SEP\
     \
-    ```FN``_RDEV_SEL(rom)    SEP\
+    ```FN``_BDEV_SEL(rom)    SEP\
     \
-    ```FN``_LDEV_SEL(marlo)    SEP\
-    ```FN``_RDEV_SEL(marlo)    SEP\
+    ```FN``_ADEV_SEL(marlo)    SEP\
+    ```FN``_BDEV_SEL(marlo)    SEP\
     ```FN``_TDEV_SEL(marlo)    SEP\
     \
-    ```FN``_LDEV_SEL(marhi)    SEP\
-    ```FN``_RDEV_SEL(marhi)    SEP\
+    ```FN``_ADEV_SEL(marhi)    SEP\
+    ```FN``_BDEV_SEL(marhi)    SEP\
     ```FN``_TDEV_SEL(marhi)    SEP\
     \
-    ```FN``_LDEV_SEL(rega)    SEP\
-    ```FN``_RDEV_SEL(rega)    SEP\
+    ```FN``_ADEV_SEL(rega)    SEP\
+    ```FN``_BDEV_SEL(rega)    SEP\
     ```FN``_TDEV_SEL(rega)    SEP\
     \
-    ```FN``_LDEV_SEL(regb)    SEP\
-    ```FN``_RDEV_SEL(regb)    SEP\
+    ```FN``_ADEV_SEL(regb)    SEP\
+    ```FN``_BDEV_SEL(regb)    SEP\
     ```FN``_TDEV_SEL(regb)    SEP\
     \
-    ```FN``_LDEV_SEL(regc)    SEP\
-    ```FN``_RDEV_SEL(regc)    SEP\
+    ```FN``_ADEV_SEL(regc)    SEP\
+    ```FN``_BDEV_SEL(regc)    SEP\
     ```FN``_TDEV_SEL(regc)    SEP\
     \
-    ```FN``_LDEV_SEL(regd)    SEP\
-    ```FN``_RDEV_SEL(regd)    SEP\
+    ```FN``_ADEV_SEL(regd)    SEP\
+    ```FN``_BDEV_SEL(regd)    SEP\
     ```FN``_TDEV_SEL(regd)    SEP\
     \
-    ```FN``_LDEV_SEL(uart)    SEP\
+    ```FN``_ADEV_SEL(uart)    SEP\
     ```FN``_TDEV_SEL(uart)    SEP\
     \
-    ```FN``_RDEV_SEL(instreg)    SEP\
+    ```FN``_BDEV_SEL(instreg)    SEP\
        \
     ```FN``_TDEV_SEL(pchitmp)    SEP\
     ```FN``_TDEV_SEL(pclo)    SEP\
@@ -269,8 +269,8 @@ endmodule: control
 `define SEMICOLON ;
 `define COMMA ,
 
-`define OUT_LDEV_SEL(DNAME) output _ldev_``DNAME``
-`define OUT_RDEV_SEL(DNAME) output _rdev_``DNAME``
+`define OUT_ADEV_SEL(DNAME) output _adev_``DNAME``
+`define OUT_BDEV_SEL(DNAME) output _bdev_``DNAME``
 `define OUT_TDEV_SEL(DNAME) output _``DNAME``_in
 
 `endif
