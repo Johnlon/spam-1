@@ -59,13 +59,12 @@ module test();
 
     integer icount;
     integer ADD_ONE;
+    `define WRITE 60
+    integer wait_uart_out;
 
     // SETUP ROM
     task INIT_ROM;
     begin
-
-// forward declare 
- `define DO_CARRY 30
 
          // implement 16 bit counter
 
@@ -78,10 +77,14 @@ module test();
 
          `DEV_EQ_XY_ALU(icount, rega, rega, not_used, A_PLUS_1); icount++; // A+PLUS_1 - doesn't consume carry but sets it // TODO The "lower" bank of arith in the design can do this +1 nocarryin without this specialised instruction
          `DEV_EQ_XI_ALU(icount, regb, regb, 0, A_PLUS_B); icount++; // B=B+0+Carryin   - sets and consumes carry 
-
          `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
-         `JMP_IMMED16(icount, ADD_ONE); icount++;
 
+         wait_uart_out = icount;
+         `JMPDO_IMMED16(icount, `WRITE); icount+=2;
+         `JMP_IMMED16(icount, wait_uart_out); icount+=2;
+
+         `DEV_EQ_XY_ALU(`WRITE, uart, rega, rega, A); icount++; 
+         `JMP_IMMED16(`WRITE + 1, ADD_ONE); icount++;
     end
     endtask : INIT_ROM
 
@@ -143,19 +146,19 @@ module test();
 
         if (last_count !== not_initialised) begin
             if (last_count == 65535 && count != 0) begin 
-                $display("wrong count roll value : count=%d  last_count=%d", count , last_count);
+                $error("ERROR wrong count roll value : count=%d  last_count=%d", count , last_count);
                 $finish();
             end
             
             if (last_count != 65535 & count != last_count+1) begin 
-                $display("wrong count next +1 value : count=%d  last_count=%d", count , last_count);
+                $error("ERROR wrong count next +1 value : count=%d  last_count=%d", count , last_count);
                 $finish();
             end
         end
         else 
         begin
             if (count != 0) begin 
-                $display("wrong initial count : count=%d", count);
+                $error("ERROR wrong initial count : count=%d", count);
                 $finish();
             end
     
@@ -171,7 +174,7 @@ module test();
     always @(*) begin
         if (CPU.phaseDecode & CPU.ctrl.instruction_6 === 'x) begin
            $display("instruction_6", CPU.ctrl.instruction_6); 
-            $display("ERROR END OF PROGRAM - PROGRAM BYTE = XX "); 
+            $error("ERROR END OF PROGRAM - PROGRAM BYTE = XX "); 
             $finish_and_return(1);
         end
     end
