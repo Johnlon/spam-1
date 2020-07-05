@@ -87,6 +87,7 @@ module alu #(parameter LOG=0, PD=120) (
 
 // II items could be deleted due to immediates in any R side instruction
 // JJ could be deleted additionally if Immediate can be on A or B bus
+// SOME OPS LIKE A+1 are redundant if Y can be immed, so could use those slots for more logic ops like NAND/NOR as long as immed can be on both busses
 // | PASSA       | B-1   JJ          | A*B (high bits)   | A ROR B       |
 // | PASSB       | __A+B+Cin (0)__   | A*B (low bits)    | A AND B       |
 // | 0   II      | __A-B-Cin (0)__   | A/B               | A OR B        |
@@ -195,16 +196,16 @@ Can Overflow double as a divide / 0 flag ?
                 tmp = -to9(b);
                 _out_of_range = a > 127 | a < -128; // too big/small
             end
-            alu_ops.OP_A_PLUS_1: begin // UNLIKE A_PLUS_B this sets carry but doesn't consume it - useful for low byte of a counter where we always want CLC first
+            alu_ops.OP_A_PLUS_1: begin // UNLIKE A_PLUS_B this sets carry but doesn't consume it - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH AS LONG AS IMMED CAN BE ON BOTH BUSSES
                 tmp = to9(a)+1;
             end
-            alu_ops.OP_B_PLUS_1: begin // UNLIKE B_PLUS_A this sets carry but doesn't consume it - useful for low byte of a counter where we always want CLC first
+            alu_ops.OP_B_PLUS_1: begin // UNLIKE B_PLUS_A this sets carry but doesn't consume it - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
                 tmp = to9(b)+1;
             end
-            alu_ops.OP_A_MINUS_1: begin // UNLIKE A_MINUS_B this sets carry but doesn't consume it - useful for low byte of a counter where we always want CLC first
+            alu_ops.OP_A_MINUS_1: begin // UNLIKE A_MINUS_B this sets carry but doesn't consume it - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_-_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
                 tmp = to9(a)-1;
             end
-            alu_ops.OP_B_MINUS_1: begin // UNLIKE B_MINUS_A this sets carry but doesn't consume it - useful for low byte of a counter where we always want CLC first
+            alu_ops.OP_B_MINUS_1: begin // UNLIKE B_MINUS_A this sets carry but doesn't consume it - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
                 tmp = to9(b)-1;
             end
             alu_ops.OP_A_OR_B: begin
