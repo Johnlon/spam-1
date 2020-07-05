@@ -8,7 +8,7 @@
 `define NULL 0 
 `define NL 10
 
-module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80, HEXMODE=0, LOG=0)  (
+module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80, HEXMODE=0, ASCIIONLY=1, LOG=0)  (
     inout [7:0] D,    // Input data
     input WR,        // Writes data on -ve edge
     input _RD,        // When goes from high to low then the FIFO data is placed onto D (equates to _OE)
@@ -78,6 +78,14 @@ assign _RXF = !(dataAvailable && _RXF_SUPPRESS && _MR);
 
 assign #T3 D= _RD? 8'bzzzzzzzz: dataAvailable ? Drx : 8'bxzxzxzxz; // xzxzxzxz is a distinctive signal that we're reading uninitialised data
 
+function [7:0] printable([7:0] c);
+    if (ASCIIONLY) begin
+        if (c == 0) return 32;
+        if (c >= 128) return 32;
+    end
+    return c;
+endfunction
+
 /*
     Transmit only valid when _TXE is low.
     Transmit occurs when WR goes low.
@@ -86,11 +94,12 @@ always @(negedge WR) begin
     if (_MR) begin
     if (_TXE) begin
             $display("%9t ", $time, "UART: TRANSMITTING %8b", D);
-            $error("%9t ", $time, "UART: WR low while _TXE not ready");
+            $error("%9t ", $time, "UART: ERROR WR low while _TXE not ready");
             $finish_and_return(1);
     end
 
-    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING 0x%02x (c='%c' b=%08b)", D, D, D);
+    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING 0x%02x (c='%c' b=%08b)", D, printable(D), D);
+//    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING 0x%02x (b=%08b)", D, D, D);
 
     $fwrite(fOut, "%02x\n", D);
     $fflush(fOut);
@@ -101,7 +110,7 @@ always @(negedge WR) begin
 
     tx_count --;
     if (tx_count < 0) begin
-            $error("%9t ", $time, "UART: tx_count went negative");
+            $error("%9t ", $time, "UART: ERROR tx_count went negative");
             $finish_and_return(1);
     end
 
@@ -119,26 +128,27 @@ end
 always @(negedge _RD) begin
     if (_MR) begin
     if (_RXF) begin
-            $display("%9t ", $time, "UART: _RD low while _RXF not ready");
+            $display("%9t ", $time, "UART: ERROR _RD low while _RXF not ready");
             $finish_and_return(1);
     end
 
     if (! dataAvailable) begin
-            $display("%9t ", $time, "UART: _RD low while data not available");
+            $display("%9t ", $time, "UART: ERROR _RD low while data not available");
             $finish_and_return(1);
     end
 
     if (LOG>1) $display("%9t ", $time, "UART: READING AT %-d", absReadPos);
     Drx = rxBuf[absReadPos%BUFFER_SIZE];
 
-    if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x (%c) from serial at pos %-d", Drx, Drx, absReadPos);
+    if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x (%c) from serial at pos %-d", Drx, printable(Drx), absReadPos);
+//    if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x from serial at pos %-d", Drx, Drx, absReadPos);
     end
 end
 
 always @(posedge _RD) begin
     if (_MR) begin
         if (_RXF) begin
-                $display("%9t ", $time, "UART: _RD going high while _RXF not ready");
+                $display("%9t ", $time, "UART: ERROR _RD going high while _RXF not ready");
                 $finish_and_return(1);
         end
 
@@ -195,7 +205,7 @@ initial
                 disable file_block; // Just quit 
         end
 
-        $display("%9t ", $time, "UART: fifos open");
+        $display("%9t ", $time, "UART: files are open");
 
         while (fControl != `NULL)  
         begin
