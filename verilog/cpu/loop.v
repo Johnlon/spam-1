@@ -76,7 +76,7 @@ module test();
 
          ADD_ONE=icount;
 
-         `DEV_EQ_XY_ALU(icount, rega, rega, not_used, A_PLUS_1); icount++; // A+PLUS_1 - doesn't consume carry but does set it
+         `DEV_EQ_XY_ALU(icount, rega, rega, not_used, A_PLUS_1); icount++; // A+PLUS_1 - doesn't consume carry but sets it // TODO The "lower" bank of arith in the design can do this +1 nocarryin without this specialised instruction
          `DEV_EQ_XI_ALU(icount, regb, regb, 0, A_PLUS_B); icount++; // B=B+0+Carryin   - sets and consumes carry 
 
          `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
