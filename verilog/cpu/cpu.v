@@ -26,6 +26,7 @@
 `include "../ram/ram.v"
 `include "../alu/alu.v"
 `include "../alu/alu_func.v"
+`include "../uart/um245r.v"
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
@@ -228,7 +229,7 @@ module cpu(
 
     wire #(9) gated_flags_clk = phaseExec & _pclo_in & _pchitmp_in & _do_jmp;
 
-    hct74574 #(.LOG(1)) flags_czonGLEN( .D({_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out}),
+    hct74574 #(.LOG(0)) flags_czonGLEN( .D({_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out}),
                                        .Q(_flags),
                                         //.CLK(phaseExec), 
                                         .CLK(gated_flags_clk), 
@@ -250,7 +251,7 @@ module cpu(
     if (0) always @* $display("regfile bbus out=", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
 
 
-    syncRegisterFile #(.LOG(1)) regFile(
+    syncRegisterFile #(.LOG(0)) regFile(
         .clk(phaseExec), // only on the execute otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
         ._wr_en(_gated_regfile_in),
         .wr_addr(regfile_wr_addr),
@@ -267,7 +268,20 @@ module cpu(
 
 
     // UART =============================================================
-    wire _flag_di = 1;
-    wire _flag_do = 1;
+    wire _flag_di;
+    wire _flag_do;
+    wire _gated_uart_wr = _uart_in | _phaseExec;   // sync clock data into uart -- FIXME gate with EXEC
+    wire [7:0] uart_d;
+
+    um245r #(.LOG(1), .HEXMODE(1))  uart (
+        .D(uart_d),
+        .WR(_gated_uart_wr),// Writes data on -ve edge
+        ._RD(_adev_uart),	// When goes from high to low then the FIFO data is placed onto D (equates to _OE)
+        ._TXE(_flag_do),	// When high do NOT write data using WR, when low write data by strobing WR
+        ._RXF(_flag_di)		// When high to NOT read from D, when low then data is available to read by strobing RD low
+      );
+
+    hct74245ab uart_alubus_buf(.A(alu_result_bus), .B(uart_d), .nOE(_uart_in));
+    hct74245ab uart_abus_buf(.A(uart_d), .B(abus), .nOE(_adev_uart));
 
 endmodule : cpu
