@@ -56,6 +56,7 @@
 `define JMPZ_IMMED(INST, ADDRESS_LO)       `INSTRUCTION(INST, jmpz,    not_used, instreg,    B,     `NA_AMODE, `NA, ADDRESS_LO) 
 // conditional jump sourcing the PCLO from the immed8
 `define JMPC_IMMED(INST, ADDRESS_LO)       `INSTRUCTION(INST, jmpc,    not_used, instreg,    B,     `NA_AMODE, `NA, ADDRESS_LO) 
+`define JMPDO_IMMED(INST, ADDRESS_LO)      `INSTRUCTION(INST, jmpdo,   not_used, instreg,    B,     `NA_AMODE, `NA, ADDRESS_LO) 
 
 `define JMP_IMMED16(INST, ADDRESS_LONG)       \
   `JMP_PREP_IMMED(INST, ADDRESS_LONG >>  8) \
@@ -64,6 +65,10 @@
 `define JMPC_IMMED16(INST, ADDRESS_LONG)       \
   `JMP_PREP_IMMED(INST, ADDRESS_LONG >>  8) \
   `JMPC_IMMED(INST+1, ADDRESS_LONG & 8'hff)
+
+`define JMPDO_IMMED16(INST, ADDRESS_LONG)       \
+  `JMP_PREP_IMMED(INST, ADDRESS_LONG >>  8) \
+  `JMPDO_IMMED(INST+1, ADDRESS_LONG & 8'hff)
 
 /*
     `PREPJMP_IMMED(INST, cast.hi8(ADDRESS_LONG)) \
