@@ -91,6 +91,7 @@ module control;
     // dest only
     `define TARGH(DNAME) localparam [4:0] TDEV_``DNAME`` = DEV_``DNAME``;
 
+    // define constants
     `TARGL(ram)
     `TARGL(rom)
     `TARGL(marlo)
@@ -260,9 +261,14 @@ endmodule: control
     ```FN``_TDEV_SEL(pchitmp)    SEP\
     ```FN``_TDEV_SEL(pclo)    SEP\
     ```FN``_TDEV_SEL(pc)    SEP\
-    ```FN``_TDEV_SEL(jmpo)    SEP\
-    ```FN``_TDEV_SEL(jmpz)    SEP\
     ```FN``_TDEV_SEL(jmpc)    SEP\
+    ```FN``_TDEV_SEL(jmpn)    SEP\
+    ```FN``_TDEV_SEL(jmpz)    SEP\
+    ```FN``_TDEV_SEL(jmpeq)    SEP\
+    ```FN``_TDEV_SEL(jmpne)    SEP\
+    ```FN``_TDEV_SEL(jmpgt)    SEP\
+    ```FN``_TDEV_SEL(jmplt)    SEP\
+    ```FN``_TDEV_SEL(jmpo)    SEP\
     ```FN``_TDEV_SEL(jmpdi)    SEP\
     ```FN``_TDEV_SEL(jmpdo)    
 

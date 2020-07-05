@@ -1,11 +1,9 @@
 
 // FIXME Implement conditional jumps for other conditions
-// FIXME Use Warrents ALU ROM and external logic
+// FIXME Use Warrens ALU ROM and my external logic
 // FIXME Implement uart
 // FIXME Implement conditional instructions with spare ROM bits
 // FIXME option: If use 16 immediate then can do a direct jump - but needs an alternative route into the PC for that
-// FIXME ??? How come carry out is't interfering with B_PLUS_1 in loop test? and throwing it out
-// FIXME TODO Rewrite loop test to take advantage of carry out by using Hi=0+)+carryin to count rather than logic
 
 
 // ADDRESSING TERMINOLOGY
@@ -147,7 +145,16 @@ module cpu(
 
     wire #(8) _do_jmpc = _jmpc_in | _flag_c;
     wire #(8) _do_jmpz = _jmpz_in | _flag_z;
-    wire #(8) _do_jmp = _pc_in & _do_jmpc & _do_jmpz; 
+    wire #(8) _do_jmpo = _jmpo_in | _flag_o;
+    wire #(8) _do_jmpn = _jmpn_in | _flag_n;
+    wire #(8) _do_jmpeq = _jmpeq_in | _flag_eq;
+    wire #(8) _do_jmpne = _jmpne_in | _flag_ne;
+    wire #(8) _do_jmpgt = _jmpgt_in | _flag_gt;
+    wire #(8) _do_jmplt = _jmplt_in | _flag_lt;
+    wire #(8) _do_jmpdi = _jmpdi_in | _flag_di;
+    wire #(8) _do_jmpdo = _jmpdo_in | _flag_do;
+
+   wire #(8) _do_jmp = _pc_in & _do_jmpc & _do_jmpz & _do_jmpn & _do_jmpo & _do_jmpeq & _do_jmpne & _do_jmpgt & _do_jmplt & _do_jmpdi & _do_jmpdo; // use two 7411 triple 3-input AND
     
     // PC reset is sync with +ve edge of clock
     pc #(.LOG(0))  PC (
@@ -257,5 +264,10 @@ module cpu(
         .rdR_addr(regfile_rdR_addr),
         .rdR_data(bbus)
     );
+
+
+    // UART =============================================================
+    wire _flag_di = 1;
+    wire _flag_do = 1;
 
 endmodule : cpu
