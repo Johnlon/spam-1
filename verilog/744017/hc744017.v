@@ -16,13 +16,17 @@ module hc744017(cp0, _cp1, mr, q, _co);
         $monitor("%9t decade ", $time, " cp0=", cp0, " _cp1=", _cp1, " mr=", mr, " q=%1d", q, " _co=", _co, " o=%1d", o);
     `endif
 
-    always@(posedge cp0 , negedge _cp1)
+    wire #(22) d_mr = mr;
+    wire #(25) d_cp0 = cp0;
+    wire #(25) d__cp1 = _cp1;
+
+    always@(posedge d_cp0 , negedge d__cp1)
     begin
-        o <= mr ? o : (o + 1) < 10 ? o+1: 0;
+        o <= d_mr ? o : (o + 1) < 10 ? o+1: 0;
     end
 
     always @* begin
-        if (mr) begin
+        if (d_mr) begin
             o <= 0;
         end
     end
