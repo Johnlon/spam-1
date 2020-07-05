@@ -59,7 +59,8 @@ module test();
 
     integer icount;
     integer ADD_ONE;
-    `define WRITE 60
+    `define WRITE_UART 60
+    `define READ_UART 80
     integer wait_uart_out;
 
     // SETUP ROM
@@ -80,11 +81,19 @@ module test();
          `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
 
          wait_uart_out = icount;
-         `JMPDO_IMMED16(icount, `WRITE); icount+=2;
+         `JMPDI_IMMED16(icount, `READ_UART); icount+=2;
+         `JMPDO_IMMED16(icount, `WRITE_UART); icount+=2;
          `JMP_IMMED16(icount, wait_uart_out); icount+=2;
 
-         `DEV_EQ_XY_ALU(`WRITE, uart, rega, rega, A); icount++; 
-         `JMP_IMMED16(`WRITE + 1, ADD_ONE); icount++;
+         icount = `WRITE_UART;
+         `DEV_EQ_XY_ALU(icount, uart, rega, rega, A); icount++;
+         `JMP_IMMED16(icount, ADD_ONE); icount++;
+
+         icount = `READ_UART;
+         `DEV_EQ_XY_ALU(icount, marhi, uart, uart, A); icount++;
+         `JMP_IMMED16(icount, ADD_ONE); icount++;
+            
+
     end
     endtask : INIT_ROM
 
