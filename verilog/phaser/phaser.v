@@ -18,7 +18,6 @@ clock 10 is dead
 
 `timescale 1ns/1ns
 
-//module phaser #(parameter LOG=0, PHASE_FETCH_LEN=1, PHASE_DECODE_LEN=1, PHASE_EXEC_LEN=1) 
 module phaser #(parameter LOG=0, PHASE_FETCH_LEN=4, PHASE_DECODE_LEN=4, PHASE_EXEC_LEN=2) 
 (
     input clk, 
@@ -37,18 +36,6 @@ module phaser #(parameter LOG=0, PHASE_FETCH_LEN=4, PHASE_DECODE_LEN=4, PHASE_EX
     else
     hc744017 decade(.cp0(clk), ._cp1(1'b0), .mr(mr), .q(seq), ._co);
 
-    //hc744017 decade(.cp0(clk), ._cp1(1'b0), .mr(mr), .q(seq), ._co);
-
-    // construct using 3 input nor gates so we can OR mr into the trigger
-    // first clock (seq=1) does nothing - used to allow fetch +ve edge once cycle AFTER MR released otherwise that edge is missed
-/*
-    wire phaseFetch_begin = !mr & seq[0]; // 3 clocks 
-    wire phaseFetch_end = mr | seq[4];
-    wire phaseDecode_begin = seq[4]; // 4 clocks
-    wire phaseDecode_end = mr |seq[8]; // ensure phase is reset when MR triggers
-    wire phaseExec_begin = seq[8];   // 2 clock
-    wire phaseExec_end = mr |seq[0]; // ensure phase is reset when MR triggers
-*/
     wire phaseFetch_begin = !mr & seq[0]; // 3 clocks 
     wire phaseFetch_end = mr | seq[PHASE_FETCH_LEN];
     wire phaseDecode_begin = seq[PHASE_FETCH_LEN]; // 4 clocks

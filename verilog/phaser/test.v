@@ -10,8 +10,8 @@
 
 module test();
 
-    reg [80:0][7:0] label;
-    
+    `include "../lib/display_snippet.v"
+
     logic clk;
     logic mr;
 
@@ -141,6 +141,15 @@ module test();
         #T
         `Equals( FDE, 3'b100);
         `Equals( seq, 10'b0000000001);
+
+        // free run
+
+        for (count = 0; count < 20; count++) begin
+            #T
+            clk <= 1;
+            #T
+            clk <= 0;
+        end
 
         $display("testing end");
     end
