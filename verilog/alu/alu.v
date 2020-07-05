@@ -147,7 +147,7 @@ Can Overflow double as a divide / 0 flag ?
         asSigned = in;
     endfunction
 
-    //if (LOG) 
+    if (LOG) 
     always @(*) 
         $display("%9t ALU", $time,
         " aluop=%-10s (%d)", alu_func.aluopName(alu_op), alu_op, // %1s causes string to lose trailing space
