@@ -23,7 +23,6 @@
 `include "../rom/rom.v"
 `include "../ram/ram.v"
 `include "../alu/alu.v"
-`include "../alu/alu_func.v"
 `include "../uart/um245r.v"
 
 // verilator lint_off ASSIGNDLY

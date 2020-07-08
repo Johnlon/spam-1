@@ -11,7 +11,6 @@
 
 `ifndef  V_ALU
 `define  V_ALU
-`include "alu_func.v"
 
 `timescale 1ns/1ns
 

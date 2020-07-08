@@ -38,7 +38,7 @@ if (ACTUAL === EXPECTED) begin \
 end \
 else \
 begin  \
-  $display("%9t ", $time, " Line:%-5d FAILED: '%b' != '%b'    : ACTUAL != EXPECTED", `__LINE__, ACTUAL, EXPECTED); 	\
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (dec %1d != %1d)  : ACTUAL != EXPECTED", `__LINE__, ACTUAL, EXPECTED, ACTUAL, EXPECTED); 	\
   `FAIL \
 end
 
