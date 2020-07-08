@@ -1,9 +1,7 @@
 
-// FIXME Implement conditional jumps for other conditions
 // FIXME Use Warrens ALU ROM and my external logic
-// FIXME Implement uart
-// FIXME Implement conditional instructions with spare ROM bits
-// FIXME option: If use 16 immediate then can do a direct jump - but needs an alternative route into the PC for that
+// TODO option: Implement conditional instructions with spare ROM bits
+// TODO option: If use 16 immediate then can do a direct jump - but needs an alternative route into the PC for that
 
 
 // ADDRESSING TERMINOLOGY
