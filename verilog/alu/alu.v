@@ -183,17 +183,13 @@ Can Overflow double as a divide / 0 flag ?
     logic [8:0] tmp = 0; // long enough for result and carry 
     logic [4:0] alu_op_effective;
 
-    function [8:0] to9([7:0] i);
-        to9 = i;
-    endfunction
 
-
-    logic _sign_changed;
+    logic _overflow;
 
     assign #(PD) _flag_c = ! tmp[8];
     assign #(PD) _flag_n = !ALU_Result[7]; // top bit set indicates negative in signed arith
     assign #(PD) _flag_z = !(ALU_Result == 8'b0);
-    assign #(PD) _flag_o = _sign_changed;
+    assign #(PD) _flag_o = _overflow;
     assign #(PD) _flag_eq = !(a == b);    
     assign #(PD) _flag_ne = !(a != b);  
 
@@ -234,7 +230,7 @@ Can Overflow double as a divide / 0 flag ?
         " _eq=%1b", _flag_eq,
         " _ne=%1b", _flag_ne,
         "      ",
-        " _sign_changed=%b ", _sign_changed,
+        " _overflow=%b ", _overflow,
         " unsigned_magnitude=%b ", unsigned_magnitude
          );
 
@@ -270,7 +266,7 @@ Can Overflow double as a divide / 0 flag ?
 
     always @* begin
 
-        _sign_changed = 1;
+        _overflow = 1;
         unsigned_magnitude=1;
 
         // FIXME TODO CHANGE TO LOGIC and delays etc
@@ -306,61 +302,69 @@ Can Overflow double as a divide / 0 flag ?
                 tmp=b;
             end
             alu_ops.OP_NEGATE_A: begin // should set overflow - same as 0-A surely
-                tmp = {1'b0, -a}; // 0 no carry
+                tmp = -a; // 0 no carry
             end
             alu_ops.OP_NEGATE_B: begin // should set overflow - same as 0-B surely
-                tmp = {1'b0, -b}; // 0 no carry
+                tmp = -b; // 0 no carry
             end
-            alu_ops.OP_A_PLUS_1: begin // UNLIKE A_PLUS_B this sets carry but doesn't consume it - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH AS LONG AS IMMED CAN BE ON BOTH BUSSES
-                tmp = to9(a)+1;
+            alu_ops.OP_A_PLUS_1: begin 
+                // UNLIKE A_PLUS_B this sets carry but doesn't consume it 
+                // - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH AS LONG AS IMMED CAN BE ON BOTH BUSSES
+                tmp = a+1;
             end
-            alu_ops.OP_B_PLUS_1: begin // UNLIKE B_PLUS_A this sets carry but doesn't consume it - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
-                tmp = to9(b)+1;
+            alu_ops.OP_B_PLUS_1: begin 
+                // UNLIKE B_PLUS_A this sets carry but doesn't consume it 
+                // - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
+                tmp = b+1;
             end
-            alu_ops.OP_A_MINUS_1: begin // UNLIKE A_MINUS_B this sets carry but doesn't consume it - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_-_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
-                tmp = to9(a)-1;
+            alu_ops.OP_A_MINUS_1: begin 
+                // UNLIKE A_MINUS_B this sets carry but doesn't consume it 
+                // - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_-_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
+                tmp = a-1;
             end
 
             ///// 8 ...
-            alu_ops.OP_B_MINUS_1: begin // UNLIKE B_MINUS_A this sets carry but doesn't consume it - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
-                tmp = to9(b)-1;
+            alu_ops.OP_B_MINUS_1: begin 
+                // UNLIKE B_MINUS_A this sets carry but doesn't consume it 
+                // - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
+                tmp = b-1;
             end
 
             // low bank is when CIN=0 or these ops were directly selected
             alu_ops.OP_A_PLUS_B: begin  
-                tmp = to9(a) + to9(b);
-                _sign_changed = _addOv(a[7], b[7], o[7]);
+                tmp = a + b;
+                _overflow = _addOv(a[7], b[7], o[7]);
             end
             alu_ops.OP_A_MINUS_B: begin 
-                tmp = to9(a) - to9(b);
-                _sign_changed = _subOv(a[7], b[7], o[7]);
+                tmp = a - b;
+                _overflow = _subOv(a[7], b[7], o[7]);
             end
             alu_ops.OP_B_MINUS_A: begin 
-                tmp = to9(b) - to9(a);
-                _sign_changed = _subOv(b[7], a[7], o[7]);
+                tmp = b - a;
+                _overflow = _subOv(b[7], a[7], o[7]);
             end
 
             alu_ops.OP_A_MINUS_B_SIGNEDMAG: begin 
                 unsigned_magnitude=0;
-                tmp = to9(a) - to9(b);
-                _sign_changed = _subOv(a[7], b[7], o[7]);
+                tmp = a - b;
+                _overflow = _subOv(a[7], b[7], o[7]);
             end
 
             alu_ops.OP_A_PLUS_B_PLUS_C: begin  
                 // OP ONLY USED WHEN CARRY IS ACTIVE
-                tmp = (to9(a) + to9(b)) + 1; 
-                _sign_changed = _addOv(a[7], b[7], o[7]);
+                tmp = (a + b) + 1; 
+                _overflow = _addOv(a[7], b[7], o[7]);
             end
             alu_ops.OP_A_MINUS_B_MINUS_C: begin 
                 // OP ONLY USED WHEN CARRY IS ACTIVE
-                tmp = (to9(a) - to9(b)) - 1;
-                _sign_changed = _subOv(a[7],b[7],o[7]);
+                tmp = (a - b) - 1;
+                _overflow = _subOv(a[7],b[7],o[7]);
             end
             alu_ops.OP_B_MINUS_A_MINUS_C: begin 
 
                 // OP ONLY USED WHEN CARRY IS ACTIVE
-                tmp = (to9(b) - to9(a)) - 1;
-                _sign_changed = _subOv(b[7],a[7],o[7]);
+                tmp = (b - a) - 1;
+                _overflow = _subOv(b[7],a[7],o[7]);
             end
 
             // 24 .............................................................
