@@ -155,13 +155,13 @@ module alu #(parameter LOG=0, PD=120) (
 // | A-1         | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
 
 // My wiring here is ....
-// | A           | B-1               | A*B (high bits)   | A ROR B       |
-// | B           | __A+B+Cin (0)__   | A*B (low bits)    | A AND B       |
+// | A           | B-1               | A*B (low bits)    | A ROR B       |
+// | B           | __A+B+Cin (0)__   | A*B (high bits)   | A AND B       |
 // | 0           | __A-B-Cin (0)__   | A/B               | A OR B        |
 // | -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
-// | -B          | A-B (special)     | A << B            | NOT A         |
-// | A+1         | __A+B+Cin (1)__   | A >> B arithmetic | NOT B         |
-// | B+1         | __A-B-Cin (1)__   | A >> B logical    | A+B (BCD)     |
+// | -B          | A-B signedmag     | A << B            | NOT A         |
+// | A+1         | __A+B+Cin (1)__   | A >> B logical    | NOT B         |
+// | B+1         | __A-B-Cin (1)__   | A >> B arithmetic | A+B (BCD)     |
 // | A-1         | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
 
     logic [7:0] ALU_Result;
@@ -193,13 +193,12 @@ Can Overflow double as a divide / 0 flag ?
     wire signed [7:0] signed_a = a;
     wire signed [7:0] signed_b = b;
 
-    logic force_not_o;
     logic _sign_changed;
 
     assign #(PD) _flag_c = ! tmp[8];
     assign #(PD) _flag_n = !ALU_Result[7]; // top bit set indicates negative in signed arith
     assign #(PD) _flag_z = !(ALU_Result == 8'b0);
-    assign #(PD) _flag_o = force_not_o | _sign_changed;
+    assign #(PD) _flag_o = _sign_changed;
     assign #(PD) _flag_eq = !(a == b);    
     assign #(PD) _flag_ne = !(a != b);  
 
@@ -240,7 +239,6 @@ Can Overflow double as a divide / 0 flag ?
         " _eq=%1b", _flag_eq,
         " _ne=%1b", _flag_ne,
         "      ",
-        " force_not_o=%b ", force_not_o,
         " _sign_changed=%b ", _sign_changed,
         " unsigned_magnitude=%b ", unsigned_magnitude
          );
@@ -277,7 +275,6 @@ Can Overflow double as a divide / 0 flag ?
 
     always @* begin
 
-        force_not_o=0;
         _sign_changed = 1;
         unsigned_magnitude=1;
 
@@ -337,57 +334,38 @@ Can Overflow double as a divide / 0 flag ?
             // low bank is when CIN=0 or these ops were directly selected
             alu_ops.OP_A_PLUS_B: begin  
                 tmp = to9(a) + to9(b);
-                //_sign_changed = !((a[7] == b[7]) & (a[7] != o[7]));
                 _sign_changed = _addOv(a[7], b[7], o[7]);
-                force_not_o = a[7] != b[7]; // never overflow if sign is diff
             end
             alu_ops.OP_A_MINUS_B: begin 
                 tmp = to9(a) - to9(b);
-                //_sign_changed = !((a[7] != b[7]) & (a[7] != o[7]));
                 _sign_changed = _subOv(a[7], b[7], o[7]);
-                force_not_o = a[7] != b[7]; // never overflow if sign is same because "A - -B" can't overrlow
             end
             alu_ops.OP_B_MINUS_A: begin 
                 tmp = to9(b) - to9(a);
-                //_sign_changed = !((a[7] != b[7]) & (a[7] != o[7]));
                 _sign_changed = _subOv(b[7], a[7], o[7]);
-                force_not_o = a[7] != b[7]; // never overflow if sign is same
             end
 
             alu_ops.OP_A_MINUS_B_SIGNEDMAG: begin 
                 unsigned_magnitude=0;
                 tmp = to9(a) - to9(b);
-
                 _sign_changed = _subOv(a[7], b[7], o[7]);
-                //_sign_changed = !((a[7] != b[7]) & (a[7] != o[7]));
-                force_not_o = a[7] == b[7]; // never overflow if sign is same
             end
 
             alu_ops.OP_A_PLUS_B_PLUS_C: begin  
                 // OP ONLY USED WHEN CARRY IS ACTIVE
                 tmp = (to9(a) + to9(b)) + 1; 
-                //_sign_changed = !((a[7] == b[7]) & (a[7] != o[7]));
                 _sign_changed = _addOv(a[7], b[7], o[7]);
-                force_not_o = a[7] != b[7]; // never overflow if sign is diff
             end
             alu_ops.OP_A_MINUS_B_MINUS_C: begin 
                 // OP ONLY USED WHEN CARRY IS ACTIVE
                 tmp = (to9(a) - to9(b)) - 1;
-                //_sign_changed = !((a[7] != b[7]) & (a[7] != o[7]));
-                //_sign_changed = ! ( (!b[0]) & b[7] & (!o[0]) | (b[0]) & (!b[7]) & (o[0]) );
                 _sign_changed = _subOv(a[7],b[7],o[7]);
-                force_not_o = a[7] == b[7]; // never overflow if sign is same
-//    $display("====== a=%8b b=%8b a-b=%8b     a9=%9b  b9=%9b tmp=%9b       a9-b9 %9b", a,b,(a-b), to9(a), to9(b), tmp, (to9(a) - to9(b)));
-//    $display("====== a=%8d b=%8d a-b=%8d     a9=%9d  b9=%9d tmp=%9d       a9-b9 %9d", a,b,(a-b), to9(a), to9(b), tmp, (to9(a) - to9(b)));
             end
             alu_ops.OP_B_MINUS_A_MINUS_C: begin 
 
                 // OP ONLY USED WHEN CARRY IS ACTIVE
                 tmp = (to9(b) - to9(a)) - 1;
-                //_sign_changed = ! ( (!b[0]) & b[7] & (!o[0]) | (b[0]) & (!b[7]) & (o[0]) );
                 _sign_changed = _subOv(b[7],a[7],o[7]);
-                $display("_SC", _sign_changed);
-                force_not_o = a[7] == b[7]; // never overflow if sign is same
             end
 
             // 24 .............................................................
