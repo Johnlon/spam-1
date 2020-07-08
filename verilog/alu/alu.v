@@ -187,11 +187,6 @@ Can Overflow double as a divide / 0 flag ?
         to9 = i;
     endfunction
 
-    wire signA=a[7];
-    wire signB=b[7];
-
-    wire signed [7:0] signed_a = a;
-    wire signed [7:0] signed_b = b;
 
     logic _sign_changed;
 
@@ -207,8 +202,8 @@ Can Overflow double as a divide / 0 flag ?
     // if this is the case then use a subtract operation instead
     logic unsigned_magnitude=1;
 
-    //assign #(PD) _flag_gt = unsigned_magnitude ? !(signed_a > signed_b) : !(to9(a) > to9(b));
-    //assign #(PD) _flag_lt = unsigned_magnitude ? !(signed_a < signed_b) : !(to9(a) < to9(b));
+    wire signed [7:0] signed_a = a;
+    wire signed [7:0] signed_b = b;
     assign #(PD) _flag_gt = unsigned_magnitude ? !(a>b) : !(signed_a > signed_b);
     assign #(PD) _flag_lt = unsigned_magnitude ? !(a<b) : !(signed_a < signed_b);
 
