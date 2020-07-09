@@ -44,7 +44,7 @@ module alu_ops;
     localparam [4:0] OP_A_TIMES_B_HI=17;
     localparam [4:0] OP_A_DIV_B=18;
     localparam [4:0] OP_A_MOD_B=19;
-    localparam [4:0] OP_A_ASL_B=20;
+    localparam [4:0] OP_A_LSL_B=20;
     localparam [4:0] OP_A_LSR_B=21; // logical shift right - simple bit wise
     localparam [4:0] OP_A_SHR_B_A=22; // arith shift right - preserves top bit and fills with top bit as shift right
     localparam [4:0] OP_A_ROL_B=23;
@@ -403,20 +403,17 @@ Can Overflow double as a divide / 0 flag ?
                 end
             end
 
-            alu_ops.OP_A_ASL_B: begin 
-                if (b == 0) tmp=a;
-                else begin
-                    tmp = {a, !_flag_c_in};
-                    tmp = tmp << (b-1);
-                end;
+            alu_ops.OP_A_LSL_B: begin 
+                tmp = a;
+                tmp= tmp << b;
             end
 
             alu_ops.OP_A_LSR_B: begin
-                if (b == 0) tmp=a;
-                else begin
-                    tmp = {!_flag_c_in, a};
-                    tmp = tmp >> b;
-                    tmp[8] = ({!_flag_c_in, a} >> (b-1)) & 1'b1;
+                tmp = a;
+                tmp = tmp >> b;
+
+                if (b > 0) begin
+                    tmp[8] = (a >> (b-1)) & 1'b1; // get the last bit thatr would have been shifted out
                 end
             end
 

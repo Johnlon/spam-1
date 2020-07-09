@@ -621,11 +621,11 @@ module test();
         `Equals(o, 8'bx);
         `FLAGS(C|O|NE|GT)  // carry here indicates that the upper byte is non-zero
 
-        ////////////////////////////////////////////////////////////// A_ASL_B
+        ////////////////////////////////////////////////////////////// A_LSL_B
         assign a = 8'b10000010;
         assign b = 0;
         assign _flag_c_in = 1;
-        assign alu_op = alu_ops.OP_A_ASL_B;
+        assign alu_op = alu_ops.OP_A_LSL_B;
         PD;
         `Equals(o, 8'b10000010);
         `FLAGS(N|NE|GT)  
@@ -644,20 +644,20 @@ module test();
         assign b = 1;
         assign _flag_c_in = 0;
         PD;
-        `Equals(o, 8'b00000101);
+        `Equals(o, 8'b00000100);
         `FLAGS(C|NE|GT)  
 
         assign b = 8;
         assign _flag_c_in = 0;
         PD;
-        `Equals(o, 8'b10000000);
-        `FLAGS(N|NE|GT)  
+        `Equals(o, 8'b00000000);
+        `FLAGS(Z|NE|GT)  
 
         assign b = 9;
         assign _flag_c_in = 0;
         PD;
         `Equals(o, 8'b00000000);
-        `FLAGS(C|Z|NE|GT)  
+        `FLAGS(Z|NE|GT)  
 
         assign b = 10;
         assign _flag_c_in = 0;
@@ -680,16 +680,22 @@ module test();
         `Equals(o, 8'b01000000);
         `FLAGS(C|NE|GT)  
 
+        assign b = 1;
+        assign _flag_c_in = 0; 
+        PD;
+        `Equals(o, 8'b01000000);
+        `FLAGS(C|NE|GT)  
+
         assign b = 8;
         assign _flag_c_in = 0; 
         PD;
-        `Equals(o, 8'b00000001);
-        `FLAGS(C|NE|GT)  
+        `Equals(o, 8'b00000000);
+        `FLAGS(C|Z|NE|GT)  
 
         assign b = 9;
         PD;
         `Equals(o, 8'b00000000);
-        `FLAGS(C|Z|NE|GT)  
+        `FLAGS(Z|NE|GT)  
 
         assign b = 10;
         PD;
