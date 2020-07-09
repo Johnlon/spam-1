@@ -46,7 +46,7 @@ module alu_ops;
     localparam [4:0] OP_A_MOD_B=19;
     localparam [4:0] OP_A_LSL_B=20;
     localparam [4:0] OP_A_LSR_B=21; // logical shift right - simple bit wise
-    localparam [4:0] OP_A_SHR_B_A=22; // arith shift right - preserves top bit and fills with top bit as shift right
+    localparam [4:0] OP_A_ASR_B=22; // arith shift right - preserves top bit and fills with top bit as shift right
     localparam [4:0] OP_A_ROL_B=23;
 
     localparam [4:0] OP_A_ROR_B=24;
@@ -87,9 +87,9 @@ module alu_ops;
                 17 : aluopName =    "A*B HI";
                 18 : aluopName =    "A/B";
                 19 : aluopName =    "A%B";
-                20 : aluopName =    "A<<B";
-                21 : aluopName =    "A>>B log";
-                22 : aluopName =    "A>>B arith" ;
+                20 : aluopName =    "A LSL B";
+                21 : aluopName =    "A LSR B";
+                22 : aluopName =    "A ASL B" ;
                 23 : aluopName =    "A ROL B";
 
                 24 : aluopName =    "A ROR B";
@@ -404,19 +404,25 @@ Can Overflow double as a divide / 0 flag ?
             end
 
             alu_ops.OP_A_LSL_B: begin 
-                tmp = a;
-                tmp= tmp << b;
+                tmp= a << b;
             end
 
             alu_ops.OP_A_LSR_B: begin
-                tmp = a;
-                tmp = tmp >> b;
+                tmp = a >> b;
 
                 if (b > 0) begin
-                    tmp[8] = (a >> (b-1)) & 1'b1; // get the last bit thatr would have been shifted out
+                    tmp[8] = (a >> (b-1)) & 1'b1; // get the last bit that would have been shifted out
                 end
             end
 
+            alu_ops.OP_A_ASR_B: begin
+                tmp = {1'b0, 8'(signed_a >>> b)};
+
+                if (b > 0) begin
+                    tmp[8] = 8'(signed_a >>> (b-1)) & 1'b1; // get the last bit that would have been shifted out
+                    //$display("%9b", tmp, " %b -> %1b", (signed_a >>> (b-1)), 8'(signed_a >>> (b-1)) & 1'b1);
+                end
+            end
 
             alu_ops.OP_A_OR_B: begin
                 tmp=a | b;

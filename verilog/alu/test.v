@@ -624,7 +624,7 @@ module test();
         ////////////////////////////////////////////////////////////// A_LSL_B
         assign a = 8'b10000010;
         assign b = 0;
-        assign _flag_c_in = 1;
+        assign _flag_c_in = 'x;
         assign alu_op = alu_ops.OP_A_LSL_B;
         PD;
         `Equals(o, 8'b10000010);
@@ -636,31 +636,26 @@ module test();
         `FLAGS(C|NE|GT)  
 
         assign b = 0;
-        assign _flag_c_in = 0; 
         PD;
         `Equals(o, 8'b10000010);
         `FLAGS(N|NE|GT)  
 
         assign b = 1;
-        assign _flag_c_in = 0;
         PD;
         `Equals(o, 8'b00000100);
         `FLAGS(C|NE|GT)  
 
         assign b = 8;
-        assign _flag_c_in = 0;
         PD;
         `Equals(o, 8'b00000000);
         `FLAGS(Z|NE|GT)  
 
         assign b = 9;
-        assign _flag_c_in = 0;
         PD;
         `Equals(o, 8'b00000000);
         `FLAGS(Z|NE|GT)  
 
         assign b = 10;
-        assign _flag_c_in = 0;
         PD;
         `Equals(o, 8'b00000000);
         `FLAGS(Z|NE|GT)  
@@ -669,7 +664,7 @@ module test();
 
         assign a = 8'b10000001;
         assign b = 0;
-        assign _flag_c_in = 1;
+        assign _flag_c_in = 'x;
         assign alu_op = alu_ops.OP_A_LSR_B;
         PD;
         `Equals(o, 8'b10000001);
@@ -681,13 +676,11 @@ module test();
         `FLAGS(C|NE|GT)  
 
         assign b = 1;
-        assign _flag_c_in = 0; 
         PD;
         `Equals(o, 8'b01000000);
         `FLAGS(C|NE|GT)  
 
         assign b = 8;
-        assign _flag_c_in = 0; 
         PD;
         `Equals(o, 8'b00000000);
         `FLAGS(C|Z|NE|GT)  
@@ -701,6 +694,51 @@ module test();
         PD;
         `Equals(o, 8'b00000000);
         `FLAGS(Z|NE|GT)  
+
+        ////////////////////////////////////////////////////////////// A_ASR_B
+
+        assign a = 8'b10000001;
+        assign b = 0;
+        assign _flag_c_in = 'x;
+        assign alu_op = alu_ops.OP_A_ASR_B;
+        PD;
+        `Equals(o, 8'b10000001);
+        `FLAGS(N|NE|GT)  
+
+        assign b = 1;
+        PD;
+        `Equals(o, 8'b11000000);
+        `FLAGS(C|N|NE|GT)  
+
+        assign b = 1;
+        PD;
+        `Equals(o, 8'b11000000);
+        `FLAGS(C|N|NE|GT)  
+
+        assign b = 6;
+        PD;
+        `Equals(o, 8'b11111110);
+        `FLAGS(N|NE|GT)  
+
+        assign b = 7;
+        PD;
+        `Equals(o, 8'b11111111);
+        `FLAGS(N|NE|GT)  
+
+        assign b = 8;
+        PD;
+        `Equals(o, 8'b11111111);
+        `FLAGS(C|N|NE|GT)  
+
+        assign b = 9;
+        PD;
+        `Equals(o, 8'b11111111);
+        `FLAGS(C|N|NE|GT)  
+
+        assign b = 10;
+        PD;
+        `Equals(o, 8'b11111111);
+        `FLAGS(C|N|NE|GT)  
 
         ////////////////////////////////////////////////////////////// A_AND_B
         assign a = 8'b11010101; // LOGICAL VALUE
