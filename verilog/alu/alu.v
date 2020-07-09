@@ -405,6 +405,7 @@ Can Overflow double as a divide / 0 flag ?
 
             alu_ops.OP_A_LSL_B: begin 
                 tmp= a << b;
+                _overflow = !(a[7] != tmp[7]);
             end
 
             alu_ops.OP_A_LSR_B: begin
@@ -413,6 +414,7 @@ Can Overflow double as a divide / 0 flag ?
                 if (b > 0) begin
                     tmp[8] = (a >> (b-1)) & 1'b1; // get the last bit that would have been shifted out
                 end
+                _overflow = !(a[7] != tmp[7]);
             end
 
             alu_ops.OP_A_ASR_B: begin
@@ -422,7 +424,20 @@ Can Overflow double as a divide / 0 flag ?
                     tmp[8] = 8'(signed_a >>> (b-1)) & 1'b1; // get the last bit that would have been shifted out
                     //$display("%9b", tmp, " %b -> %1b", (signed_a >>> (b-1)), 8'(signed_a >>> (b-1)) & 1'b1);
                 end
+                _overflow = !(a[7] != tmp[7]);
             end
+
+            alu_ops.OP_A_ROL_B: begin 
+                tmp= a << b;
+                tmp = (b==0) ? tmp : tmp | (8'(!_flag_c_in) << (b-1));
+                _overflow = !(a[7] != tmp[7]);
+            end
+
+            alu_ops.OP_A_ROR_B: begin 
+                //# USE A C+8+C buffer for the rolls
+                _overflow = !(a[7] != tmp[7]);
+            end
+
 
             alu_ops.OP_A_OR_B: begin
                 tmp=a | b;
