@@ -560,7 +560,7 @@ module test();
         `Equals(o, 8'h0F);
         `FLAGS(NE|GT) 
 
-        ////////////////////////////////////////////////////////////// A_TIMES_B_HI
+        ////////////////////////////////////////////////////////////// A_TIMES_B_LO
         assign a = 8'hff;
         assign b = 8'h00;
         assign _flag_c_in = 1'bx;
@@ -584,6 +584,117 @@ module test();
         PD;
         `Equals(o, 8'h01);
         `FLAGS(C|EQ)  // carry here indicates that the upper byte is non-zero
+
+
+        ////////////////////////////////////////////////////////////// A_DIV_B
+        assign a = 8'haa;
+        assign b = 8'h02;
+        assign _flag_c_in = 1'bx;
+        assign alu_op = alu_ops.OP_A_DIV_B;
+        PD;
+        `Equals(o, 8'h55);
+        `FLAGS(NE|GT)  // carry here indicates that the upper byte is non-zero
+
+        assign a = 8'haa;
+        assign b = 8'h00;
+        assign _flag_c_in = 1'bx;
+        assign alu_op = alu_ops.OP_A_DIV_B;
+        PD;
+        `Equals(o, 8'bx);
+        `FLAGS(C|O|NE|GT)  // carry here indicates that the upper byte is non-zero
+
+
+        ////////////////////////////////////////////////////////////// A_MOD_B
+        assign a = 8'd7;
+        assign b = 8'd2;
+        assign _flag_c_in = 1'bx;
+        assign alu_op = alu_ops.OP_A_MOD_B;
+        PD;
+        `Equals(o, 8'd1);
+        `FLAGS(NE|GT)  // carry here indicates that the upper byte is non-zero
+
+        assign a = 8'haa;
+        assign b = 8'h00;
+        assign _flag_c_in = 1'bx;
+        assign alu_op = alu_ops.OP_A_MOD_B;
+        PD;
+        `Equals(o, 8'bx);
+        `FLAGS(C|O|NE|GT)  // carry here indicates that the upper byte is non-zero
+
+        ////////////////////////////////////////////////////////////// A_ASL_B
+        assign a = 8'b10000010;
+        assign b = 0;
+        assign _flag_c_in = 1;
+        assign alu_op = alu_ops.OP_A_ASL_B;
+        PD;
+        `Equals(o, 8'b10000010);
+        `FLAGS(N|NE|GT)  
+
+        assign b = 1;
+        PD;
+        `Equals(o, 8'b00000100);
+        `FLAGS(C|NE|GT)  
+
+        assign b = 0;
+        assign _flag_c_in = 0; 
+        PD;
+        `Equals(o, 8'b10000010);
+        `FLAGS(N|NE|GT)  
+
+        assign b = 1;
+        assign _flag_c_in = 0;
+        PD;
+        `Equals(o, 8'b00000101);
+        `FLAGS(C|NE|GT)  
+
+        assign b = 8;
+        assign _flag_c_in = 0;
+        PD;
+        `Equals(o, 8'b10000000);
+        `FLAGS(N|NE|GT)  
+
+        assign b = 9;
+        assign _flag_c_in = 0;
+        PD;
+        `Equals(o, 8'b00000000);
+        `FLAGS(C|Z|NE|GT)  
+
+        assign b = 10;
+        assign _flag_c_in = 0;
+        PD;
+        `Equals(o, 8'b00000000);
+        `FLAGS(Z|NE|GT)  
+
+        ////////////////////////////////////////////////////////////// A_LSR_B
+
+        assign a = 8'b10000001;
+        assign b = 0;
+        assign _flag_c_in = 1;
+        assign alu_op = alu_ops.OP_A_LSR_B;
+        PD;
+        `Equals(o, 8'b10000001);
+        `FLAGS(N|NE|GT)  
+
+        assign b = 1;
+        PD;
+        `Equals(o, 8'b01000000);
+        `FLAGS(C|NE|GT)  
+
+        assign b = 8;
+        assign _flag_c_in = 0; 
+        PD;
+        `Equals(o, 8'b00000001);
+        `FLAGS(C|NE|GT)  
+
+        assign b = 9;
+        PD;
+        `Equals(o, 8'b00000000);
+        `FLAGS(C|Z|NE|GT)  
+
+        assign b = 10;
+        PD;
+        `Equals(o, 8'b00000000);
+        `FLAGS(Z|NE|GT)  
 
         ////////////////////////////////////////////////////////////// A_AND_B
         assign a = 8'b11010101; // LOGICAL VALUE

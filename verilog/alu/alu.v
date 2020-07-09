@@ -44,9 +44,9 @@ module alu_ops;
     localparam [4:0] OP_A_TIMES_B_HI=17;
     localparam [4:0] OP_A_DIV_B=18;
     localparam [4:0] OP_A_MOD_B=19;
-    localparam [4:0] OP_A_SHL_B=20;
-    localparam [4:0] OP_A_SHR_B_L=21;
-    localparam [4:0] OP_A_SHR_B_A=22;
+    localparam [4:0] OP_A_ASL_B=20;
+    localparam [4:0] OP_A_LSR_B=21; // logical shift right - simple bit wise
+    localparam [4:0] OP_A_SHR_B_A=22; // arith shift right - preserves top bit and fills with top bit as shift right
     localparam [4:0] OP_A_ROL_B=23;
 
     localparam [4:0] OP_A_ROR_B=24;
@@ -180,7 +180,7 @@ Overflow occurs when the value affects the sign:
 
 Can Overflow double as a divide / 0 flag ?
 */
-    logic [8:0] tmp = 0; // long enough for result and carry 
+    logic [8:0] tmp = 'x; // long enough for result and carry 
     logic [4:0] alu_op_effective;
 
 
@@ -198,16 +198,16 @@ Can Overflow double as a divide / 0 flag ?
     // if this is the case then use a subtract operation instead
     logic unsigned_magnitude=1;
 
+    // cast to signed numbers
     wire signed [7:0] signed_a = a;
     wire signed [7:0] signed_b = b;
+    wire signed [7:0] signed_o = o;
+
+    // optionally perform signed/unsigned mag comparison
     assign #(PD) _flag_gt = unsigned_magnitude ? !(a>b) : !(signed_a > signed_b);
     assign #(PD) _flag_lt = unsigned_magnitude ? !(a<b) : !(signed_a < signed_b);
 
     wire [7:0] cin8 = {7'b0, !_flag_c_in};
-
-    function signed [7:0] asSigned([7:0] in);
-        asSigned = in;
-    endfunction
 
     if (LOG) 
     always @(*) 
@@ -215,12 +215,12 @@ Can Overflow double as a divide / 0 flag ?
         " aluop=%-10s (op:%d)", alu_ops.aluopName(alu_op), alu_op, // %1s causes string to lose trailing space
         " aluop_effective=%-10s", alu_ops.aluopName(alu_op_effective), // %1s causes string to lose trailing space
         "  ",
-        " a=%08b (uns %3d/sign %4d) ", a, a, asSigned(a),
-        " b=%08b (uns %3d/sign %4d) ", b, b, asSigned(b),
+        " a=%08b (uns %3d/sign %4d) ", a, a, signed_a,
+        " b=%08b (uns %3d/sign %4d) ", b, b, signed_b,
         " _c_in=%1b ", _flag_c_in,
         "  ",
         "  ",
-        " result=%08b (uns %3d/sign %4d) ", o, o, asSigned(o),
+        " result=%08b (uns %3d/sign %4d) ", o, o, signed_o,
         " _c=%1b",  _flag_c,
         " _z=%1b",  _flag_z,
         " _n=%1b",  _flag_n,
@@ -230,7 +230,6 @@ Can Overflow double as a divide / 0 flag ?
         " _eq=%1b", _flag_eq,
         " _ne=%1b", _flag_ne,
         "      ",
-        " _overflow=%b ", _overflow,
         " unsigned_magnitude=%b ", unsigned_magnitude
          );
 
@@ -264,6 +263,8 @@ Can Overflow double as a divide / 0 flag ?
         return 1;
     endfunction
 
+    int count;
+
     always @* begin
 
         _overflow = 1;
@@ -291,6 +292,7 @@ Can Overflow double as a divide / 0 flag ?
         end
 
 
+
         case (alu_op_effective)
             alu_ops.OP_0: begin // not needed anymore cos immed allows 0 value into ALU
                 tmp=0;
@@ -309,24 +311,28 @@ Can Overflow double as a divide / 0 flag ?
             end
             alu_ops.OP_A_PLUS_1: begin 
                 // UNLIKE A_PLUS_B this sets carry but doesn't consume it 
-                // - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH AS LONG AS IMMED CAN BE ON BOTH BUSSES
+                // - useful for low byte of a counter where we always want CLC first  
+                // FIXME - not needed?  CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH AS LONG AS IMMED CAN BE ON BOTH BUSSES
                 tmp = a+1;
             end
             alu_ops.OP_B_PLUS_1: begin 
                 // UNLIKE B_PLUS_A this sets carry but doesn't consume it 
-                // - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
+                // - useful for low byte of a counter where we always want CLC first  
+                // FIXME - not needed?  CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
                 tmp = b+1;
             end
             alu_ops.OP_A_MINUS_1: begin 
                 // UNLIKE A_MINUS_B this sets carry but doesn't consume it 
-                // - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_-_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
+                // - useful for low byte of a counter where we always want CLC first  
+                // FIXME - not needed?  CAN BE DONE USING "LOWER" A_-_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
                 tmp = a-1;
             end
 
             ///// 8 ...
             alu_ops.OP_B_MINUS_1: begin 
                 // UNLIKE B_MINUS_A this sets carry but doesn't consume it 
-                // - useful for low byte of a counter where we always want CLC first  FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
+                // - useful for low byte of a counter where we always want CLC first  
+                //FIXME - not needed? FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
                 tmp = b-1;
             end
 
@@ -368,16 +374,52 @@ Can Overflow double as a divide / 0 flag ?
             end
 
             // 24 .............................................................
-            alu_ops.OP_A_TIMES_B_HI: begin // how do I do long multiplications?
+            alu_ops.OP_A_TIMES_B_HI: begin 
                 TimesResult = (a * b);
                 tmp={1'b0, TimesResult[15:8]};
             end
 
-            alu_ops.OP_A_TIMES_B_LO: begin // how do I do long multiplications?
+            alu_ops.OP_A_TIMES_B_LO: begin 
                 TimesResult = (a * b);
                 tmp[7:0] = TimesResult[7:0];
                 tmp[8] = (TimesResult[15:8] > 0); // set carry to indicate whether the upper byte has a value
             end
+
+            alu_ops.OP_A_DIV_B: begin 
+                tmp = a /b;
+                if (b == 0) begin
+                    // tmp will be 'x
+                    _overflow=0; // force overflow
+                    tmp[8] = 1; // force carry
+                end
+            end
+
+            alu_ops.OP_A_MOD_B: begin 
+                tmp = a % b;
+                if (b == 0) begin
+                    // tmp will be 'x
+                    _overflow=0; // force overflow
+                    tmp[8] = 1; // force carry
+                end
+            end
+
+            alu_ops.OP_A_ASL_B: begin 
+                if (b == 0) tmp=a;
+                else begin
+                    tmp = {a, !_flag_c_in};
+                    tmp = tmp << (b-1);
+                end;
+            end
+
+            alu_ops.OP_A_LSR_B: begin
+                if (b == 0) tmp=a;
+                else begin
+                    tmp = {!_flag_c_in, a};
+                    tmp = tmp >> b;
+                    tmp[8] = ({!_flag_c_in, a} >> (b-1)) & 1'b1;
+                end
+            end
+
 
             alu_ops.OP_A_OR_B: begin
                 tmp=a | b;
