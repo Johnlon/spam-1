@@ -24,7 +24,7 @@ module test();
     wire _flag_eq;
     wire _flag_ne;
 	
-	alu #(.LOG(1)) Alu(
+	alu #(.LOG(0)) Alu(
         .o, 
         .a,
         .b,
@@ -102,16 +102,19 @@ module test();
         to8 = i;
     endfunction
 
+    integer testcount=0;
     task PD;
-        #PropDelay $display("");
+        #PropDelay
+        // $display("");
+        testcount++;
     endtask
 
     integer count;
-    logic [7:0] bcount;
+    function [7:0] count8();
+        count8=8'(count);
+    endfunction
 
     initial begin
-
-/*
         ////////////////////////////////////////////////////////////// 0
         assign a = 1;
         assign b = 2;
@@ -157,33 +160,33 @@ module test();
 
         ////////////////////////////////////////////////////////////// NEGATE
 
-        for (bcount=0; bcount<255; bcount++) begin
-            assign a = bcount; 
+        for (count=0; count<=255; count++) begin
+            assign a = count; 
             assign b = 0;
             assign _flag_c_in = 'x; // not relevant
             assign alu_op = alu_ops.OP_NEGATE_A;
             PD;
-            `Equals(o, 8'((~bcount)+1)); // perform 2s comp negation
-            `FLAGS( (bcount == 0?Z:0)  |
-                    (bcount > 0 & bcount <= 128? N:0)  |
-                    (bcount == 0?EQ:0) |
-                    (bcount != 0?NE:0)  |
-                    (bcount > 0?GT:0)
+            `Equals(o, 8'((~count8())+1)); // perform 2s comp negation
+            `FLAGS( (count8() == 0?Z:0)  |
+                    (count8() > 0 & count8() <= 128? N:0)  |
+                    (count8() == 0?EQ:0) |
+                    (count8() != 0?NE:0)  |
+                    (count8() > 0?GT:0)
                 ) 
         end
 
-        for (bcount=0; bcount<255; bcount++) begin
+        for (count=0; count<=255; count++) begin
             assign a = 0; 
-            assign b = bcount; 
+            assign b = count; 
             assign _flag_c_in = 'x; // not relevant
             assign alu_op = alu_ops.OP_NEGATE_B;
             PD;
-            `Equals(o, 8'((~bcount)+1)); // perform 2s comp negation
-            `FLAGS( (bcount == 0?Z:0)  |
-                    (bcount > 0 & bcount <= 128? N:0)  |
-                    (bcount == 0?EQ:0) |
-                    (bcount != 0?NE:0)  |
-                    (bcount > 0?LT:0)
+            `Equals(o, 8'((~count8())+1)); // perform 2s comp negation
+            `FLAGS( (count8() == 0?Z:0)  |
+                    (count8() > 0 & count8() <= 128? N:0)  |
+                    (count8() == 0?EQ:0) |
+                    (count8() != 0?NE:0)  |
+                    (count8() > 0?LT:0)
                 ) 
         end
 
@@ -191,44 +194,45 @@ module test();
 
         ////////////////////////////////////////////////////////////// A_MINUS_1
 
-        for (bcount=0; bcount<255; bcount++) begin
-            assign a = bcount; 
+        for (count=0; count<=255; count++) begin
+            assign a = count; 
             assign b = 0;
             assign _flag_c_in = 'x; // not relevant
             assign alu_op = alu_ops.OP_A_MINUS_1;
             PD;
-            $display(8'(bcount)); 
-            `Equals(o, 8'(bcount-1)); 
+            `Equals(o, 8'(count8()-1)); 
             `FLAGS( 
-                    (bcount == 0?C:0)  |
-                    (bcount == 1?Z:0)  |
-                    ((bcount == 0 | bcount > (127+1)) ?N:0)  |  
-                    (bcount == 0?EQ:0) |
-                    (bcount != 0?NE:0)  |
-                    (bcount > 0?GT:0)
+                    (count8() == 0?C:0)  |
+                    (count8() == 1?Z:0)  |
+                    ((count8() < 1) | (count8() > 128) ?N:0)  |
+                    (count8() == 128?O:0)  |   // -128 is 
+                    (count8() == 0?EQ:0) |
+                    (count8() != 0?NE:0)  |
+                    (count8() > 0?GT:0)
                 ) 
         end
 
         ////////////////////////////////////////////////////////////// B_MINUS_1
 
-        for (bcount=0; bcount<255; bcount++) begin
+        for (count=0; count<=255; count++) begin
             assign a = 0; 
-            assign b = bcount;
+            assign b = count;
             assign _flag_c_in = 'x; // not relevant
             assign alu_op = alu_ops.OP_B_MINUS_1;
             PD;
-            `Equals(o, 8'(bcount-1)); 
+            `Equals(o, 8'(count8()-1)); 
             `FLAGS( 
-                    (bcount == 0?C:0)  |
-                    (bcount == 1?Z:0)  |
-                    ((bcount == 0 | bcount > (127+1)) ?N:0)  |  
-                    (bcount == 0?EQ:0) |
-                    (bcount != 0?NE:0)  |
-                    (bcount > 0?LT:0)
+                    (count8() == 0?C:0)  |
+                    (count8() == 1?Z:0)  |
+                    ((count8() == 0 | count8() > (127+1)) ?N:0)  |  
+                    ((count < 1) | (count > 128) ?N:0)  |
+                    (count == 128?O:0)  |   // -128 is 
+                    (count8() == 0?EQ:0) |
+                    (count8() != 0?NE:0)  |
+                    (count8() > 0?LT:0)
                 ) 
         end
 
-*/
         ////////////////////////////////////////////////////////////// A_PLUS_B
 
         // -86 + -127 is the same as 
@@ -715,10 +719,10 @@ module test();
         `Equals(o, 8'b11000000);
         `FLAGS(C|N|NE|GT)  
 
-        assign b = 1;
+        assign b = 2;
         PD;
-        `Equals(o, 8'b11000000);
-        `FLAGS(C|N|NE|GT)  
+        `Equals(o, 8'b11100000);
+        `FLAGS(N|NE|GT)  
 
         assign b = 6;
         PD;
@@ -759,6 +763,7 @@ module test();
 
         ////////////////////////////////////////////////////////////// A_ROL_B
 
+
         assign a = 8'b10000001;
         assign b = 0;
         assign _flag_c_in = 'x;
@@ -782,8 +787,22 @@ module test();
         assign b = 2;
         assign _flag_c_in = 1'b0;
         PD;
-        `Equals(o, 8'b00000110);
+        `Equals(o, 8'b00000111);
         `FLAGS(O|NE|GT)  
+
+        assign b = 3;
+        assign _flag_c_in = 1'b0;
+        PD;
+        `Equals(o, 8'b00001110);
+        `FLAGS(O|NE|GT)  
+
+
+        assign a = 8'b01011101;
+        assign b = 8;
+        assign _flag_c_in = 1'b0;
+        PD;
+        `Equals(o, 8'b10101110); // first shift should have put lower bit '0' into carry and filled top bit from carry '1'  so second therefore  11000000->0   to second shift is 01100000->0
+        `FLAGS(C|N|O|NE|GT)  
 
         ////////////////////////////////////////////////////////////// A_ROR_B
 
@@ -810,19 +829,58 @@ module test();
         assign b = 2;
         assign _flag_c_in = 1'b0;
         PD;
-        `Equals(o, 8'b11100000);
+        `Equals(o, 8'b11100000); // first shift should have put lower bit '0' into carry and filled top bit from carry '1'  so second therefore  11000000->0   to second shift is 01100000->0
         `FLAGS(N|NE|GT)  
 
-
+        assign a = 8'b01011101;
+        assign b = 8;
+        assign _flag_c_in = 1'b0;
+        PD;
+        `Equals(o, 8'b10111011); // first shift should have put lower bit '0' into carry and filled top bit from carry '1'  so second therefore  11000000->0   to second shift is 01100000->0
+        `FLAGS(O|N|NE|GT)  
 
 
         ////////////////////////////////////////////////////////////// A_AND_B
         assign a = 8'b11010101; // LOGICAL VALUE
-        assign b = 8'b10000000; // LOGICAL VALUE
+        assign b = 8'b10100000; // LOGICAL VALUE
         assign alu_op = alu_ops.OP_A_AND_B;
+        assign _flag_c_in = 1'bx;
         PD;
         `Equals(o, 8'b10000000);
-        `FLAGS(N|NE|GT) // neg and ov get set but since this isn't arith then interpet with that in mind
+        `FLAGS(N|NE|GT)
+
+        assign b = 8'b11111111; // LOGICAL VALUE
+        assign alu_op = alu_ops.OP_A_AND_B;
+        PD;
+        `Equals(o, 8'b11010101);
+        `FLAGS(N|NE|LT)
+
+        assign b = 8'b00000000; // LOGICAL VALUE
+        assign alu_op = alu_ops.OP_A_AND_B;
+        PD;
+        `Equals(o, 8'b00000000);
+        `FLAGS(O|Z|NE|GT)
+
+        ////////////////////////////////////////////////////////////// A_OR_B
+        assign a = 8'b11010101; // LOGICAL VALUE
+        assign b = 8'b10100000; // LOGICAL VALUE
+        assign alu_op = alu_ops.OP_A_OR_B;
+        assign _flag_c_in = 1'bx;
+        PD;
+        `Equals(o, 8'b11110101);
+        `FLAGS(N|NE|GT)
+
+        assign b = 8'b11111111; // LOGICAL VALUE
+        assign alu_op = alu_ops.OP_A_OR_B;
+        PD;
+        `Equals(o, 8'b11111111);
+        `FLAGS(N|NE|LT)
+
+        assign b = 8'b00000000; // LOGICAL VALUE
+        assign alu_op = alu_ops.OP_A_OR_B;
+        PD;
+        `Equals(o, 8'b11010101);
+        `FLAGS(N|NE|GT)
 
         ////////////////////////////////////////////////////////////// A
         assign a = 8'b11010101; // PASS THRU
@@ -834,7 +892,7 @@ module test();
 
         PD;
         $display("---");
-        $display("done");
+        $display("done : %d tests", testcount);
         
 
     end
