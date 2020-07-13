@@ -1,7 +1,7 @@
 /* verilator lint_off ASSIGNDLY */
 
+/// FIXME NEED A BINARY TO BCD OPERATION AS THIS IS HARD - https://www.nandland.com/vhdl/modules/double-dabble.html
 /// FIXME NEED TO USE CARRY IN CONSISTENTLY ON ARITH AND ROTATES (SHIFTS??)
-/// FIXME NEED TO USE XY/AB/LR consistently in design !!
 /// EG USING ROM 28C512
 
 /// MANY OPS NOT REQUIRED IF R CAN BE IMMEDIATE eg "A+1" is same as "A+immediate 1" as long as both treat carry the same
@@ -9,6 +9,7 @@
 
 
 // FIXME - see my notes on using lower range of A+/-B as no carry in and upper range as the shiftable ones taking cin into account.
+// also http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt#:~:text=The%20ALU%20doesn't%20know,after%20the%20math%20is%20done.
 
 `ifndef  V_ALU
 `define  V_ALU
@@ -218,10 +219,11 @@ Can Overflow double as a divide / 0 flag ?
     logic [4:0] alu_op_effective;
 
     logic _overflow;
+    logic _force_neg;
 
     assign #(PD) o = c_buf_c[8:1];
     assign #(PD) _flag_c = !c_buf_c[9];
-    assign #(PD) _flag_n = !c_buf_c[8]; // top bit set indicates negative in signed arith
+    assign #(PD) _flag_n = _force_neg & (!c_buf_c[8]); // top bit set indicates negative in signed arith
     assign #(PD) _flag_z = !(c_buf_c[8:1] == 8'b0);
     assign #(PD) _flag_o = _overflow;
     assign #(PD) _flag_eq = !(a == b);    
@@ -247,24 +249,31 @@ Can Overflow double as a divide / 0 flag ?
     if (LOG) 
     always @(*) 
         $display("%9t ALU", $time,
-        " aluop=%-10s (op:%d)", alu_ops.aluopName(alu_op), alu_op, // %1s causes string to lose trailing space
-        " aluop_effective=%-10s", alu_ops.aluopName(alu_op_effective), // %1s causes string to lose trailing space
+        " aluop=%-1s (op:%d)", alu_ops.aluopName(alu_op), alu_op, // %1s causes string to lose trailing space
+        " (%-1s)", alu_ops.aluopName(alu_op_effective), // %1s causes string to lose trailing space
         "  ",
-        " a=%08b (uns %3d/sign %4d) ", a, a, signed_a,
-        " b=%08b (uns %3d/sign %4d) ", b, b, signed_b,
+        " a=%08b (u%-3d/s%-4d/h%-02h) ", a, a, signed_a, a,
+        " b=%08b (u%-3d/s%-4d/h%-02h) ", b, b, signed_b, b,
         " _c_in=%1b ", _flag_c_in,
         "  ",
-        "  ",
-        " result=%08b (uns %3d/sign %4d) ", o, o, signed_o,
-        " _c=%1b",  _flag_c,
-        " _z=%1b",  _flag_z,
-        " _n=%1b",  _flag_n,
-        " _o=%1b",  _flag_o,
-        " _gt=%1b", _flag_gt,
-        " _lt=%1b", _flag_lt,
-        " _eq=%1b", _flag_eq,
-        " _ne=%1b", _flag_ne,
-        "      ",
+        " out=%08b (u%-3d/s%-4d/h%-02h) ", o, o, signed_o, o,
+        //" _c=%1b",  _flag_c,
+        //" _z=%1b",  _flag_z,
+        //" _n=%1b",  _flag_n,
+        //" _o=%1b",  _flag_o,
+        //" _gt=%1b", _flag_gt,
+        //" _lt=%1b", _flag_lt,
+        //" _eq=%1b", _flag_eq,
+        //" _ne=%1b", _flag_ne,
+        " _c%1b",  _flag_c,
+        " _z%1b",  _flag_z,
+        " _n%1b",  _flag_n,
+        " _o%1b",  _flag_o,
+        " _gt%1b", _flag_gt,
+        " _lt%1b", _flag_lt,
+        " _eq%1b", _flag_eq,
+        " _ne%1b", _flag_ne,
+        " ",
         " unsigned_magnitude=%b ", unsigned_magnitude
          );
 
@@ -307,6 +316,7 @@ Can Overflow double as a divide / 0 flag ?
         c_buf_c = 1;
 
         _overflow = 1;
+        _force_neg = 1;
         unsigned_magnitude=1;
 
         // FIXME TODO CHANGE TO LOGIC and delays etc
@@ -344,9 +354,11 @@ Can Overflow double as a divide / 0 flag ?
             end
             alu_ops.OP_NEGATE_A: begin  // eg switches -1 to 255 and 255 to -1
                 set_result(-a); 
+                _overflow = !(a==8'b10000000); 
             end
             alu_ops.OP_NEGATE_B: begin 
                 set_result(-b);
+                _overflow = !(b==8'b10000000); 
             end
             alu_ops.OP_A_PLUS_1: begin 
                 // UNLIKE A_PLUS_B this sets carry but doesn't consume it 
@@ -493,6 +505,51 @@ Can Overflow double as a divide / 0 flag ?
                 set_result(a & b);
                 _overflow = !(a[7] != result_sign());
             end
+            alu_ops.OP_A_XOR_B: begin
+                set_result(a ^ b);
+                _overflow = !(a[7] != result_sign()); // for logical op this merely indicates a top bit change which doesn't necessarily mean overflow if this were signed (which it isn't) - what do I want to do with the bit? leave it x or 0? could use it for anything eg out!=in for instance
+            end
+            alu_ops.OP_NOT_A: begin
+                set_result(~a);
+                _overflow = !(a[7] != result_sign()); // for logical op this merely indicates a top bit change which doesn't necessarily mean overflow if this were signed (which it isn't) - what do I want to do with the bit? leave it x or 0? could use it for anything eg out!=in for instance
+            end
+            alu_ops.OP_NOT_B: begin
+                set_result(~b);
+                _overflow = !(a[7] != result_sign()); // for logical op this merely indicates a top bit change which doesn't necessarily mean overflow if this were signed (which it isn't) - what do I want to do with the bit? leave it x or 0? could use it for anything eg out!=in for instance
+            end
+    
+
+            alu_ops.OP_A_PLUS_B_BCD: begin
+
+                `define P_A (((a >>4)*10) + (a & 8'h0f))
+                `define P_B (((b >>4)*10) + (b & 8'h0f))
+                `define P_SUM (`P_A + `P_B + cin8)
+
+                `define P_CARRY 8'(`P_SUM/100)
+                `define P_REMAIN 8'(`P_SUM % 100)
+
+                `define P_TOP 8'(`P_REMAIN/10)
+                `define P_BOT 8'(`P_REMAIN%10)
+
+                set_result9({`P_CARRY, ((`P_TOP<<4) | `P_BOT) });
+            end
+
+            alu_ops.OP_A_MINUS_B_BCD: begin
+                _force_neg = !(b>a);
+
+                `define S_A 8'(((a >>4)*10) + (a & 8'h0f))
+                `define S_B 8'(((b >>4)*10) + (b & 8'h0f))
+                `define S_SUM 8'((`S_A + (100-`S_B)) + (100-cin8))
+
+                `define S_CARRY 8'(`S_SUM/100)
+                `define S_REMAIN 8'(`S_SUM % 100)
+
+                `define S_TOP 8'(`S_REMAIN/10)
+                `define S_BOT 8'(`S_REMAIN%10)
+
+                set_result9({`S_CARRY, ((`S_TOP<<4) | `S_BOT) });
+            end
+
             default: begin
                 c_buf_c = 10'bxzxzxzxzxz;
                 $display("%9t !!!!!!!!!!!!!!!!!!!!!!!!!!!! RANDOM ALU OUT !!!!!!!!!!!!!!!!!!!!!! UNHANDLED alu_op=%5b : SpecifiedOp:%-s EffectiveOp=%-s", $time, alu_op, 

@@ -24,7 +24,7 @@ module test();
     wire _flag_eq;
     wire _flag_ne;
 	
-	alu #(.LOG(0)) Alu(
+	alu #(.LOG(1)) Alu(
         .o, 
         .a,
         .b,
@@ -39,6 +39,9 @@ module test();
         ._flag_eq,
         ._flag_ne
     );
+
+    `define MAX_POS (127)
+    `define MAX_NEG (-128)
 
     initial begin
         `ifndef verilator
@@ -82,7 +85,7 @@ module test();
         reg bitExpected;
         bitExpected = (expectation & bitSelector) == 0;
         flagCheck = (_flagValue == bitExpected);
-        if (!flagCheck) $display("FLAG %2s wrong : got=%1b expected=%1b     for test case '%s'      a=%8b(%d) b%8b (%d) o=%8b (%d)", flagName, _flagValue, bitExpected, expectationStr, a,a,b,b,o,o); 
+        if (!flagCheck) $display("FLAG %2s wrong : got=%1b expected=%1b     for test case '%s'      a=%8b(d%-d/h%-2h) b%8b (d%-d/h%-2h) o=%8b (d%-d/h%-2h)", flagName, _flagValue, bitExpected, expectationStr, a,a,a,b,b,b,o,o,o); 
     endfunction
 
     `define FCMP(EXPECTATION,FLAGNAME,flagname) flagCheck("FLAGNAME", _flag_``flagname``, (EXPECTATION), FLAGNAME, "EXPECTATION")
@@ -136,7 +139,6 @@ module test();
         assign a = 10;
         assign b = 20;
         assign _flag_c_in='x;
-        assign alu_op = alu_ops.OP_A;
         PD;
         `Equals(o, 10); 
         `FLAGS(NE | LT)
@@ -153,42 +155,123 @@ module test();
         assign a = 10;
         assign b = 20;
         assign _flag_c_in='x;
-        assign alu_op = alu_ops.OP_B;
         PD;
         `Equals(o, 20); 
         `FLAGS(NE | LT)
 
-        ////////////////////////////////////////////////////////////// NEGATE
+        ////////////////////////////////////////////////////////////// NEGATE_A
 
-        for (count=0; count<=255; count++) begin
-            assign a = count; 
-            assign b = 0;
-            assign _flag_c_in = 'x; // not relevant
-            assign alu_op = alu_ops.OP_NEGATE_A;
-            PD;
-            `Equals(o, 8'((~count8())+1)); // perform 2s comp negation
-            `FLAGS( (count8() == 0?Z:0)  |
-                    (count8() > 0 & count8() <= 128? N:0)  |
-                    (count8() == 0?EQ:0) |
-                    (count8() != 0?NE:0)  |
-                    (count8() > 0?GT:0)
-                ) 
-        end
+        assign a = 0; 
+        assign b = 0;
+        assign _flag_c_in = 'x; // not relevant
+        assign alu_op = alu_ops.OP_NEGATE_A;
+        PD;
+        `Equals(o, 8'b0)
+        `FLAGS(Z|EQ)
 
-        for (count=0; count<=255; count++) begin
-            assign a = 0; 
-            assign b = count; 
-            assign _flag_c_in = 'x; // not relevant
-            assign alu_op = alu_ops.OP_NEGATE_B;
-            PD;
-            `Equals(o, 8'((~count8())+1)); // perform 2s comp negation
-            `FLAGS( (count8() == 0?Z:0)  |
-                    (count8() > 0 & count8() <= 128? N:0)  |
-                    (count8() == 0?EQ:0) |
-                    (count8() != 0?NE:0)  |
-                    (count8() > 0?LT:0)
-                ) 
-        end
+        assign a = 1; 
+        assign b = 0;
+        assign _flag_c_in = 'x; 
+        PD;
+        `Equals(o, 8'b11111111)
+        `FLAGS(N|NE|GT)
+
+        assign a = 2; 
+        assign b = 0;
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 8'b11111110)
+        `FLAGS(N|NE|GT)
+
+        assign a = `MAX_POS; // 127
+        assign b = 0;
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 8'b10000001)
+        `Equals(o, 8'(`MAX_NEG+1))
+        `FLAGS(N|NE|GT)
+
+        assign a = (`MAX_POS+1); // 128 = overflow on negation
+        assign b = 0;
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 8'b10000000)
+        `FLAGS(O|N|NE|GT) // OVERFLOW BECAUSE (MAX_POS+1)=128 which is actually negative -128 binary, and we cannot negate -128 in 8 bits (ie +ve 128 doesn't fit)
+
+        assign a = (`MAX_NEG); // 128 = overflow on negation
+        assign b = 0;
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 8'b10000000)
+        `FLAGS(O|N|NE|GT) // OVERFLOW BECAUSE (MAX_POS+1)=128 which is actually negative -128 binary, and we cannot negate -128 in 8 bits (ie +ve 128 doesn't fit)
+
+        assign a = (`MAX_NEG+1); // 128 = overflow on negation
+        assign b = 0;
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 8'b01111111)
+        `Equals(o, 8'(`MAX_POS))
+        `FLAGS(NE|GT) // OVERFLOW BECAUSE (MAX_POS+1)=128 which is actually negative -128 binary, and we cannot negate -128 in 8 bits (ie +ve 128 doesn't fit)
+
+
+        ////////////////////////////////////////////////////////////// NEGATE_B
+        assign a = 0; 
+        assign b = 0;
+        assign _flag_c_in = 'x; // not relevant
+        assign alu_op = alu_ops.OP_NEGATE_B;
+        PD;
+        `Equals(o, 8'b0)
+        `FLAGS(Z|EQ)
+
+        assign a = 0; 
+        assign b = 1;
+        assign _flag_c_in = 'x; 
+        assign alu_op = alu_ops.OP_NEGATE_B;
+        PD;
+        `Equals(o, 8'b11111111)
+        `FLAGS(N|NE|LT)
+
+        assign a = 0; 
+        assign b = 2;
+        assign _flag_c_in = 'x;
+        assign alu_op = alu_ops.OP_NEGATE_B;
+        PD;
+        `Equals(o, 8'b11111110)
+        `FLAGS(N|NE|LT)
+
+        assign a = 0;
+        assign b = `MAX_POS; // 127
+        assign _flag_c_in = 'x;
+        assign alu_op = alu_ops.OP_NEGATE_B;
+        PD;
+        `Equals(o, 8'b10000001)
+        `Equals(o, 8'(`MAX_NEG+1))
+        `FLAGS(N|NE|LT)
+
+        assign a = 0;
+        assign b = (`MAX_POS+1); // 128 = overflow on negation
+        assign _flag_c_in = 'x;
+        assign alu_op = alu_ops.OP_NEGATE_B;
+        PD;
+        `Equals(o, 8'b10000000)
+        `FLAGS(O|N|NE|LT) // OVERFLOW BECAUSE (MAX_POS+1)=128 which is actually negative -128 binary, and we cannot negate -128 in 8 bits (ie +ve 128 doesn't fit)
+
+        assign a = 0;
+        assign b = (`MAX_NEG); // 128 = overflow on negation
+        assign _flag_c_in = 'x;
+        assign alu_op = alu_ops.OP_NEGATE_B;
+        PD;
+        `Equals(o, 8'b10000000)
+        `FLAGS(O|N|NE|LT) // OVERFLOW BECAUSE (MAX_POS+1)=128 which is actually negative -128 binary, and we cannot negate -128 in 8 bits (ie +ve 128 doesn't fit)
+
+        assign a = 0;
+        assign b = (`MAX_NEG+1); // 128 = overflow on negation
+        assign _flag_c_in = 'x;
+        assign alu_op = alu_ops.OP_NEGATE_B;
+        PD;
+        `Equals(o, 8'b01111111)
+        `Equals(o, 8'(`MAX_POS))
+        `FLAGS(NE|LT) // OVERFLOW BECAUSE (MAX_POS+1)=128 which is actually negative -128 binary, and we cannot negate -128 in 8 bits (ie +ve 128 doesn't fit)
 
 
 
@@ -226,7 +309,7 @@ module test();
                     (count8() == 1?Z:0)  |
                     ((count8() == 0 | count8() > (127+1)) ?N:0)  |  
                     ((count < 1) | (count > 128) ?N:0)  |
-                    (count == 128?O:0)  |   // -128 is 
+                    (count == 128?O:0)  |   
                     (count8() == 0?EQ:0) |
                     (count8() != 0?NE:0)  |
                     (count8() > 0?LT:0)
@@ -309,14 +392,6 @@ module test();
         PD;
         `Equals(o, 8'h01); // 0 - -1 = +1   , but in unsigned this is 0-255 = 1 borrow 1
         `FLAGS(C|NE|LT) 
-
-        assign a = 1;
-        assign b = 1; 
-        assign _flag_c_in = 'x;
-        assign alu_op = alu_ops.OP_A_MINUS_B;
-        PD;
-        `Equals(o, 8'h00);
-        `FLAGS(Z|EQ) 
 
         ////////////////////////////////////////////////////////////// B_MINUS_A
         assign a = 1;
@@ -440,12 +515,35 @@ module test();
         `FLAGS(EQ) 
 
 
-        ////////////////////////////////////////////////////////////// A_MINUS_B_PLUS_C
+        ////////////////////////////////////////////////////////////// A_MINUS_B_MINUS_C
 
+        // zero boundary tests
+        assign a = 1;
+        assign b = 0;
+        assign _flag_c_in = 1; 
+        assign alu_op = alu_ops.OP_A_MINUS_B_MINUS_C; 
+        PD;
+        `Equals(o, 1);
+        `FLAGS(NE|GT)
+        assign a = 1;
+
+        assign b = 1;
+        assign _flag_c_in = 1; 
+        PD;
+        `Equals(o, 0);
+        `FLAGS(Z|EQ)
+
+        assign b = 1;
+        assign _flag_c_in = 0; 
+        PD;
+        `Equals(o, 8'hff);
+        `FLAGS(C|N|EQ)
+
+
+        // minus-munus make positive
         assign a = 1;
         assign b = 3;
         assign _flag_c_in = 0;
-        assign alu_op = alu_ops.OP_A_MINUS_B_MINUS_C;
         PD;
         `Equals(o, 8'b11111101); // -2 = 254 unsigned
         `Equals(o, -8'd3); // also can write a negative twos complement like this
@@ -454,36 +552,36 @@ module test();
         assign a = 1;
         assign b = -3; // same as 254
         assign _flag_c_in = 0;
-        assign alu_op = alu_ops.OP_A_MINUS_B_MINUS_C;
         PD;
         `Equals(o, 8'd3); //  ((1 - (-3)) - 1) = 3
         `FLAGS(C|NE|LT)  // O set and C set - bug FIXME
 
 
+        // overflow boundary test 
         // -255=0-255  is (9'b100000001) too big for 8 bits so overflow
         assign a = 0;
-        assign b = 255; // 255 unsigned = but this is -1 in twos complement
+        assign b = (`MAX_POS-1);
+        assign _flag_c_in = 1;
+        assign alu_op = alu_ops.OP_A_MINUS_B_MINUS_C;
+        PD;
+        `Equals(o, 8'b10000010); // -126
+        `FLAGS(C|N|NE|LT)
+
+        assign a = 0;
+        assign b = `MAX_POS;
+        assign _flag_c_in = 1;
+        assign alu_op = alu_ops.OP_A_MINUS_B_MINUS_C;
+        PD;
+        `Equals(o, 8'b10000001); // -127
+        `FLAGS(C|N|NE|LT)
+
+        assign a = 0;
+        assign b = `MAX_POS;
         assign _flag_c_in = 0;
         assign alu_op = alu_ops.OP_A_MINUS_B_MINUS_C;
         PD;
-        `Equals(o, 8'h00); // ((0 - (-1)) -1) = 0   , but in unsigned this is (0-255)= = 1 borrow 1
-        `FLAGS(C|Z|NE|LT)
-
-        assign a = 1;
-        assign b = 1; 
-        assign _flag_c_in = 0;
-        assign alu_op = alu_ops.OP_A_MINUS_B_MINUS_C;
-        PD;
-        `Equals(o, 8'hff);
-        `FLAGS(C|N|EQ) 
-
-        assign a = 1;
-        assign b = 1;
-        assign _flag_c_in = 1; 
-        assign alu_op = alu_ops.OP_A_MINUS_B_MINUS_C; 
-        PD;
-        `Equals(o, -8'd0);
-        `FLAGS(Z|EQ)
+        `Equals(o, 8'b10000000); // -128
+        `FLAGS(C|N|NE|LT)
 
         ////////////////////////////////////////////////////////////// B_MINUS_A_MINUS_C
         assign a = 1;
@@ -850,13 +948,11 @@ module test();
         `FLAGS(N|NE|GT)
 
         assign b = 8'b11111111; // LOGICAL VALUE
-        assign alu_op = alu_ops.OP_A_AND_B;
         PD;
         `Equals(o, 8'b11010101);
         `FLAGS(N|NE|LT)
 
         assign b = 8'b00000000; // LOGICAL VALUE
-        assign alu_op = alu_ops.OP_A_AND_B;
         PD;
         `Equals(o, 8'b00000000);
         `FLAGS(O|Z|NE|GT)
@@ -871,25 +967,121 @@ module test();
         `FLAGS(N|NE|GT)
 
         assign b = 8'b11111111; // LOGICAL VALUE
-        assign alu_op = alu_ops.OP_A_OR_B;
         PD;
         `Equals(o, 8'b11111111);
         `FLAGS(N|NE|LT)
 
         assign b = 8'b00000000; // LOGICAL VALUE
-        assign alu_op = alu_ops.OP_A_OR_B;
         PD;
         `Equals(o, 8'b11010101);
         `FLAGS(N|NE|GT)
 
-        ////////////////////////////////////////////////////////////// A
-        assign a = 8'b11010101; // PASS THRU
-        assign b = 8'b10000000; // PASS THRU
-        assign alu_op = alu_ops.OP_A;
+        ////////////////////////////////////////////////////////////// A_XOR_B
+        assign a = 8'b11010101; // LOGICAL VALUE
+        assign b = 8'b10100000; // LOGICAL VALUE
+        assign alu_op = alu_ops.OP_A_XOR_B;
+        assign _flag_c_in = 1'bx;
+        PD;
+        `Equals(o, 8'b01110101);
+        `FLAGS(O|NE|GT)
+
+        assign b = 8'b11111111; // LOGICAL VALUE
+        PD;
+        `Equals(o, 8'b00101010);
+        `FLAGS(O|NE|LT)
+
+        assign b = 8'b00000000; // LOGICAL VALUE
         PD;
         `Equals(o, 8'b11010101);
-        `FLAGS(N|NE|GT) // neg and ov get set but since this isn't arith then interpet with that in mind
+        `FLAGS(N|NE|GT)
 
+        ////////////////////////////////////////////////////////////// NOT_A
+        assign a = 8'b11010101; // LOGICAL VALUE
+        assign b = 8'b10100000; // LOGICAL VALUE
+        assign alu_op = alu_ops.OP_NOT_A;
+        assign _flag_c_in = 1'bx;
+        PD;
+        `Equals(o, 8'b00101010);
+        `FLAGS(O|NE|GT)
+
+
+        ////////////////////////////////////////////////////////////// NOT_B
+        assign a = 8'b11010101; // LOGICAL VALUE
+        assign b = 8'b10100000; // LOGICAL VALUE
+        assign alu_op = alu_ops.OP_NOT_B;
+        assign _flag_c_in = 1'bx;
+        PD;
+        `Equals(o, 8'b01011111);
+        `FLAGS(O|NE|GT)
+
+        ////////////////////////////////////////////////////////////// OP_A_PLUS_B_BCD
+        assign a = 8'h29; 
+        assign b = 8'h32; 
+        assign alu_op = alu_ops.OP_A_PLUS_B_BCD;
+        assign _flag_c_in = 1'b1;
+        PD;
+        `Equals(o, 8'h61);
+        `FLAGS(NE|LT)
+
+        assign _flag_c_in = 1'b0;
+        PD;
+        `Equals(o, 8'h62);
+        `FLAGS(NE|LT)
+
+        assign a = 8'h99; 
+        assign b = 8'h00; 
+        assign _flag_c_in = 1'b0;
+        PD;
+        `Equals(o, 8'h00);
+        `FLAGS(C|Z|NE|GT)
+
+        assign a = 8'h99; 
+        assign b = 8'h01; 
+        assign _flag_c_in = 1'b0;
+        PD;
+        `Equals(o, 8'h01);
+        `FLAGS(C|NE|GT)
+
+        // not legal BCD but a test to see that tens and units are still respected
+        assign a = 8'haa; 
+        assign b = 8'h01; 
+        assign _flag_c_in = 1'b0;
+        PD;
+        `Equals(o, 8'h12);
+        `FLAGS(C|NE|GT)
+
+
+        ////////////////////////////////////////////////////////////// OP_A_MINUS_B_BCD
+        assign a = 8'h70; 
+        assign b = 8'h25; 
+        assign alu_op = alu_ops.OP_A_MINUS_B_BCD;
+        assign _flag_c_in = 1'b1;
+        PD;
+        `Equals(o, 8'h45);
+        `FLAGS(NE|GT)
+
+        assign _flag_c_in = 1'b0;
+        PD;
+        `Equals(o, 8'h44);
+        `FLAGS(NE|GT)
+
+        assign a = 8'h00; 
+        assign b = 8'h01; 
+        assign _flag_c_in = 1'b1;
+        PD;
+        `Equals(o, 8'h99);
+        `FLAGS(C|N|NE|LT)
+
+        // not value BCD
+        assign a = 8'haa; 
+        assign b = 8'hff; 
+        assign _flag_c_in = 1'b1;
+        PD;
+        `Equals(o, 8'h45);
+        `FLAGS(C|N|NE|LT) // should be neg as B>A
+
+
+        //////////////////////////////////////////////////////////////////////
         PD;
         $display("---");
         $display("done : %d tests", testcount);
