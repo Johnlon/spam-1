@@ -152,9 +152,9 @@ module wide_controller(
     wire [15:0] lsel = {abus_dev_16_demux.Y, abus_dev_08_demux.Y};
     wire [15:0] rsel = {bbus_dev_16_demux.Y, bbus_dev_08_demux.Y};
     
-    `define HOOKUP_ADEV_SEL(DNAME) wire _adev_``DNAME`` = lsel[control.DEV_``DNAME``]
-    `define HOOKUP_BDEV_SEL(DNAME) wire _bdev_``DNAME`` = rsel[control.DEV_``DNAME``]
-    `define HOOKUP_TDEV_SEL(DNAME) wire _``DNAME``_in = tsel[control.TDEV_``DNAME``]
+    `define HOOKUP_ADEV_SEL(DNAME) wire _adev_``DNAME`` = lsel[DEV_``DNAME``]
+    `define HOOKUP_BDEV_SEL(DNAME) wire _bdev_``DNAME`` = rsel[DEV_``DNAME``]
+    `define HOOKUP_TDEV_SEL(DNAME) wire _``DNAME``_in = tsel[TDEV_``DNAME``]
     
     `CONTROL_WIRES(HOOKUP, `SEMICOLON);
 

@@ -13,7 +13,7 @@
 `define DECODE_ADDRMODES (!_addrmode_pc ? "pc" : !_addrmode_register?  "register" : !_addrmode_direct? "direct": "---") 
 `define DECODE_ADDRMODE  logic [3*8-1:0] sAddrMode; assign sAddrMode = `DECODE_ADDRMODES;
 
-`define toDEV(DEVNAME) control.DEV_``DEVNAME``
+`define toDEV(DEVNAME) control::DEV_``DEVNAME``
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
@@ -22,7 +22,7 @@
 // verilator lint_off DISABLED-UNUSED
 `timescale 1ns/1ns
 
-module control;
+package control;
  
     localparam PHASE_NONE = 3'b000;
     localparam PHASE_FETCH = 3'b100;
@@ -202,14 +202,14 @@ module control;
 
         begin
             case(opcode)
-                 control.OP_dev_eq_xy_alu : opName = "dev_eq_xy_alu";
-                 control.OP_dev_eq_const8 : opName = "dev_eq_const8";
-                 control.OP_dev_eq_const16 : opName = "dev_eq_const16";
-                 control.OP_3_unused : opName = "3_unused";
-                 control.OP_dev_eq_rom_direct : opName = "dev_eq_rom_direct";
-                 control.OP_dev_eq_ram_direct : opName = "dev_eq_ram_direct";
-                 control.OP_ram_direct_eq_dev : opName = "ram_direct_eq_dev";
-                 control.OP_7_unused : opName = "7_unused";
+                 OP_dev_eq_xy_alu : opName = "dev_eq_xy_alu";
+                 OP_dev_eq_const8 : opName = "dev_eq_const8";
+                 OP_dev_eq_const16 : opName = "dev_eq_const16";
+                 OP_3_unused : opName = "3_unused";
+                 OP_dev_eq_rom_direct : opName = "dev_eq_rom_direct";
+                 OP_dev_eq_ram_direct : opName = "dev_eq_ram_direct";
+                 OP_ram_direct_eq_dev : opName = "ram_direct_eq_dev";
+                 OP_7_unused : opName = "7_unused";
 
                  default: begin
                     $sformat(ret,"??unknown(%b)",opcode);
@@ -220,7 +220,9 @@ module control;
     end
     endfunction
 
-endmodule: control
+endpackage: control
+
+import control::*;
 
 
 `define CONTROL_WIRES(FN, SEP)  \
