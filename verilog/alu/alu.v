@@ -1,6 +1,9 @@
 /* verilator lint_off ASSIGNDLY */
 
 /// FIXME NEED A BINARY TO BCD OPERATION AS THIS IS HARD - https://www.nandland.com/vhdl/modules/double-dabble.html
+// replace A-1 and A+1 with 
+
+// FIXME - include those ALU Div with Borrow Remainder functions?
 
 /// EG USING ROM 28C512
 
@@ -29,11 +32,11 @@ package alu_ops;
     localparam [4:0] OP_B=2;
     localparam [4:0] OP_NEGATE_A=3;  
     localparam [4:0] OP_NEGATE_B=4;  
-    localparam [4:0] OP_A_PLUS_1=5; // not needed as I can do 'A+IMMED(1)'  - use for ROR or RCR?
-    localparam [4:0] OP_B_PLUS_1=6; // needed for ROM/RAM+1  needed because if using IREG then can't also use RAM as both are B bus
-    localparam [4:0] OP_A_MINUS_1=7; // not needed as I can do 'A-IMMED(1)' - use for ROL or RCL?
+    localparam [4:0] OP_A_PLUS_1=5; // DOESNT USE CARRY IN // NOT NEEDED as I can do 'A+IMMED(1)'  - use for ROR or RCR?
+    localparam [4:0] OP_B_PLUS_1=6; // DOESNT USE CARRY IN // needed for ROM/RAM+1  needed because if using IREG then can't also use RAM as both are B bus
+    localparam [4:0] OP_A_MINUS_1=7; // DOESNT USE CARRY IN // NOT NEEDED as I can do 'A-IMMED(1)' - use for ROL or RCL?
 
-    localparam [4:0] OP_B_MINUS_1=8; // needed for RAM/ROM-1
+    localparam [4:0] OP_B_MINUS_1=8; // DOESNT USE CARRY IN // needed for RAM/ROM-1
     localparam [4:0] OP_A_PLUS_B=9;
     localparam [4:0] OP_A_MINUS_B=10;
     localparam [4:0] OP_B_MINUS_A=11;
