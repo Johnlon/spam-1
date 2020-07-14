@@ -64,8 +64,8 @@ The SPAM-1 ALU ROM functions are ...
 | -A          | __B-A__<sup>*1</sup>    | A%B               | A XOR B       |
 | -B          | A-B (special)           | A << B            | NOT A         |
 | A+1         | __A+B+1__<sup>*2</sup>  | A >> B arithmetic | NOT B         |
-| B+1         | __A-B+1__<sup>*2</sup>  | A >> B logical    | A+B (BCD)     |
-| A-1         | __B-A+1__<sup>*2</sup>  | A ROL B           | A-B (BCD)     |
+| B+1         | __A-B-1__<sup>*2</sup>  | A >> B logical    | A+B (BCD)     |
+| A-1         | __B-A-1__<sup>*2</sup>  | A ROL B           | A-B (BCD)     |
 
 <sup>
 *1 these ops will be used if the instruction directly selects ops 9/10/11, or, when the instruction selects 13/14/15 but carry-in is not set<br/>
