@@ -1,15 +1,14 @@
 /* verilator lint_off ASSIGNDLY */
 
 /// FIXME NEED A BINARY TO BCD OPERATION AS THIS IS HARD - https://www.nandland.com/vhdl/modules/double-dabble.html
-/// FIXME NEED TO USE CARRY IN CONSISTENTLY ON ARITH AND ROTATES (SHIFTS??)
+
 /// EG USING ROM 28C512
 
 /// MANY OPS NOT REQUIRED IF R CAN BE IMMEDIATE eg "A+1" is same as "A+immediate 1" as long as both treat carry the same
 /// HMMMM .. But can't do "B+immediate 1" unless instreg is available on A bus too.
 
 
-// FIXME - see my notes on using lower range of A+/-B as no carry in and upper range as the shiftable ones taking cin into account.
-// also http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt#:~:text=The%20ALU%20doesn't%20know,after%20the%20math%20is%20done.
+// See also http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt#:~:text=The%20ALU%20doesn't%20know,after%20the%20math%20is%20done.
 
 `ifndef  V_ALU
 `define  V_ALU
@@ -21,7 +20,7 @@
 // else use mux use 74241 (2x4 with hi or low en) or 74244 (2x4 with low en) 
 //assign reg_x_addr = device_sel[3:0]; // top bit of device sel ignored
 
-`define toALUOP(OPNAME) OP_``OPNAME``
+`define toALUOP(OPNAME) alu_ops::OP_``OPNAME``
 
 package alu_ops;
 
@@ -173,7 +172,7 @@ endpackage
 
 
 /* 
-    Inputs to arithmentic must be two's complement.
+    If Inputs to arithmentic are two's complement then value will be 7 bits plus sign and Overflow is relevant, but ignore Carry
 
     The comparator outputs GT/LT are only valid for logical values (not twos complement).
     For contrast: 74AS885 permits selection of logical or arithmetic magnitude comparison https://www.ti.com/lit/ds/symlink/sn74as885.pdf?ts=1592517566383&ref_url=https%253A%252F%252Fwww.google.com%252F
@@ -217,9 +216,9 @@ module alu #(parameter LOG=0, PD=120) (
 // | A-1         | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
 
 // My wiring here is ....
-// | A           | B-1               | A*B (low bits)    | A ROR B       |
-// | B           | __A+B+Cin (0)__   | A*B (high bits)   | A AND B       |
-// | 0           | __A-B-Cin (0)__   | A/B               | A OR B        |
+// | 0           | B-1               | A*B (low bits)    | A ROR B       |
+// | A           | __A+B+Cin (0)__   | A*B (high bits)   | A AND B       |
+// | B           | __A-B-Cin (0)__   | A/B               | A OR B        |
 // | -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
 // | -B          | A-B signedmag     | A << B            | NOT A         |
 // | A+1         | __A+B+Cin (1)__   | A >> B logical    | NOT B         |
@@ -374,7 +373,7 @@ Can Overflow double as a divide / 0 flag ?
         unsigned_magnitude=1;
 
 
-        // FIXME TODO CHANGE TO LOGIC and delays etc
+        // FIXME TODO CHANGE TO LOGIC and delays etc as I need this for the H/W
         if (_flag_c_in) begin
             case (alu_op)
                 OP_A_PLUS_B_PLUS_C: begin  
@@ -418,7 +417,6 @@ Can Overflow double as a divide / 0 flag ?
             OP_A_PLUS_1: begin 
                 // UNLIKE A_PLUS_B this sets carry but doesn't consume it 
                 // - useful for low byte of a counter where we always want CLC first  
-                // FIXME - not needed?  CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH AS LONG AS IMMED CAN BE ON BOTH BUSSES
                 set_result9(a + 1);
                 _overflow = _addOv(a[7], 1'b0, result_sign());
             end
@@ -432,7 +430,6 @@ Can Overflow double as a divide / 0 flag ?
             OP_A_MINUS_1: begin 
                 // UNLIKE A_MINUS_B this sets carry but doesn't consume it 
                 // - useful for low byte of a counter where we always want CLC first  
-                // FIXME - not needed?  CAN BE DONE USING "LOWER" A_-_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
                 set_result9(9'(a) - 1);
                 _overflow = _subOv(a[7], 1'b0, result_sign());
             end
