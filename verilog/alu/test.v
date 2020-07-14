@@ -248,7 +248,6 @@ module test();
         assign a = 0; 
         assign b = 1;
         assign _flag_c_in = 'x; 
-        assign alu_op = OP_NEGATE_B;
         PD;
         `Equals(o, 8'b11111111)
         `FLAGS(N|NE|LT)
@@ -256,7 +255,6 @@ module test();
         assign a = 0; 
         assign b = 2;
         assign _flag_c_in = 'x;
-        assign alu_op = OP_NEGATE_B;
         PD;
         `Equals(o, 8'b11111110)
         `FLAGS(N|NE|LT)
@@ -264,7 +262,6 @@ module test();
         assign a = 0;
         assign b = `MAX_POS; // 127
         assign _flag_c_in = 'x;
-        assign alu_op = OP_NEGATE_B;
         PD;
         `Equals(o, 8'b10000001)
         `Equals(o, 8'(`MAX_NEG+1))
@@ -273,7 +270,6 @@ module test();
         assign a = 0;
         assign b = (`MAX_POS+1); // 128 = overflow on negation
         assign _flag_c_in = 'x;
-        assign alu_op = OP_NEGATE_B;
         PD;
         `Equals(o, 8'b10000000)
         `FLAGS(O|N|NE|LT) // OVERFLOW BECAUSE (MAX_POS+1)=128 which is actually negative -128 binary, and we cannot negate -128 in 8 bits (ie +ve 128 doesn't fit)
@@ -281,7 +277,6 @@ module test();
         assign a = 0;
         assign b = (`MAX_NEG); // 128 = overflow on negation
         assign _flag_c_in = 'x;
-        assign alu_op = OP_NEGATE_B;
         PD;
         `Equals(o, 8'b10000000)
         `FLAGS(O|N|NE|LT) // OVERFLOW BECAUSE (MAX_POS+1)=128 which is actually negative -128 binary, and we cannot negate -128 in 8 bits (ie +ve 128 doesn't fit)
@@ -289,7 +284,6 @@ module test();
         assign a = 0;
         assign b = (`MAX_NEG+1); // 128 = overflow on negation
         assign _flag_c_in = 'x;
-        assign alu_op = OP_NEGATE_B;
         PD;
         `Equals(o, 8'b01111111)
         `Equals(o, 8'(`MAX_POS))
@@ -298,45 +292,81 @@ module test();
 
 
         ////////////////////////////////////////////////////////////// A_MINUS_1
+        assign a = 0;
+        assign b = 0; // NA
+        assign _flag_c_in = 'x;
+        assign alu_op = OP_A_MINUS_1;
+        PD;
+        `Equals(o, 8'b11111111)
+        `FLAGS(C|N|EQ) 
 
-        for (count=0; count<=255; count++) begin
-            assign a = count; 
-            assign b = 0;
-            assign _flag_c_in = 'x; // not relevant
-            assign alu_op = OP_A_MINUS_1;
-            PD;
-            `Equals(o, 8'(count8()-1)); 
-            `FLAGS( 
-                    (count8() == 0?C:0)  |
-                    (count8() == 1?Z:0)  |
-                    ((count8() < 1) | (count8() > 128) ?N:0)  |
-                    (count8() == 128?O:0)  |   // -128 is 
-                    (count8() == 0?EQ:0) |
-                    (count8() != 0?NE:0)  |
-                    (count8() > 0?GT:0)
-                ) 
-        end
+        assign a = 1;
+        assign b = 0; // NA
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 8'b0)
+        `FLAGS(Z|NE|GT) 
+
+        assign a = 127;
+        assign b = 0; // NA
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 126) 
+        `FLAGS(NE|GT) 
+
+        assign a = 128; // 128 unsigned reads as -128 signed
+        assign b = 0; // NA
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 127); // 128-1=127 unsigned = same as -128-1=overflow signed
+        `FLAGS(O|NE|GT) 
+
+        assign a = 255; // 128 unsigned reads as -128 signed
+        assign b = 0; // NA
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 254); // 255-1=254 unsigned = same as -1-1=-2 signed
+        `Equals(o, 8'(-2)); // 255-1=254 unsigned = same as -1-1=-2 signed
+        `FLAGS(N|NE|GT) 
+
 
         ////////////////////////////////////////////////////////////// B_MINUS_1
+        assign a = 0; // NA
+        assign b = 0; 
+        assign _flag_c_in = 'x;
+        assign alu_op = OP_B_MINUS_1;
+        PD;
+        `Equals(o, 8'b11111111)
+        `FLAGS(C|N|EQ) 
 
-        for (count=0; count<=255; count++) begin
-            assign a = 0; 
-            assign b = count;
-            assign _flag_c_in = 'x; // not relevant
-            assign alu_op = OP_B_MINUS_1;
-            PD;
-            `Equals(o, 8'(count8()-1)); 
-            `FLAGS( 
-                    (count8() == 0?C:0)  |
-                    (count8() == 1?Z:0)  |
-                    ((count8() == 0 | count8() > (127+1)) ?N:0)  |  
-                    ((count < 1) | (count > 128) ?N:0)  |
-                    (count == 128?O:0)  |   
-                    (count8() == 0?EQ:0) |
-                    (count8() != 0?NE:0)  |
-                    (count8() > 0?LT:0)
-                ) 
-        end
+        assign a = 0; // NA
+        assign b = 1;
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 8'b0)
+        `FLAGS(Z|NE|LT) 
+
+        assign a = 0; // NA
+        assign b = 127;
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 126) 
+        `FLAGS(NE|LT) 
+
+        assign a = 0; // NA
+        assign b = 128; // 128 unsigned reads as -128 signed
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 127); // 128-1=127 unsigned = same as -128-1=overflow signed
+        `FLAGS(O|NE|LT) 
+
+        assign a = 0; // NA
+        assign b = 255; // 128 unsigned reads as -128 signed
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 254); // 255-1=254 unsigned = same as -1-1=-2 signed
+        `Equals(o, 8'(-2)); // 255-1=254 unsigned = same as -1-1=-2 signed
+        `FLAGS(N|NE|LT) 
 
         ////////////////////////////////////////////////////////////// A_PLUS_B
 
@@ -355,7 +385,6 @@ module test();
         assign a = 1;  
         assign b = -5; // same as 251 unsigned
         assign _flag_c_in='x;
-        assign alu_op = OP_A_PLUS_B;
         PD;
         `Equals(o, 8'(-4)); // 1+-5=-4   
         `Equals(o, 252); // but also 1+251 unsigned = 252
@@ -365,7 +394,6 @@ module test();
         assign a = 251; // -5
         assign b = 3;   // +3
         assign _flag_c_in='x;
-        assign alu_op = OP_A_PLUS_B;
         PD;
         `Equals(o, 8'b11111110); // -2
         `FLAGS(N|NE|GT)
@@ -373,7 +401,6 @@ module test();
         assign a = 1;
         assign b = -1; 
         assign _flag_c_in = 'x;
-        assign alu_op = OP_A_PLUS_B; 
         PD;
         `Equals(o, 0); // signed 1 + -1 = 0,  unsigned 1+255=0 carry 1
         `FLAGS(C|Z|NE|LT) 
@@ -381,7 +408,6 @@ module test();
         assign a = 1;
         assign b = 1;
         assign _flag_c_in = 'x;
-        assign alu_op = OP_A_PLUS_B; // carry ignored
         PD;
         `Equals(o, 8'd2);
         `FLAGS(EQ) 
@@ -400,7 +426,6 @@ module test();
         assign a = 1;
         assign b = -3; // same as 254
         assign _flag_c_in = 'x;
-        assign alu_op = OP_A_MINUS_B;
         PD;
         `Equals(o, 8'b00000100); // 1 - -3 = +4    but also 1-254 = 255 borrow 1
         `Equals(o, 8'd4); // also can write a negative twos complement like this
@@ -410,7 +435,6 @@ module test();
         assign a = 0;
         assign b = 255; // 255 unsigned = but this is -1 in twos complement
         assign _flag_c_in = 'x;
-        assign alu_op = OP_A_MINUS_B;
         PD;
         `Equals(o, 8'h01); // 0 - -1 = +1   , but in unsigned this is 0-255 = 1 borrow 1
         `FLAGS(C|NE|LT) 
@@ -427,7 +451,6 @@ module test();
         assign a = 1;
         assign b = 3;
         assign _flag_c_in = 'x;
-        assign alu_op = OP_B_MINUS_A;
         PD;
         `Equals(o, 8'd2);
         `FLAGS(NE|LT)  
@@ -435,7 +458,6 @@ module test();
         assign a = 1;
         assign b = -3; // same as 253
         assign _flag_c_in = 'x;
-        assign alu_op = OP_B_MINUS_A;
         PD;
         `Equals(o, 8'd252); // -3 -1 = -4    but also 253 - 1 = 252
         `Equals(o, -8'd4); // also can write a negative twos complement like this
@@ -445,7 +467,6 @@ module test();
         assign a = 0;
         assign b = 255; // 255 unsigned = but this is -1 in twos complement
         assign _flag_c_in = 'x;
-        assign alu_op = OP_B_MINUS_A;
         PD;
         `Equals(o, 255); //  -1 - 1 = -1 
         `FLAGS(N|NE|LT) 
@@ -464,7 +485,6 @@ module test();
         assign a = 1;
         assign b = -3; // same as 254
         assign _flag_c_in = 'x;
-        assign alu_op = OP_A_MINUS_B_SIGNEDMAG;
         PD;
         `Equals(o, 8'b00000100); // 1 - -3 = +4    but also 1-254 = 255 borrow 1
         `Equals(o, 8'd4); // also can write a negative twos complement like this
@@ -474,7 +494,6 @@ module test();
         assign a = 0;
         assign b = 255; // 255 unsigned = but this is -1 in twos complement
         assign _flag_c_in = 'x;
-        assign alu_op = OP_A_MINUS_B_SIGNEDMAG;
         PD;
         `Equals(o, 8'h01); // 0 - -1 = +1   , but in unsigned this is 0-255 = 1 borrow 1
         `FLAGS(C|NE|GT) 
@@ -482,7 +501,6 @@ module test();
         assign a = 1;
         assign b = 1; 
         assign _flag_c_in = 'x;
-        assign alu_op = OP_A_MINUS_B_SIGNEDMAG;
         PD;
         `Equals(o, 8'h00);
         `FLAGS(Z|EQ) 
@@ -505,7 +523,6 @@ module test();
         assign a = 1;  
         assign b = -5; // same as 251 unsigned
         assign _flag_c_in=0;
-        assign alu_op = OP_A_PLUS_B_PLUS_C;
         PD;
         `Equals(o, 8'(-3)); // 1+-5=-4   
         `Equals(o, 8'(253)); // but also 1+251 unsigned = 252
@@ -515,7 +532,6 @@ module test();
         assign a = 251; // -5
         assign b = 3;   // +3
         assign _flag_c_in=0;
-        assign alu_op = OP_A_PLUS_B_PLUS_C;
         PD;
         `Equals(o, 8'b11111111); // -2
         `FLAGS(N|NE|GT)
@@ -523,7 +539,6 @@ module test();
         assign a = 1;
         assign b = -1; 
         assign _flag_c_in =0;
-        assign alu_op = OP_A_PLUS_B_PLUS_C; 
         PD;
         `Equals(o, 1); // signed 1 + -1 + 1 = 0,  unsigned 1+255+1=1 carry 1
         `FLAGS(C|NE|LT) 
@@ -531,7 +546,6 @@ module test();
         assign a = 1;
         assign b = 1;
         assign _flag_c_in = 1; // will be promoted to low bank of A+B
-        assign alu_op = OP_A_PLUS_B_PLUS_C; // carry consumed
         PD;
         `Equals(o, 8'd2);
         `FLAGS(EQ) 
@@ -592,7 +606,6 @@ module test();
         assign a = 0;
         assign b = `MAX_POS;
         assign _flag_c_in = 1;
-        assign alu_op = OP_A_MINUS_B_MINUS_C;
         PD;
         `Equals(o, 8'b10000001); // -127
         `FLAGS(C|N|NE|LT)
@@ -600,7 +613,6 @@ module test();
         assign a = 0;
         assign b = `MAX_POS;
         assign _flag_c_in = 0;
-        assign alu_op = OP_A_MINUS_B_MINUS_C;
         PD;
         `Equals(o, 8'b10000000); // -128
         `FLAGS(C|N|NE|LT)
@@ -617,7 +629,6 @@ module test();
         assign a = 1;
         assign b = 3;
         assign _flag_c_in = 0;
-        assign alu_op = OP_B_MINUS_A_MINUS_C;
         PD;
         `Equals(o, 8'd1);
         `FLAGS(NE|LT)  
@@ -625,7 +636,6 @@ module test();
         assign a = 1;
         assign b = -3; // same as 253
         assign _flag_c_in = 0;
-        assign alu_op = OP_B_MINUS_A_MINUS_C;
         PD;
         `Equals(o, 8'd251); // (-3 -1 = -4) -1c = -5    but also 253 - 1 -1 = 251
         `Equals(o, -8'd5); 
@@ -635,7 +645,6 @@ module test();
         assign a = 0;
         assign b = 255; // 255 unsigned = but this is -1 in twos complement
         assign _flag_c_in = 0;
-        assign alu_op = OP_B_MINUS_A_MINUS_C;
         PD;
         `Equals(o, 8'd254); //  (-1 - 0) -1  = -2 
         `FLAGS(N|NE|LT) 
@@ -643,7 +652,6 @@ module test();
         assign a = 1;
         assign b = 1;
         assign _flag_c_in = 1; 
-        assign alu_op = OP_B_MINUS_A_MINUS_C;
         PD;
         `Equals(o, 8'd0);
         `FLAGS(Z|EQ)
@@ -662,7 +670,6 @@ module test();
         assign a = 8'h0F;
         assign b = 8'h0F;
         assign _flag_c_in = 1'bx;
-        assign alu_op = OP_A_TIMES_B_HI; // 0fx0f=e1
         PD;
         `Equals(o, 8'b00000000); // 0f*0f=00e1
         `Equals(_flag_c, 1'b1);
@@ -671,7 +678,6 @@ module test();
         assign a = 8'hFF;
         assign b = 8'hFF;
         assign _flag_c_in = 1'bx;
-        assign alu_op = OP_A_TIMES_B_HI;
         PD;
         `Equals(o, 8'hFE);
         `FLAGS(N|EQ) 
@@ -679,7 +685,6 @@ module test();
         assign a = 8'hF0;
         assign b = 8'h10;
         assign _flag_c_in = 1'bx;
-        assign alu_op = OP_A_TIMES_B_HI;
         PD;
         `Equals(o, 8'h0F);
         `FLAGS(NE|GT) 
@@ -696,7 +701,6 @@ module test();
         assign a = 8'h0f;
         assign b = 8'h0f;
         assign _flag_c_in = 1'bx;
-        assign alu_op = OP_A_TIMES_B_LO;
         PD;
         `Equals(o, 8'he1);
         `FLAGS(N|EQ)  
@@ -704,7 +708,6 @@ module test();
         assign a = 8'hFF;
         assign b = 8'hFF;
         assign _flag_c_in = 1'bx;
-        assign alu_op = OP_A_TIMES_B_LO;
         PD;
         `Equals(o, 8'h01);
         `FLAGS(C|EQ)  // carry here indicates that the upper byte is non-zero
@@ -722,7 +725,6 @@ module test();
         assign a = 8'haa;
         assign b = 8'h00;
         assign _flag_c_in = 1'bx;
-        assign alu_op = OP_A_DIV_B;
         PD;
         `Equals(o, 8'bx);
         `FLAGS(C|O|NE|GT)  // carry here indicates that the upper byte is non-zero
@@ -740,7 +742,6 @@ module test();
         assign a = 8'haa;
         assign b = 8'h00;
         assign _flag_c_in = 1'bx;
-        assign alu_op = OP_A_MOD_B;
         PD;
         `Equals(o, 8'bx);
         `FLAGS(C|O|NE|GT)  // carry here indicates that the upper byte is non-zero

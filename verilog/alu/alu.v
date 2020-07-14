@@ -31,10 +31,10 @@ package alu_ops;
     localparam [4:0] OP_NEGATE_A=3;  
     localparam [4:0] OP_NEGATE_B=4;  
     localparam [4:0] OP_A_PLUS_1=5; // not needed as I can do 'A+IMMED(1)'  - use for ROR or RCR?
-    localparam [4:0] OP_B_PLUS_1=6; // needed because if using IREG then can't also use RAM as both are B bus
+    localparam [4:0] OP_B_PLUS_1=6; // needed for ROM/RAM+1  needed because if using IREG then can't also use RAM as both are B bus
     localparam [4:0] OP_A_MINUS_1=7; // not needed as I can do 'A-IMMED(1)' - use for ROL or RCL?
 
-    localparam [4:0] OP_B_MINUS_1=8; // needed
+    localparam [4:0] OP_B_MINUS_1=8; // needed for RAM/ROM-1
     localparam [4:0] OP_A_PLUS_B=9;
     localparam [4:0] OP_A_MINUS_B=10;
     localparam [4:0] OP_B_MINUS_A=11;
@@ -409,11 +409,11 @@ Can Overflow double as a divide / 0 flag ?
             end
             OP_NEGATE_A: begin  // eg switches -1 to 255 and 255 to -1
                 set_result(-a); 
-                _overflow = !(a==8'b10000000); 
+                _overflow = !(a==8'b10000000); // indicates the argument cannot be converted
             end
             OP_NEGATE_B: begin 
                 set_result(-b);
-                _overflow = !(b==8'b10000000); 
+                _overflow = !(b==8'b10000000); // indicates the argument cannot be converted
             end
             OP_A_PLUS_1: begin 
                 // UNLIKE A_PLUS_B this sets carry but doesn't consume it 
@@ -487,9 +487,6 @@ Can Overflow double as a divide / 0 flag ?
 
             OP_A_TIMES_B_LO: begin 
                 TimesResult = (a * b);
-//                tmp[7:0] = TimesResult[7:0];
-//                tmp[8] = (TimesResult[15:8] > 0); // set carry to indicate whether the upper byte has a value
-
                 set_result9( {(TimesResult[15:8] > 0), TimesResult[7:0] });
             end
 
@@ -498,7 +495,7 @@ Can Overflow double as a divide / 0 flag ?
                 if (b == 0) begin
                     // div/0
                     // result will be 'x
-                    _overflow=0; // force overflow
+                    _overflow=0; // force overflow - when div/0
                     set_ctop(1); // force carry
                 end
             end
@@ -508,7 +505,7 @@ Can Overflow double as a divide / 0 flag ?
                 if (b == 0) begin
                     // div/0
                     // result will be 'x
-                    _overflow=0; // force overflow
+                    _overflow=0; // force overflow - when div/0
                     set_ctop(1); // force carry
                 end
             end
@@ -516,21 +513,21 @@ Can Overflow double as a divide / 0 flag ?
             OP_A_LSL_B: begin 
                 c_buf_c = {a, 1'b0};
                 c_buf_c = c_buf_c << b;
-                _overflow = !(a[7] != result_sign());
+                _overflow = !(a[7] != result_sign()); // sign bit change - not must use but hey ho
             end
 
             OP_A_LSR_B: begin
                 c_buf_c = {a, 1'b0};
                 c_buf_c = c_buf_c >> b;
                 set_ctop(c_bot()); // move the carry-out bit to the return value position
-                _overflow = !(a[7] != result_sign());
+                _overflow = !(a[7] != result_sign()); // sign bit change - not must use but hey ho
             end
 
             OP_A_ASR_B: begin
                 c_buf_c = {a[7], a, 1'b0}; // extend the sign bit left
                 c_buf_c = c_buf_c >>> b;
                 set_ctop(c_bot()); // move the carry-out bit to the return value position
-                _overflow = !(a[7] != result_sign());
+                _overflow = !(a[7] != result_sign()); // sign bit change can't happen unless this code is flawed
             end
 
             OP_A_ROL_B: begin 
@@ -539,7 +536,7 @@ Can Overflow double as a divide / 0 flag ?
                     c_buf_c = c_buf_c << 1;
                     set_cbot(c_top());
                 end
-                _overflow = !(a[7] != result_sign());
+                _overflow = !(a[7] != result_sign()); // sign bit change - not much use but hey ho
             end
 
             OP_A_ROR_B: begin 
@@ -548,29 +545,24 @@ Can Overflow double as a divide / 0 flag ?
                     c_buf_c = c_buf_c >> 1;
                     set_ctop(c_bot()); // move the carry-out bit to the return value position
                 end
-                _overflow = !(a[7] != result_sign());
+                _overflow = !(a[7] != result_sign()); // mnot much use
             end
 
 
             OP_A_OR_B: begin
                 set_result(a | b);
-                _overflow = !(a[7] != result_sign());
             end
             OP_A_AND_B: begin
                 set_result(a & b);
-                _overflow = !(a[7] != result_sign());
             end
             OP_A_XOR_B: begin
                 set_result(a ^ b);
-                _overflow = !(a[7] != result_sign()); // for logical op this merely indicates a top bit change which doesn't necessarily mean overflow if this were signed (which it isn't) - what do I want to do with the bit? leave it x or 0? could use it for anything eg out!=in for instance
             end
             OP_NOT_A: begin
                 set_result(~a);
-                _overflow = !(a[7] != result_sign()); // for logical op this merely indicates a top bit change which doesn't necessarily mean overflow if this were signed (which it isn't) - what do I want to do with the bit? leave it x or 0? could use it for anything eg out!=in for instance
             end
             OP_NOT_B: begin
                 set_result(~b);
-                _overflow = !(a[7] != result_sign()); // for logical op this merely indicates a top bit change which doesn't necessarily mean overflow if this were signed (which it isn't) - what do I want to do with the bit? leave it x or 0? could use it for anything eg out!=in for instance
             end
     
 
