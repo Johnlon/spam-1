@@ -18,6 +18,7 @@
 `define COMMA ,
 
 module test();
+    import alu_ops::*;
 
     `include "../lib/display_snippet.v"
 
@@ -515,7 +516,7 @@ module test();
                 " tdev=%5b(%s)", CPU.targ_dev, control.tdevname(CPU.targ_dev),
                 " adev=%4b(%s)", CPU.abus_dev, control.devname(CPU.abus_dev),
                 " bdev=%4b(%s)", CPU.bbus_dev,control.devname(CPU.bbus_dev),
-                " alu_op=%5b(%s)", CPU.alu_op, alu_ops.aluopName(CPU.alu_op)
+                " alu_op=%5b(%s)", CPU.alu_op, aluopName(CPU.alu_op)
             );            
             $display ("%9t ", $time,  "DUMP  ",
                  " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
@@ -541,7 +542,7 @@ module test();
                  " addbbus=0x%4x", address_bus,
                  " FDE=%-6s (%1b%1b%1b)", control.fPhase(phaseFetch, phaseDecode, phaseExec), phaseFetch, phaseDecode, phaseExec,
                  " bbus=%8b abus=%8b alu_result_bus=%8b", bbus, abus, alu_result_bus,
-                 " bdev=%04b adev=%04b targ=%05b alu_op=%05b (%1s)", bbus_dev, abus_dev, targ_dev, alu_op, alu_ops.aluopName(alu_op),
+                 " bdev=%04b adev=%04b targ=%05b alu_op=%05b (%1s)", bbus_dev, abus_dev, targ_dev, alu_op, aluopName(alu_op),
                  " tsel=%32b ", tsel,
                  " PC=%02h:%02h", PCHI, PCLO,
                  "     : %1s", label

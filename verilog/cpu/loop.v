@@ -29,6 +29,8 @@ Unit number Time unit Unit number Time unit
 
 module test();
 
+    import alu_ops::*;
+
     `include "../lib/display_snippet.v"
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
@@ -77,7 +79,7 @@ module test();
          ADD_ONE=icount;
 
          `DEV_EQ_XY_ALU(icount, rega, rega, not_used, A_PLUS_1); icount++; // A+PLUS_1 - doesn't consume carry but sets it // TODO The "lower" bank of arith in the design can do this +1 nocarryin without this specialised instruction
-         `DEV_EQ_XI_ALU(icount, regb, regb, 0, A_PLUS_B); icount++; // B=B+0+Carryin   - sets and consumes carry 
+         `DEV_EQ_XI_ALU(icount, regb, regb, 0, A_PLUS_B_PLUS_C); icount++; // B=B+0+Carryin   - sets and consumes carry 
          `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
 
          wait_uart_out = icount;
@@ -133,7 +135,7 @@ module test();
 
     string_bits currentCode; // create field so it can appear in dump file
 
-    always @( posedge CPU.phaseExec )
+    always @( negedge CPU.phaseExec )
        $display ("%9t ", $time,  "DUMP  ", " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
 
     always @(CPU.PCHI or CPU.PCLO) begin
@@ -155,23 +157,24 @@ module test();
 
         if (last_count !== not_initialised) begin
             if (last_count == 65535 && count != 0) begin 
-                $error("ERROR wrong count roll value : count=%d  last_count=%d", count , last_count);
-                $finish();
+                $error("ERROR wrong count roll value : count=%d  last_count=%d but expected count=0", count , last_count);
+                $finish_and_return(2);
             end
             
             if (last_count != 65535 & count != last_count+1) begin 
-                $error("ERROR wrong count next +1 value : count=%d  last_count=%d", count , last_count);
-                $finish();
+                $error("ERROR wrong count next +1 value : count=%d  last_count=%d but expected count=%d", count , last_count, last_count+1);
+                $finish_and_return(2);
             end
         end
         else 
         begin
             if (count != 0) begin 
                 $error("ERROR wrong initial count : count=%d", count);
-                $finish();
+                $finish_and_return(2);
             end
     
         end
+        
         $display("OK %4h", {CPU.regFile.get(1), CPU.regFile.get(0) });
         last_count=count;
     end
