@@ -21,9 +21,10 @@
 // else use mux use 74241 (2x4 with hi or low en) or 74244 (2x4 with low en) 
 //assign reg_x_addr = device_sel[3:0]; // top bit of device sel ignored
 
-`define toALUOP(OPNAME) alu_ops.OP_``OPNAME``
-    
-module alu_ops;
+`define toALUOP(OPNAME) OP_``OPNAME``
+
+package alu_ops;
+
     localparam [4:0] OP_0=0; // not needed as I can do PASSA with IMMED(0)
     localparam [4:0] OP_A=1;
     localparam [4:0] OP_B=2;
@@ -63,6 +64,58 @@ module alu_ops;
     localparam [4:0] OP_NOT_B=29; // Change to A NOR B? we lose ability to invert the B bus because IREG and ROM and RAM only write to B bus so I can't do "RAM[] NOR RAM[]"
     localparam [4:0] OP_A_PLUS_B_BCD=30;
     localparam [4:0] OP_A_MINUS_B_BCD=31;
+
+
+    typedef reg[13*8:1] OpName;
+    function OpName aluopNameR;
+        input [4:0] opcode;
+        
+        OpName ret;
+        begin
+            case(opcode)
+                 0 : aluopNameR =    "0";
+                 1 : aluopNameR =    "A";
+                 2 : aluopNameR =    "B";
+                 3 : aluopNameR =    "-A";
+                 4 : aluopNameR =    "-B";
+                 5 : aluopNameR =    "A+1";
+                 6 : aluopNameR =    "B+1";
+                 7 : aluopNameR =    "A-1";
+
+                 8 : aluopNameR =    "B-1";
+                 9 : aluopNameR =    "A+B";   // CarryIn not considered
+                10 : aluopNameR =    "A-B";   // CarryIn not considered
+                11 : aluopNameR =    "B-A";   // CarryIn not considered
+                12 : aluopNameR =    "A-B signedmag"; // CarryIn not considered
+                13 : aluopNameR =    "A+B+C"; // If CarryIn=N then this op is automatically updated to A+B
+                14 : aluopNameR =    "A-B-C"; // If CarryIn=N then this op is automatically updated to A-B
+                15 : aluopNameR =    "B-A-C"; // If CarryIn=N then this op is automatically updated to B-A
+
+                16 : aluopNameR =    "A*B LO";
+                17 : aluopNameR =    "A*B HI";
+                18 : aluopNameR =    "A/B";
+                19 : aluopNameR =    "A%B";
+                20 : aluopNameR =    "A LSL B";
+                21 : aluopNameR =    "A LSR B";
+                22 : aluopNameR =    "A ASL B" ;
+                23 : aluopNameR =    "A ROL B";
+
+                24 : aluopNameR =    "A ROR B";
+                25 : aluopNameR =    "A AND B";
+                26 : aluopNameR =    "A OR B";
+                27 : aluopNameR =    "A XOR B"; 
+                28 : aluopNameR =    "NOT A";
+                29 : aluopNameR =    "NOT B";
+                30 : aluopNameR =    "A+B BCD";
+                31 : aluopNameR =    "A-B BCD";
+                default: begin
+                    $sformat(ret,"??unknown(%b)",opcode);
+                    aluopNameR = ret;
+                end
+            endcase
+
+        end
+    endfunction
 
     
     function string aluopName;
@@ -115,7 +168,7 @@ module alu_ops;
         end
     endfunction
 
-endmodule
+endpackage
 
 /* 
     Inputs to arithmentic must be two's complement.
@@ -149,6 +202,7 @@ module alu #(parameter LOG=0, PD=120) (
     input  [4:0] alu_op,
     input  _flag_c_in
 );
+    import alu_ops::*;
 
 //// THIS IS THE MOST RECENT Jun 2020 ALU layout from CSCVon8
 // | 0           | B-1               | A*B (low bits)    | A ROR B       |
@@ -216,8 +270,6 @@ Can Overflow double as a divide / 0 flag ?
         c_bot = c_buf_c[0];
     endfunction
 
-    logic [4:0] alu_op_effective;
-
     logic _overflow;
     logic _force_neg;
 
@@ -249,8 +301,8 @@ Can Overflow double as a divide / 0 flag ?
     if (LOG) 
     always @(*) 
         $display("%9t ALU", $time,
-        " aluop=%-1s (op:%d)", alu_ops.aluopName(alu_op), alu_op, // %1s causes string to lose trailing space
-        " (%-1s)", alu_ops.aluopName(alu_op_effective), // %1s causes string to lose trailing space
+        " aluop=%-1s (op:%d)", aluopName(alu_op), alu_op, // %1s causes string to lose trailing space
+        " (%-1s)", aluopName(alu_op_effective), // %1s causes string to lose trailing space
         "  ",
         " a=%08b (u%-3d/s%-4d/h%-02h) ", a, a, signed_a, a,
         " b=%08b (u%-3d/s%-4d/h%-02h) ", b, b, signed_b, b,
@@ -310,26 +362,27 @@ Can Overflow double as a divide / 0 flag ?
     endfunction
 
     int count;
+    logic [4:0] alu_op_effective;
 
     always @* begin
 
-        c_buf_c = 1;
-
-        _overflow = 1;
-        _force_neg = 1;
+        c_buf_c = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
+        _overflow = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
+        _force_neg = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
         unsigned_magnitude=1;
+
 
         // FIXME TODO CHANGE TO LOGIC and delays etc
         if (_flag_c_in) begin
             case (alu_op)
-                alu_ops.OP_A_PLUS_B_PLUS_C: begin  
-                    alu_op_effective=alu_ops.OP_A_PLUS_B;
+                OP_A_PLUS_B_PLUS_C: begin  
+                    alu_op_effective=OP_A_PLUS_B;
                 end
-                alu_ops.OP_A_MINUS_B_MINUS_C: begin 
-                    alu_op_effective=alu_ops.OP_A_MINUS_B;
+                OP_A_MINUS_B_MINUS_C: begin 
+                    alu_op_effective=OP_A_MINUS_B;
                 end
-                alu_ops.OP_B_MINUS_A_MINUS_C: begin 
-                    alu_op_effective=alu_ops.OP_B_MINUS_A;
+                OP_B_MINUS_A_MINUS_C: begin 
+                    alu_op_effective=OP_B_MINUS_A;
                 end
                 default: begin
                     alu_op_effective=alu_op;
@@ -343,38 +396,38 @@ Can Overflow double as a divide / 0 flag ?
 
 
         case (alu_op_effective)
-            alu_ops.OP_0: begin // not needed anymore cos immed allows 0 value into ALU
+            OP_0: begin // not needed anymore cos immed allows 0 value into ALU
                 set_result(0);
             end
-            alu_ops.OP_A: begin // this is not the same as "A+0 immediate" because + takes carry into account and what we want is PASSA so maybe call it PASSA?
+            OP_A: begin // this is not the same as "A+0 immediate" because + takes carry into account and what we want is PASSA so maybe call it PASSA?
                 set_result(a);
             end
-            alu_ops.OP_B: begin // this is not the same as "B+0 immediate" because + takes carry into account and what we want is PASSB so maybe call it PASSB?
+            OP_B: begin // this is not the same as "B+0 immediate" because + takes carry into account and what we want is PASSB so maybe call it PASSB?
                 set_result(b);
             end
-            alu_ops.OP_NEGATE_A: begin  // eg switches -1 to 255 and 255 to -1
+            OP_NEGATE_A: begin  // eg switches -1 to 255 and 255 to -1
                 set_result(-a); 
                 _overflow = !(a==8'b10000000); 
             end
-            alu_ops.OP_NEGATE_B: begin 
+            OP_NEGATE_B: begin 
                 set_result(-b);
                 _overflow = !(b==8'b10000000); 
             end
-            alu_ops.OP_A_PLUS_1: begin 
+            OP_A_PLUS_1: begin 
                 // UNLIKE A_PLUS_B this sets carry but doesn't consume it 
                 // - useful for low byte of a counter where we always want CLC first  
                 // FIXME - not needed?  CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH AS LONG AS IMMED CAN BE ON BOTH BUSSES
                 set_result9(a + 1);
                 _overflow = _addOv(a[7], 1'b0, result_sign());
             end
-            alu_ops.OP_B_PLUS_1: begin 
+            OP_B_PLUS_1: begin 
                 // UNLIKE B_PLUS_A this sets carry but doesn't consume it 
                 // - useful for low byte of a counter where we always want CLC first  
                 // FIXME - not needed?  CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
                 set_result9(b + 1);
                 _overflow = _addOv(b[7], 1'b0, result_sign());
             end
-            alu_ops.OP_A_MINUS_1: begin 
+            OP_A_MINUS_1: begin 
                 // UNLIKE A_MINUS_B this sets carry but doesn't consume it 
                 // - useful for low byte of a counter where we always want CLC first  
                 // FIXME - not needed?  CAN BE DONE USING "LOWER" A_-_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
@@ -383,7 +436,7 @@ Can Overflow double as a divide / 0 flag ?
             end
 
             ///// 8 ...
-            alu_ops.OP_B_MINUS_1: begin 
+            OP_B_MINUS_1: begin 
                 // UNLIKE B_MINUS_A this sets carry but doesn't consume it 
                 // - useful for low byte of a counter where we always want CLC first  
                 //FIXME - not needed? FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
@@ -392,45 +445,45 @@ Can Overflow double as a divide / 0 flag ?
             end
 
             // low bank is when CIN=0 or these ops were directly selected
-            alu_ops.OP_A_PLUS_B: begin  
+            OP_A_PLUS_B: begin  
                 set_result9(a + b);
                 _overflow = _addOv(a[7], b[7], o[7]);
             end
-            alu_ops.OP_A_MINUS_B: begin 
+            OP_A_MINUS_B: begin 
                 set_result9(a - b);
                 _overflow = _subOv(a[7], b[7], o[7]);
             end
-            alu_ops.OP_B_MINUS_A: begin 
+            OP_B_MINUS_A: begin 
                 set_result9(b - a);
                 _overflow = _subOv(b[7], a[7], o[7]);
             end
 
-            alu_ops.OP_A_MINUS_B_SIGNEDMAG: begin 
+            OP_A_MINUS_B_SIGNEDMAG: begin 
                 set_result9(a - b);
                 unsigned_magnitude=0;
                 _overflow = _subOv(a[7], b[7], o[7]);
             end
 
-            alu_ops.OP_A_PLUS_B_PLUS_C: begin  // OP ONLY USED WHEN CARRY IS ACTIVE
+            OP_A_PLUS_B_PLUS_C: begin  // OP ONLY USED WHEN CARRY IS ACTIVE
                 set_result9((a + b) + 1); 
                 _overflow = _addOv(a[7], b[7], o[7]);
             end
-            alu_ops.OP_A_MINUS_B_MINUS_C: begin // OP ONLY USED WHEN CARRY IS ACTIVE
+            OP_A_MINUS_B_MINUS_C: begin // OP ONLY USED WHEN CARRY IS ACTIVE
                 set_result9((a - b) - 1); 
                 _overflow = _subOv(a[7],b[7],o[7]);
             end
-            alu_ops.OP_B_MINUS_A_MINUS_C: begin // OP ONLY USED WHEN CARRY IS ACTIVE
+            OP_B_MINUS_A_MINUS_C: begin // OP ONLY USED WHEN CARRY IS ACTIVE
                 set_result9((b - a) - 1); 
                 _overflow = _subOv(b[7],a[7],o[7]);
             end
 
             // 24 .............................................................
-            alu_ops.OP_A_TIMES_B_HI: begin 
+            OP_A_TIMES_B_HI: begin 
                 TimesResult = (a * b);
                 set_result(TimesResult[15:8]);
             end
 
-            alu_ops.OP_A_TIMES_B_LO: begin 
+            OP_A_TIMES_B_LO: begin 
                 TimesResult = (a * b);
 //                tmp[7:0] = TimesResult[7:0];
 //                tmp[8] = (TimesResult[15:8] > 0); // set carry to indicate whether the upper byte has a value
@@ -438,7 +491,7 @@ Can Overflow double as a divide / 0 flag ?
                 set_result9( {(TimesResult[15:8] > 0), TimesResult[7:0] });
             end
 
-            alu_ops.OP_A_DIV_B: begin 
+            OP_A_DIV_B: begin 
                 set_result( a/ b );
                 if (b == 0) begin
                     // div/0
@@ -448,7 +501,7 @@ Can Overflow double as a divide / 0 flag ?
                 end
             end
 
-            alu_ops.OP_A_MOD_B: begin 
+            OP_A_MOD_B: begin 
                 set_result( a % b );
                 if (b == 0) begin
                     // div/0
@@ -458,27 +511,27 @@ Can Overflow double as a divide / 0 flag ?
                 end
             end
 
-            alu_ops.OP_A_LSL_B: begin 
+            OP_A_LSL_B: begin 
                 c_buf_c = {a, 1'b0};
                 c_buf_c = c_buf_c << b;
                 _overflow = !(a[7] != result_sign());
             end
 
-            alu_ops.OP_A_LSR_B: begin
+            OP_A_LSR_B: begin
                 c_buf_c = {a, 1'b0};
                 c_buf_c = c_buf_c >> b;
                 set_ctop(c_bot()); // move the carry-out bit to the return value position
                 _overflow = !(a[7] != result_sign());
             end
 
-            alu_ops.OP_A_ASR_B: begin
+            OP_A_ASR_B: begin
                 c_buf_c = {a[7], a, 1'b0}; // extend the sign bit left
                 c_buf_c = c_buf_c >>> b;
                 set_ctop(c_bot()); // move the carry-out bit to the return value position
                 _overflow = !(a[7] != result_sign());
             end
 
-            alu_ops.OP_A_ROL_B: begin 
+            OP_A_ROL_B: begin 
                 c_buf_c = {a, !_flag_c_in};
                 for (count = 0; count < b; count++) begin
                     c_buf_c = c_buf_c << 1;
@@ -487,7 +540,7 @@ Can Overflow double as a divide / 0 flag ?
                 _overflow = !(a[7] != result_sign());
             end
 
-            alu_ops.OP_A_ROR_B: begin 
+            OP_A_ROR_B: begin 
                 c_buf_c = {!_flag_c_in, a, 1'b0};
                 for (count = 0; count < b; count++) begin
                     c_buf_c = c_buf_c >> 1;
@@ -497,29 +550,29 @@ Can Overflow double as a divide / 0 flag ?
             end
 
 
-            alu_ops.OP_A_OR_B: begin
+            OP_A_OR_B: begin
                 set_result(a | b);
                 _overflow = !(a[7] != result_sign());
             end
-            alu_ops.OP_A_AND_B: begin
+            OP_A_AND_B: begin
                 set_result(a & b);
                 _overflow = !(a[7] != result_sign());
             end
-            alu_ops.OP_A_XOR_B: begin
+            OP_A_XOR_B: begin
                 set_result(a ^ b);
                 _overflow = !(a[7] != result_sign()); // for logical op this merely indicates a top bit change which doesn't necessarily mean overflow if this were signed (which it isn't) - what do I want to do with the bit? leave it x or 0? could use it for anything eg out!=in for instance
             end
-            alu_ops.OP_NOT_A: begin
+            OP_NOT_A: begin
                 set_result(~a);
                 _overflow = !(a[7] != result_sign()); // for logical op this merely indicates a top bit change which doesn't necessarily mean overflow if this were signed (which it isn't) - what do I want to do with the bit? leave it x or 0? could use it for anything eg out!=in for instance
             end
-            alu_ops.OP_NOT_B: begin
+            OP_NOT_B: begin
                 set_result(~b);
                 _overflow = !(a[7] != result_sign()); // for logical op this merely indicates a top bit change which doesn't necessarily mean overflow if this were signed (which it isn't) - what do I want to do with the bit? leave it x or 0? could use it for anything eg out!=in for instance
             end
     
 
-            alu_ops.OP_A_PLUS_B_BCD: begin
+            OP_A_PLUS_B_BCD: begin
 
                 `define P_A (((a >>4)*10) + (a & 8'h0f))
                 `define P_B (((b >>4)*10) + (b & 8'h0f))
@@ -534,7 +587,7 @@ Can Overflow double as a divide / 0 flag ?
                 set_result9({`P_CARRY, ((`P_TOP<<4) | `P_BOT) });
             end
 
-            alu_ops.OP_A_MINUS_B_BCD: begin
+            OP_A_MINUS_B_BCD: begin
                 _force_neg = !(b>a);
 
                 `define S_A 8'(((a >>4)*10) + (a & 8'h0f))
@@ -553,8 +606,8 @@ Can Overflow double as a divide / 0 flag ?
             default: begin
                 c_buf_c = 10'bxzxzxzxzxz;
                 $display("%9t !!!!!!!!!!!!!!!!!!!!!!!!!!!! RANDOM ALU OUT !!!!!!!!!!!!!!!!!!!!!! UNHANDLED alu_op=%5b : SpecifiedOp:%-s EffectiveOp=%-s", $time, alu_op, 
-                        alu_ops.aluopName(alu_op),
-                        alu_ops.aluopName(alu_op_effective)
+                        aluopName(alu_op),
+                        aluopName(alu_op_effective)
                         );
             end
 
