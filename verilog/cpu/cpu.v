@@ -2,6 +2,7 @@
 // FIXME Use Warrens ALU ROM and my external logic
 // TODO option: Implement conditional instructions with spare ROM bits
 // TODO option: If use 16 immediate then can do a direct jump - but needs an alternative route into the PC for that
+// FIXME: Can I make this single cycle - dual cycle at least?
 
 
 // ADDRESSING TERMINOLOGY
