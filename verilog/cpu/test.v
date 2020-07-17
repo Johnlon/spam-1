@@ -25,8 +25,6 @@ module test();
     `AMODE_TUPLE
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
-    localparam PHASE_FETCH_LEN=1;
-    localparam PHASE_EXEC_LEN=1;
 
     // CLOCK ===================================================================================
     //localparam HALF_CLK=44;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
@@ -40,7 +38,7 @@ module test();
     //always begin
     //   #CLOCK_INTERVAL clk = !clk;
     //end
-    cpu #(.PHASE_FETCH_LEN(PHASE_FETCH_LEN), .PHASE_EXEC_LEN(PHASE_EXEC_LEN)) CPU(_RESET_SWITCH, clk);
+    cpu CPU(_RESET_SWITCH, clk);
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -136,13 +134,10 @@ module test();
     end
     endtask : INIT_ROM
 
-    integer phaseFetchLen=PHASE_FETCH_LEN;
-    integer phaseExecLen=PHASE_EXEC_LEN;
-    integer FULL_PHASES = phaseFetchLen+phaseExecLen;
-
+    localparam PHASE_COUNT=2;
     integer clkcount=0;
     wire [15:0] icount;
-    assign icount = clkcount / FULL_PHASES;
+    assign icount = clkcount / PHASE_COUNT;
 
     wire [15:0] pc = {CPU.PCHI, CPU.PCLO};
 
@@ -158,9 +153,7 @@ module test();
     task CLK_DN; 
     begin
         $display("\n%9t", $time, " END OF CLOCK STATE %s", clk ? "HI" : "LO"); 
-//        DUMP;
-        if (CPU.phaseExec) DUMP;
-        else DUMP_OP;
+        if (CPU.phaseExec) DUMP; else DUMP_OP;
         $display("\n%9t", $time, " CLK  -----------------------------------------------------------------------"); 
         clk = 0;
     end
@@ -176,8 +169,10 @@ module test();
     endtask: noop
 
 
+
     initial begin
-        `define EXECUTE_CYCLE(N) for (count =0; count < N*(phaseFetchLen+phaseExecLen); count++) begin #HALF_CLK CLK_UP; #HALF_CLK CLK_DN; end
+        `define PHASE_COUNT 2
+        `define EXECUTE_CYCLE(N) for (count =0; count < N*PHASE_COUNT; count++) begin #HALF_CLK CLK_UP; #HALF_CLK CLK_DN; end
 
         INIT_ROM();
 
@@ -187,19 +182,16 @@ module test();
 
         #1000
         `Equals(CPU.phase, control::PHASE_NONE)
-        `Equals(CPU.seq, `SEQ(1))
         `Equals(CPU.PCHI, 8'bx)
         `Equals(CPU.PCLO, 8'bx)
-
         `Equals( _addrmode, 2'bxx)
-
         `Equals(CPU.address_bus, 16'bx); // noone providing address
 
         #1000
         `DISPLAY("_mrPC=0  - so clocking is ineffective = stay in PC addressing mode")
         `Equals(CPU._mrPC, 0);
 
-        for (count =0; count < phaseFetchLen+phaseExecLen; count++) begin
+        for (count =0; count < PHASE_COUNT; count++) begin
             CLK_UP; //CLK_UP;
             #HALF_CLK
             CLK_DN;
@@ -218,8 +210,9 @@ module test();
 
         #HALF_CLK
 
-        `DISPLAY("instruction - write ram")
-        for (count =0; count < phaseFetchLen+phaseExecLen; count++) begin
+        `DISPLAY("FIRST INSTRUCTION");
+        `DISPLAY("instruction - fetch/exec")
+        for (count =0; count < PHASE_COUNT; count++) begin
             CLK_UP; //CLK_UP;
             #HALF_CLK
             CLK_DN;
@@ -228,16 +221,12 @@ module test();
         end
 
         #1000
-
-        `DISPLAY("instruction - start")
+        `DISPLAY("NEXT INSTRUCTION");
         `DISPLAY("instruction - fetch")
-        for (count =0; count < phaseFetchLen; count++) begin
-            CLK_UP;
-            #HALF_CLK
-            CLK_DN;
-            #HALF_CLK
-            noop();
-        end
+        CLK_UP;
+        #HALF_CLK
+        CLK_DN;
+        #HALF_CLK
 
         `Equals(CPU.phase, control::PHASE_FETCH)
         `Equals( _addrmode, control::_AMODE_DIR);
@@ -245,16 +234,12 @@ module test();
         `Equals(CPU.PCHI, 8'h00) 
         `Equals(CPU.PCLO, 8'h01)
         `Equals(CPU.address_bus, 16'hffaa);
-        `Equals(CPU.seq, `SEQ(count));
 
         `DISPLAY("instruction - exec")
-        for (count =0; count < phaseExecLen; count++) begin
-            CLK_UP;
-            #HALF_CLK
-            CLK_DN;
-            #HALF_CLK
-            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
-        end
+        CLK_UP;
+        #HALF_CLK
+        CLK_DN;
+        #HALF_CLK
         `Equals(CPU.phase, control::PHASE_EXEC)
         `Equals(CPU.PCHI, 8'h00)
         `Equals(CPU.PCLO, 8'h01)
@@ -266,31 +251,25 @@ module test();
         `Equals(CPU.MARHI.Q, 8'bxzxzxzxz)
 
         `DISPLAY("NEXT CYCLE STARTS")
-        `DISPLAY("instruction - clock fetch")
-        for (count =0; count < phaseFetchLen; count++) begin
-            CLK_UP;
-            #HALF_CLK
-            CLK_DN;
-            #HALF_CLK
-            `Equals(CPU.seq, `SEQ(count+1));
-        end
+        `DISPLAY("instruction - fetch")
+        CLK_UP;
+        #HALF_CLK
+        CLK_DN;
+        #HALF_CLK
         `Equals(CPU.phase, control::PHASE_FETCH)
         `Equals(CPU.PCHI, 8'h00)
         `Equals(CPU.PCLO, 8'h02)
         `Equals( _addrmode, control::_AMODE_REG);
         `Equals(CPU.address_bus, {8'bxzxzxzxz, 8'h42}); 
 
-        `DISPLAY("instruction - clock exec")
-        for (count =0; count < phaseExecLen; count++) begin
-            CLK_UP;
-            #HALF_CLK
-            `Equals(CPU.phase, control::PHASE_EXEC)
-            `Equals(CPU.PCHI, 8'h00)
-            `Equals(CPU.PCLO, 8'h02)
-            CLK_DN;
-            #HALF_CLK
-            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
-        end
+        `DISPLAY("instruction - exec")
+        CLK_UP;
+        #HALF_CLK
+        `Equals(CPU.phase, control::PHASE_EXEC)
+        `Equals(CPU.PCHI, 8'h00)
+        `Equals(CPU.PCLO, 8'h02)
+        CLK_DN;
+        #HALF_CLK
 
         // operation result 
         `Equals(CPU.MARLO.Q, 8'h42)
@@ -298,13 +277,10 @@ module test();
 
         `DISPLAY("NEXT CYCLE STARTS")
         `DISPLAY("instruction - clock fetch")
-        for (count =0; count < phaseFetchLen; count++) begin
-            CLK_UP;
-            #HALF_CLK
-            CLK_DN;
-            #HALF_CLK
-            `Equals(CPU.seq, `SEQ(count+1));
-        end
+        CLK_UP;
+        #HALF_CLK
+        CLK_DN;
+        #HALF_CLK
         `Equals(CPU.phase, control::PHASE_FETCH)
         `Equals(CPU.PCHI, 8'h00)
         `Equals(CPU.PCLO, 8'd3)
@@ -312,13 +288,10 @@ module test();
         `Equals(CPU.address_bus, 16'h0042); 
 
         `DISPLAY("instruction - clock exec")
-        for (count =0; count < phaseExecLen; count++) begin
-            CLK_UP;
-            #HALF_CLK
-            CLK_DN;
-            #HALF_CLK
-            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
-        end
+        CLK_UP;
+        #HALF_CLK
+        CLK_DN;
+        #HALF_CLK
         `Equals(CPU.phase, control::PHASE_EXEC) 
         `Equals(CPU.PCHI, 8'h00)
         `Equals(CPU.PCLO, 8'd3)
@@ -330,25 +303,18 @@ module test();
 
         `DISPLAY("NEXT CYCLE STARTS")
         `DISPLAY("instruction - clock fetch/decode")
-        // fetch/decode
-        for (count =0; count < 1* (phaseFetchLen); count++) begin
-            #HALF_CLK
-            CLK_UP;
-            #HALF_CLK
-            CLK_DN;
-            noop();
-        end
+        #HALF_CLK
+        CLK_UP;
+        #HALF_CLK
+        CLK_DN;
         `Equals(`RAM(16'h0000), CPU.ram64.UNDEF); //8'hxx); // Should still be XX as we've not entered EXECUTE yet
 
         // exec
         `DISPLAY("instruction - clock exec")
-        for (count =0; count < phaseExecLen; count++) begin
-            #HALF_CLK
-            CLK_UP;
-            #HALF_CLK
-            CLK_DN;
-            noop();
-        end
+        #HALF_CLK
+        CLK_UP;
+        #HALF_CLK
+        CLK_DN;
         `Equals(`RAM(16'h0043), 8'h22);
 
         `DISPLAY("instruction - MARLO=RAM[MAR=0x0043]=0x22")
@@ -484,8 +450,6 @@ module test();
             $display ("%9t ", $time,  "DUMP  ",
                  " phase=%-6s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
             $display ("%9t ", $time,  "DUMP  ",
-                 " seq=%-2d", $clog2(CPU.seq)+1);
-            $display ("%9t ", $time,  "DUMP  ",
                  " PC=%1d (0x%4h) PCHItmp=%d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             $display ("%9t ", $time,  "DUMP  ",
                  " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
@@ -530,7 +494,6 @@ module test();
     if (0) always @* begin
         $display ("%9t ", $time,  "MON     ",
                  "rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
-                 " seq=%-2d", $clog2(seq)+1,
                  " _amode=%-2s", control::fAddrMode(_addrmode_register, _addrmode_direct),
                  " addbbus=0x%4x", address_bus,
                  " FE=%-6s (%1b%1b)", control::fPhase(phaseFetch, phaseExec), phaseFetch, phaseExec,
@@ -556,15 +519,6 @@ module test();
 
 
     
-    if (0) always @(*) begin
-        $display("%9t", $time, " PHASE CHANGE: FE=%-s  %1b%1b seq=%10b", control::fPhase(phaseFetch, phaseExec), 
-                                                        phaseFetch, phaseExec, seq); 
-    end
-
-    if (0) always @(*) begin
-        $display("%9t", $time, " control::_AMODE: PRI=%-s  %1b%1b seq=%10b", control::fAddrMode(_addrmode_register, _addrmode_direct), 
-                                                        _addrmode_register, _addrmode_direct, seq); 
-    end
 
     integer instCount = 0;
     always @(posedge CPU.phaseFetch) begin
@@ -576,47 +530,6 @@ module test();
         $display("%9t", $time, " PHASE: EXECUTE"); 
     end
 
-    if (0) always @* 
-        $display ("%9t ", $time,  "ADDRESSING      _amode=%s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct), " addbbus=0x%4x", CPU.address_bus);
-
-    if (0) always @* 
-        $display ("%9t ", $time,  "RAM     ram=%08b", CPU.ram64.D,
-                " _amode=%s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
-                " addbbus=0x%4x", CPU.address_bus,
-                " _ram_in=%1b _gated_ram_in=%1b", CPU._ram_in, CPU._gated_ram_in,
-                );
-        
-    if (0) always @* 
-        $display("%9t ... seq=%-2d  %8b................", $time, $clog2(CPU.seq)+1, CPU.seq); 
-        
-/*
-    if (0) always @* 
-        $display("%9t ", $time, "ROMBUFFS rom_addbbuslo_buf=0x%-2x", rom_addbbuslo_buf.B, 
-            " rom_addbbus_hi_buf=0x%-2x", rom_addbbushi_buf.B,
-            " instruction_hi=%8b", instruction_hi,
-            " _oe=%1b(_addrmode_direct)", _addrmode_direct
-            ); 
-*/
-
-                
-    if (0) always @* 
-        $display("%9t ", $time, "DEVICE-SEL ", 
-                    "bdev=%04b adev=%04b targ=%05b alu_op=%05b ", bbus_dev, abus_dev, targ_dev, alu_op
-        ); 
-
-    if (0) always @* 
-        $display("%9t ", $time, "MAR  %02x:%02x    _marhi_in=%b _marlo_in=%b", MARHI.Q, MARLO.Q, _marhi_in, _marlo_in);
-
-    if (0) always @* 
-        $display("%9t ", $time, "tsel=%032b  lsel=%016b rsel=%016b", tsel, lsel, rsel);
-
-    if (0) always @* 
-        $display("%9t ", $time, "ALU BUS ",
-            " bbus=0x%-2x", bbus, 
-            " abus=0x%-2x", abus,
-            " alu_result_bus=%-2x", alu_result_bus
-            ); 
-        
     
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // CONSTRAINTS

@@ -34,8 +34,6 @@ module test();
     `include "../lib/display_snippet.v"
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
-    localparam PHASE_FETCH_LEN=1;
-    localparam PHASE_EXEC_LEN=1;
 
     // CLOCK ===================================================================================
     localparam TCLK=500;   // clock cycle
@@ -49,7 +47,7 @@ module test();
        #TCLK clk = !clk;
     end
 
-    cpu #(.PHASE_FETCH_LEN(PHASE_FETCH_LEN), .PHASE_EXEC_LEN(PHASE_EXEC_LEN)) CPU(_RESET_SWITCH, clk);
+    cpu CPU(_RESET_SWITCH, clk);
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////

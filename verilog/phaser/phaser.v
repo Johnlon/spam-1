@@ -18,7 +18,7 @@ clock 10 is dead
 
 `timescale 1ns/1ns
 
-module phaser #(parameter LOG=0, PHASE_FETCH_LEN=4, PHASE_EXEC_LEN=2) 
+module phaser #(parameter LOG=0)
 (
     input clk, 
     input mr,
@@ -27,6 +27,8 @@ module phaser #(parameter LOG=0, PHASE_FETCH_LEN=4, PHASE_EXEC_LEN=2)
 
     output _phaseFetch, phaseFetch , _phaseExec, phaseExec
 );
+
+    localparam PHASE_FETCH_LEN=1, PHASE_EXEC_LEN=1;
 
     wire _co; 
 

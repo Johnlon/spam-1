@@ -44,8 +44,6 @@ module cpu(
 );
 
     parameter LOG=0;
-    parameter PHASE_FETCH_LEN=1;
-    parameter PHASE_EXEC_LEN=1;
     
     tri [15:0] address_bus;
 
@@ -102,7 +100,7 @@ module cpu(
     `define SEQ(x) (10'd2 ** (x-1))
 
     // releasing reset allows phaser to go from 000 to 100 whilst _mrPC is low which resets the PC
-    phaser #(.LOG(0), .PHASE_FETCH_LEN(PHASE_FETCH_LEN), .PHASE_EXEC_LEN(PHASE_EXEC_LEN)) ph(.clk, .mr(mrPH), .seq, ._phaseFetch, .phaseFetch , .phaseExec, ._phaseExec);
+    phaser #(.LOG(0)) ph(.clk, .mr(mrPH), .seq, ._phaseFetch, .phaseFetch , .phaseExec, ._phaseExec);
 
     // CONTROL ===========================================================================================
     wire _addrmode_register, _addrmode_direct;
