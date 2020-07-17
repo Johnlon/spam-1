@@ -13,7 +13,7 @@ module ram(_OE, _WE, A, D);
     parameter DWIDTH=8,AWIDTH=16, DEPTH= 1 << AWIDTH;
     parameter LOG=0;
 
-    parameter [DWIDTH-1:0] UNDEF = {(DWIDTH/2){2'bxz}};
+    parameter [DWIDTH-1:0] UNDEF = {(DWIDTH/4){4'bxzzx}};
     parameter [DWIDTH-1:0] HIZ = {DWIDTH{1'bz}};
 
     reg [DWIDTH-1:0] Mem [DEPTH-1:0];
@@ -48,6 +48,11 @@ end
            $display("%9t", $time, " ALERT - RAM _OE and _WE simultaneously - WRITE WINS - RAM[0x%04x]=%08b", A, D );
         end
     end
+  end
+
+  if (LOG)
+    always @(Mem[A]) begin
+        if (!_WE) $display("%9t ", $time, "RAM : UPDATE - RAM[0x%04x]=%08b     Mem[A]=%02h", A, D , Mem[A]);
   end
 
   always @(_WE or _OE or D or A)
