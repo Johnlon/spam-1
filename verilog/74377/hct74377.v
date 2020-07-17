@@ -21,7 +21,7 @@ if (LOG)
   end
 
 //------------------------------------------------//
-parameter [WIDTH-1:0] UNDEF = {(WIDTH/2){2'bxz}};
+parameter [WIDTH-1:0] UNDEF = {(WIDTH/4){4'bzxxz}};
 reg [WIDTH-1:0] Q_current=UNDEF;
 
 always @(posedge CP)
@@ -34,6 +34,10 @@ end
 //------------------------------------------------//
 
 assign #14 Q = Q_current;
+
+function isUndef();
+    isUndef = (Q === UNDEF);
+endfunction
 
 endmodule
 
