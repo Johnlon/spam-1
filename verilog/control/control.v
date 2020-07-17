@@ -6,12 +6,11 @@
 `ifndef V_CONTROL
 `define V_CONTROL
 
-`define DECODE_PHASES   (phaseFetch ? "fetch" : phaseDecode?  "decode" : phaseExec? "exec": "---")
+`define DECODE_PHASES   (phaseFetch ? "fetch" : phaseExec? "exec": "---")
 `define DECODE_PHASE   logic [6*8-1:0] sPhase; assign sPhase = `DECODE_PHASES;
 
 // unlike an assign this executes instantaneously but not referentially transparent
 `define DECODE_ADDRMODES (!_addrmode_register?  "register" : !_addrmode_direct? "direct": "--") 
-//`define DECODE_ADDRMODE  logic [2*8-1:0] sAddrMode; assign sAddrMode = `DECODE_ADDRMODES;
 `define DECODE_ADDRMODE  logic [9*8-1:0] sAddrMode; assign sAddrMode = `DECODE_ADDRMODES;
 
 `define toDEV(DEVNAME) control::DEV_``DEVNAME``
@@ -27,10 +26,9 @@
 
 package control;
  
-    localparam PHASE_NONE = 3'b000;
-    localparam PHASE_FETCH = 3'b100;
-    localparam PHASE_DECODE = 3'b010;
-    localparam PHASE_EXEC = 3'b001;
+    localparam PHASE_NONE = 2'b00;
+    localparam PHASE_FETCH = 2'b10;
+    localparam PHASE_EXEC = 2'b01;
    
     // see _addrmode_tuple
     localparam _AMODE_NONE=2'b11;
@@ -186,7 +184,7 @@ package control;
     end
     endfunction    
 
-    function string fPhase(phaseFetch, phaseDecode, phaseExec); 
+    function string fPhase(phaseFetch, phaseExec); 
     begin
             fPhase = `DECODE_PHASES;
     end

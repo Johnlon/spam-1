@@ -26,7 +26,6 @@ module test();
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
     localparam PHASE_FETCH_LEN=1;
-    localparam PHASE_DECODE_LEN=1;
     localparam PHASE_EXEC_LEN=1;
 
     // CLOCK ===================================================================================
@@ -41,7 +40,7 @@ module test();
     //always begin
     //   #CLOCK_INTERVAL clk = !clk;
     //end
-    cpu #(.PHASE_FETCH_LEN(PHASE_FETCH_LEN), .PHASE_DECODE_LEN(PHASE_DECODE_LEN), .PHASE_EXEC_LEN(PHASE_EXEC_LEN)) CPU(_RESET_SWITCH, clk);
+    cpu #(.PHASE_FETCH_LEN(PHASE_FETCH_LEN), .PHASE_EXEC_LEN(PHASE_EXEC_LEN)) CPU(_RESET_SWITCH, clk);
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -138,9 +137,8 @@ module test();
     endtask : INIT_ROM
 
     integer phaseFetchLen=PHASE_FETCH_LEN;
-    integer phaseDecodeLen=PHASE_DECODE_LEN;
     integer phaseExecLen=PHASE_EXEC_LEN;
-    integer FULL_PHASES = phaseFetchLen+phaseDecodeLen+phaseExecLen;
+    integer FULL_PHASES = phaseFetchLen+phaseExecLen;
 
     integer clkcount=0;
     wire [15:0] icount;
@@ -179,7 +177,7 @@ module test();
 
 
     initial begin
-        `define EXECUTE_CYCLE(N) for (count =0; count < N*(phaseFetchLen+phaseDecodeLen+phaseExecLen); count++) begin #HALF_CLK CLK_UP; #HALF_CLK CLK_DN; end
+        `define EXECUTE_CYCLE(N) for (count =0; count < N*(phaseFetchLen+phaseExecLen); count++) begin #HALF_CLK CLK_UP; #HALF_CLK CLK_DN; end
 
         INIT_ROM();
 
@@ -201,7 +199,7 @@ module test();
         `DISPLAY("_mrPC=0  - so clocking is ineffective = stay in PC addressing mode")
         `Equals(CPU._mrPC, 0);
 
-        for (count =0; count < phaseFetchLen+phaseDecodeLen+phaseExecLen; count++) begin
+        for (count =0; count < phaseFetchLen+phaseExecLen; count++) begin
             CLK_UP; //CLK_UP;
             #HALF_CLK
             CLK_DN;
@@ -221,7 +219,7 @@ module test();
         #HALF_CLK
 
         `DISPLAY("instruction - write ram")
-        for (count =0; count < phaseFetchLen+phaseDecodeLen+phaseExecLen; count++) begin
+        for (count =0; count < phaseFetchLen+phaseExecLen; count++) begin
             CLK_UP; //CLK_UP;
             #HALF_CLK
             CLK_DN;
@@ -240,6 +238,7 @@ module test();
             #HALF_CLK
             noop();
         end
+
         `Equals(CPU.phase, control::PHASE_FETCH)
         `Equals( _addrmode, control::_AMODE_DIR);
         `Equals(CPU._mrPC, 1'b1); // +clock due to phaseFetch on SR plus the release of the reset on the SR
@@ -248,28 +247,13 @@ module test();
         `Equals(CPU.address_bus, 16'hffaa);
         `Equals(CPU.seq, `SEQ(count));
 
-        `DISPLAY("instruction - decode")
-        for (count =0; count < phaseDecodeLen; count++) begin
-            CLK_UP;
-            #HALF_CLK
-            CLK_DN;
-            #HALF_CLK
-            noop();
-        end
-        `Equals(CPU.phase, control::PHASE_DECODE)
-        `Equals(CPU.PCHI, 8'h00)
-        `Equals(CPU.PCLO, 8'h01)
-        `Equals( _addrmode, control::_AMODE_DIR);
-        `Equals(CPU.address_bus, 16'hffaa); // FROM ROM[15:0] 
-        `Equals(CPU.seq, `SEQ(count+phaseFetchLen));
-
         `DISPLAY("instruction - exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
             #HALF_CLK
             CLK_DN;
             #HALF_CLK
-            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
+            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
         end
         `Equals(CPU.phase, control::PHASE_EXEC)
         `Equals(CPU.PCHI, 8'h00)
@@ -296,18 +280,6 @@ module test();
         `Equals( _addrmode, control::_AMODE_REG);
         `Equals(CPU.address_bus, {8'bxzxzxzxz, 8'h42}); 
 
-        `DISPLAY("instruction - clock decode")
-        for (count =0; count < phaseDecodeLen; count++) begin
-            CLK_UP;
-            #HALF_CLK
-            `Equals(CPU.phase, control::PHASE_DECODE)
-            `Equals(CPU.PCHI, 8'h00)
-            `Equals(CPU.PCLO, 8'h02)
-            CLK_DN;
-            #HALF_CLK
-            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
-        end
-
         `DISPLAY("instruction - clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
@@ -317,7 +289,7 @@ module test();
             `Equals(CPU.PCLO, 8'h02)
             CLK_DN;
             #HALF_CLK
-            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
+            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
         end
 
         // operation result 
@@ -339,27 +311,13 @@ module test();
         `Equals( _addrmode, control::_AMODE_REG);
         `Equals(CPU.address_bus, 16'h0042); 
 
-        `DISPLAY("instruction - clock decode")
-        for (count =0; count < phaseDecodeLen; count++) begin
-            CLK_UP;
-            #HALF_CLK
-            CLK_DN;
-            #HALF_CLK
-            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
-        end
-        `Equals(CPU.phase, control::PHASE_DECODE)
-        `Equals(CPU.PCHI, 8'h00)
-        `Equals(CPU.PCLO, 8'd3)
-        `Equals( _addrmode, control::_AMODE_REG);
-        `Equals(CPU.address_bus, 16'h0042);
-
         `DISPLAY("instruction - clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
             #HALF_CLK
             CLK_DN;
             #HALF_CLK
-            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
+            `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
         end
         `Equals(CPU.phase, control::PHASE_EXEC) 
         `Equals(CPU.PCHI, 8'h00)
@@ -373,7 +331,7 @@ module test();
         `DISPLAY("NEXT CYCLE STARTS")
         `DISPLAY("instruction - clock fetch/decode")
         // fetch/decode
-        for (count =0; count < 1* (phaseFetchLen+phaseDecodeLen); count++) begin
+        for (count =0; count < 1* (phaseFetchLen); count++) begin
             #HALF_CLK
             CLK_UP;
             #HALF_CLK
@@ -524,7 +482,7 @@ module test();
     task DUMP;
             DUMP_OP;
             $display ("%9t ", $time,  "DUMP  ",
-                 " phase=%-6s", control::fPhase(CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec));
+                 " phase=%-6s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
             $display ("%9t ", $time,  "DUMP  ",
                  " seq=%-2d", $clog2(CPU.seq)+1);
             $display ("%9t ", $time,  "DUMP  ",
@@ -532,7 +490,7 @@ module test();
             $display ("%9t ", $time,  "DUMP  ",
                  " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
             $display ("%9t ", $time,  "DUMP  ",
-                 " FDE=%1b%1b%1b(%-s)", CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec));
+                 " FE=%1b%%1b(%-s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
             $display ("%9t ", $time,  "DUMP  ",
                  " _amode=%-2s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
                  " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
@@ -575,7 +533,7 @@ module test();
                  " seq=%-2d", $clog2(seq)+1,
                  " _amode=%-2s", control::fAddrMode(_addrmode_register, _addrmode_direct),
                  " addbbus=0x%4x", address_bus,
-                 " FDE=%-6s (%1b%1b%1b)", control::fPhase(phaseFetch, phaseDecode, phaseExec), phaseFetch, phaseDecode, phaseExec,
+                 " FE=%-6s (%1b%1b)", control::fPhase(phaseFetch, phaseExec), phaseFetch, phaseExec,
                  " bbus=%8b abus=%8b alu_result_bus=%8b", bbus, abus, alu_result_bus,
                  " bdev=%04b adev=%04b targ=%05b alu_op=%05b (%1s)", bbus_dev, abus_dev, targ_dev, alu_op, aluopName(alu_op),
                  " tsel=%32b ", tsel,
@@ -599,8 +557,8 @@ module test();
 
     
     if (0) always @(*) begin
-        $display("%9t", $time, " PHASE CHANGE: FDE=%-s  %1b%1b%1b seq=%10b", control::fPhase(phaseFetch, phaseDecode, phaseExec), 
-                                                        phaseFetch, phaseDecode, phaseExec, seq); 
+        $display("%9t", $time, " PHASE CHANGE: FE=%-s  %1b%1b seq=%10b", control::fPhase(phaseFetch, phaseExec), 
+                                                        phaseFetch, phaseExec, seq); 
     end
 
     if (0) always @(*) begin
@@ -612,10 +570,6 @@ module test();
     always @(posedge CPU.phaseFetch) begin
         instCount ++;
         $display("%9t", $time, " PHASE: FETCH  INTRUCTION#=%-d", instCount); 
-    end
-
-    always @(posedge CPU.phaseDecode) begin
-        $display("%9t", $time, " PHASE: DECODE"); 
     end
 
     always @(posedge CPU.phaseExec) begin
@@ -672,7 +626,7 @@ module test();
     // constraints
 
     always @(*) begin
-        if (CPU.phaseDecode & CPU.ctrl.instruction_6 === 'x) begin
+        if (CPU.phaseExec & CPU.ctrl.instruction_6 === 'x) begin
            $display("instruction_6", CPU.ctrl.instruction_6); 
             DUMP;
             $display("ERROR END OF PROGRAM - PROGRAM BYTE = XX "); 
@@ -705,7 +659,7 @@ module test();
     always @* begin
         // permits a situation where the control lines conflict.
         // this is ok as long as they settle quickly and are settled before exec phase.
-        if (_RESET_SWITCH & CPU.phaseDecode) begin
+        if (_RESET_SWITCH & CPU.phaseExec) begin
             if (CPU._addrmode_register === 1'bx |  CPU._addrmode_direct === 1'bx) begin
                 $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _REG=%1b/_IMM=%1b", CPU._addrmode_register , CPU._addrmode_direct );
                 $display("\n\n%9t ", $time, " ABORT");

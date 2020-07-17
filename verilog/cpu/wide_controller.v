@@ -17,7 +17,6 @@
 
 module wide_controller(
     input _mr,
-    input phaseFetch, phaseDecode, phaseExec, _phaseFetch, _phaseExec,
     input [15:0] pc,
     input [7:0] _flags,
 

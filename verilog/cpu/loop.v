@@ -35,7 +35,6 @@ module test();
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
     localparam PHASE_FETCH_LEN=1;
-    localparam PHASE_DECODE_LEN=1;
     localparam PHASE_EXEC_LEN=1;
 
     // CLOCK ===================================================================================
@@ -50,7 +49,7 @@ module test();
        #TCLK clk = !clk;
     end
 
-    cpu #(.PHASE_FETCH_LEN(PHASE_FETCH_LEN), .PHASE_DECODE_LEN(PHASE_DECODE_LEN), .PHASE_EXEC_LEN(PHASE_EXEC_LEN)) CPU(_RESET_SWITCH, clk);
+    cpu #(.PHASE_FETCH_LEN(PHASE_FETCH_LEN), .PHASE_EXEC_LEN(PHASE_EXEC_LEN)) CPU(_RESET_SWITCH, clk);
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,7 +119,7 @@ module test();
     task DUMP;
             DUMP_OP;
             $display ("%9t ", $time,  "DUMP  ",
-                 " phase=%-6s", control::fPhase(CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec));
+                 " phase=%-6s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
             $display ("%9t ", $time,  "DUMP  ",
                  " seq=%-2d", $clog2(CPU.seq)+1);
             $display ("%9t ", $time,  "DUMP  ",
@@ -128,7 +127,7 @@ module test();
             $display ("%9t ", $time,  "DUMP  ",
                  " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
             $display ("%9t ", $time,  "DUMP  ",
-                 " FDE=%1b%1b%1b(%-s)", CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec));
+                 " FDE=%1b%1b(%-s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
             $display ("%9t ", $time,  "DUMP  ",
                  " _amode=%-1s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
                  " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
@@ -246,7 +245,7 @@ module test();
 // CONSTRAINTS
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
     always @(*) begin
-        if (CPU.phaseDecode && CPU.ctrl.instruction_6 === 'x) begin
+        if (CPU.phaseExec && CPU.ctrl.instruction_6 === 'x) begin
             #1
             DUMP;
             $display("rom value instruction_6", CPU.ctrl.instruction_6); 
