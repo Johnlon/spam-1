@@ -1,4 +1,5 @@
 
+//////////////// TO RUN TEST ... RUN AND GREP FOR  "MAR=" TO SEE COUNTER
 
 // ADDRESSING TERMINOLOGY
 //  IMMEDIATE ADDRESSING = INSTRUCTION CONTAINS THE CONSTANT VALUE DATA TO USE
@@ -21,14 +22,16 @@ module test();
     import alu_ops::*;
 
     `include "../lib/display_snippet.v"
+    `AMODE_TUPLE
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
-    localparam PHASE_FETCH_LEN=4;
-    localparam PHASE_DECODE_LEN=4;
-    localparam PHASE_EXEC_LEN=2;
+    localparam PHASE_FETCH_LEN=1;
+    localparam PHASE_DECODE_LEN=1;
+    localparam PHASE_EXEC_LEN=1;
 
     // CLOCK ===================================================================================
-    localparam HALF_CLK=44;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    //localparam HALF_CLK=44;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    localparam HALF_CLK=1000;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;
@@ -52,87 +55,104 @@ module test();
     localparam MAX_PC=2048;
     string_bits CODE [MAX_PC];
 
+    integer counter =0;
+
     // SETUP ROM
     task INIT_ROM;
     begin
+        // DATA SEGMENT - ONLY LOWER 8 BITS ACCESSIBLE AT THE MOMENT AS ITS AN 8 BITS OF DATA CPU
+        // initialise rom[ffaa] = 0x42
+        //`ROM(16'hffaa) = { 8'b0, 8'b0, 8'h42 }; 
+//        `ROM('hffaa) = `DATA(8'h42);
 
-        // CODE SEGMENT
-        `DEV_EQ_ROM_DIRECT(0, marlo, 'hffaa)
+        `RAM_DIRECT_EQ_IMMED8(counter, 'hffaa, 8'h42); counter++;
+
+        `DEV_EQ_RAM_DIRECT(counter, marlo, 'hffaa); counter++;
        // `DUMP_ROM(0)
 
         // dev_eq_const8 tdev=00011(CPU.MARHI), const8=0           
-        `DEV_EQ_IMMED8(1, marhi, 0)                  // MARHI=const 0      implies ALUOP=R
+        `DEV_EQ_IMMED8(counter, marhi, 0); counter++;                  // MARHI=const 0      implies ALUOP=R
         //`DUMP_ROM(1)
 
         // dev_eq_xy_alu tdev=00010(CPU.MARLO) adev=0010(MARLO) bdev=0010(MARLO) alu=00101(5=A+1)
-        `DEV_EQ_XY_ALU(2, marlo, marlo, marlo, A_PLUS_1) 
+        `DEV_EQ_XY_ALU(counter, marlo, marlo, marlo, A_PLUS_1) ; counter++;
 
         // dev_eq_const8 tdev=00000(RAM[MAR]), const8=0x22           
-        `DEV_EQ_IMMED8(3, ram, 8'h22)
+        `DEV_EQ_IMMED8(counter, ram, 8'h22); counter++;
 
         // dev_eq_ram_direct tdev=00010(CPU.MARLO), address=ffaa     
-        `DEV_EQ_RAM_DIRECT(4, marlo, 'h0043)
+        `DEV_EQ_RAM_DIRECT(counter, marlo, 'h0043); counter++;
 
         // ram_direct_eq_dev tdev=00001(RAM), bdev=MARLO  address=abcd     
         //`ROM(5)= { 8'b110_00010, 16'habcd }                // RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R
-        `RAM_DIRECT_EQ_DEV(5, 'habcd, marlo)
+        `RAM_DIRECT_EQ_DEV(counter, 'habcd, marlo); counter++;
 
         // write RAM into regb
-        `DEV_EQ_RAM_DIRECT(6, regb, 'h0043)
+        `DEV_EQ_RAM_DIRECT(counter, regb, 'h0043); counter++;
 
         // write regb into RAM
-        `RAM_DIRECT_EQ_DEV(7, 'hdcba, regb)
+        `RAM_DIRECT_EQ_DEV(counter, 'hdcba, regb); counter++;
 
         // test all registers read write
-        `DEV_EQ_IMMED8(8, rega, 1)
-        `DEV_EQ_IMMED8(9, regb, 2)
-        `DEV_EQ_IMMED8(10, regc, 3)
-        `DEV_EQ_IMMED8(11, regd, 4)
-        `RAM_DIRECT_EQ_DEV(12, 'h0001, rega)
-        `RAM_DIRECT_EQ_DEV(13, 'h0002, regb)
-        `RAM_DIRECT_EQ_DEV(14, 'h0003, regc)
-        `RAM_DIRECT_EQ_DEV(15, 'h0004, regd)
+        `DEV_EQ_IMMED8(counter, rega, 1); counter++;
+        `DEV_EQ_IMMED8(counter, regb, 2); counter++;
+        `DEV_EQ_IMMED8(counter, regc, 3); counter++;
+        `DEV_EQ_IMMED8(counter, regd, 4); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 'h0001, rega); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 'h0002, regb); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 'h0003, regc); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 'h0004, regd); counter++;
 
         // test all registers on L and R channel into ALU
-        `DEV_EQ_XY_ALU(16, marlo, rega,     not_used, A)  
-        `DEV_EQ_XY_ALU(17, marhi, not_used, rega,     B)  
-        `DEV_EQ_XY_ALU(18, marlo, regb,     not_used, A)  
-        `DEV_EQ_XY_ALU(19, marhi, not_used, regb,     B)  
-        `DEV_EQ_XY_ALU(20, marlo, regc,     not_used, A)  
-        `DEV_EQ_XY_ALU(21, marhi, not_used, regc,     B)  
-        `DEV_EQ_XY_ALU(22, marlo, regd,     not_used, A)  
-        `DEV_EQ_XY_ALU(23, marhi, not_used, regd,     B)  
+        `DEV_EQ_XY_ALU(counter, marlo, rega,     not_used, A); counter++;  
+        `DEV_EQ_XY_ALU(counter, marhi, not_used, rega,     B)  ; counter++;
+        `DEV_EQ_XY_ALU(counter, marlo, regb,     not_used, A)  ; counter++;
+        `DEV_EQ_XY_ALU(counter, marhi, not_used, regb,     B)  ; counter++;
+        `DEV_EQ_XY_ALU(counter, marlo, regc,     not_used, A)  ; counter++;
+        `DEV_EQ_XY_ALU(counter, marhi, not_used, regc,     B)  ; counter++;
+        `DEV_EQ_XY_ALU(counter, marlo, regd,     not_used, A)  ; counter++;
+        `DEV_EQ_XY_ALU(counter, marhi, not_used, regd,     B)  ; counter++;
 
         // LONG JUMP 
 `define FAR_AWAY 1024
-        `JMP_IMMED16(24, `FAR_AWAY)
+        `JMP_IMMED16(counter, `FAR_AWAY); counter++;
+
 
         // implement 16 bit counter
 `define ADD_ONE 256
 `define DO_CARRY 512
-        `DEV_EQ_XY_ALU(`ADD_ONE, marlo, not_used, marlo, B_PLUS_1)  
-        `JMPC_IMMED16(`ADD_ONE+1, `DO_CARRY)
-        `JMP_IMMED16(`ADD_ONE+3, `ADD_ONE)
+        counter=`ADD_ONE;
+        `DEV_EQ_XY_ALU(counter, marlo, not_used, marlo, B_PLUS_1)  ; counter++;
+        `JMPC_IMMED16(counter, `DO_CARRY); counter+=2;
+        `JMP_IMMED16(counter, `ADD_ONE); counter+=2;
 
-        `DEV_EQ_XY_ALU(`DO_CARRY, marhi, not_used, marhi, B_PLUS_1)  
-        `JMP_IMMED16(`DO_CARRY+1, `ADD_ONE)
+        counter=`DO_CARRY;
+        `DEV_EQ_XY_ALU(counter, marhi, not_used, marhi, B_PLUS_1)  ; counter++;
+        `JMP_IMMED16(counter, `ADD_ONE); counter+=2;
 
-        `JMP_IMMED16(`FAR_AWAY, `ADD_ONE) // JUMP BACK AGAIN
+        counter=`FAR_AWAY;
+        `JMP_IMMED16(counter, `ADD_ONE) ; counter+=2; // JUMP BACK AGAIN
 
-
-        // DATA SEGMENT - ONLY LOWER 8 BITS ACCESSIBLE AT THE MOMENT AS ITS AN 8 BITS OF DATA CPU
-        // initialise rom[ffaa] = 0x42
-        //`ROM(16'hffaa) = { 8'b0, 8'b0, 8'h42 }; 
-        `ROM('hffaa) = `DATA(8'h42);
 
     end
     endtask : INIT_ROM
 
-    wire [2:0] _addrmode = {CPU._addrmode_pc, CPU._addrmode_register, CPU._addrmode_direct}; 
+    integer phaseFetchLen=PHASE_FETCH_LEN;
+    integer phaseDecodeLen=PHASE_DECODE_LEN;
+    integer phaseExecLen=PHASE_EXEC_LEN;
+    integer FULL_PHASES = phaseFetchLen+phaseDecodeLen+phaseExecLen;
+
+    integer clkcount=0;
+    wire [15:0] icount;
+    assign icount = clkcount / FULL_PHASES;
+
+    wire [15:0] pc = {CPU.PCHI, CPU.PCLO};
 
     task CLK_UP; 
     begin
-        $display("\n%9t", $time, " CLK  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"); 
+        if (_RESET_SWITCH) clkcount++;
+
+        $display("\n%9t", $time, " CLK  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ INSTRUCTION %1d   cycles=%1d    pc=%04h\n", icount, clkcount, pc); 
         clk = 1;
     end
     endtask
@@ -140,8 +160,9 @@ module test();
     task CLK_DN; 
     begin
         $display("\n%9t", $time, " END OF CLOCK STATE %s", clk ? "HI" : "LO"); 
-        DUMP;
-       // if (CPU.phaseExec) DUMP;
+//        DUMP;
+        if (CPU.phaseExec) DUMP;
+        else DUMP_OP;
         $display("\n%9t", $time, " CLK  -----------------------------------------------------------------------"); 
         clk = 0;
     end
@@ -149,14 +170,13 @@ module test();
 
 
     // TESTS
+
     integer count;
-    integer phaseFetchLen=PHASE_FETCH_LEN;
-    integer phaseDecodeLen=PHASE_DECODE_LEN;
-    integer phaseExecLen=PHASE_EXEC_LEN;
 
     task noop;
         // do nothing - just for syntax
     endtask: noop
+
 
     initial begin
         `define EXECUTE_CYCLE(N) for (count =0; count < N*(phaseFetchLen+phaseDecodeLen+phaseExecLen); count++) begin #HALF_CLK CLK_UP; #HALF_CLK CLK_DN; end
@@ -168,16 +188,13 @@ module test();
         CLK_DN;
 
         #1000
-        `Equals( CPU.phase, control::PHASE_NONE)
-
-        `Equals( CPU.seq, `SEQ(1))
-        `Equals( _addrmode, 3'b1xx)
-        //HACK`Equals( _addrmode, 3'b111)
-
+        `Equals(CPU.phase, control::PHASE_NONE)
+        `Equals(CPU.seq, `SEQ(1))
         `Equals(CPU.PCHI, 8'bx)
         `Equals(CPU.PCLO, 8'bx)
 
-        //HACK`Equals(CPU.address_bus, 16'bz); // noone providing address
+        `Equals( _addrmode, 2'bxx)
+
         `Equals(CPU.address_bus, 16'bx); // noone providing address
 
         #1000
@@ -203,7 +220,19 @@ module test();
 
         #HALF_CLK
 
-        `DISPLAY("instruction 1 - clock fetch")
+        `DISPLAY("instruction - write ram")
+        for (count =0; count < phaseFetchLen+phaseDecodeLen+phaseExecLen; count++) begin
+            CLK_UP; //CLK_UP;
+            #HALF_CLK
+            CLK_DN;
+            #HALF_CLK
+            noop();
+        end
+
+        #1000
+
+        `DISPLAY("instruction - start")
+        `DISPLAY("instruction - fetch")
         for (count =0; count < phaseFetchLen; count++) begin
             CLK_UP;
             #HALF_CLK
@@ -212,14 +241,14 @@ module test();
             noop();
         end
         `Equals(CPU.phase, control::PHASE_FETCH)
-        `Equals( _addrmode, control::_AMODE_PC);
+        `Equals( _addrmode, control::_AMODE_DIR);
         `Equals(CPU._mrPC, 1'b1); // +clock due to phaseFetch on SR plus the release of the reset on the SR
-        `Equals(CPU.PCHI, 8'b0) 
-        `Equals(CPU.PCLO, 8'b0)
-        `Equals(CPU.address_bus, 16'h0000);
+        `Equals(CPU.PCHI, 8'h00) 
+        `Equals(CPU.PCLO, 8'h01)
+        `Equals(CPU.address_bus, 16'hffaa);
         `Equals(CPU.seq, `SEQ(count));
 
-        `DISPLAY("instruction 1 - clock decode")
+        `DISPLAY("instruction - decode")
         for (count =0; count < phaseDecodeLen; count++) begin
             CLK_UP;
             #HALF_CLK
@@ -228,13 +257,13 @@ module test();
             noop();
         end
         `Equals(CPU.phase, control::PHASE_DECODE)
-        `Equals(CPU.PCHI, 8'b0)
-        `Equals(CPU.PCLO, 8'b0)
+        `Equals(CPU.PCHI, 8'h00)
+        `Equals(CPU.PCLO, 8'h01)
         `Equals( _addrmode, control::_AMODE_DIR);
         `Equals(CPU.address_bus, 16'hffaa); // FROM ROM[15:0] 
         `Equals(CPU.seq, `SEQ(count+phaseFetchLen));
 
-        `DISPLAY("instruction 1 - clock exec")
+        `DISPLAY("instruction - exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
             #HALF_CLK
@@ -243,17 +272,17 @@ module test();
             `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
         end
         `Equals(CPU.phase, control::PHASE_EXEC)
-        `Equals(CPU.PCHI, 8'b0)
-        `Equals(CPU.PCLO, 8'b0)
+        `Equals(CPU.PCHI, 8'h00)
+        `Equals(CPU.PCLO, 8'h01)
         `Equals( _addrmode, control::_AMODE_DIR);
         `Equals(CPU.address_bus, 16'hffaa); // FROM ROM[15:0] 
 
         // operation result 
         `Equals(CPU.MARLO.Q, 8'h42)
-        `Equals(CPU.MARHI.Q, 8'hxx)
+        `Equals(CPU.MARHI.Q, 8'bxzxzxzxz)
 
         `DISPLAY("NEXT CYCLE STARTS")
-        `DISPLAY("instruction 2 - clock fetch")
+        `DISPLAY("instruction - clock fetch")
         for (count =0; count < phaseFetchLen; count++) begin
             CLK_UP;
             #HALF_CLK
@@ -262,30 +291,30 @@ module test();
             `Equals(CPU.seq, `SEQ(count+1));
         end
         `Equals(CPU.phase, control::PHASE_FETCH)
-        `Equals(CPU.PCHI, 8'b0)
-        `Equals(CPU.PCLO, 8'b1)
-        `Equals( _addrmode, control::_AMODE_PC);
-        `Equals(CPU.address_bus, 16'h0001); // FROM PC
+        `Equals(CPU.PCHI, 8'h00)
+        `Equals(CPU.PCLO, 8'h02)
+        `Equals( _addrmode, control::_AMODE_REG);
+        `Equals(CPU.address_bus, {8'bxzxzxzxz, 8'h42}); 
 
-        `DISPLAY("instruction 2 - clock decode")
+        `DISPLAY("instruction - clock decode")
         for (count =0; count < phaseDecodeLen; count++) begin
             CLK_UP;
             #HALF_CLK
             `Equals(CPU.phase, control::PHASE_DECODE)
-            `Equals(CPU.PCHI, 8'b0)
-            `Equals(CPU.PCLO, 8'b1)
+            `Equals(CPU.PCHI, 8'h00)
+            `Equals(CPU.PCLO, 8'h02)
             CLK_DN;
             #HALF_CLK
             `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
         end
 
-        `DISPLAY("instruction 2 - clock exec")
+        `DISPLAY("instruction - clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
             #HALF_CLK
             `Equals(CPU.phase, control::PHASE_EXEC)
-            `Equals(CPU.PCHI, 8'b0)
-            `Equals(CPU.PCLO, 8'b1)
+            `Equals(CPU.PCHI, 8'h00)
+            `Equals(CPU.PCLO, 8'h02)
             CLK_DN;
             #HALF_CLK
             `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
@@ -296,7 +325,7 @@ module test();
         `Equals(CPU.MARHI.Q, 8'h00)
 
         `DISPLAY("NEXT CYCLE STARTS")
-        `DISPLAY("instruction 3 - clock fetch")
+        `DISPLAY("instruction - clock fetch")
         for (count =0; count < phaseFetchLen; count++) begin
             CLK_UP;
             #HALF_CLK
@@ -305,12 +334,12 @@ module test();
             `Equals(CPU.seq, `SEQ(count+1));
         end
         `Equals(CPU.phase, control::PHASE_FETCH)
-        `Equals(CPU.PCHI, 8'b0)
-        `Equals(CPU.PCLO, 8'd2)
-        `Equals( _addrmode, control::_AMODE_PC);
-        `Equals(CPU.address_bus, 16'd2); // FROM PC
+        `Equals(CPU.PCHI, 8'h00)
+        `Equals(CPU.PCLO, 8'd3)
+        `Equals( _addrmode, control::_AMODE_REG);
+        `Equals(CPU.address_bus, 16'h0042); 
 
-        `DISPLAY("instruction 3 - clock decode")
+        `DISPLAY("instruction - clock decode")
         for (count =0; count < phaseDecodeLen; count++) begin
             CLK_UP;
             #HALF_CLK
@@ -319,12 +348,12 @@ module test();
             `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen));
         end
         `Equals(CPU.phase, control::PHASE_DECODE)
-        `Equals(CPU.PCHI, 8'b0)
-        `Equals(CPU.PCLO, 8'd2)
+        `Equals(CPU.PCHI, 8'h00)
+        `Equals(CPU.PCLO, 8'd3)
         `Equals( _addrmode, control::_AMODE_REG);
-        `Equals(CPU.address_bus, 16'h0042); // FROM MAR
+        `Equals(CPU.address_bus, 16'h0042);
 
-        `DISPLAY("instruction 3 - clock exec")
+        `DISPLAY("instruction - clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             CLK_UP;
             #HALF_CLK
@@ -333,15 +362,16 @@ module test();
             `Equals(CPU.seq, `SEQ(count+1+phaseFetchLen+phaseDecodeLen));
         end
         `Equals(CPU.phase, control::PHASE_EXEC) 
-        `Equals(CPU.PCHI, 8'b0)
-        `Equals(CPU.PCLO, 8'd2)
+        `Equals(CPU.PCHI, 8'h00)
+        `Equals(CPU.PCLO, 8'd3)
         `Equals( _addrmode, control::_AMODE_REG);
         //`Equals(CPU.address_bus, 16'h0000); // FROM MAR - NOT MATERIAL TO THE TEST BUT A SIDE EFFECT OF SETTING MAR=0000
         
         `Equals(CPU.MARLO.Q, 8'h43)
         `Equals(CPU.MARHI.Q, 8'h00)
 
-        `DISPLAY("instruction 4 - RAM[MAR=0x0043]=0x22 ")
+        `DISPLAY("NEXT CYCLE STARTS")
+        `DISPLAY("instruction - clock fetch/decode")
         // fetch/decode
         for (count =0; count < 1* (phaseFetchLen+phaseDecodeLen); count++) begin
             #HALF_CLK
@@ -350,9 +380,10 @@ module test();
             CLK_DN;
             noop();
         end
-        `Equals(`RAM(16'h0000), 8'hxx); // Should still be XX as we've not entered EXECUTE yet
+        `Equals(`RAM(16'h0000), CPU.ram64.UNDEF); //8'hxx); // Should still be XX as we've not entered EXECUTE yet
 
         // exec
+        `DISPLAY("instruction - clock exec")
         for (count =0; count < phaseExecLen; count++) begin
             #HALF_CLK
             CLK_UP;
@@ -362,20 +393,20 @@ module test();
         end
         `Equals(`RAM(16'h0043), 8'h22);
 
-        `DISPLAY("instruction 5 - MARLO=RAM[MAR=0x0043]=0x22")
+        `DISPLAY("instruction - MARLO=RAM[MAR=0x0043]=0x22")
         `EXECUTE_CYCLE(1)
         `Equals(CPU.MARLO.Q, 8'h22)
         `Equals(CPU.MARHI.Q, 8'h00)
 
-        `DISPLAY("instruction 6 - RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R")
+        `DISPLAY("instruction - RAM[DIRECT=abcd]=MARLO=h22     implies ALUOP=R")
         `EXECUTE_CYCLE(1)
         `Equals(`RAM(16'habcd), 8'h22);
 
-        `DISPLAY("instruction 7 - DEV_EQ_RAM_DIRECT(regb, 'habcd) write to Register File");
+        `DISPLAY("instruction - DEV_EQ_RAM_DIRECT(regb, 'habcd) write to Register File");
         `EXECUTE_CYCLE(1)
         `Equals( CPU.regFile.get(1), 8'h22);
 
-        `DISPLAY("instruction 8 - RAM_DIRECT_EQ_DEV('hdcba, regb) read from Register File");
+        `DISPLAY("instruction  - RAM_DIRECT_EQ_DEV('hdcba, regb) read from Register File");
         `EXECUTE_CYCLE(1)
         `Equals(`RAM(16'hdcba), 8'h22);
 
@@ -470,6 +501,7 @@ module test();
 
     end
 
+
     integer pcval;
     assign pcval={CPU.PCHI, CPU.PCLO};
 
@@ -480,17 +512,17 @@ module test();
         currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
     end
 
-    `define LOG_ADEV_SEL(DNAME) " _adev_``DNAME``=%1b", CPU._adev_``DNAME``
-    `define LOG_BDEV_SEL(DNAME) " _bdev_``DNAME``=%1b", CPU._bdev_``DNAME``
-    `define LOG_TDEV_SEL(DNAME) " _``DNAME``_in=%1b",  CPU._``DNAME``_in
-
-    task DUMP;
+    task DUMP_OP;
             $display ("%9t ", $time,  "DUMP  ",
                  ": CODE: %-s", currentCode,
                  );
             $display ("%9t ", $time,  "DUMP  ",
                  ": %-s", label
                  );
+    endtask
+
+    task DUMP;
+            DUMP_OP;
             $display ("%9t ", $time,  "DUMP  ",
                  " phase=%-6s", control::fPhase(CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec));
             $display ("%9t ", $time,  "DUMP  ",
@@ -502,8 +534,8 @@ module test();
             $display ("%9t ", $time,  "DUMP  ",
                  " FDE=%1b%1b%1b(%-s)", CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec));
             $display ("%9t ", $time,  "DUMP  ",
-                 " _amode=%-3s", control::fAddrMode(CPU._addrmode_pc, CPU._addrmode_register, CPU._addrmode_direct),
-                 " (%03b)", {CPU._addrmode_pc, CPU._addrmode_register, CPU._addrmode_direct},
+                 " _amode=%-2s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
+                 " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
                  " addbbus=0x%4x", CPU.address_bus);
             $display ("%9t ", $time,  "DUMP  ",
                  " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
@@ -530,6 +562,9 @@ module test();
                  "  REGC:%08b", CPU.regFile.get(2),
                  "  REGD:%08b", CPU.regFile.get(3)
                  );
+            `define LOG_ADEV_SEL(DNAME) " _adev_``DNAME``=%1b", CPU._adev_``DNAME``
+            `define LOG_BDEV_SEL(DNAME) " _bdev_``DNAME``=%1b", CPU._bdev_``DNAME``
+            `define LOG_TDEV_SEL(DNAME) " _``DNAME``_in=%1b",  CPU._``DNAME``_in
             $display("%9t", $time, " DUMP   WIRES ", `CONTROL_WIRES(LOG, `COMMA));
     endtask 
 
@@ -538,7 +573,7 @@ module test();
         $display ("%9t ", $time,  "MON     ",
                  "rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
                  " seq=%-2d", $clog2(seq)+1,
-                 " _amode=%-3s", control::fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct),
+                 " _amode=%-2s", control::fAddrMode(_addrmode_register, _addrmode_direct),
                  " addbbus=0x%4x", address_bus,
                  " FDE=%-6s (%1b%1b%1b)", control::fPhase(phaseFetch, phaseDecode, phaseExec), phaseFetch, phaseDecode, phaseExec,
                  " bbus=%8b abus=%8b alu_result_bus=%8b", bbus, abus, alu_result_bus,
@@ -569,8 +604,8 @@ module test();
     end
 
     if (0) always @(*) begin
-        $display("%9t", $time, " control::_AMODE: PRI=%-s  %1b%1b%1b seq=%10b", control::fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct), 
-                                                        _addrmode_pc, _addrmode_register, _addrmode_direct, seq); 
+        $display("%9t", $time, " control::_AMODE: PRI=%-s  %1b%1b seq=%10b", control::fAddrMode(_addrmode_register, _addrmode_direct), 
+                                                        _addrmode_register, _addrmode_direct, seq); 
     end
 
     integer instCount = 0;
@@ -588,11 +623,11 @@ module test();
     end
 
     if (0) always @* 
-        $display ("%9t ", $time,  "ADDRESSING      _amode=%s", control::fAddrMode(CPU._addrmode_pc, CPU._addrmode_register, CPU._addrmode_direct), " addbbus=0x%4x", CPU.address_bus);
+        $display ("%9t ", $time,  "ADDRESSING      _amode=%s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct), " addbbus=0x%4x", CPU.address_bus);
 
     if (0) always @* 
         $display ("%9t ", $time,  "RAM     ram=%08b", CPU.ram64.D,
-                " _amode=%s", control::fAddrMode(CPU._addrmode_pc, CPU._addrmode_register, CPU._addrmode_direct),
+                " _amode=%s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
                 " addbbus=0x%4x", CPU.address_bus,
                 " _ram_in=%1b _gated_ram_in=%1b", CPU._ram_in, CPU._gated_ram_in,
                 );
@@ -671,8 +706,8 @@ module test();
         // permits a situation where the control lines conflict.
         // this is ok as long as they settle quickly and are settled before exec phase.
         if (_RESET_SWITCH & CPU.phaseDecode) begin
-            if (CPU._addrmode_pc === 1'bx |  CPU._addrmode_register === 1'bx |  CPU._addrmode_direct === 1'bx) begin
-                $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b", CPU._addrmode_pc , CPU._addrmode_register , CPU._addrmode_direct );
+            if (CPU._addrmode_register === 1'bx |  CPU._addrmode_direct === 1'bx) begin
+                $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _REG=%1b/_IMM=%1b", CPU._addrmode_register , CPU._addrmode_direct );
                 $display("\n\n%9t ", $time, " ABORT");
                 $finish();
                 //#SETTLE_TOLERANCE
@@ -683,9 +718,9 @@ module test();
                 //    $finish();
                 //end
             end
-            if (CPU._addrmode_pc + CPU._addrmode_register + CPU._addrmode_direct < 2) begin
-                $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _PC=%1b/_REG=%1b/_IMM=%1b sAddrMode=%-s", CPU._addrmode_pc , CPU._addrmode_register , CPU._addrmode_direct,
-                                            control::fAddrMode(CPU._addrmode_pc, CPU._addrmode_register, CPU._addrmode_direct));
+            if (CPU._addrmode_register + CPU._addrmode_direct < 1) begin
+                $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _REG=%1b/_IMM=%1b sAddrMode=%-s", CPU._addrmode_register , CPU._addrmode_direct,
+                                            control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct));
                 $display("\n\n%9t ", $time, " ABORT");
                 $finish();
                 //#SETTLE_TOLERANCE

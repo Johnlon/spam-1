@@ -33,7 +33,7 @@ module test();
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
 
     // CLOCK ===================================================================================
-    localparam TCLK=50;   // clock cycle
+    localparam TCLK=500;   // clock cycle
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;
@@ -101,9 +101,8 @@ module test();
             $display("\n%9t PC RESET SET       _mrPC=%1b  ======================================================================\n", $time, CPU._mrPC); 
     end
 
-    always @* 
-            $display ("%9t ", $time,  "DUMP  ",
-                 " phase=%-6s", control.fPhase(CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec));
+//    always @(*)
+ //           $display("%9t ", $time,  "DUMP  ", " phase=%-6s", control.fPhase(CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec));
 
     integer pcval;
     assign pcval={CPU.PCHI, CPU.PCLO};

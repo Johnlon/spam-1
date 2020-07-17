@@ -43,9 +43,10 @@ module cpu(
     input clk
 );
 
-    parameter PHASE_FETCH_LEN=4;
-    parameter PHASE_DECODE_LEN=4;
-    parameter PHASE_EXEC_LEN=2;
+    parameter LOG=0;
+    parameter PHASE_FETCH_LEN=1;
+    parameter PHASE_DECODE_LEN=1;
+    parameter PHASE_EXEC_LEN=1;
     
     tri [15:0] address_bus;
 
@@ -105,7 +106,7 @@ module cpu(
     phaser #(.LOG(0), .PHASE_FETCH_LEN(PHASE_FETCH_LEN), .PHASE_DECODE_LEN(PHASE_DECODE_LEN), .PHASE_EXEC_LEN(PHASE_EXEC_LEN)) ph(.clk, .mr(mrPH), .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec, ._phaseExec);
 
     // CONTROL ===========================================================================================
-    wire _addrmode_register, _addrmode_pc, _addrmode_direct;
+    wire _addrmode_register, _addrmode_direct;
     wire [7:0] direct_address_hi, direct_address_lo;
     wire [7:0] direct8;
     wire [7:0] immed8;
@@ -128,10 +129,10 @@ module cpu(
         ._mr(_mrPC),
         .phaseFetch, .phaseDecode, .phaseExec, ._phaseFetch, ._phaseExec,
         .pc(pc_addr),
-        .address_bus,
+        //.address_bus,
         ._flags(_flags),
 
-        ._addrmode_register, ._addrmode_pc, ._addrmode_direct,
+        ._addrmode_register, ._addrmode_direct,
         `CONTROL_WIRES(BIND, `COMMA),
         .direct_address_hi, .direct_address_lo,
         .direct8,
@@ -169,17 +170,14 @@ module cpu(
         .PCHI(PCHI)
     );
 
-    hct74245ab pchi_addbbushi_buf(.A(PCHI), .B(address_bus[15:8]), .nOE(_addrmode_pc));
-    hct74245ab pclo_addbbuslo_buf(.A(PCLO), .B(address_bus[7:0]), .nOE(_addrmode_pc));
+//    hct74245ab pchi_addbbushi_buf(.A(PCHI), .B(address_bus[15:8]), .nOE(_addrmode_pc));
+//    hct74245ab pclo_addbbuslo_buf(.A(PCLO), .B(address_bus[7:0]), .nOE(_addrmode_pc));
 
     // ROM =============================================================================================
 
     
-    // ROM OUT to BBUS when direct rom addressing is being used
+    // ROM OUT to BBUS when immed rom addressing is being used
     hct74245ab rom_bbus_buf(.A(direct8), .B(bbus), .nOE(_bdev_rom));
-
-    // ROM OUT TO BBUS VIA IR is immediate addressing of that operand, and we can be simultaneously register (MAR) addressing the RAM
-    hct74245ab rom_instreg_bbus_buf(.A(immed8), .B(bbus), .nOE(_bdev_instreg));
 
     hct74245ab rom_addbbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
     hct74245ab rom_addbbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
@@ -187,7 +185,7 @@ module cpu(
     // RAM =============================================================================================
 
     wire #(8) _gated_ram_in = _phaseExec | _ram_in;
-    ram #(.AWIDTH(16)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus));
+    ram #(.AWIDTH(16), .LOG(1)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
     
     hct74245ab ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in));
     hct74245ab ram_bbus_buf(.A(ram64.D), .B(bbus), .nOE(_bdev_ram));

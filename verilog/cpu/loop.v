@@ -1,6 +1,6 @@
 
+
 //// RUN  and grep for OK to see counter incrementing
-// consider impl using carry in
 /*
 
 Unit number Time unit Unit number Time unit 
@@ -34,9 +34,12 @@ module test();
     `include "../lib/display_snippet.v"
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
+    localparam PHASE_FETCH_LEN=1;
+    localparam PHASE_DECODE_LEN=1;
+    localparam PHASE_EXEC_LEN=1;
 
     // CLOCK ===================================================================================
-    localparam TCLK=50;   // clock cycle
+    localparam TCLK=500;   // clock cycle
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;
@@ -47,7 +50,7 @@ module test();
        #TCLK clk = !clk;
     end
 
-    cpu CPU(_RESET_SWITCH, clk);
+    cpu #(.PHASE_FETCH_LEN(PHASE_FETCH_LEN), .PHASE_DECODE_LEN(PHASE_DECODE_LEN), .PHASE_EXEC_LEN(PHASE_EXEC_LEN)) CPU(_RESET_SWITCH, clk);
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,13 +62,13 @@ module test();
     localparam MAX_PC=100;
     string_bits CODE [MAX_PC];
 
-    integer icount;
     integer ADD_ONE;
     `define WRITE_UART 60
     `define READ_UART 80
-    integer wait_uart_out;
+    integer WAIT_UART_OUT;
 
     // SETUP ROM
+    integer icount;
     task INIT_ROM;
     begin
 
@@ -82,25 +85,25 @@ module test();
          `DEV_EQ_XI_ALU(icount, regb, regb, 0, A_PLUS_B_PLUS_C); icount++; // B=B+0+Carryin   - sets and consumes carry 
          `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
 
-         wait_uart_out = icount;
+         WAIT_UART_OUT = icount;
          `JMPDI_IMMED16(icount, `READ_UART); icount+=2;
          `JMPDO_IMMED16(icount, `WRITE_UART); icount+=2;
-         `JMP_IMMED16(icount, wait_uart_out); icount+=2;
+         `JMP_IMMED16(icount, WAIT_UART_OUT); icount+=2;
 
          icount = `WRITE_UART;
          `DEV_EQ_XY_ALU(icount, uart, rega, rega, A); icount++;
-         `JMP_IMMED16(icount, ADD_ONE); icount++;
+         `JMP_IMMED16(icount, ADD_ONE); icount+=2;
 
          icount = `READ_UART;
          `DEV_EQ_XY_ALU(icount, marhi, uart, uart, A); icount++;
-         `JMP_IMMED16(icount, ADD_ONE); icount++;
+         `JMP_IMMED16(icount, ADD_ONE); icount+=2;
             
 
     end
     endtask : INIT_ROM
 
     initial begin
-        $timeformat(-3, 0, "ms", 10);
+        //$timeformat(-3, 0, "ms", 10);
 
         INIT_ROM();
 
@@ -114,6 +117,53 @@ module test();
     end
 
    // $timeformat [(unit_number, precision, suffix, min_width )] ;
+    task DUMP;
+            DUMP_OP;
+            $display ("%9t ", $time,  "DUMP  ",
+                 " phase=%-6s", control::fPhase(CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec));
+            $display ("%9t ", $time,  "DUMP  ",
+                 " seq=%-2d", $clog2(CPU.seq)+1);
+            $display ("%9t ", $time,  "DUMP  ",
+                 " PC=%1d (0x%4h) PCHItmp=%d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
+            $display ("%9t ", $time,  "DUMP  ",
+                 " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
+            $display ("%9t ", $time,  "DUMP  ",
+                 " FDE=%1b%1b%1b(%-s)", CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseDecode, CPU.phaseExec));
+            $display ("%9t ", $time,  "DUMP  ",
+                 " _amode=%-1s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
+                 " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
+                 " addbbus=0x%4x", CPU.address_bus);
+            $display ("%9t ", $time,  "DUMP  ",
+                 " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
+            $display ("%9t ", $time,  "DUMP  ",
+                 " direct8=%08b", CPU.direct8,
+                 " immed8=%08b", CPU.immed8);
+            $display ("%9t ", $time,  "DUMP  ",
+                 " ram=%08b", CPU.ram64.D);
+            $display ("%9t ", $time,  "DUMP  ",
+                " tdev=%5b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
+                " adev=%4b(%s)", CPU.abus_dev, control::devname(CPU.abus_dev),
+                " bdev=%4b(%s)", CPU.bbus_dev,control::devname(CPU.bbus_dev),
+                " alu_op=%5b(%s)", CPU.alu_op, aluopName(CPU.alu_op)
+            );            
+            $display ("%9t ", $time,  "DUMP  ",
+                 " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
+            $display ("%9t ", $time,  "DUMP  ",
+                 " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU.flags_czonGLEN.Q, CPU.gated_flags_clk);
+            $display ("%9t ", $time,  "DUMP  ",
+                 " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);
+            $display("%9t", $time, " DUMP:",
+                 "  REGA:%08b", CPU.regFile.get(0),
+                 "  REGB:%08b", CPU.regFile.get(1),
+                 "  REGC:%08b", CPU.regFile.get(2),
+                 "  REGD:%08b", CPU.regFile.get(3)
+                 );
+
+            `define LOG_ADEV_SEL(DNAME) " _adev_``DNAME``=%1b", CPU._adev_``DNAME``
+            `define LOG_BDEV_SEL(DNAME) " _bdev_``DNAME``=%1b", CPU._bdev_``DNAME``
+            `define LOG_TDEV_SEL(DNAME) " _``DNAME``_in=%1b",  CPU._``DNAME``_in
+            $display("%9t", $time, " DUMP   WIRES ", `CONTROL_WIRES(LOG, `COMMA));
+    endtask 
 
 
     always @* begin
@@ -145,6 +195,18 @@ module test();
         $display ("%9t ", $time,  "OPERATION:  ", ": %-s", currentCode);
     end
 
+    task DUMP_OP;
+        $display ("%9t ", $time,  "DUMP  ", ": OPERATION: %-1s        PC=%4h", currentCode,pcval);
+        $display ("%9t ", $time,  "DUMP  ", ": PC    : %04h", pcval);
+        $display ("%9t ", $time,  "DUMP  ", ": ROM 1 : %02h     %8b", CPU.ctrl.instruction_1, CPU.ctrl.instruction_1);
+        $display ("%9t ", $time,  "DUMP  ", ": ROM 2 : %02h     %8b", CPU.ctrl.instruction_2, CPU.ctrl.instruction_2);
+        $display ("%9t ", $time,  "DUMP  ", ": ROM 3 : %02h     %8b", CPU.ctrl.instruction_3, CPU.ctrl.instruction_3);
+        $display ("%9t ", $time,  "DUMP  ", ": ROM 4 : %02h     %8b", CPU.ctrl.instruction_4, CPU.ctrl.instruction_4);
+        $display ("%9t ", $time,  "DUMP  ", ": ROM 5 : %02h     %8b", CPU.ctrl.instruction_5, CPU.ctrl.instruction_5);
+        $display ("%9t ", $time,  "DUMP  ", ": ROM 6 : %02h     %8b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_6);
+    endtask
+
+
     integer not_initialised = 16'hffff + 1;
     integer last_count = not_initialised;
     integer count;
@@ -161,7 +223,7 @@ module test();
                 $finish_and_return(2);
             end
             
-            if (last_count != 65535 & count != last_count+1) begin 
+            if (last_count != 65535 && count != last_count+1) begin 
                 $error("ERROR wrong count next +1 value : count=%d  last_count=%d but expected count=%d", count , last_count, last_count+1);
                 $finish_and_return(2);
             end
@@ -184,8 +246,10 @@ module test();
 // CONSTRAINTS
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
     always @(*) begin
-        if (CPU.phaseDecode & CPU.ctrl.instruction_6 === 'x) begin
-           $display("instruction_6", CPU.ctrl.instruction_6); 
+        if (CPU.phaseDecode && CPU.ctrl.instruction_6 === 'x) begin
+            #1
+            DUMP;
+            $display("rom value instruction_6", CPU.ctrl.instruction_6); 
             $error("ERROR END OF PROGRAM - PROGRAM BYTE = XX "); 
             $finish_and_return(1);
         end

@@ -10,10 +10,13 @@
 `define DECODE_PHASE   logic [6*8-1:0] sPhase; assign sPhase = `DECODE_PHASES;
 
 // unlike an assign this executes instantaneously but not referentially transparent
-`define DECODE_ADDRMODES (!_addrmode_pc ? "pc" : !_addrmode_register?  "register" : !_addrmode_direct? "direct": "---") 
-`define DECODE_ADDRMODE  logic [3*8-1:0] sAddrMode; assign sAddrMode = `DECODE_ADDRMODES;
+`define DECODE_ADDRMODES (!_addrmode_register?  "register" : !_addrmode_direct? "direct": "--") 
+//`define DECODE_ADDRMODE  logic [2*8-1:0] sAddrMode; assign sAddrMode = `DECODE_ADDRMODES;
+`define DECODE_ADDRMODE  logic [9*8-1:0] sAddrMode; assign sAddrMode = `DECODE_ADDRMODES;
 
 `define toDEV(DEVNAME) control::DEV_``DEVNAME``
+
+`define AMODE_TUPLE    wire [1:0] _addrmode = {CPU._addrmode_register, CPU._addrmode_direct}; 
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
@@ -29,10 +32,10 @@ package control;
     localparam PHASE_DECODE = 3'b010;
     localparam PHASE_EXEC = 3'b001;
    
-    localparam _AMODE_NONE=3'b111;
-    localparam _AMODE_PC=3'b011;
-    localparam _AMODE_REG=3'b101;
-    localparam _AMODE_DIR=3'b110;
+    // see _addrmode_tuple
+    localparam _AMODE_NONE=2'b11;
+    localparam _AMODE_REG=2'b01;
+    localparam _AMODE_DIR=2'b10;
 
     // ops
     localparam [2:0] OP_dev_eq_xy_alu =0;
@@ -54,7 +57,7 @@ package control;
     localparam [3:0] DEV_regg = 6; 
     localparam [3:0] DEV_regh = 7; 
     localparam [3:0] DEV_flags =8;
-    localparam [3:0] DEV_instreg = 9;
+    localparam [3:0] DEV_immed = 9;
     localparam [3:0] DEV_ram = 10;
     localparam [3:0] DEV_rom = 11;
     localparam [3:0] DEV_marlo = 12;
@@ -138,7 +141,7 @@ package control;
             DEV_regh: devname = "REGH"; // 8
             DEV_flags: devname = "FLAGS";
             DEV_not_used: devname = "NOT_USED";
-            DEV_instreg: devname = "INSTREG";
+            DEV_immed: devname = "IMMED";
             default: begin
                 string n; 
                 $sformat(n,"??(unknown %4b)", dev);
@@ -189,7 +192,7 @@ package control;
     end
     endfunction
 
-    function string fAddrMode(_addrmode_pc, _addrmode_register, _addrmode_direct); 
+    function string fAddrMode(_addrmode_register, _addrmode_direct); 
     begin
             fAddrMode = `DECODE_ADDRMODES;
     end
@@ -258,7 +261,7 @@ import control::*;
     ```FN``_ADEV_SEL(uart)    SEP\
     ```FN``_TDEV_SEL(uart)    SEP\
     \
-    ```FN``_BDEV_SEL(instreg)    SEP\
+    ```FN``_BDEV_SEL(immed)    SEP\
        \
     ```FN``_TDEV_SEL(pchitmp)    SEP\
     ```FN``_TDEV_SEL(pclo)    SEP\

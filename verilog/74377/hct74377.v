@@ -21,7 +21,8 @@ if (LOG)
   end
 
 //------------------------------------------------//
-reg [WIDTH-1:0] Q_current='x;
+parameter [WIDTH-1:0] UNDEF = {(WIDTH/2){2'bxz}};
+reg [WIDTH-1:0] Q_current=UNDEF;
 
 always @(posedge CP)
 begin
