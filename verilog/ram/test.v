@@ -23,46 +23,61 @@ module test();
       $display("%9t", $time, " MON : _OE=%1b, _WE=%1b, A=%8b, D=%8b - setup write 1 @ 1",_OE, _WE, A, D);
 
  initial begin
+    $dumpfile("dumpfile.vcd");
+    $dumpvars(0, test);
 
     `DISPLAY("TEST: INITIAL STATE");
     #PD
 
     `DISPLAY("TEST: write 1 at 1");
-    assign A=8'b00000001;
+    A=8'b00000001;
     Vd=8'b00000001;
     _OE=1'b1;
     _WE=1'b0;
     #PD
     _WE=1'b1;
     #PD
+    `Equals(RAM.Mem[1],1);
  
     `DISPLAY("TEST: write 2 at 2");
-    assign A=8'b00000010;
+    A=8'b00000010;
     Vd=8'b00000010;
     _OE=1'b1;
     _WE=1'b0;
     #PD
     _WE=1'b1;
     #PD
+    `Equals(RAM.Mem[2],2);
+
+   `DISPLAY("TEST: READ at 2");
+    A=8'b00000010;
+    Vd=8'bz;
+    _OE=1'b0;
+    #PD
+    `Equals(D, 8'b00000010);
  
     `DISPLAY("TEST: NO READ OR WRITE");
     Vd=8'bzzzzzzzz;
+    _OE=1'b1;
     #PD
     `Equals(D, 8'bzzzzzzzz);
 
-    `DISPLAY("TEST: READ at 2");
-    assign A=8'b00000010;
+   `DISPLAY("TEST: READ at 2");
+    Vd=8'bz;
+    A=8'b00000010;
     _OE=1'b0;
     #PD
     `Equals(D, 8'b00000010);
  
     `DISPLAY("TEST: Slide READ at 1");
-    assign A=8'b00000001;
+    Vd=8'bz;
+    A=8'b00000001;
     #PD
     `Equals(D, 8'b00000001);
  
     `DISPLAY("TEST: Slide READ at 0 is not defined");
-    assign A=8'b00000000;
+    Vd=8'bz;
+    A=8'b00000000;
     #PD
     `Equals(D, RAM.UNDEF);
 
@@ -70,7 +85,7 @@ module test();
     Vd=8'bz;
     _WE=1'b1;
     _OE=1'b0;
-    assign A=8'b00000011;
+    A=8'b00000011;
     #PD
     `Equals(D, RAM.UNDEF);
  
