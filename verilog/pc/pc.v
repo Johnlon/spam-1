@@ -1,6 +1,8 @@
 `ifndef  V_PC
 `define  V_PC
 
+// ADVANCE ON +CLK
+
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
 

@@ -22,7 +22,6 @@ localparam SETTLE=50;
 
 pc PC (
   .clk,
-  ._clk,
   ._MR(_MR),
   ._pc_in(_pc_in),
   ._pclo_in(_pclo_in),
@@ -56,11 +55,20 @@ initial begin
   _pclo_in = 1'b1;
   _MR = 1'b0;
   D = 8'b0;
-  clk = 1'b1;
+  clk = 1'b0;
+  #T
+  `Equals(PCLO, 8'bxxxxxxxx);
+  `Equals(PCHI, 8'bxxxxxxxx);
+
   
   $display("resetting");
-  clkpulse();
-  #SETTLE
+  clk = 1'b1;
+  #T
+  `Equals(PCLO, 8'b0);
+  `Equals(PCHI, 8'b0);
+
+  clk= 1'b1;
+  #T
   `Equals(PCLO, 8'b00000000);
   `Equals(PCHI, 8'b00000000);
 
@@ -92,31 +100,36 @@ initial begin
   `Equals(PCHI, 8'b00000000);
 
 
-// Set PCHITmp + PC advances
+  // Set PCHITmp + PC advances
   D = 8'b11111111;
-  $display("load PCHITmp with %8b - PC should advance on -ve edge", D);
+  $display("load PCHITmp with %8b - PC should advance on +ve edge", D);
   _pc_in = 1'b1;
   _pchitmp_in = 1'b0;
   _pclo_in = 1'b1;
   clk= 1'b0;
   #SETTLE
-  `Equals(PCLO, 8'b00000011);
+  `Equals(PCLO, 8'b00000010);
   `Equals(PCHI, 8'b00000000);
 
-  $display("PC should NOT advance on +ve edge");
   clk= 1'b1;
   #SETTLE
   `Equals(PCLO, 8'b00000011);
   `Equals(PCHI, 8'b00000000);
 
-  $display("PC should advance on -ve edge");
+  $display("PC should NOT advance on -ve edge");
   clk= 1'b0;
+  #SETTLE
+  `Equals(PCLO, 8'b00000011);
+  `Equals(PCHI, 8'b00000000);
+
+  $display("PC should advance on +ve edge");
+  clk= 1'b1;
   #SETTLE
   `Equals(PCLO, 8'b00000100);
   `Equals(PCHI, 8'b00000000);
 
-  $display("PC should NOT advance on +ve edge");
-  clk= 1'b1;
+  $display("PC should NOT advance on -ve edge");
+  clk= 1'b0;
   #SETTLE
   `Equals(PCLO, 8'b00000100);
   `Equals(PCHI, 8'b00000000);
