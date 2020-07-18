@@ -18,7 +18,15 @@ module ram(_OE, _WE, A, D);
 
     reg [DWIDTH-1:0] Mem [DEPTH-1:0];
 
-    assign D=!_WE? HIZ: _OE? HIZ: Mem[A];
+    localparam t_dis_w = 25;
+    localparam t_en_w = 0;
+    localparam t_dis_g = 25;
+    localparam t_en_g = 0;
+    wire #(t_en_w, t_dis_w) _delayedWE = _WE;
+    wire #(t_dis_g, t_en_g) _delayedOE = _OE;
+
+    //assign D=!_WE? HIZ: _OE? HIZ: Mem[A];
+    assign D=!_delayedWE? HIZ: _delayedOE ? HIZ: Mem[A];
 
 /*
   if (LOG) begin
