@@ -20,6 +20,9 @@ if (LOG)
       $display("%9t", $time, " REGISTER %m   CP=%1b _EN=%1b D=%08b Q=%08b (Q_current=%08b)", CP, _EN, D, Q, Q_current);
   end
 
+if (LOG)  
+  always @* $display("%9t", $time, " REGISTER %m UPDATED  Q=%08b", Q);
+
 //------------------------------------------------//
 parameter [WIDTH-1:0] UNDEF = {(WIDTH/4){4'bzxxz}};
 reg [WIDTH-1:0] Q_current=UNDEF;
