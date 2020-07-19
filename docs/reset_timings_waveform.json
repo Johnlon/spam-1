@@ -1,0 +1,29 @@
+{
+    "signal": [
+
+      { "name": "clk",        "wave": "p.......", "node": "..YZG", "period":6 },
+      { "name": "_RESET",     "wave": "hL.....H.......................................", "node": ".R.....C"},
+      { "name": "resetffQ",   "wave": "x.l..........h.................................", "node": "..M..........N.....V.....W.....H", "color": ["white", "red", "green"] },
+      { "name": ""  },
+      { "name": "phase",      "wave": "x.l................h.....l.....h.....l.....h...", "node": "..Q................U.....V.....W.....H"},
+      { "name": "phases",                                                                "node": "..A................B.....D.....E.....F"},
+      { "name": ""  },
+      { "name": "_pc_reset",  "wave": "xxl.......................h....................", "node": "..........................I"},
+      { "name": "pc",         "wave": "xxxxxxxxxxxxxxxxxxxx3...........3...........3..", "node": "....................O...........P", "data": ["0", "1"] },
+      
+    ],
+      "edge": [
+        "R-|>M async reset", 
+          "C~-N button released", 
+          "U-|>O clock : reset pc",
+          "W-|>P clock : inc pc",
+          "Y-|>N trigger release reset",
+          "N~-U release reset enabled",
+          "Z-|>U toggle", 
+          "G-|>V toggle", 
+          "V-|>I clear PC reset", 
+          "A<->B exec", "B<->D fetch", "D<->E exec", "E<->F fetch"  
+      ],
+     "config": { "hscale": 1, "skin":"narrow"}
+  
+  }
