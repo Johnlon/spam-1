@@ -1,6 +1,10 @@
 `ifndef  V_74163
 `define  V_74163
 
+// counts on the +ve edge
+// low at PE disables counting and enables par load on next +ve clock
+// low on MR sets counter to 0 on next +ve clock - overrides all other controls
+
 // Hate the TI docs, so changed naming to... https://assets.nexperia.com/documents/data-sheet/74HC_HCT163.pdf
 // 4 bit fully synchronous binary counter, parallel loadable
 // HCT timings
