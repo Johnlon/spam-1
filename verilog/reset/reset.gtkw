@@ -1,0 +1,27 @@
+[*]
+[*] GTKWave Analyzer v3.3.86 (w)1999-2017 BSI
+[*] Sun Jul 19 16:06:59 2020
+[*]
+[dumpfile] "/mnt/c/Users/johnl/OneDrive/simplecpu/verilog/reset/dumpfile.vcd"
+[dumpfile_mtime] "Sun Jul 19 16:01:11 2020"
+[dumpfile_size] 5809
+[savefile] "/mnt/c/Users/johnl/OneDrive/simplecpu/verilog/reset/reset.gtkw"
+[timestart] 0
+[size] 1536 801
+[pos] -139 -139
+*-9.137147 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 213
+[signals_width] 134
+[sst_expanded] 1
+[sst_vpaned_height] 222
+@28
+test.clk
+test._RESET_SWITCH
+test._mr
+test.phase_clk
+@29
+test._reset_pc
+@22
+test.pc[15:0]
+[pattern_trace] 1
+[pattern_trace] 0

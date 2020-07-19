@@ -26,15 +26,16 @@ module reset(
           //._Q(_mr)
         );
 
-    assign #(10) phase_clk = clk & _mr;
 
     hct7474 #(.BLOCKS(1), .LOG(0)) pcresetff(
           ._SD(1'b1),
           ._RD(_mr),
           .D(1'd1),
-          .CP(clk),
+          .CP(~clk),
           .Q(_reset_pc),
           ._Q()
         );
+
+    assign #(10) phase_clk = clk & _mr;
 
 endmodule 

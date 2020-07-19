@@ -97,7 +97,7 @@ module test(
         `Equals(pc, 'x);
         `Equals(_mr, 1'b1);
         `Equals(phase_clk, 1'b0); // clk tracking
-        `Equals(_reset_pc, 'x);
+        `Equals(_reset_pc, '1);
         
         clk=1;
         #GAP
@@ -199,7 +199,7 @@ module test(
         #GAP
         `Equals(_mr, 1'b1);
         `Equals(phase_clk, 1'b0);
-        `Equals(_reset_pc, '0);
+        `Equals(_reset_pc, '1);
         `Equals(pc, 16'd0);
 
         $display("clk +ve edge , _reset_pc is cleared");
@@ -208,33 +208,33 @@ module test(
         `Equals(_mr, 1'b1);
         `Equals(phase_clk, 1'b1);
         `Equals(_reset_pc, '1); // +clk clears _reset_pc
-        `Equals(pc, 16'd0);
+        `Equals(pc, 16'd1);
         
         $display("_reset_pc is cleared so next cycle increments the PC");
         clk=0;
         #GAP
-        `Equals(pc, 16'd0);
+        `Equals(pc, 16'd1);
         `Equals(_mr, 1'b1);
         `Equals(phase_clk, 1'b0);
         `Equals(_reset_pc, '1);
 
         clk=1;
         #GAP
-        `Equals(pc, 16'd1);
+        `Equals(pc, 16'd2);
         `Equals(_mr, 1'b1);
         `Equals(phase_clk, 1'b1);
         `Equals(_reset_pc, '1);
         
         clk=0;
         #GAP
-        `Equals(pc, 16'd1);
+        `Equals(pc, 16'd2);
         `Equals(_mr, 1'b1);
         `Equals(phase_clk, 1'b0);
         `Equals(_reset_pc, '1);
         
         clk=1;
         #GAP
-        `Equals(pc, 16'd2);
+        `Equals(pc, 16'd3);
         `Equals(_mr, 1'b1);
         `Equals(phase_clk, 1'b1);
         `Equals(_reset_pc, '1);
@@ -266,7 +266,7 @@ module test(
         #GAP
         clk=1;
        
-        `Equals(pc, 16'd4);
+        `Equals(pc, 16'd5);
     end
 
     always @* $display("%9t ", $time, "      _mr %1b  ", _mr);
