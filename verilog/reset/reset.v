@@ -26,12 +26,13 @@ module reset(
           //._Q(_mr)
         );
 
+    wire #(8) _clk = !clk;
 
     hct7474 #(.BLOCKS(1), .LOG(0)) pcresetff(
           ._SD(1'b1),
           ._RD(_mr),
           .D(1'd1),
-          .CP(~clk),
+          .CP(_clk),
           .Q(_reset_pc),
           ._Q()
         );
