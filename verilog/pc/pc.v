@@ -91,6 +91,10 @@ begin
   begin
     $display("%9t ", $time, "PC RESET ");
   end
+    else
+  begin
+    $display("%9t ", $time, "PC TICK _MR=%1b ", _MR);
+  end
 end
 
 if (LOG) always @(*) begin

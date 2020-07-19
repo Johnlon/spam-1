@@ -19,9 +19,7 @@ Unit number Time unit Unit number Time unit
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
 
-//`timescale 1ns/1ns
 `timescale 1ns/1ns
-
 
 `define SEMICOLON ;
 `define COMMA ,
@@ -95,10 +93,10 @@ module test();
     end
 
     always @* begin
-        if (CPU._mrPC)  
-            $display("\n%9t PC RESET RELEASE   _mrPC=%1b  ======================================================================\n", $time, CPU._mrPC); 
+        if (CPU._mrN)  
+            $display("\n%9t PC RESET RELEASE   _mrN=%1b  ======================================================================\n", $time, CPU._mrN); 
         else      
-            $display("\n%9t PC RESET SET       _mrPC=%1b  ======================================================================\n", $time, CPU._mrPC); 
+            $display("\n%9t PC RESET SET       _mrN=%1b  ======================================================================\n", $time, CPU._mrN); 
     end
 
 

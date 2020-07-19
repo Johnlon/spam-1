@@ -16,7 +16,6 @@
 `timescale 1ns/1ns
 
 module wide_controller(
-    input _mr,
     input [15:0] pc,
     input [7:0] _flags,
 

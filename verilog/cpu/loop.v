@@ -105,52 +105,39 @@ module test();
         INIT_ROM();
 
         `DISPLAY("init : _RESET_SWITCH=0")
-        _RESET_SWITCH <= 0;
+        _RESET_SWITCH = 0;
         clk=0;
 
         #1000
-        _RESET_SWITCH <= 1;
+        _RESET_SWITCH = 1;
 
     end
 
    // $timeformat [(unit_number, precision, suffix, min_width )] ;
     task DUMP;
             DUMP_OP;
-            $display ("%9t ", $time,  "DUMP  ",
-                 " phase=%-6s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
-            $display ("%9t ", $time,  "DUMP  ",
-                 " seq=%-2d", $clog2(CPU.seq)+1);
-            $display ("%9t ", $time,  "DUMP  ",
-                 " PC=%1d (0x%4h) PCHItmp=%d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
-            $display ("%9t ", $time,  "DUMP  ",
-                 " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
-            $display ("%9t ", $time,  "DUMP  ",
-                 " FDE=%1b%1b(%-s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
-            $display ("%9t ", $time,  "DUMP  ",
-                 " _amode=%-1s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
+            `define DD $display ("%9t ", $time,  "DUMP  ",
+
+            `DD " phase=%-6s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
+            `DD " PC=%1d (0x%4h) PCHItmp=%d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
+            `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
+            `DD " FDE=%1b%1b(%-s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
+            `DD " _amode=%-1s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
                  " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
                  " addbbus=0x%4x", CPU.address_bus);
-            $display ("%9t ", $time,  "DUMP  ",
-                 " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
-            $display ("%9t ", $time,  "DUMP  ",
-                 " direct8=%08b", CPU.direct8,
+            `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
+            `DD " direct8=%08b", CPU.direct8,
                  " immed8=%08b", CPU.immed8);
-            $display ("%9t ", $time,  "DUMP  ",
-                 " ram=%08b", CPU.ram64.D);
-            $display ("%9t ", $time,  "DUMP  ",
-                " tdev=%5b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
+            `DD " ram=%08b", CPU.ram64.D);
+            `DD " tdev=%5b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
                 " adev=%4b(%s)", CPU.abus_dev, control::devname(CPU.abus_dev),
                 " bdev=%4b(%s)", CPU.bbus_dev,control::devname(CPU.bbus_dev),
                 " alu_op=%5b(%s)", CPU.alu_op, aluopName(CPU.alu_op)
             );            
-            $display ("%9t ", $time,  "DUMP  ",
-                 " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
-            $display ("%9t ", $time,  "DUMP  ",
-                 " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU.flags_czonGLEN.Q, CPU.gated_flags_clk);
-            $display ("%9t ", $time,  "DUMP  ",
-                 " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);
-            $display("%9t", $time, " DUMP:",
-                 "  REGA:%08b", CPU.regFile.get(0),
+            `DD " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
+            `DD " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU.flags_czonGLEN.Q, CPU.gated_flags_clk);
+            `DD " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);
+            `DD "  REGA:%08b", CPU.regFile.get(0),
                  "  REGB:%08b", CPU.regFile.get(1),
                  "  REGC:%08b", CPU.regFile.get(2),
                  "  REGD:%08b", CPU.regFile.get(3)
@@ -171,10 +158,10 @@ module test();
     end
 
     always @* begin
-        if (CPU._mrPC)  
-            $display("\n%9t PC RESET RELEASE   _mrPC=%1b  ======================================================================\n", $time, CPU._mrPC); 
+        if (CPU._mrN)  
+            $display("\n%9t PC RESET RELEASE   _mrN=%1b  ======================================================================\n", $time, CPU._mrN); 
         else      
-            $display("\n%9t PC RESET SET       _mrPC=%1b  ======================================================================\n", $time, CPU._mrPC); 
+            $display("\n%9t PC RESET SET       _mrN=%1b  ======================================================================\n", $time, CPU._mrN); 
     end
 
     integer pcval;
@@ -243,7 +230,7 @@ module test();
 // CONSTRAINTS
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
     always @(*) begin
-        if (CPU.phaseExec && CPU.ctrl.instruction_6 === 'x) begin
+        if (CPU._mrN && CPU.phaseExec && CPU.ctrl.instruction_6 === 'x) begin
             #1
             DUMP;
             $display("rom value instruction_6", CPU.ctrl.instruction_6); 

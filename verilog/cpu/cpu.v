@@ -12,6 +12,7 @@
 
 //#!/usr/bin/iverilog -Ttyp -Wall -g2012 -gspecify -o test.vvp 
 `include "../cpu/wide_controller.v"
+`include "../reset/reset.v"
 `include "../phaser/phaser.v"
 `include "../registerFile/syncRegisterFile.v"
 `include "../pc/pc.v"
@@ -40,7 +41,7 @@ typedef reg[`MAX_INST_LEN:0][7:0] string_bits ;
 // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
 module cpu(
     input _RESET_SWITCH,
-    input clk
+    input system_clk
 );
 
     parameter LOG=0;
@@ -53,9 +54,16 @@ module cpu(
     wire [4:0] alu_op;
     wire [7:0] _flags;
 
+    wire _mr, _mrN, clk;
 
-    wire _phaseFetch, phaseFetch,  phaseExec, _phaseExec;
-    wire [1:0] phase = {phaseFetch, phaseExec};
+    reset RESET(
+        .system_clk,
+        ._RESET_SWITCH,
+        .clk,
+        ._mr,
+        ._mrN
+    );
+
 
     // CLOCK ===================================================================================
     //localparam T=1000;
@@ -65,42 +73,13 @@ module cpu(
     //end
 
     wire #8 _clk = ! clk; // GATE + PD
+
+
+    wire  phaseFetch = clk;
+    wire _phaseExec = clk;
+    wire  #(10) _phaseFetch = !phaseFetch;
+    wire  #(10) phaseExec = !_phaseExec;
     
-    // RESET CIRCUIT ===================================================================================
-
-    wire mrPC, _mrPC;
-    wire mrPH, _mrPH;
-
-    // syncs the reset with the clock.
-    // mrPH forces phase to 000 so clock to PC will be low.
-    // at this point _mrPC will also be low so when the clock releases _mrPH then 
-    // there will be a phase transition to 100 which the PC will see as a clock pulse that resets the PC   
-    hct7474 #(.BLOCKS(1), .LOG(0)) resetPH(
-          ._SD(1'b1),
-          ._RD(_RESET_SWITCH),
-          .D(1'b1),
-          .CP(clk),
-          .Q(_mrPH),
-          ._Q(mrPH)
-        );
-
-    hct7474 #(.BLOCKS(1), .LOG(0)) resetPCFF(
-          ._SD(1'b1),
-          ._RD(_mrPH), // reset released after clock on resetPH
-          .D(1'b1),
-          .CP(phaseFetch),
-          .Q(_mrPC),
-          ._Q(mrPC)
-        );
-
-
-    // CLOCK PHASING ===================================================================================
-
-    wire [9:0] seq;
-    `define SEQ(x) (10'd2 ** (x-1))
-
-    // releasing reset allows phaser to go from 000 to 100 whilst _mrPC is low which resets the PC
-    phaser #(.LOG(0)) ph(.clk, .mr(mrPH), .seq, ._phaseFetch, .phaseFetch , .phaseExec, ._phaseExec);
 
     // CONTROL ===========================================================================================
     wire _addrmode_register, _addrmode_direct;
@@ -123,9 +102,7 @@ module cpu(
     wire [15:0] pc_addr = {PCHI, PCLO}; 
 
     wide_controller ctrl(
-        ._mr(_mrPC),
         .pc(pc_addr),
-        //.address_bus,
         ._flags(_flags),
 
         ._addrmode_register, ._addrmode_direct,
@@ -134,7 +111,7 @@ module cpu(
         .direct8,
         .immed8,
         .alu_op,
-        .bbus_dev, .abus_dev, .targ_dev // for regfile
+        .bbus_dev, .abus_dev, .targ_dev
     );
 
     // PROGRAM COUNTER ======================================================================================
@@ -154,9 +131,8 @@ module cpu(
     
     // PC reset is sync with +ve edge of clock
     pc #(.LOG(0))  PC (
-        .clk(phaseFetch),
-        ._MR(_mrPC),
-        //._pc_in(_pc_in), // load both
+        .clk(clk),
+        ._MR(_mrN),
         ._pc_in(_do_jmp),  // load both
         ._pclo_in(_pclo_in), // load lo
         ._pchitmp_in(_pchitmp_in), // load tmp
@@ -181,14 +157,15 @@ module cpu(
     // RAM =============================================================================================
 
     wire #(8) _gated_ram_in = _phaseExec | _ram_in;
+    //wire #(8) _gated_ram_in = _phaseFetch | _ram_in;
     ram #(.AWIDTH(16), .LOG(1)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
     
     hct74245ab ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in));
     hct74245ab ram_bbus_buf(.A(ram64.D), .B(bbus), .nOE(_bdev_ram));
 
     // MAR =============================================================================================
-    hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
-    hct74377 #(.LOG(0)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
+    hct74377 #(.LOG(1)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
+    hct74377 #(.LOG(1)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
 
     hct74245ab marlo_abus_buf(.A(MARLO.Q), .B(abus), .nOE(_adev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
     hct74245ab marlo_bbus_buf(.A(MARLO.Q), .B(bbus), .nOE(_bdev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
@@ -238,9 +215,9 @@ module cpu(
     wire [1:0] regfile_rdR_addr = bbus_dev[1:0];
     wire [1:0] regfile_wr_addr = targ_dev[1:0];
 
-    if (0) always @* $display("regfile gated in=", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
-    if (0) always @* $display("regfile abus out=", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
-    if (0) always @* $display("regfile bbus out=", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
+    if (1) always @* $display("regfile gated in=", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
+    if (1) always @* $display("regfile abus out=", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
+    if (1) always @* $display("regfile bbus out=", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
 
 
     syncRegisterFile #(.LOG(0)) regFile(
