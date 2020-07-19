@@ -1,3 +1,4 @@
+// see also ../../docs/reset_timings_waveform.json
 `include "../7474/hct7474.v"
 
 // verilator lint_off ASSIGNDLY
