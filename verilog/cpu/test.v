@@ -35,7 +35,7 @@ module test();
 
     // CLOCK ===================================================================================
     //localparam HALF_CLK=44;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
-    localparam HALF_CLK=1000;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    localparam HALF_CLK=300;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;
@@ -476,6 +476,7 @@ module test();
 
     integer instCount = 0;
 
+/*
     always @(CPU.clk) begin
         $display("%9t", $time, " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CLK %1b  <<<<<<<<<<<<<<<<<<<<<<<", CPU.clk);
     end
@@ -492,7 +493,7 @@ module test();
         instCount ++;
         $display("%9t", $time, " START PHASE: FETCH (posedge)  INTRUCTION#=%-d ==============================================================", instCount); 
     end
-
+*/
     
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // CONSTRAINTS

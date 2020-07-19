@@ -158,14 +158,14 @@ module cpu(
 
     wire #(8) _gated_ram_in = _phaseExec | _ram_in;
     //wire #(8) _gated_ram_in = _phaseFetch | _ram_in;
-    ram #(.AWIDTH(16), .LOG(1)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
+    ram #(.AWIDTH(16), .LOG(0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
     
     hct74245ab ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in));
     hct74245ab ram_bbus_buf(.A(ram64.D), .B(bbus), .nOE(_bdev_ram));
 
     // MAR =============================================================================================
-    hct74377 #(.LOG(1)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
-    hct74377 #(.LOG(1)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
+    hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
+    hct74377 #(.LOG(0)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
 
     hct74245ab marlo_abus_buf(.A(MARLO.Q), .B(abus), .nOE(_adev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
     hct74245ab marlo_bbus_buf(.A(MARLO.Q), .B(bbus), .nOE(_bdev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
