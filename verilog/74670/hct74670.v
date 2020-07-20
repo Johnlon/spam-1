@@ -19,10 +19,10 @@ module hct74670 (input _wr_en,
     reg [3:0] registers[3:0];
     
     specify
-    (_rd_en *> rd_data)   = (18:18:35);
-    (_wr_en *> rd_data)   = (28:28:50);
-    (rd_addr *> rd_data) = (21:21:40);
-    (wr_data => rd_data) = (27:27:50);
+    (_rd_en *> rd_data)  = 18;
+    (_wr_en *> rd_data)  = 28;
+    (rd_addr *> rd_data) = 21;
+    (wr_data => rd_data) = 27;
     endspecify
     
     // write to register file
