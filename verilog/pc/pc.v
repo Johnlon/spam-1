@@ -41,16 +41,6 @@ hct74377 PCHiTmpReg(
 // count disabled for this clock cycle if we've just loaded PC
 wire countEn;
 
-/*
-hct7474 #(.BLOCKS(1), .NAME("RESETFF (sensitivity = _clk)"), .LOG(0)) resetFF(
-  ._SD(1'b1),
-  ._RD(_pclo_load),     // ASYNC !! gets set as soon as _pclo fires TODO FIXME << SPURIOUS RESET RISK??
-  .D(1'b1),
-  .clk(_clk),             // gets cleared on next neg clk
-  .Q(countEn)
-);
-*/
-
 // 74163 counts when CEP/CET/PE are all high
 // _pclo_load is synchronous and must be held low DURING a +ve clk
 
