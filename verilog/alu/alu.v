@@ -1,7 +1,7 @@
 /* verilator lint_off ASSIGNDLY */
 
 /// FIXME NEED A BINARY TO BCD OPERATION AS THIS IS HARD - https://www.nandland.com/vhdl/modules/double-dabble.html
-// replace A-1 and A+1 with 
+//  replace A-1 and A+1 with 
 
 // FIXME - include those ALU Div with Borrow Remainder functions?
 
@@ -9,6 +9,8 @@
 
 /// MANY OPS NOT REQUIRED IF R CAN BE IMMEDIATE eg "A+1" is same as "A+immediate 1" as long as both treat carry the same
 /// HMMMM .. But can't do "B+immediate 1" unless instreg is available on A bus too.
+
+`include "../74138/hct74138.v"
 
 
 // See also http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt#:~:text=The%20ALU%20doesn't%20know,after%20the%20math%20is%20done.
@@ -18,10 +20,6 @@
 
 `timescale 1ns/1ns
 
-// need to be able to mux the device[3:0] with 74HC243 quad bus tranceiver has OE & /OE for outputs control and 
-// use a sip5 10k resistor pull down to get 0. 
-// else use mux use 74241 (2x4 with hi or low en) or 74244 (2x4 with low en) 
-//assign reg_x_addr = device_sel[3:0]; // top bit of device sel ignored
 
 `define toALUOP(OPNAME) alu_ops::OP_``OPNAME``
 
@@ -299,7 +297,10 @@ Can Overflow double as a divide / 0 flag ?
     assign #(PD) _flag_gt = unsigned_magnitude ? !(a>b) : !(signed_a > signed_b);
     assign #(PD) _flag_lt = unsigned_magnitude ? !(a<b) : !(signed_a < signed_b);
 
-    wire [7:0] cin8 = {7'b0, !_flag_c_in};
+    wire #(8) flag_c_in = !_flag_c_in; // inverter
+
+    wire [7:0] cin8 = {7'b0, flag_c_in};
+
     logic [15:0] TimesResult;
 
     if (LOG) 
@@ -366,7 +367,32 @@ Can Overflow double as a divide / 0 flag ?
     endfunction
 
     int count;
+
+
+    // CARRY-IN LOGIC
     logic [4:0] alu_op_effective;
+
+    wire D,E,C,B,A;
+    assign E=alu_op[4];
+    assign D=alu_op[3];
+    assign C=alu_op[2];
+    assign B=alu_op[1];
+    assign A=alu_op[0];
+
+    wire [7:0] _decoded;
+    hct74138 decoder
+    (
+      .Enable1_bar(E),
+      .Enable2_bar(1'b0),
+      .Enable3(D),
+      .A({C,B,A}),
+      .Y(_decoded)
+    );
+
+    wire #(8) _use_cin = _decoded[7] & _decoded[6] & _decoded[5]; // AND GATE - BUT USE TRIPLE 3 INPUT NAND AS WE NEED A NOT ON THE _flag_c_in ABOVE
+
+    wire effective_bit3 = _use_cin ? alu_op[2]: flag_c_in; // multiplexer
+        
 
     always @* begin
 
@@ -376,6 +402,16 @@ Can Overflow double as a divide / 0 flag ?
         unsigned_magnitude=1;
 
 
+        alu_op_effective=alu_op;
+        alu_op_effective[2] = effective_bit3;
+/*
+$display("_use_cin ", _use_cin);
+$display("_flag_cin ", _flag_c_in);
+$display("op        %5b ", alu_op);
+$display("effective %5b ", alu_op_effective);
+*/
+
+/*
         // FIXME TODO CHANGE TO LOGIC and delays etc as I need this for the H/W
         if (_flag_c_in) begin
             case (alu_op)
@@ -396,6 +432,7 @@ Can Overflow double as a divide / 0 flag ?
         else begin
              alu_op_effective=alu_op;
         end
+*/
 
 
 
@@ -531,7 +568,7 @@ Can Overflow double as a divide / 0 flag ?
             end
 
             OP_A_ROL_B: begin 
-                c_buf_c = {a, !_flag_c_in};
+                c_buf_c = {a, flag_c_in};
                 for (count = 0; count < b; count++) begin
                     c_buf_c = c_buf_c << 1;
                     set_cbot(c_top());
@@ -540,7 +577,7 @@ Can Overflow double as a divide / 0 flag ?
             end
 
             OP_A_ROR_B: begin 
-                c_buf_c = {!_flag_c_in, a, 1'b0};
+                c_buf_c = {flag_c_in, a, 1'b0};
                 for (count = 0; count < b; count++) begin
                     c_buf_c = c_buf_c >> 1;
                     set_ctop(c_bot()); // move the carry-out bit to the return value position
