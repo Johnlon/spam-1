@@ -1,5 +1,7 @@
 /* verilator lint_off ASSIGNDLY */
 
+// TODO TODO TODO - generate rom images for Warren
+
 /// FIXME NEED A BINARY TO BCD OPERATION AS THIS IS HARD - https://www.nandland.com/vhdl/modules/double-dabble.html
 //  replace A-1 and A+1 with 
 
@@ -7,8 +9,30 @@
 
 /// EG USING ROM 28C512
 
+
 /// MANY OPS NOT REQUIRED IF R CAN BE IMMEDIATE eg "A+1" is same as "A+immediate 1" as long as both treat carry the same
 /// HMMMM .. But can't do "B+immediate 1" unless instreg is available on A bus too.
+
+//// THIS IS THE MOST RECENT Jun 2020 ALU layout from CSCVon8
+// | 0           | B-1               | A*B (low bits)    | A ROR B       |
+// | A           | __A+B+Cin (0)__   | A*B (high bits)   | A AND B       |
+// | B           | __A-B-Cin (0)__   | A/B               | A OR B        |
+// | -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
+// | -B          | A-B (special)     | A << B            | NOT A         |
+// | A+1         | __A+B+Cin (1)__   | A >> B logical    | NOT B         |
+// | B+1         | __A-B-Cin (1)__   | A >> B arithmetic | A+B (BCD)     |
+// | A-1         | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
+
+// My wiring here is ....
+// | 0           | B-1               | A*B (low bits)    | A ROR B       |
+// | A           | __A+B+Cin (0)__   | A*B (high bits)   | A AND B       |
+// | B           | __A-B-Cin (0)__   | A/B               | A OR B        |
+// | -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
+// | -B          | A-B signedmag     | A << B            | NOT A         |
+// | A+1         | __A+B+Cin (1)__   | A >> B logical    | NOT B         |
+// | B+1         | __A-B-Cin (1)__   | A >> B arithmetic | A+B (BCD)     |
+// | A-1         | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
+
 
 `include "../74138/hct74138.v"
 
@@ -206,42 +230,42 @@ module alu #(parameter LOG=0, PD=120) (
 );
     import alu_ops::*;
 
-//// THIS IS THE MOST RECENT Jun 2020 ALU layout from CSCVon8
-// | 0           | B-1               | A*B (low bits)    | A ROR B       |
-// | A           | __A+B+Cin (0)__   | A*B (high bits)   | A AND B       |
-// | B           | __A-B-Cin (0)__   | A/B               | A OR B        |
-// | -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
-// | -B          | A-B (special)     | A << B            | NOT A         |
-// | A+1         | __A+B+Cin (1)__   | A >> B logical    | NOT B         |
-// | B+1         | __A-B-Cin (1)__   | A >> B arithmetic | A+B (BCD)     |
-// | A-1         | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
+    //////////////////////////////////////////////////////
+    // CARRY-IN LOGIC - EXTERNAL LOGIC
+    //////////////////////////////////////////////////////
 
-// My wiring here is ....
-// | 0           | B-1               | A*B (low bits)    | A ROR B       |
-// | A           | __A+B+Cin (0)__   | A*B (high bits)   | A AND B       |
-// | B           | __A-B-Cin (0)__   | A/B               | A OR B        |
-// | -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
-// | -B          | A-B signedmag     | A << B            | NOT A         |
-// | A+1         | __A+B+Cin (1)__   | A >> B logical    | NOT B         |
-// | B+1         | __A-B-Cin (1)__   | A >> B arithmetic | A+B (BCD)     |
-// | A-1         | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
+    wire #(8) flag_c_in = !_flag_c_in; // inverter
 
+    wire D,E,C,B,A;
+    assign E=alu_op[4];
+    assign D=alu_op[3];
+    assign C=alu_op[2];
+    assign B=alu_op[1];
+    assign A=alu_op[0];
 
-/*
-- No overflow when adding a +ve and a -ve number
-- No overflow when signs are the same for subtraction (because -- means a +)
+    wire [7:0] _decoded;
+    hct74138 decoder
+    (
+      .Enable1_bar(E),
+      .Enable2_bar(1'b0),
+      .Enable3(D),
+      .A({C,B,A}),
+      .Y(_decoded)
+    );
 
-Overflow occurs when the value affects the sign:
-- overflow when adding two +ves yields a -ve
-- or, adding two -ves gives a +ve
-- or, subtract a -ve from a +ve and get a -ve
-- or, subtract a +ve from a -ve and get a +ve
+    wire #(8) _use_cin = _decoded[7] & _decoded[6] & _decoded[5]; // AND GATE - BUT USE TRIPLE 3 INPUT NAND AS WE NEED A NOT ON THE _flag_c_in ABOVE
 
-Can Overflow double as a divide / 0 flag ?
-*/
-//    logic [8:0] tmp = 'x; // long enough for result and carry 
+    wire effective_bit3 = _use_cin ? alu_op[2]: flag_c_in; // multiplexer
+        
+    wire [4:0] alu_op_effective = {alu_op[4:3], effective_bit3, alu_op[1:0]};
 
     logic signed [9:0] c_buf_c;
+
+    //////////////////////////////////////////////////////
+    // ROM PROGRAMMING
+    // ROM PROGRAMMING
+    // ROM PROGRAMMING
+    //////////////////////////////////////////////////////
 
     task set_ctop(c);
         c_buf_c[9] =c;
@@ -297,42 +321,9 @@ Can Overflow double as a divide / 0 flag ?
     assign #(PD) _flag_gt = unsigned_magnitude ? !(a>b) : !(signed_a > signed_b);
     assign #(PD) _flag_lt = unsigned_magnitude ? !(a<b) : !(signed_a < signed_b);
 
-    wire #(8) flag_c_in = !_flag_c_in; // inverter
-
     wire [7:0] cin8 = {7'b0, flag_c_in};
 
     logic [15:0] TimesResult;
-
-    if (LOG) 
-    always @(*) 
-        $display("%9t ALU", $time,
-        " aluop=%-1s (op:%d)", aluopName(alu_op), alu_op, // %1s causes string to lose trailing space
-        " (%-1s)", aluopName(alu_op_effective), // %1s causes string to lose trailing space
-        "  ",
-        " a=%08b (u%-3d/s%-4d/h%-02h) ", a, a, signed_a, a,
-        " b=%08b (u%-3d/s%-4d/h%-02h) ", b, b, signed_b, b,
-        " _c_in=%1b ", _flag_c_in,
-        "  ",
-        " out=%08b (u%-3d/s%-4d/h%-02h) ", o, o, signed_o, o,
-        //" _c=%1b",  _flag_c,
-        //" _z=%1b",  _flag_z,
-        //" _n=%1b",  _flag_n,
-        //" _o=%1b",  _flag_o,
-        //" _gt=%1b", _flag_gt,
-        //" _lt=%1b", _flag_lt,
-        //" _eq=%1b", _flag_eq,
-        //" _ne=%1b", _flag_ne,
-        " _c%1b",  _flag_c,
-        " _z%1b",  _flag_z,
-        " _n%1b",  _flag_n,
-        " _o%1b",  _flag_o,
-        " _gt%1b", _flag_gt,
-        " _lt%1b", _flag_lt,
-        " _eq%1b", _flag_eq,
-        " _ne%1b", _flag_ne,
-        " ",
-        " unsigned_magnitude=%b ", unsigned_magnitude
-         );
 
     // http://class.ece.iastate.edu/arun/Cpre381/lectures/arithmetic.pdf
     // pass sign bits in for subtraction overflow
@@ -368,73 +359,16 @@ Can Overflow double as a divide / 0 flag ?
 
     int count;
 
-
-    // CARRY-IN LOGIC
-    logic [4:0] alu_op_effective;
-
-    wire D,E,C,B,A;
-    assign E=alu_op[4];
-    assign D=alu_op[3];
-    assign C=alu_op[2];
-    assign B=alu_op[1];
-    assign A=alu_op[0];
-
-    wire [7:0] _decoded;
-    hct74138 decoder
-    (
-      .Enable1_bar(E),
-      .Enable2_bar(1'b0),
-      .Enable3(D),
-      .A({C,B,A}),
-      .Y(_decoded)
-    );
-
-    wire #(8) _use_cin = _decoded[7] & _decoded[6] & _decoded[5]; // AND GATE - BUT USE TRIPLE 3 INPUT NAND AS WE NEED A NOT ON THE _flag_c_in ABOVE
-
-    wire effective_bit3 = _use_cin ? alu_op[2]: flag_c_in; // multiplexer
-        
+    //////////////////////////////////////////////////////
+    // ROM PROGRAMMING
+    //////////////////////////////////////////////////////
 
     always @* begin
 
         c_buf_c = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
         _overflow = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
         _force_neg = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
-        unsigned_magnitude=1;
-
-
-        alu_op_effective=alu_op;
-        alu_op_effective[2] = effective_bit3;
-/*
-$display("_use_cin ", _use_cin);
-$display("_flag_cin ", _flag_c_in);
-$display("op        %5b ", alu_op);
-$display("effective %5b ", alu_op_effective);
-*/
-
-/*
-        // FIXME TODO CHANGE TO LOGIC and delays etc as I need this for the H/W
-        if (_flag_c_in) begin
-            case (alu_op)
-                OP_A_PLUS_B_PLUS_C: begin  
-                    alu_op_effective=OP_A_PLUS_B;
-                end
-                OP_A_MINUS_B_MINUS_C: begin 
-                    alu_op_effective=OP_A_MINUS_B;
-                end
-                OP_B_MINUS_A_MINUS_C: begin 
-                    alu_op_effective=OP_B_MINUS_A;
-                end
-                default: begin
-                    alu_op_effective=alu_op;
-                end
-            endcase
-        end
-        else begin
-             alu_op_effective=alu_op;
-        end
-*/
-
-
+        unsigned_magnitude=1; // select whether a given op will use signed or unsigned arithmetic
 
         case (alu_op_effective)
             OP_0: begin // not needed anymore cos immed allows 0 value into ALU
@@ -644,6 +578,38 @@ $display("effective %5b ", alu_op_effective);
 
         endcase
     end
+
+
+    if (LOG) 
+    always @(*) 
+        $display("%9t ALU", $time,
+        " aluop=%-1s (op:%d)", aluopName(alu_op), alu_op, // %1s causes string to lose trailing space
+        " (%-1s)", aluopName(alu_op_effective), // %1s causes string to lose trailing space
+        "  ",
+        " a=%08b (u%-3d/s%-4d/h%-02h) ", a, a, signed_a, a,
+        " b=%08b (u%-3d/s%-4d/h%-02h) ", b, b, signed_b, b,
+        " _c_in=%1b ", _flag_c_in,
+        "  ",
+        " out=%08b (u%-3d/s%-4d/h%-02h) ", o, o, signed_o, o,
+        //" _c=%1b",  _flag_c,
+        //" _z=%1b",  _flag_z,
+        //" _n=%1b",  _flag_n,
+        //" _o=%1b",  _flag_o,
+        //" _gt=%1b", _flag_gt,
+        //" _lt=%1b", _flag_lt,
+        //" _eq=%1b", _flag_eq,
+        //" _ne=%1b", _flag_ne,
+        " _c%1b",  _flag_c,
+        " _z%1b",  _flag_z,
+        " _n%1b",  _flag_n,
+        " _o%1b",  _flag_o,
+        " _gt%1b", _flag_gt,
+        " _lt%1b", _flag_lt,
+        " _eq%1b", _flag_eq,
+        " _ne%1b", _flag_ne,
+        " ",
+        " unsigned_magnitude=%b ", unsigned_magnitude
+         );
 
 endmodule: alu
 
