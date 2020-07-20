@@ -2,7 +2,6 @@
 // FIXME Use Warrens ALU ROM and my external logic
 // TODO option: Implement conditional instructions with spare ROM bits
 // TODO option: If use 16 immediate then can do a direct jump - but needs an alternative route into the PC for that
-// FIXME: Can I make this single cycle - dual cycle at least?
 
 
 // ADDRESSING TERMINOLOGY
@@ -239,10 +238,11 @@ module cpu(
     // UART =============================================================
     wire _flag_di;
     wire _flag_do;
-    wire _gated_uart_wr = _uart_in | _phaseExec;   // sync clock data into uart -- FIXME gate with EXEC
+    wire #(10) _gated_uart_wr = _uart_in | _phaseExec;   // sync clock data into uart -- FIXME gate with EXEC
+
     wire [7:0] uart_d;
 
-    um245r #(.LOG(1), .HEXMODE(1))  uart (
+    um245r #(.LOG(0), .HEXMODE(1))  uart (
         .D(uart_d),
         .WR(_gated_uart_wr),// Writes data on -ve edge
         ._RD(_adev_uart),	// When goes from high to low then the FIFO data is placed onto D (equates to _OE)

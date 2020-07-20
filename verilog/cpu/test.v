@@ -35,7 +35,7 @@ module test();
 
     // CLOCK ===================================================================================
     //localparam HALF_CLK=44;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
-    localparam HALF_CLK=300;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    localparam HALF_CLK=335;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;
@@ -163,6 +163,9 @@ module test();
     wire [1:0] phaseFE = {CPU.phaseFetch, CPU.phaseExec};
 
     initial begin
+        $dumpfile("dumpfile.vcd");
+        $dumpvars(0, test);
+
         `define CYCLE begin CLK_UP; #HALF_CLK CLK_DN; #HALF_CLK; noop(); end
         `define FULL_CYCLE(N) for (count =0; count < N; count++) begin CLK_UP; #HALF_CLK; CLK_DN; #HALF_CLK; noop(); end
 
