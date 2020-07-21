@@ -121,7 +121,7 @@ package alu_ops;
                 19 : aluopNameR =    "A%B";
                 20 : aluopNameR =    "A LSL B";
                 21 : aluopNameR =    "A LSR B";
-                22 : aluopNameR =    "A ASL B" ;
+                22 : aluopNameR =    "A ASR B" ;
                 23 : aluopNameR =    "A ROL B";
 
                 24 : aluopNameR =    "A ROR B";
@@ -172,7 +172,7 @@ package alu_ops;
                 19 : aluopName =    "A%B";
                 20 : aluopName =    "A LSL B";
                 21 : aluopName =    "A LSR B";
-                22 : aluopName =    "A ASL B" ;
+                22 : aluopName =    "A ASR B" ;
                 23 : aluopName =    "A ROL B";
 
                 24 : aluopName =    "A ROR B";
@@ -481,27 +481,27 @@ module alu #(parameter LOG=0, PD=120) (
                 end
             end
 
-            OP_A_LSL_B: begin 
+            OP_A_LSL_B: begin  // C <- A <- 0
                 c_buf_c = {a, 1'b0};
                 c_buf_c = c_buf_c << b;
                 _overflow = !(a[7] != result_sign()); // sign bit change - not must use but hey ho
             end
 
-            OP_A_LSR_B: begin
+            OP_A_LSR_B: begin // 0 -> A -> C
                 c_buf_c = {a, 1'b0};
                 c_buf_c = c_buf_c >> b;
                 set_ctop(c_bot()); // move the carry-out bit to the return value position
                 _overflow = !(a[7] != result_sign()); // sign bit change - not must use but hey ho
             end
 
-            OP_A_ASR_B: begin
+            OP_A_ASR_B: begin // Sxxxxxxx -> SSxxxxxx  C=last carry out right
                 c_buf_c = {a[7], a, 1'b0}; // extend the sign bit left
                 c_buf_c = c_buf_c >>> b;
                 set_ctop(c_bot()); // move the carry-out bit to the return value position
                 _overflow = !(a[7] != result_sign()); // sign bit change can't happen unless this code is flawed
             end
 
-            OP_A_ROL_B: begin 
+            OP_A_ROL_B: begin // C <- A <- C
                 c_buf_c = {a, flag_c_in};
                 for (count = 0; count < b; count++) begin
                     c_buf_c = c_buf_c << 1;
@@ -510,7 +510,7 @@ module alu #(parameter LOG=0, PD=120) (
                 _overflow = !(a[7] != result_sign()); // sign bit change - not much use but hey ho
             end
 
-            OP_A_ROR_B: begin 
+            OP_A_ROR_B: begin // C -> A -> C
                 c_buf_c = {flag_c_in, a, 1'b0};
                 for (count = 0; count < b; count++) begin
                     c_buf_c = c_buf_c >> 1;
