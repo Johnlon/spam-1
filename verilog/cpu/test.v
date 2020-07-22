@@ -68,7 +68,7 @@ module test();
 
         `DEV_EQ_IMMED8(counter, marhi, 0); counter++;
 
-        `DEV_EQ_XY_ALU(counter, marlo, marlo, marlo, A_PLUS_1) ; counter++;
+        `DEV_EQ_XI_ALU(counter, marlo, marlo, 1, A_PLUS_B) ; counter++;
 
         `DEV_EQ_IMMED8(counter, ram, 8'h22); counter++;
 

@@ -45,10 +45,10 @@ module test();
 
     //reg [20*8:1] op_name;
     OpName op_name;
+    string s;
     always @* begin
         op_name = aluopNameR(alu_op);
-        //op_name = OpName'(aluopName(3));
-        $strobe ("%9t", $time, " MON: a=%8b b=%8b  _flag_c_in=%b   op=%02d %-1s  result=%8b   _flags (_c=%b _z=%1b _n=%1b _o=%1b _eq=%1b _ne=%1b _gt=%1b _lt=%b)", 
+        $display ("%9t", $time, " MON: a=%8b b=%8b  _flag_c_in=%b   op=%02d %-1s  result=%8b   _flags (_c=%b _z=%1b _n=%1b _o=%1b _eq=%1b _ne=%1b _gt=%1b _lt=%b)", 
             a,
             b,
             _flag_c_in,
@@ -290,45 +290,8 @@ module test();
         `FLAGS(NE|LT) // OVERFLOW BECAUSE (MAX_POS+1)=128 which is actually negative -128 binary, and we cannot negate -128 in 8 bits (ie +ve 128 doesn't fit)
 
 
-
-        ////////////////////////////////////////////////////////////// A_MINUS_1
-        assign a = 0;
-        assign b = 0; // NA
-        assign _flag_c_in = 'x;
-        assign alu_op = OP_A_MINUS_1;
-        PD;
-        `Equals(o, 8'b11111111)
-        `FLAGS(C|N|EQ) 
-
-        assign a = 1;
-        assign b = 0; // NA
-        assign _flag_c_in = 'x;
-        PD;
-        `Equals(o, 8'b0)
-        `FLAGS(Z|NE|GT) 
-
-        assign a = 127;
-        assign b = 0; // NA
-        assign _flag_c_in = 'x;
-        PD;
-        `Equals(o, 126) 
-        `FLAGS(NE|GT) 
-
-        assign a = 128; // 128 unsigned reads as -128 signed
-        assign b = 0; // NA
-        assign _flag_c_in = 'x;
-        PD;
-        `Equals(o, 127); // 128-1=127 unsigned = same as -128-1=overflow signed
-        `FLAGS(O|NE|GT) 
-
-        assign a = 255; // 128 unsigned reads as -128 signed
-        assign b = 0; // NA
-        assign _flag_c_in = 'x;
-        PD;
-        `Equals(o, 254); // 255-1=254 unsigned = same as -1-1=-2 signed
-        `Equals(o, 8'(-2)); // 255-1=254 unsigned = same as -1-1=-2 signed
-        `FLAGS(N|NE|GT) 
-
+        ////////////////////////////////////////////////////////////// BCD_DIV TODO
+        ////////////////////////////////////////////////////////////// BCD_MOD TODO
 
         ////////////////////////////////////////////////////////////// B_MINUS_1
         assign a = 0; // NA
@@ -367,6 +330,45 @@ module test();
         `Equals(o, 254); // 255-1=254 unsigned = same as -1-1=-2 signed
         `Equals(o, 8'(-2)); // 255-1=254 unsigned = same as -1-1=-2 signed
         `FLAGS(N|NE|LT) 
+
+        ////////////////////////////////////////////////////////////// B_PLUS_1
+        assign a = 0; // NA
+        assign b = 0; 
+        assign _flag_c_in = 'x;
+        assign alu_op = OP_B_PLUS_1;
+        PD;
+        `Equals(o, 1)
+        `FLAGS(EQ) 
+
+        assign a = 0; // NA
+        assign b = 1;
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 2)
+        `FLAGS(NE|LT) 
+
+        assign a = 0; // NA
+        assign b = 127;
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 128) 
+        `FLAGS(O|N|NE|LT) 
+
+        assign a = 0; // NA
+        assign b = 128; // 128 unsigned reads as -128 signed
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 129); // 128+1=129 unsigned = same as -128+1=overflow signed
+        `Equals(o, 8'(-127)); // 128+1=129 unsigned = same as -128+1=overflow signed
+        `FLAGS(N|NE|LT) 
+
+        assign a = 0; // NA
+        assign b = 255; // 255 reads as -1
+        assign _flag_c_in = 'x;
+        PD;
+        `Equals(o, 0); // 255-1=254 unsigned = same as -1-1=-2 signed
+        `FLAGS(C|Z|NE|LT) 
+
 
         ////////////////////////////////////////////////////////////// A_PLUS_B
 
@@ -1018,14 +1020,28 @@ module test();
         `Equals(o, 8'b11010101);
         `FLAGS(N|NE|GT)
 
-        ////////////////////////////////////////////////////////////// NOT_A
+        ////////////////////////////////////////////////////////////// A_NAND_B
         assign a = 8'b11010101; // LOGICAL VALUE
         assign b = 8'b10100000; // LOGICAL VALUE
-        assign alu_op = OP_NOT_A;
+        assign alu_op = OP_A_NAND_B;
+        assign _flag_c_in = 1'bx;
+        PD;
+        `Equals(o, 8'b01111111);
+        `FLAGS(NE|GT)
+
+        assign a = 8'b11010101; // LOGICAL VALUE
+        assign b = 8'b11111111; // LOGICAL VALUE
         assign _flag_c_in = 1'bx;
         PD;
         `Equals(o, 8'b00101010);
-        `FLAGS(O|NE|GT)
+        `FLAGS(NE|LT)
+
+        assign a = 8'b11010101; // LOGICAL VALUE
+        assign b = 8'b00000000; // LOGICAL VALUE
+        assign _flag_c_in = 1'bx;
+        PD;
+        `Equals(o, 8'b11111111);
+        `FLAGS(N|NE|GT)
 
 
         ////////////////////////////////////////////////////////////// NOT_B

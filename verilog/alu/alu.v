@@ -1,5 +1,7 @@
 /* verilator lint_off ASSIGNDLY */
 
+// EG USE M27C322 21bit address x16 data
+
 // TODO TODO TODO - generate rom images for Warren
 
 /// FIXME NEED A BINARY TO BCD OPERATION AS THIS IS HARD - https://www.nandland.com/vhdl/modules/double-dabble.html
@@ -49,16 +51,16 @@
 
 package alu_ops;
 
-    localparam [4:0] OP_0=0; // not needed as I can do PASSA with IMMED(0)
-    localparam [4:0] OP_A=1;
+    localparam [4:0] OP_0=0; // Needed for RAM=0
+    localparam [4:0] OP_A=1; 
     localparam [4:0] OP_B=2;
     localparam [4:0] OP_NEGATE_A=3;  
     localparam [4:0] OP_NEGATE_B=4;  
-    localparam [4:0] OP_A_PLUS_1=5; // DOESNT USE CARRY IN // NOT NEEDED as I can do 'A+IMMED(1)'  - use for ROR or RCR?
-    localparam [4:0] OP_B_PLUS_1=6; // DOESNT USE CARRY IN // needed for ROM/RAM+1  needed because if using IREG then can't also use RAM as both are B bus
-    localparam [4:0] OP_A_MINUS_1=7; // DOESNT USE CARRY IN // NOT NEEDED as I can do 'A-IMMED(1)' - use for ROL or RCL?
+    localparam [4:0] OP_BCD_DIV=5; // Divide binary value A by 10 using B as a carry in remainder (=A+(B*256)/10), if B>9 then remainder was illegal and result is 0 and overflow is set 
+    localparam [4:0] OP_BCD_MOD=6; // Mode binary value A by 10 using B as a carry in remainder (=A+(B*256)%10), if B>9 then remainder was illegal and result is 0 and overflow is set
 
-    localparam [4:0] OP_B_MINUS_1=8; // DOESNT USE CARRY IN // needed for RAM/ROM-1
+    localparam [4:0] OP_B_PLUS_1=7; // needed for X=RAM+1  & doesn't carry in ---- CONSIDER RAM ON BUS A!!!!
+    localparam [4:0] OP_B_MINUS_1=8; // needed for X=RAM-1 (ROM-1 isn't convincing) , no carry in ---- CONSIDER RAM ON BUS A!!!!
     localparam [4:0] OP_A_PLUS_B=9;
     localparam [4:0] OP_A_MINUS_B=10;
     localparam [4:0] OP_B_MINUS_A=11;
@@ -69,31 +71,26 @@ package alu_ops;
 
     localparam [4:0] OP_A_TIMES_B_LO=16;
     localparam [4:0] OP_A_TIMES_B_HI=17;
-    localparam [4:0] OP_A_DIV_B=18;
-    localparam [4:0] OP_A_MOD_B=19;
+    localparam [4:0] OP_A_DIV_B=18; // fix? doesn't use carry remainer in 
+    localparam [4:0] OP_A_MOD_B=19; // fix? doesn't use carry remainer in
     localparam [4:0] OP_A_LSL_B=20;
     localparam [4:0] OP_A_LSR_B=21; // logical shift right - simple bit wise
     localparam [4:0] OP_A_ASR_B=22; // arith shift right - preserves top bit and fills with top bit as shift right   ie same as "CMP #80/ROR A" on 6502
-// this is not a ROL as t uses carry in. This is a RCP rotate thru carry left
-// rotate thru carry left can be sythesised as per 6502 using "asl/adc #0" - OTHER ROTATE TYPES DONT GO THRU CARRY
-    localparam [4:0] OP_A_ROL_B=23; 
+    localparam [4:0] OP_A_ROL_B=23; // https://www.masswerk.at/6502/6502_instruction_set.html#ROL
 
-// this is not an ROR as ROR rotate within the byte. http://vitaly_filatov.tripod.com/ng/asm/asm_000.101.html
-// instead this is a 8086 RCR rotate thru carry - http://vitaly_filatov.tripod.com/ng/asm/asm_000.93.html
-    localparam [4:0] OP_A_ROR_B=24;
+    localparam [4:0] OP_A_ROR_B=24; // https://www.masswerk.at/6502/6502_instruction_set.html#ROR
     localparam [4:0] OP_A_AND_B=25;
-    localparam [4:0] OP_A_OR_B=26;
-    localparam [4:0] OP_A_XOR_B=27; // XOR Can synthesise NOT A by setting B to 1, but we lose ability to invert the B bus because I can't set A to 1 as IREG is B only - also ROM and RAM only write to B bus and some reg only write to A bus
-    localparam [4:0] OP_NOT_A=28; // Change to A NAND B? which can synthesise NOT A when A points to desired reg and B is set to 1
-    localparam [4:0] OP_NOT_B=29; // Change to A NOR B? we lose ability to invert the B bus because IREG and ROM and RAM only write to B bus so I can't do "RAM[] NOR RAM[]"
+    localparam [4:0] OP_A_OR_B=26;  
+    localparam [4:0] OP_A_XOR_B=27; // NB XOR can can also synthesise NOT A by setting B to 0xff 
+    localparam [4:0] OP_A_NAND_B=28;  
+    localparam [4:0] OP_NOT_B=29;  // if NOT_A is need then use A XOR 0xff
     localparam [4:0] OP_A_PLUS_B_BCD=30;
     localparam [4:0] OP_A_MINUS_B_BCD=31;
 
 
+    // returning a bitset is needed when using strobe to print
     typedef reg[13*8:1] OpName;
-    function OpName aluopNameR;
-        input [4:0] opcode;
-        
+    function OpName aluopNameR; input [4:0] opcode;
         OpName ret;
         begin
             case(opcode)
@@ -102,9 +99,9 @@ package alu_ops;
                  2 : aluopNameR =    "B";
                  3 : aluopNameR =    "-A";
                  4 : aluopNameR =    "-B";
-                 5 : aluopNameR =    "A+1";
-                 6 : aluopNameR =    "B+1";
-                 7 : aluopNameR =    "A-1";
+                 5 : aluopNameR =    "BCD DIV";
+                 6 : aluopNameR =    "BCD MOD";
+                 7 : aluopNameR =    "B+1";
 
                  8 : aluopNameR =    "B-1";
                  9 : aluopNameR =    "A+B";   // CarryIn not considered
@@ -128,7 +125,7 @@ package alu_ops;
                 25 : aluopNameR =    "A AND B";
                 26 : aluopNameR =    "A OR B";
                 27 : aluopNameR =    "A XOR B"; 
-                28 : aluopNameR =    "NOT A";
+                28 : aluopNameR =    "A NAND B";
                 29 : aluopNameR =    "NOT B";
                 30 : aluopNameR =    "A+B BCD";
                 31 : aluopNameR =    "A-B BCD";
@@ -137,58 +134,14 @@ package alu_ops;
                     aluopNameR = ret;
                 end
             endcase
-
         end
     endfunction
-
     
-    function string aluopName;
-        input [4:0] opcode;
-        
+    function string aluopName; input [4:0] opcode;
         string ret;
         begin
-            case(opcode)
-                 0 : aluopName =    "0";
-                 1 : aluopName =    "A";
-                 2 : aluopName =    "B";
-                 3 : aluopName =    "-A";
-                 4 : aluopName =    "-B";
-                 5 : aluopName =    "A+1";
-                 6 : aluopName =    "B+1";
-                 7 : aluopName =    "A-1";
-
-                 8 : aluopName =    "B-1";
-                 9 : aluopName =    "A+B";   // CarryIn not considered
-                10 : aluopName =    "A-B";   // CarryIn not considered
-                11 : aluopName =    "B-A";   // CarryIn not considered
-                12 : aluopName =    "A-B signedmag"; // CarryIn not considered
-                13 : aluopName =    "A+B+C"; // If CarryIn=N then this op is automatically updated to A+B
-                14 : aluopName =    "A-B-C"; // If CarryIn=N then this op is automatically updated to A-B
-                15 : aluopName =    "B-A-C"; // If CarryIn=N then this op is automatically updated to B-A
-
-                16 : aluopName =    "A*B LO";
-                17 : aluopName =    "A*B HI";
-                18 : aluopName =    "A/B";
-                19 : aluopName =    "A%B";
-                20 : aluopName =    "A LSL B";
-                21 : aluopName =    "A LSR B";
-                22 : aluopName =    "A ASR B" ;
-                23 : aluopName =    "A ROL B";
-
-                24 : aluopName =    "A ROR B";
-                25 : aluopName =    "A AND B";
-                26 : aluopName =    "A OR B";
-                27 : aluopName =    "A XOR B"; 
-                28 : aluopName =    "NOT A";
-                29 : aluopName =    "NOT B";
-                30 : aluopName =    "A+B BCD";
-                31 : aluopName =    "A-B BCD";
-                default: begin
-                    $sformat(ret,"??unknown(%b)",opcode);
-                    aluopName = ret;
-                end
-            endcase
-
+            $sformat(ret,"%-s",aluopNameR(opcode));
+            aluopName = ret;
         end
     endfunction
 
@@ -388,11 +341,12 @@ module alu #(parameter LOG=0, PD=120) (
                 set_result(-b);
                 _overflow = !(b==8'b10000000); // indicates the argument cannot be converted
             end
-            OP_A_PLUS_1: begin 
-                // UNLIKE A_PLUS_B this sets carry but doesn't consume it 
-                // - useful for low byte of a counter where we always want CLC first  
-                set_result9(a + 1);
-                _overflow = _addOv(a[7], 1'b0, result_sign());
+            OP_BCD_DIV: begin 
+                TimesResult = b<10 ? (a + (b*256))/10: 0;
+
+                set_result9(8'(TimesResult));
+
+                _overflow = b < 10;
             end
             OP_B_PLUS_1: begin 
                 // UNLIKE B_PLUS_A this sets carry but doesn't consume it 
@@ -401,11 +355,12 @@ module alu #(parameter LOG=0, PD=120) (
                 set_result9(b + 1);
                 _overflow = _addOv(b[7], 1'b0, result_sign());
             end
-            OP_A_MINUS_1: begin 
-                // UNLIKE A_MINUS_B this sets carry but doesn't consume it 
-                // - useful for low byte of a counter where we always want CLC first  
-                set_result9(9'(a) - 1);
-                _overflow = _subOv(a[7], 1'b0, result_sign());
+            OP_BCD_MOD: begin 
+                TimesResult = b<10 ? (a + (b*256))%10: 0;
+
+                set_result9(8'(TimesResult));
+
+                _overflow = b < 10;
             end
 
             ///// 8 ...
@@ -529,8 +484,8 @@ module alu #(parameter LOG=0, PD=120) (
             OP_A_XOR_B: begin
                 set_result(a ^ b);
             end
-            OP_NOT_A: begin
-                set_result(~a);
+            OP_A_NAND_B: begin
+                set_result(~(a & b));
             end
             OP_NOT_B: begin
                 set_result(~b);
