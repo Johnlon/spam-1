@@ -1035,36 +1035,28 @@ module test();
         assign a = 8'h29; 
         assign b = 8'h32; 
         assign alu_op = OP_A_PLUS_B_BCD;
-        assign _flag_c_in = 1'b1;
+        assign _flag_c_in = 1'bx;
         PD;
         `Equals(o, 8'h61);
         `FLAGS(NE|LT)
 
-        assign _flag_c_in = 1'b0;
-        PD;
-        `Equals(o, 8'h62);
-        `FLAGS(NE|LT)
-
         assign a = 8'h99; 
         assign b = 8'h00; 
-        assign _flag_c_in = 1'b0;
+        PD;
+        `Equals(o, 8'h99);
+        `FLAGS(N|NE|GT) 
+
+        assign a = 8'h99; 
+        assign b = 8'h01; 
         PD;
         `Equals(o, 8'h00);
         `FLAGS(C|Z|NE|GT)
 
-        assign a = 8'h99; 
-        assign b = 8'h01; 
-        assign _flag_c_in = 1'b0;
-        PD;
-        `Equals(o, 8'h01);
-        `FLAGS(C|NE|GT)
-
         // not legal BCD but a test to see that tens and units are still respected
-        assign a = 8'haa; 
+        assign a = 8'haa;  // in broken BCD = 10*100 + 10 = 110 which rolls over to 10
         assign b = 8'h01; 
-        assign _flag_c_in = 1'b0;
         PD;
-        `Equals(o, 8'h12);
+        `Equals(o, 8'h11); // 10 +1 = 11
         `FLAGS(C|O|NE|GT)
 
 
@@ -1072,19 +1064,13 @@ module test();
         assign a = 8'h70; 
         assign b = 8'h25; 
         assign alu_op = OP_A_MINUS_B_BCD;
-        assign _flag_c_in = 1'b1;
+        assign _flag_c_in = 1'bx;
         PD;
         `Equals(o, 8'h45);
         `FLAGS(NE|GT)
 
-        assign _flag_c_in = 1'b0;
-        PD;
-        `Equals(o, 8'h44);
-        `FLAGS(NE|GT)
-
         assign a = 8'h00; 
         assign b = 8'h01; 
-        assign _flag_c_in = 1'b1;
         PD;
         `Equals(o, 8'h99);
         `FLAGS(C|N|NE|LT)
@@ -1092,7 +1078,6 @@ module test();
         // not legal BCD but a test to see that tens and units are still respected
         assign a = 8'haa; 
         assign b = 8'hff; 
-        assign _flag_c_in = 1'b1;
         PD;
         `Equals(o, 8'h45); // 110-165=-55 (100-55=45)
         `FLAGS(C|N|O|NE|LT) 
