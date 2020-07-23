@@ -116,7 +116,7 @@ module alu #(parameter LOG=0, PD=120) (
     // ROM PROGRAMMING
     //////////////////////////////////////////////////////
 
-    alu_rom ALU_ROM( o, _flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne, a, b, alu_op_effective);
+    alu_rom ALU_ROM( .o, ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_gt, ._flag_lt, ._flag_eq, ._flag_ne, .a, .b, .alu_op(alu_op_effective));
 
 endmodule: alu
 

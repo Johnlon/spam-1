@@ -11,8 +11,8 @@ package alu_ops;
     localparam [4:0] OP_B=2;
     localparam [4:0] OP_NEGATE_A=3;  
     localparam [4:0] OP_NEGATE_B=4;  
-    localparam [4:0] OP_BCD_DIV=5; // Divide binary value A by 10 using B as a carry in remainder (=A+(B*256)/10), if B>9 then remainder was illegal and result is 0 and overflow is set 
-    localparam [4:0] OP_BCD_MOD=6; // Mode binary value A by 10 using B as a carry in remainder (=A+(B*256)%10), if B>9 then remainder was illegal and result is 0 and overflow is set
+    localparam [4:0] OP_BA_DIV_10=5; // Divide BINARY (NOT BCD)  value A by 10 using B as a carry in remainder (=A+(B*256)/10), if B>9 then remainder was illegal and result is 0 and overflow is set 
+    localparam [4:0] OP_BA_MOD_10=6; // Mod BINARY (NOT BCD)  value A by 10 using B as a carry in remainder (=A+(B*256)%10), if B>9 then remainder was illegal and result is 0 and overflow is set
 
     localparam [4:0] OP_B_PLUS_1=7; // needed for X=RAM+1  & doesn't carry in ---- CONSIDER RAM ON BUS A!!!!
     localparam [4:0] OP_B_MINUS_1=8; // needed for X=RAM-1, no carry in ---- CONSIDER RAM ON BUS A!!!!
@@ -20,14 +20,14 @@ package alu_ops;
     localparam [4:0] OP_A_MINUS_B=10;
     localparam [4:0] OP_B_MINUS_A=11;
     localparam [4:0] OP_A_MINUS_B_SIGNEDMAG=12;
-    localparam [4:0] OP_A_PLUS_B_PLUS_C=13;
-    localparam [4:0] OP_A_MINUS_B_MINUS_C=14;
-    localparam [4:0] OP_B_MINUS_A_MINUS_C=15;
+    localparam [4:0] OP_A_PLUS_B_PLUS_1=13;
+    localparam [4:0] OP_A_MINUS_B_MINUS_1=14;
+    localparam [4:0] OP_B_MINUS_A_MINUS_1=15;
 
     localparam [4:0] OP_A_TIMES_B_LO=16;
     localparam [4:0] OP_A_TIMES_B_HI=17;
-    localparam [4:0] OP_A_DIV_B=18; // doesn't use carry remainer in as not enought ALU inputs
-    localparam [4:0] OP_A_MOD_B=19; // doesn't use carry remainer in as not enought ALU inputs
+    localparam [4:0] OP_A_DIV_B=18; // doesn't use carry remainer in as not enought ALU inputs, sets Overflow if div by zero
+    localparam [4:0] OP_A_MOD_B=19; // doesn't use carry remainer in as not enought ALU inputs, sets Overflow if div by zero
     localparam [4:0] OP_A_LSL_B=20;
     localparam [4:0] OP_A_LSR_B=21; // logical shift right - simple bit wise
     localparam [4:0] OP_A_ASR_B=22; // arith shift right - preserves top bit and fills with top bit as shift right   nb. same as "CMP #80/ROR A" on 6502
@@ -63,9 +63,9 @@ package alu_ops;
                 10 : aluopNameR =    "A-B";   // CarryIn not considered
                 11 : aluopNameR =    "B-A";   // CarryIn not considered
                 12 : aluopNameR =    "A-B signedmag"; // CarryIn not considered
-                13 : aluopNameR =    "A+B+C"; // If CarryIn=N then this op is automatically updated to A+B
-                14 : aluopNameR =    "A-B-C"; // If CarryIn=N then this op is automatically updated to A-B
-                15 : aluopNameR =    "B-A-C"; // If CarryIn=N then this op is automatically updated to B-A
+                13 : aluopNameR =    "A+B+1"; // If CarryIn=N then this op is automatically updated to A+B
+                14 : aluopNameR =    "A-B-1"; // If CarryIn=N then this op is automatically updated to A-B
+                15 : aluopNameR =    "B-A-1"; // If CarryIn=N then this op is automatically updated to B-A
 
                 16 : aluopNameR =    "A*B LO";
                 17 : aluopNameR =    "A*B HI";

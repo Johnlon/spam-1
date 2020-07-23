@@ -126,9 +126,9 @@ module alu_rom #(parameter LOG=0, PD=120) (
     always @* begin
 
         c_buf_c = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
-        _overflow = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
-        _force_neg = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
-        force_pos = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
+        _overflow = 1'b1;
+        _force_neg = 1'b1;
+        force_pos = 1'b0;
         unsigned_magnitude=1; // select whether a given op will use signed or unsigned arithmetic
 
         case (alu_op)
@@ -149,13 +149,31 @@ module alu_rom #(parameter LOG=0, PD=120) (
                 set_result(-b);
                 _overflow = !(b==8'b10000000); // indicates the argument cannot be converted
             end
-            OP_BCD_DIV: begin 
-                TimesResult = b<10 ? (a + (b*256))/10: 0;
+            OP_BA_DIV_10: begin 
 
+                if ( b >= 10 ) begin
+                    _overflow =0;
+                    TimesResult = 0;
+                end
+                else
+                begin
+                    TimesResult = (a + (b*256))/10;
+                end
                 set_result9(8'(TimesResult));
-
-                _overflow = b < 10;
+                //    $display("TR %d/%4h/%b    %10b", TimesResult, TimesResult, TimesResult, c_buf_c);
             end
+            OP_BA_MOD_10: begin 
+                if ( b >= 10 ) begin
+                    _overflow =0;
+                    TimesResult = 0;
+                end
+                else
+                begin
+                    TimesResult = (a + (b*256))%10;
+                end
+                set_result9(8'(TimesResult));
+            end
+
             OP_B_PLUS_1: begin 
                 // UNLIKE B_PLUS_A this sets carry but doesn't consume it 
                 // - useful for low byte of a counter where we always want CLC first  
@@ -163,14 +181,6 @@ module alu_rom #(parameter LOG=0, PD=120) (
                 set_result9(b + 1);
                 _overflow = _addOv(b[7], 1'b0, result_sign());
             end
-            OP_BCD_MOD: begin 
-                TimesResult = b<10 ? (a + (b*256))%10: 0;
-
-                set_result9(8'(TimesResult));
-
-                _overflow = b < 10;
-            end
-
             ///// 8 ...
             OP_B_MINUS_1: begin 
                 // UNLIKE B_MINUS_A this sets carry but doesn't consume it 
@@ -200,15 +210,15 @@ module alu_rom #(parameter LOG=0, PD=120) (
                 _overflow = _subOv(a[7], b[7], o[7]);
             end
 
-            OP_A_PLUS_B_PLUS_C: begin  // OP ONLY USED WHEN CARRY IS ACTIVE
+            OP_A_PLUS_B_PLUS_1: begin  // OP ONLY USED WHEN CARRY IS ACTIVE
                 set_result9((a + b) + 1); 
                 _overflow = _addOv(a[7], b[7], o[7]);
             end
-            OP_A_MINUS_B_MINUS_C: begin // OP ONLY USED WHEN CARRY IS ACTIVE
+            OP_A_MINUS_B_MINUS_1: begin // OP ONLY USED WHEN CARRY IS ACTIVE
                 set_result9((a - b) - 1); 
                 _overflow = _subOv(a[7],b[7],o[7]);
             end
-            OP_B_MINUS_A_MINUS_C: begin // OP ONLY USED WHEN CARRY IS ACTIVE
+            OP_B_MINUS_A_MINUS_1: begin // OP ONLY USED WHEN CARRY IS ACTIVE
                 set_result9((b - a) - 1); 
                 _overflow = _subOv(b[7],a[7],o[7]);
             end
@@ -225,22 +235,30 @@ module alu_rom #(parameter LOG=0, PD=120) (
             end
 
             OP_A_DIV_B: begin 
-                set_result( a/ b );
                 if (b == 0) begin
                     // div/0
-                    // result will be 'x
+                    // result will be 0 with overflow
                     _overflow=0; // force overflow - when div/0
                     set_ctop(1); // force carry
+                    set_result( 0 );
+                end
+                else
+                begin
+                    set_result( a/ b );
                 end
             end
 
             OP_A_MOD_B: begin 
-                set_result( a % b );
                 if (b == 0) begin
                     // div/0
-                    // result will be 'x
+                    // result will be 0 with overflow
                     _overflow=0; // force overflow - when div/0
                     set_ctop(1); // force carry
+                    set_result( 0 );
+                end
+                else
+                begin
+                    set_result( a% b );
                 end
             end
 
@@ -269,12 +287,10 @@ module alu_rom #(parameter LOG=0, PD=120) (
                 
                 c_buf_c = {a, 1'bx};
                 set_ctop(0);
-                for (count = 0; count < b; count++) begin
-                //    c_buf_c = c_buf_c << 1;
-                //   set_cbot(c_top());
-                    set_ctop(c_buf_c[8]);
+                for (count = 0; count < (b%8); count++) begin
                     c_buf_c[8:1] = { c_buf_c[7:1], c_buf_c[8]};
                 end
+                if (b>0) set_ctop(c_buf_c[1]);
                 _overflow = !(a[7] != result_sign()); // sign bit change - not much use but hey ho
             end
 
@@ -282,12 +298,10 @@ module alu_rom #(parameter LOG=0, PD=120) (
                 //c_buf_c = {1'b0, a, 1'b0};
                 set_ctop(0);
                 c_buf_c = {a, 1'bx};
-                for (count = 0; count < b; count++) begin
-                    //c_buf_c = c_buf_c >> 1;
-                    //set_ctop(c_bot()); // move the carry-out bit to the return value position
-                    set_ctop(c_buf_c[1]);
+                for (count = 0; count < (b%8); count++) begin
                     c_buf_c[8:1] = { c_buf_c[1], c_buf_c[8:2]};
                 end
+                if (b>0) set_ctop(c_buf_c[8]);
                 _overflow = !(a[7] != result_sign()); // mnot much use
             end
 

@@ -66,6 +66,25 @@ module test();
         );
     end
 
+    `define  ERROR begin $display("ERROR @ %d", `__LINE__); $finish_and_return(1); end
+
+
+    logic started = 0;
+    always @* begin
+        // detect inconsistent values
+        if (started) begin
+            if (!(o >=0 && o <= 255)) `ERROR
+            if (_flag_c === 'x) `ERROR
+            if (_flag_z === 'x) `ERROR
+            if (_flag_n === 'x) `ERROR
+            if (_flag_o === 'x) `ERROR
+            if (_flag_gt === 'x) `ERROR
+            if (_flag_lt === 'x) `ERROR
+            if (_flag_ne === 'x) `ERROR
+            if (_flag_eq === 'x) `ERROR
+        end
+    end
+
     initial begin
         `ifndef verilator
 
@@ -148,6 +167,8 @@ module test();
         PD;
         `Equals(o, 8'b0); 
         `FLAGS(NE | Z | LT)
+
+        started=1;
 
         ////////////////////////////////////////////////////////////// A
         assign a = 1;
@@ -290,8 +311,61 @@ module test();
         `FLAGS(NE|LT) // OVERFLOW BECAUSE (MAX_POS+1)=128 which is actually negative -128 binary, and we cannot negate -128 in 8 bits (ie +ve 128 doesn't fit)
 
 
-        ////////////////////////////////////////////////////////////// BCD_DIV TODO
-        ////////////////////////////////////////////////////////////// BCD_MOD TODO
+        ////////////////////////////////////////////////////////////// BA_DIV_10
+        assign a = 0; 
+        assign b = 0; 
+        assign _flag_c_in = 'x;
+        assign alu_op = OP_BA_DIV_10;
+        PD;
+        `Equals(o, 8'b0)
+        `FLAGS(Z|EQ) 
+
+        assign a = 0; 
+        assign b = 1; // carry in < 10 
+        PD;
+        `Equals(o, 8'd25);
+        `FLAGS(NE|LT) 
+
+        assign a = 1; 
+        assign b = 10; // carry un MUST BE < 10 
+        PD;
+        `Equals(o, 8'd0);
+        `FLAGS(O|Z|NE|LT) 
+
+        assign a = 10; 
+        assign b = 2; // carry in < 10 
+        PD;
+        `Equals(o, 8'd52); // 2*256 + 10 / 10 = 52
+        `FLAGS(NE|GT) 
+
+
+        ////////////////////////////////////////////////////////////// BCD_MOD 
+        assign a = 0; 
+        assign b = 0; 
+        assign _flag_c_in = 'x;
+        assign alu_op = OP_BA_MOD_10;
+        PD;
+        `Equals(o, 8'b0)
+        `FLAGS(Z|EQ) 
+
+        assign a = 0; 
+        assign b = 1; // carry in < 10 
+        PD;
+        `Equals(o, 8'd6);
+        `FLAGS(NE|LT) 
+
+        assign a = 1; 
+        assign b = 10; // carry un MUST BE < 10 
+        PD;
+        `Equals(o, 8'd0);
+        `FLAGS(O|Z|NE|LT) 
+
+        assign a = 10; 
+        assign b = 2; // carry in < 10 
+        PD;
+        `Equals(o, 8'd2); // 2*256 + 10 % 10 = 2
+        `FLAGS(NE|GT) 
+
 
         ////////////////////////////////////////////////////////////// B_MINUS_1
         assign a = 0; // NA
@@ -508,13 +582,13 @@ module test();
         `FLAGS(Z|EQ) 
 
 
-        ////////////////////////////////////////////////////////////// A_PLUS_B_PLUS_C
+        ////////////////////////////////////////////////////////////// A_PLUS_B_PLUS_1
 
         // -86 + -127 is the same as 
         assign a = 8'b10101010; // -86 = 170 unsigned
         assign b = 8'b10000001; // -127 = 129 unsigned
         assign _flag_c_in=0;
-        assign alu_op = OP_A_PLUS_B_PLUS_C;
+        assign alu_op = OP_A_PLUS_B_PLUS_1;
         PD;
         `Equals(o, 8'b00101100); // +43 so this is signed overflow but also carry because 170+129=42 carry 1
         `FLAGS(C | O | NE | GT)
@@ -553,13 +627,13 @@ module test();
         `FLAGS(EQ) 
 
 
-        ////////////////////////////////////////////////////////////// A_MINUS_B_MINUS_C
+        ////////////////////////////////////////////////////////////// A_MINUS_B_MINUS_1
 
         // zero boundary tests
         assign a = 1;
         assign b = 0;
         assign _flag_c_in = 1; 
-        assign alu_op = OP_A_MINUS_B_MINUS_C; 
+        assign alu_op = OP_A_MINUS_B_MINUS_1; 
         PD;
         `Equals(o, 1);
         `FLAGS(NE|GT)
@@ -600,7 +674,7 @@ module test();
         assign a = 0;
         assign b = (`MAX_POS-1);
         assign _flag_c_in = 1;
-        assign alu_op = OP_A_MINUS_B_MINUS_C;
+        assign alu_op = OP_A_MINUS_B_MINUS_1;
         PD;
         `Equals(o, 8'b10000010); // -126
         `FLAGS(C|N|NE|LT)
@@ -619,11 +693,11 @@ module test();
         `Equals(o, 8'b10000000); // -128
         `FLAGS(C|N|NE|LT)
 
-        ////////////////////////////////////////////////////////////// B_MINUS_A_MINUS_C
+        ////////////////////////////////////////////////////////////// B_MINUS_A_MINUS_1
         assign a = 1;
         assign b = 1;
         assign _flag_c_in = 0;
-        assign alu_op = OP_B_MINUS_A_MINUS_C;
+        assign alu_op = OP_B_MINUS_A_MINUS_1;
         PD;
         `Equals(o, 8'd255);
         `FLAGS(C|N|EQ)
@@ -722,14 +796,14 @@ module test();
         assign alu_op = OP_A_DIV_B;
         PD;
         `Equals(o, 8'h55);
-        `FLAGS(NE|GT)  // carry here indicates that the upper byte is non-zero
+        `FLAGS(NE|GT)  
 
         assign a = 8'haa;
         assign b = 8'h00;
         assign _flag_c_in = 1'bx;
         PD;
-        `Equals(o, 8'bx);
-        `FLAGS(C|O|NE|GT)  // carry here indicates that the upper byte is non-zero
+        `Equals(o, 8'b0);
+        `FLAGS(O|Z|NE|GT)  // overflow indicate div/0
 
 
         ////////////////////////////////////////////////////////////// A_MOD_B
@@ -739,14 +813,14 @@ module test();
         assign alu_op = OP_A_MOD_B;
         PD;
         `Equals(o, 8'd1);
-        `FLAGS(NE|GT)  // carry here indicates that the upper byte is non-zero
+        `FLAGS(NE|GT) 
 
         assign a = 8'haa;
         assign b = 8'h00;
         assign _flag_c_in = 1'bx;
         PD;
-        `Equals(o, 8'bx);
-        `FLAGS(C|O|NE|GT)  // carry here indicates that the upper byte is non-zero
+        `Equals(o, 8'b0);
+        `FLAGS(O|Z|NE|GT)  // overflow indicate div/0
 
         ////////////////////////////////////////////////////////////// A_LSL_B
         assign a = 8'b10000010;
@@ -958,7 +1032,7 @@ module test();
         assign b = 8'b00000000; // LOGICAL VALUE
         PD;
         `Equals(o, 8'b00000000);
-        `FLAGS(O|Z|NE|GT)
+        `FLAGS(Z|NE|GT)
 
         ////////////////////////////////////////////////////////////// A_OR_B
         assign a = 8'b11010101; // LOGICAL VALUE
@@ -986,12 +1060,12 @@ module test();
         assign _flag_c_in = 1'bx;
         PD;
         `Equals(o, 8'b01110101);
-        `FLAGS(O|NE|GT)
+        `FLAGS(NE|GT)
 
         assign b = 8'b11111111; // LOGICAL VALUE
         PD;
         `Equals(o, 8'b00101010);
-        `FLAGS(O|NE|LT)
+        `FLAGS(NE|LT)
 
         assign b = 8'b00000000; // LOGICAL VALUE
         PD;
@@ -1029,7 +1103,7 @@ module test();
         assign _flag_c_in = 1'bx;
         PD;
         `Equals(o, 8'b01011111);
-        `FLAGS(O|NE|GT)
+        `FLAGS(NE|GT)
 
         ////////////////////////////////////////////////////////////// OP_A_PLUS_B_BCD
         assign a = 8'h29; 
@@ -1059,13 +1133,11 @@ module test();
         `FLAGS(C|EQ)
 
         // not legal BCD but a test to see that tens and units are still respected
-
-        // not legal BCD but a test to see that tens and units are still respected
         assign a = 8'haa;  // in broken BCD = 10*100 + 10 = 110 which rolls over to 10
         assign b = 8'h01; 
         PD;
         `Equals(o, 8'h11); // 10 +1 = 11
-        `FLAGS(C|O|NE|GT)
+        `FLAGS(C|NE|GT)
 
 
         ////////////////////////////////////////////////////////////// OP_A_MINUS_B_BCD
@@ -1088,7 +1160,7 @@ module test();
         assign b = 8'hff; 
         PD;
         `Equals(o, 8'h45); // 110-165=-55 (100-55=45)
-        `FLAGS(C|N|O|NE|LT) 
+        `FLAGS(C|N|NE|LT) 
 
 
         //////////////////////////////////////////////////////////////////////
