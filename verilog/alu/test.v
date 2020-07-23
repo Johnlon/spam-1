@@ -1139,6 +1139,18 @@ module test();
         `Equals(o, 8'h11); // 10 +1 = 11
         `FLAGS(C|NE|GT)
 
+        assign a = 8'h00; 
+        assign b = 8'h0a; // 10 in the unit column - this is not a valid BCD input - but the result should be converted to BCD nonetheless
+        PD;
+        `Equals(o, 8'h10);
+        `FLAGS(NE|LT) 
+
+        assign a = 8'haa; // 10*100+10 = 110 
+        assign b = 8'h11; // 11
+        PD;
+        `Equals(o, 8'h21);  // 110 + 11 = 121 => 21
+        `FLAGS(C|NE|GT) 
+
 
         ////////////////////////////////////////////////////////////// OP_A_MINUS_B_BCD
         assign a = 8'h70; 
