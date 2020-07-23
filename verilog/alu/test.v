@@ -1044,13 +1044,21 @@ module test();
         assign b = 8'h00; 
         PD;
         `Equals(o, 8'h99);
-        `FLAGS(N|NE|GT) 
+        `FLAGS(NE|GT) 
 
         assign a = 8'h99; 
         assign b = 8'h01; 
         PD;
         `Equals(o, 8'h00);
         `FLAGS(C|Z|NE|GT)
+
+        assign a = 8'h99; 
+        assign b = 8'h99; 
+        PD;
+        `Equals(o, 8'h98);
+        `FLAGS(C|EQ)
+
+        // not legal BCD but a test to see that tens and units are still respected
 
         // not legal BCD but a test to see that tens and units are still respected
         assign a = 8'haa;  // in broken BCD = 10*100 + 10 = 110 which rolls over to 10

@@ -59,10 +59,11 @@ module alu_rom #(parameter LOG=0, PD=120) (
 
     logic _overflow;
     logic _force_neg;
+    logic force_pos;
 
     assign #(PD) o = c_buf_c[8:1];
     assign #(PD) _flag_c = !c_buf_c[9];
-    assign #(PD) _flag_n = _force_neg & (!c_buf_c[8]); // top bit set indicates negative in signed arith
+    assign #(PD) _flag_n = force_pos | (_force_neg & (!c_buf_c[8])); // top bit set indicates negative in signed arith
     assign #(PD) _flag_z = !(c_buf_c[8:1] == 8'b0);
     assign #(PD) _flag_o = _overflow;
     assign #(PD) _flag_eq = !(a == b);    
@@ -127,6 +128,7 @@ module alu_rom #(parameter LOG=0, PD=120) (
         c_buf_c = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
         _overflow = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
         _force_neg = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
+        force_pos = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
         unsigned_magnitude=1; // select whether a given op will use signed or unsigned arithmetic
 
         case (alu_op)
@@ -308,6 +310,7 @@ module alu_rom #(parameter LOG=0, PD=120) (
     
 
             OP_A_PLUS_B_BCD: begin // DOESNT SUPPORT CARRY IN
+                force_pos = 1;
 
                 `define P_A (((a >>4)*10) + (a & 8'h0f))
                 `define P_B (((b >>4)*10) + (b & 8'h0f))
