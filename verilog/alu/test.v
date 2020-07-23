@@ -884,83 +884,61 @@ module test();
         `Equals(o, 8'b00000000);
         `FLAGS(C|Z|NE|GT)  
 
-        ////////////////////////////////////////////////////////////// A_ROL_B
+        ////////////////////////////////////////////////////////////// A_RLC_B
 
 
         assign a = 8'b10000001;
         assign b = 0;
-        assign _flag_c_in = 'x;
-        assign alu_op = OP_A_ROL_B;
+        assign _flag_c_in = 1'bx;
+        assign alu_op = OP_A_RLC_B;
         PD;
         `Equals(o, 8'b10000001);
         `FLAGS(N|NE|GT)  
 
         assign b = 1;
-        assign _flag_c_in = 1'b1;
-        PD;
-        `Equals(o, 8'b00000010);
-        `FLAGS(C|O|NE|GT)  
-
-        assign b = 1;
-        assign _flag_c_in = 1'b0;
         PD;
         `Equals(o, 8'b00000011);
         `FLAGS(C|O|NE|GT)  
 
         assign b = 2;
-        assign _flag_c_in = 1'b0;
         PD;
-        `Equals(o, 8'b00000111);
+        `Equals(o, 8'b00000110);
         `FLAGS(O|NE|GT)  
 
         assign b = 3;
-        assign _flag_c_in = 1'b0;
         PD;
-        `Equals(o, 8'b00001110);
+        `Equals(o, 8'b00001100);
         `FLAGS(O|NE|GT)  
 
-
-        assign a = 8'b01011101;
         assign b = 8;
-        assign _flag_c_in = 1'b0;
         PD;
-        `Equals(o, 8'b10101110); // first shift should have put lower bit '0' into carry and filled top bit from carry '1'  so second therefore  11000000->0   to second shift is 01100000->0
-        `FLAGS(C|N|O|NE|GT)  
+        `Equals(o, 8'b10000001); 
+        `FLAGS(C|N|NE|GT)  
 
-        ////////////////////////////////////////////////////////////// A_ROR_B
+        ////////////////////////////////////////////////////////////// A_RRC_B
 
         assign a = 8'b10000001;
         assign b = 0;
         assign _flag_c_in = 'x;
-        assign alu_op = OP_A_ROR_B;
+        assign alu_op = OP_A_RRC_B;
         PD;
         `Equals(o, 8'b10000001);
         `FLAGS(N|NE|GT)  
 
         assign b = 1;
-        assign _flag_c_in = 1'b1;
-        PD;
-        `Equals(o, 8'b01000000);
-        `FLAGS(C|O|NE|GT)  
-
-        assign b = 1;
-        assign _flag_c_in = 1'b0;
         PD;
         `Equals(o, 8'b11000000);
         `FLAGS(C|N|NE|GT)  
 
         assign b = 2;
-        assign _flag_c_in = 1'b0;
         PD;
-        `Equals(o, 8'b11100000); // first shift should have put lower bit '0' into carry and filled top bit from carry '1'  so second therefore  11000000->0   to second shift is 01100000->0
-        `FLAGS(N|NE|GT)  
+        `Equals(o, 8'b01100000); // first shift should have put lower bit '0' into carry and filled top bit from carry '1'  so second therefore  11000000->0   to second shift is 01100000->0
+        `FLAGS(O|NE|GT)  
 
-        assign a = 8'b01011101;
         assign b = 8;
-        assign _flag_c_in = 1'b0;
         PD;
-        `Equals(o, 8'b10111011); // first shift should have put lower bit '0' into carry and filled top bit from carry '1'  so second therefore  11000000->0   to second shift is 01100000->0
-        `FLAGS(O|N|NE|GT)  
+        `Equals(o, 8'b10000001); // first shift should have put lower bit '0' into carry and filled top bit from carry '1'  so second therefore  11000000->0   to second shift is 01100000->0
+        `FLAGS(C|N|NE|GT)  
 
 
         ////////////////////////////////////////////////////////////// A_AND_B

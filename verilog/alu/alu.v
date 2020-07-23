@@ -5,9 +5,8 @@
 // TODO TODO TODO - generate rom images for Warren
 
 /// FIXME NEED A BINARY TO BCD OPERATION AS THIS IS HARD - https://www.nandland.com/vhdl/modules/double-dabble.html
-//  replace A-1 and A+1 with 
 
-// FIXME - include those ALU Div with Borrow Remainder functions?
+// FIXME - need to be able to shift with carry in or do this with an OR/AND operation?
 
 /// EG USING ROM 28C512
 
@@ -26,14 +25,14 @@
 // | A-1         | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
 
 // My wiring here is ....
-// | 0           | B-1               | A*B (low bits)    | A ROR B       |
+// | 0           | B-1               | A*B (low bits)    | A RRC B       |
 // | A           | __A+B+Cin (0)__   | A*B (high bits)   | A AND B       |
 // | B           | __A-B-Cin (0)__   | A/B               | A OR B        |
 // | -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
 // | -B          | A-B signedmag     | A << B            | NOT A         |
 // | A+1         | __A+B+Cin (1)__   | A >> B logical    | NOT B         |
 // | B+1         | __A-B-Cin (1)__   | A >> B arithmetic | A+B (BCD)     |
-// | A-1         | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
+// | A-1         | __B-A-Cin (1)__   | A RLC B           | A-B (BCD)     |
 
 
 `include "../74138/hct74138.v"
@@ -51,7 +50,7 @@
 
 package alu_ops;
 
-    localparam [4:0] OP_0=0; // Needed for RAM=0
+    localparam [4:0] OP_0=0; // NOT NEEDED  USE RAM_DIRECT_EQ_IMMED8
     localparam [4:0] OP_A=1; 
     localparam [4:0] OP_B=2;
     localparam [4:0] OP_NEGATE_A=3;  
@@ -60,7 +59,7 @@ package alu_ops;
     localparam [4:0] OP_BCD_MOD=6; // Mode binary value A by 10 using B as a carry in remainder (=A+(B*256)%10), if B>9 then remainder was illegal and result is 0 and overflow is set
 
     localparam [4:0] OP_B_PLUS_1=7; // needed for X=RAM+1  & doesn't carry in ---- CONSIDER RAM ON BUS A!!!!
-    localparam [4:0] OP_B_MINUS_1=8; // needed for X=RAM-1 (ROM-1 isn't convincing) , no carry in ---- CONSIDER RAM ON BUS A!!!!
+    localparam [4:0] OP_B_MINUS_1=8; // needed for X=RAM-1, no carry in ---- CONSIDER RAM ON BUS A!!!!
     localparam [4:0] OP_A_PLUS_B=9;
     localparam [4:0] OP_A_MINUS_B=10;
     localparam [4:0] OP_B_MINUS_A=11;
@@ -71,14 +70,14 @@ package alu_ops;
 
     localparam [4:0] OP_A_TIMES_B_LO=16;
     localparam [4:0] OP_A_TIMES_B_HI=17;
-    localparam [4:0] OP_A_DIV_B=18; // fix? doesn't use carry remainer in 
-    localparam [4:0] OP_A_MOD_B=19; // fix? doesn't use carry remainer in
+    localparam [4:0] OP_A_DIV_B=18; // doesn't use carry remainer in as not enought ALU inputs
+    localparam [4:0] OP_A_MOD_B=19; // doesn't use carry remainer in as not enought ALU inputs
     localparam [4:0] OP_A_LSL_B=20;
     localparam [4:0] OP_A_LSR_B=21; // logical shift right - simple bit wise
-    localparam [4:0] OP_A_ASR_B=22; // arith shift right - preserves top bit and fills with top bit as shift right   ie same as "CMP #80/ROR A" on 6502
-    localparam [4:0] OP_A_ROL_B=23; // https://www.masswerk.at/6502/6502_instruction_set.html#ROL
+    localparam [4:0] OP_A_ASR_B=22; // arith shift right - preserves top bit and fills with top bit as shift right   nb. same as "CMP #80/ROR A" on 6502
+    localparam [4:0] OP_A_RLC_B=23; // Z80 RLC RotateLeftCircular http://z80-heaven.wikidot.com/instructions-set:rlc rather than https://www.masswerk.at/6502/6502_instruction_set.html#ROL as we don't have a carry in to the ROM or external logic
 
-    localparam [4:0] OP_A_ROR_B=24; // https://www.masswerk.at/6502/6502_instruction_set.html#ROR
+    localparam [4:0] OP_A_RRC_B=24; // Z80 RRC RotateRightCircular rather than https://www.masswerk.at/6502/6502_instruction_set.html#ROR
     localparam [4:0] OP_A_AND_B=25;
     localparam [4:0] OP_A_OR_B=26;  
     localparam [4:0] OP_A_XOR_B=27; // NB XOR can can also synthesise NOT A by setting B to 0xff 
@@ -119,9 +118,9 @@ package alu_ops;
                 20 : aluopNameR =    "A LSL B";
                 21 : aluopNameR =    "A LSR B";
                 22 : aluopNameR =    "A ASR B" ;
-                23 : aluopNameR =    "A ROL B";
+                23 : aluopNameR =    "A RLC B";
 
-                24 : aluopNameR =    "A ROR B";
+                24 : aluopNameR =    "A RRC B";
                 25 : aluopNameR =    "A AND B";
                 26 : aluopNameR =    "A OR B";
                 27 : aluopNameR =    "A XOR B"; 
@@ -456,20 +455,29 @@ module alu #(parameter LOG=0, PD=120) (
                 _overflow = !(a[7] != result_sign()); // sign bit change can't happen unless this code is flawed
             end
 
-            OP_A_ROL_B: begin // C <- A <- C
-                c_buf_c = {a, flag_c_in};
+            OP_A_RLC_B: begin // C <- A <- C  : shifted out value enters other side - last shift ends up in carry out
+                //c_buf_c = {a, 1'b0};
+                
+                c_buf_c = {a, 1'bx};
+                set_ctop(0);
                 for (count = 0; count < b; count++) begin
-                    c_buf_c = c_buf_c << 1;
-                    set_cbot(c_top());
+                //    c_buf_c = c_buf_c << 1;
+                //   set_cbot(c_top());
+                    set_ctop(c_buf_c[8]);
+                    c_buf_c[8:1] = { c_buf_c[7:1], c_buf_c[8]};
                 end
                 _overflow = !(a[7] != result_sign()); // sign bit change - not much use but hey ho
             end
 
-            OP_A_ROR_B: begin // C -> A -> C
-                c_buf_c = {flag_c_in, a, 1'b0};
+            OP_A_RRC_B: begin // C -> A -> C : shifted out value enters other side - last shift ends up in carry out
+                //c_buf_c = {1'b0, a, 1'b0};
+                set_ctop(0);
+                c_buf_c = {a, 1'bx};
                 for (count = 0; count < b; count++) begin
-                    c_buf_c = c_buf_c >> 1;
-                    set_ctop(c_bot()); // move the carry-out bit to the return value position
+                    //c_buf_c = c_buf_c >> 1;
+                    //set_ctop(c_bot()); // move the carry-out bit to the return value position
+                    set_ctop(c_buf_c[1]);
+                    c_buf_c[8:1] = { c_buf_c[1], c_buf_c[8:2]};
                 end
                 _overflow = !(a[7] != result_sign()); // mnot much use
             end
