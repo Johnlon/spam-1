@@ -54,8 +54,8 @@ package alu_ops;
                  2 : aluopNameR =    "B";
                  3 : aluopNameR =    "-A";
                  4 : aluopNameR =    "-B";
-                 5 : aluopNameR =    "BCD DIV";
-                 6 : aluopNameR =    "BCD MOD";
+                 5 : aluopNameR =    "AB DIV 10";
+                 6 : aluopNameR =    "AB MOD 10";
                  7 : aluopNameR =    "B+1";
 
                  8 : aluopNameR =    "B-1";
