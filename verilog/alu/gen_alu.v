@@ -1,8 +1,12 @@
 
 /* 
-    Generate a sequence of binary rom files for burning to a M27C322 EPROM using a TL866 burner.
+    Run this with icarus verilog using "../simulate.sh gen_alu.v"
+
+    Generates a sequence of binary rom files for burning to a M27C322 EPROM using a TL866 burner.
     The names of the files match the names of the operations and may have spcaes in them - which I can't easily remove in verilog
     This is based on https://github.com/DoctorWkt/CSCvon8/blob/master/gen_alu but is driven by callign my actual verilog ALU impl rather than using a separate set of logic.
+
+    Also creates a file alu-hex.rom that can be loaded into a verilog rom simulator.
 */
 
 `include "./alu.v"
@@ -34,13 +38,15 @@ module gen_alu();
     integer counter=0;
     int block, sub_block;
     int n_file;
+    int hex_file;
     string block_file;
 
     initial begin
+        hex_file = $fopen("roms/alu-hex.rom", "wb");
 
         for (block=0; block < 8; block++) begin
 
-            block_file = $sformatf("rom%-1d.rom", block);
+            block_file = $sformatf("roms/alu%-1d.rom", block);
 
             n_file = $fopen(block_file, "wb");
 
@@ -52,8 +58,12 @@ module gen_alu();
                     for (b=0; b <= 255 ; b++) begin
                         #(Alu.PD+1)
 
+                        // little endian 
                         $fwrite(n_file, "%c", o[7:0]);
                         $fwrite(n_file, "%c", { _flag_c, _flag_n, _flag_z, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne });
+
+                        // hex
+                        $fwrite(hex_file, "%04x ", { _flag_c, _flag_n, _flag_z, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne, o });
 
                         if (0) 
                         $display ("%9t", $time, " (%5d) ALU: a=%8b(d%4d/h%02h) b=%8b(d%4d/h%02h)  op=%02d %10s  result=%8b(%4d/%02h)   _flags (_c=%b _z=%1b _n=%1b _o=%1b _eq=%1b _ne=%1b _gt=%1b _lt=%b)", 
@@ -63,6 +73,9 @@ module gen_alu();
 
                         counter++;
                         if (counter % (256*256) == 0 ) $display("DONE %s", op_name);
+                        if (counter % 8 == 0) begin
+                            $fwrite(hex_file, "\n");
+                        end
 
                     end    
                 end    
@@ -70,6 +83,7 @@ module gen_alu();
             $fclose(n_file);
             $display("DONE file %s", block_file);
         end    
+        $fclose(hex_file);
     end
 
 endmodule : gen_alu
