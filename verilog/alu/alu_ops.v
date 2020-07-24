@@ -1,5 +1,7 @@
 `ifndef ALU_OPS_V
-`define ALU_OPS_V
+
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
 
 `timescale 1ns/1ns
 `define toALUOP(OPNAME) alu_ops::OP_``OPNAME``
@@ -69,8 +71,8 @@ package alu_ops;
 
                 16 : aluopNameR =    "A*B LO";
                 17 : aluopNameR =    "A*B HI";
-                18 : aluopNameR =    "A/B";
-                19 : aluopNameR =    "A%B";
+                18 : aluopNameR =    "A DIV B";
+                19 : aluopNameR =    "A MOD B";
                 20 : aluopNameR =    "A LSL B";
                 21 : aluopNameR =    "A LSR B";
                 22 : aluopNameR =    "A ASR B" ;
