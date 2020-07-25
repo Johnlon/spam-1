@@ -1,3 +1,5 @@
+`ifndef  V_ALU
+`define  V_ALU
 /* verilator lint_off ASSIGNDLY */
 
 // EG USE M27C322 21bit address x16 data
@@ -36,13 +38,12 @@
 
 
 `include "../74138/hct74138.v"
+`include "../rom/rom.v"
 `include "alu_ops.v"
-`include "alu_rom.v"
+`include "alu_code.v"
 
 // See also http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt#:~:text=The%20ALU%20doesn't%20know,after%20the%20math%20is%20done.
 
-`ifndef  V_ALU
-`define  V_ALU
 
 `timescale 1ns/1ns
 
@@ -64,15 +65,15 @@
 */
 
 module alu #(parameter LOG=0, PD=120) (
-    output [7:0] o,
-    output _flag_c,
-    output _flag_z,
-    output _flag_n,
-    output _flag_o,
-    output _flag_gt,
-    output _flag_lt,
-    output _flag_eq,
-    output _flag_ne,
+    output tri [7:0] o,
+    output tri _flag_c,
+    output tri _flag_z,
+    output tri _flag_n,
+    output tri _flag_o,
+    output tri _flag_gt,
+    output tri _flag_lt,
+    output tri _flag_eq,
+    output tri _flag_ne,
     input  [7:0] a,
     input  [7:0] b,
     input  [4:0] alu_op,
@@ -86,20 +87,20 @@ module alu #(parameter LOG=0, PD=120) (
 
     wire #(8) flag_c_in = !_flag_c_in; // inverter
 
-    wire D,E,C,B,A;
-    assign E=alu_op[4];
-    assign D=alu_op[3];
-    assign C=alu_op[2];
-    assign B=alu_op[1];
-    assign A=alu_op[0];
+    wire selD,selE,selC,selB,selA;
+    assign selE=alu_op[4];
+    assign selD=alu_op[3];
+    assign selC=alu_op[2];
+    assign selB=alu_op[1];
+    assign selA=alu_op[0];
 
     wire [7:0] _decoded;
     hct74138 decoder
     (
-      .Enable1_bar(E),
+      .Enable1_bar(selE),
       .Enable2_bar(1'b0),
-      .Enable3(D),
-      .A({C,B,A}),
+      .Enable3(selD),
+      .A({selC,selB,selA}),
       .Y(_decoded)
     );
 
@@ -115,8 +116,16 @@ module alu #(parameter LOG=0, PD=120) (
     // ROM PROGRAMMING
     // ROM PROGRAMMING
     //////////////////////////////////////////////////////
-
-    alu_rom ALU_ROM( .o, ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_gt, ._flag_lt, ._flag_eq, ._flag_ne, .a, .b, .alu_op(alu_op_effective));
+if (1) begin
+    wire [20:0] A = { alu_op_effective, a, b};
+    tri [15:0] D;
+    rom #(.AWIDTH(21), .DWIDTH(16), .FILENAME("../alu/roms/alu-hex.rom")) ALU_ROM(._CS(1'b0), ._OE(1'b0), .A, .D);
+    assign { _flag_c, _flag_z, _flag_n, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt, o} = D;
+end
+else  
+begin
+    alu_code ALU_CODE( .o, ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt, .a, .b, .alu_op(alu_op_effective));
+end
 
 endmodule: alu
 

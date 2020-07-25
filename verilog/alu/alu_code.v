@@ -9,16 +9,18 @@
 
 `timescale 1ns/1ns
 
-module alu_rom #(parameter LOG=0, PD=120) (
+module alu_code #(parameter LOG=0, PD=120) (
     output [7:0] o,
+
     output _flag_c,
     output _flag_z,
     output _flag_n,
     output _flag_o,
-    output _flag_gt,
-    output _flag_lt,
     output _flag_eq,
     output _flag_ne,
+    output _flag_gt,
+    output _flag_lt,
+
     input  [7:0] a,
     input  [7:0] b,
     input  [4:0] alu_op
@@ -63,8 +65,8 @@ module alu_rom #(parameter LOG=0, PD=120) (
 
     assign #(PD) o = c_buf_c[8:1];
     assign #(PD) _flag_c = !c_buf_c[9];
-    assign #(PD) _flag_n = force_pos | (_force_neg & (!c_buf_c[8])); // top bit set indicates negative in signed arith
     assign #(PD) _flag_z = !(c_buf_c[8:1] == 8'b0);
+    assign #(PD) _flag_n = force_pos | (_force_neg & (!c_buf_c[8])); // top bit set indicates negative in signed arith
     assign #(PD) _flag_o = _overflow;
     assign #(PD) _flag_eq = !(a == b);    
     assign #(PD) _flag_ne = !(a != b);  
@@ -387,14 +389,14 @@ module alu_rom #(parameter LOG=0, PD=120) (
         " _z%1b",  _flag_z,
         " _n%1b",  _flag_n,
         " _o%1b",  _flag_o,
-        " _gt%1b", _flag_gt,
-        " _lt%1b", _flag_lt,
         " _eq%1b", _flag_eq,
         " _ne%1b", _flag_ne,
+        " _gt%1b", _flag_gt,
+        " _lt%1b", _flag_lt,
         " ",
         " unsigned_magnitude=%b ", unsigned_magnitude
          );
 
-endmodule: alu_rom
+endmodule: alu_code
 
 `endif

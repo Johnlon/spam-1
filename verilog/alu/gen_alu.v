@@ -33,7 +33,7 @@ module gen_alu();
 	
     OpName op_name;
 
-	alu_rom #(.LOG(0)) Alu( .o, .a(8'(a)), .b(8'(b)), .alu_op(5'(alu_op)), ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_gt, ._flag_lt, ._flag_eq, ._flag_ne);
+	alu_code #(.LOG(0)) Alu( .o, .a(8'(a)), .b(8'(b)), .alu_op(5'(alu_op)), ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt);
 
     integer counter=0;
     int block, sub_block;
@@ -60,23 +60,23 @@ module gen_alu();
 
                         // little endian 
                         $fwrite(n_file, "%c", o[7:0]);
-                        $fwrite(n_file, "%c", { _flag_c, _flag_n, _flag_z, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne });
+                        $fwrite(n_file, "%c", { _flag_c, _flag_z, _flag_n, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt });
 
                         // hex
-                        $fwrite(hex_file, "%04x ", { _flag_c, _flag_n, _flag_z, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne, o });
+                        $fwrite(hex_file, "%04x ", { _flag_c, _flag_z, _flag_n, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt, o });
 
                         if (0) 
                         $display ("%9t", $time, " (%5d) ALU: a=%8b(d%4d/h%02h) b=%8b(d%4d/h%02h)  op=%02d %10s  result=%8b(%4d/%02h)   _flags (_c=%b _z=%1b _n=%1b _o=%1b _eq=%1b _ne=%1b _gt=%1b _lt=%b)", 
                             counter, 8'(a), 8'(a), 8'(a), 8'(b), 8'(b), 8'(b), alu_op,
-                            op_name, o, o, o, _flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_ne, _flag_eq
+                            op_name, o, o, o, _flag_c, _flag_z, _flag_n, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt
                         );
 
                         counter++;
-                        if (counter % (256*256) == 0 ) $display("DONE %s", op_name);
                         if (counter % 8 == 0) begin
                             $fwrite(hex_file, "\n");
                         end
 
+                        if (counter % (256*256) == 0 ) $display("DONE %s", op_name);
                     end    
                 end    
             end    

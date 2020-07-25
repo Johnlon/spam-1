@@ -1,3 +1,4 @@
+
 `include "./alu.v"
 `include "../lib/assertion.v"
 
@@ -24,21 +25,7 @@ module test();
     wire _flag_eq;
     wire _flag_ne;
 	
-	alu #(.LOG(0)) Alu(
-        .o, 
-        .a,
-        .b,
-        .alu_op,
-        ._flag_c_in,
-        ._flag_c,
-        ._flag_z,
-        ._flag_n,
-        ._flag_o,
-        ._flag_gt,
-        ._flag_lt,
-        ._flag_eq,
-        ._flag_ne
-    );
+	alu #(.LOG(0)) Alu( .o, .a, .b, .alu_op, ._flag_c_in, ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_gt, ._flag_lt, ._flag_eq, ._flag_ne);
 
     `define MAX_POS (127)
     `define MAX_NEG (-128)
@@ -48,21 +35,10 @@ module test();
     string s;
     always @* begin
         op_name = aluopNameR(alu_op);
-        $display ("%9t", $time, " MON: a=%8b b=%8b  _flag_c_in=%b   op=%02d %-1s  result=%8b   _flags (_c=%b _z=%1b _n=%1b _o=%1b _eq=%1b _ne=%1b _gt=%1b _lt=%b)", 
-            a,
-            b,
-            _flag_c_in,
-            alu_op,
+        $display ("%9t", $time, " MON: a=%b b=%b  _flag_c_in=%b   op=%02d %-10s  result=%8b   _flags (_c=%b _z=%1b _n=%1b _o=%1b _eq=%1b _ne=%1b _gt=%1b _lt=%b)", 
+            a, b, _flag_c_in, alu_op,
             op_name,
-            o, 
-            _flag_c,
-            _flag_z,
-            _flag_n,
-            _flag_o,
-            _flag_gt,
-            _flag_lt,
-            _flag_ne,
-            _flag_eq
+            o, _flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_ne, _flag_eq
         );
     end
 

@@ -20,8 +20,8 @@ module rom (A, D, _CS, _OE);
   parameter LOG = 0;
 
   input  [AWIDTH-1:0] A;
-  output  [DWIDTH-1:0] D;
   input _CS, _OE;
+  output  [DWIDTH-1:0] D;
 
   reg [DWIDTH-1:0] Mem [0:DEPTH-1];
 
@@ -37,8 +37,8 @@ module rom (A, D, _CS, _OE);
   assign #(DELAY) D = (!_CS && !_OE) ? Mem[A] : {DWIDTH{1'bz}};
 /* verilator lint_on ASSIGNDLY */
 
-    if (1) always @(*) begin
-        $display("%8d ROM %m : A=%x D=%b _CS=%1b, _OE=%1b", $time, A, D, _CS, _OE);
+    if (LOG) always @(*) begin
+        $display("%9t ROM %m : A=x%x (%b) D=%b _CS=%1b, _OE=%1b", $time, A, A,  D, D, _CS, _OE);
     end
 
 endmodule
