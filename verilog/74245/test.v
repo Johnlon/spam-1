@@ -27,15 +27,17 @@ module tb();
       hct74245 #(.LOG(1), .NAME("BUFX")) buf245X(.A, .B, .dir, .nOE(nOEX));
 
         // Only used in Mux test
-      wire [7:0] Ay = 8'b11111111;
+      wire [7:0] Ay = 8'b10101010;
       hct74245 #(.LOG(1), .NAME("BUFY")) buf245Y(.A(Ay), .B, .dir(1'b1), .nOE(nOEY));
 
     // for pull down int test
-    logic nOEZ=1;
-    tri [7:0]Bother;
-    hct74245 #(.LOG(1), .NAME("BUFZ")) buf245Z(.A(Ay), .B(Bother), .dir(1'b1), .nOE(nOEZ));
-    pulldown pd[7:0](Bother);
+    tri [7:0] B_pulldown;
+    hct74245ab #(.LOG(1), .NAME("BUFZ")) buf245pd(.A(Ay), .B(B_pulldown), .nOE(1'b1));
+    pulldown pd[7:0](B_pulldown);
 
+    tri0 [15:0] B_tri0;
+    hct74245ab #(.LOG(1), .NAME("BUFZ")) buf245triH(.A(Ay), .B(B_tri0[15:8]), .nOE(1'b1));
+    hct74245ab #(.LOG(1), .NAME("BUFZ")) buf245triL(.A(Ay), .B(B_tri0[7:0]), .nOE(1'b1));
 
     always @*
         $display($time, " => dir=%1b", dir, " nOEX=%1b", nOEX, " Va=%8b", Va, " Vb=%8b ", Vb, " A=%8b ", A," B=%8b ", B);
@@ -194,7 +196,7 @@ $display("-------------------------");
       nOEX <= 1;
       nOEY <= 1;
       #30
-       `equals(B , 8'bzzzzzzzz, "OE A->B X driving");
+      `equals(B , 8'bzzzzzzzz, "OE A->B X driving");
 
     $display("muxed out - X driving");
 
@@ -208,16 +210,15 @@ $display("-------------------------");
       nOEX <= 1;
       nOEY <= 0;
       #30
-      `equals(B , 8'b11111111, "OE A->B Y driving");
+      `equals(B , 8'b10101010, "OE A->B Y driving");
     
     $display("pull down integration test");
-    // test with pulldown
-      Va=8'b00000000;
-      Vb=8'bzzzzzzzz;
-      dir <= 1; // a->b
-      nOEZ <= 1;
-      #30
-      `equals(Bother , 8'b00000000, "OE disable A->B");
+      #60
+      `equals(B_pulldown , 8'b00000000, "pulldown");
+    
+    $display("tri0 integration test");
+      #60
+      `equals(B_tri0 , 16'b0, "pulldown");
 
     end
 

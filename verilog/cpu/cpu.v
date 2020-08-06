@@ -46,8 +46,11 @@ module cpu(
     parameter LOG=0;
     
     tri [15:0] address_bus;
+    pulldown pd1[15:0](address_bus);
 
-    tri [7:0] bbus, abus, alu_result_bus;
+    tri0 [7:0] abus; // when NA device is selected we don't want Z going into ALU sim as this is not a value so we get X out
+    tri0 [7:0] bbus;
+    tri [7:0] alu_result_bus;
     wire [3:0] bbus_dev, abus_dev;
     wire [4:0] targ_dev;
     wire [4:0] alu_op;
@@ -83,7 +86,6 @@ module cpu(
     // CONTROL ===========================================================================================
     wire _addrmode_register, _addrmode_direct;
     wire [7:0] direct_address_hi, direct_address_lo;
-    wire [7:0] direct8;
     wire [7:0] immed8;
 
     // selection wires
@@ -107,7 +109,6 @@ module cpu(
         ._addrmode_register, ._addrmode_direct,
         `CONTROL_WIRES(BIND, `COMMA),
         .direct_address_hi, .direct_address_lo,
-        .direct8,
         .immed8,
         .alu_op,
         .bbus_dev, .abus_dev, .targ_dev
@@ -141,23 +142,19 @@ module cpu(
         .PCHI(PCHI)
     );
 
-//    hct74245ab pchi_addbbushi_buf(.A(PCHI), .B(address_bus[15:8]), .nOE(_addrmode_pc));
-//    hct74245ab pclo_addbbuslo_buf(.A(PCLO), .B(address_bus[7:0]), .nOE(_addrmode_pc));
-
     // ROM =============================================================================================
 
     
     // ROM OUT to BBUS when immed rom addressing is being used
-    hct74245ab rom_bbus_buf(.A(direct8), .B(bbus), .nOE(_bdev_rom));
+    hct74245ab rom_bbus_buf(.A(immed8), .B(bbus), .nOE(_bdev_rom));
 
-    hct74245ab rom_addbbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
-    hct74245ab rom_addbbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
+    hct74245ab #(.LOG(1)) rom_addbbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
+    hct74245ab #(.LOG(1)) rom_addbbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
 
     // RAM =============================================================================================
 
     wire #(8) _gated_ram_in = _phaseExec | _ram_in;
-    //wire #(8) _gated_ram_in = _phaseFetch | _ram_in;
-    ram #(.AWIDTH(16), .LOG(0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
+    ram #(.AWIDTH(16), .LOG(1)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
     
     hct74245ab ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in));
     hct74245ab ram_bbus_buf(.A(ram64.D), .B(bbus), .nOE(_bdev_ram));
@@ -172,14 +169,14 @@ module cpu(
     hct74245ab marhi_abus_buf(.A(MARHI.Q), .B(abus), .nOE(_adev_marhi)); // optional - needed for marlo arith so MAR appears as a GP register
     hct74245ab marhi_bbus_buf(.A(MARHI.Q), .B(bbus), .nOE(_bdev_marhi)); // optional - needed for marlo arith so MAR appears as a GP register
 
-    hct74245ab marhi_addbbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .nOE(_addrmode_register));
-    hct74245ab marlo_addbbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register));
+    hct74245ab #(.LOG(1)) marhi_addbbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .nOE(_addrmode_register));
+    hct74245ab #(.LOG(1)) marlo_addbbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register));
 
     // ALU ==============================================================================================
     wire _flag_c_out, _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out;
     wire _flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne;
 
-	alu #(.LOG(0)) Alu(
+	alu #(.LOG(1)) Alu(
         .o(alu_result_bus), 
         .a(abus),
         .b(bbus),

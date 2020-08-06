@@ -5,7 +5,6 @@
 
 `include "../74139/hct74139.v"
 `include "../74138/hct74138.v"
-`include "../74573/hct74573.v"
 `include "../cpu/cast.v"
 `include "../rom/rom.v"
 `include "../alu/alu.v"
@@ -24,7 +23,6 @@ module wide_controller(
     // selection wires
     `CONTROL_WIRES(OUT, `COMMA),
     output [7:0] direct_address_lo, direct_address_hi,
-    output [7:0] direct8,
     output [7:0] immed8,
     output [4:0] alu_op,
     output [3:0] bbus_dev, abus_dev,
@@ -45,7 +43,6 @@ module wide_controller(
     wire [7:0] instruction_2 = rom_2.D;
     wire [7:0] instruction_1 = rom_1.D;
 
-    assign direct8 = rom_1.D;
     assign immed8 = instruction_1;
     assign direct_address_lo = instruction_2;
     assign direct_address_hi = instruction_3;

@@ -106,7 +106,7 @@ module alu #(parameter LOG=0, PD=120) (
 
     wire #(8) _use_cin = _decoded[7] & _decoded[6] & _decoded[5]; // AND GATE - BUT USE TRIPLE 3 INPUT NAND AS WE NEED A NOT ON THE _flag_c_in ABOVE
 
-    wire effective_bit3 = _use_cin ? alu_op[2]: flag_c_in; // multiplexer
+    wire #(19) effective_bit3 = _use_cin ? alu_op[2]: flag_c_in; // multiplexer 74157
         
     wire [4:0] alu_op_effective = {alu_op[4:3], effective_bit3, alu_op[1:0]};
 
@@ -119,7 +119,7 @@ module alu #(parameter LOG=0, PD=120) (
 if (1) begin
     wire [20:0] A = { alu_op_effective, a, b};
     tri [15:0] D;
-    rom #(.AWIDTH(21), .DWIDTH(16), .FILENAME("../alu/roms/alu-hex.rom")) ALU_ROM(._CS(1'b0), ._OE(1'b0), .A, .D);
+    rom #(.AWIDTH(21), .DWIDTH(16), .FILENAME("../alu/roms/alu-hex.rom"), .LOG(1)) ALU_ROM(._CS(1'b0), ._OE(1'b0), .A, .D);
     assign { _flag_c, _flag_z, _flag_n, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt, o} = D;
 end
 else  

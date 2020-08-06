@@ -35,7 +35,7 @@ module test();
 
     // CLOCK ===================================================================================
     //localparam HALF_CLK=44;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
-    localparam HALF_CLK=335;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    localparam HALF_CLK=1335;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;
@@ -224,10 +224,11 @@ module test();
         `Equals(CPU._mrN, 1);
 
         `Equals(phaseFE, control::PHASE_EXEC)
-        `Equals(`RAM(16'hffaa), 8'h42); 
 
         `Equals(CPU.PCHI, 8'h00) // doesn't advnce yet
         `Equals(CPU.PCLO, 8'h00) // doesn't advnce yet
+
+        `Equals(`RAM(16'hffaa), 8'h42); 
 
         `DISPLAY("NEXT INSTRUCTION");
         `DISPLAY("phase - fetch")
@@ -257,7 +258,8 @@ module test();
         `Equals(CPU.PCHI, 8'h00)
         `Equals(CPU.PCLO, 8'h02)
         `Equals( _addrmode, control::_AMODE_REG);
-        `Equals(CPU.address_bus, {CPU.MARHI.UNDEF, 8'h42});
+        //`Equals(CPU.address_bus, {CPU.MARHI.UNDEF, 8'h42});
+        `Equals(CPU.address_bus, {8'b0xx00xx0, 8'h42});
 
         CLK_DN;
         #HALF_CLK
@@ -425,8 +427,7 @@ module test();
                 " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
                 " addbbus=0x%4x", CPU.address_bus);
             `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
-            `DD " direct8=%08b", CPU.direct8,
-                " immed8=%08b", CPU.immed8);
+            `DD " immed8=%08b", CPU.immed8);
             `DD " ram=%08b", CPU.ram64.D);
             `DD " tdev=%5b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
                 " adev=%4b(%s)", CPU.abus_dev, control::devname(CPU.abus_dev),

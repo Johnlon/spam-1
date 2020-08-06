@@ -39,6 +39,6 @@ module reset(
           ._Q()
         );
 
-    assign #(10) clk = system_clk & _mr;
+    assign #(10) clk = system_clk & _mr; // AND GATE
 
 endmodule 

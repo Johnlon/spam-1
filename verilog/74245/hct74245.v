@@ -31,7 +31,7 @@ module hct74245(
     if (LOG) 
         always @(*) 
         begin
-            $display("%8d", $time,  " BUF %-s: A=%8b ", NAME, A, "B=%-8b ", B, "dir=%1b", dir, " nOE=%1b", nOE);
+            $display("%8d", $time,  " %m BUF %-s: A=%8b ", NAME, A, "B=%-8b ", B, "dir=%1b", dir, " nOE=%1b", nOE);
         end
 
     assign A= nOE ? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
@@ -65,7 +65,7 @@ module hct74245ab(
     if (LOG) 
         always @(*) 
         begin
-            $display("%8d", $time,  " BUF %-s: A=%8b ", NAME, A, "B=%-8b ", B, " nOE=%1b", nOE);
+            $display("%8d", $time,  " %m BUF %-s: A=%8b ", NAME, A, "B=%-8b ", B, " nOE=%1b", nOE);
         end
 
 endmodule: hct74245ab

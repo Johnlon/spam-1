@@ -1,4 +1,3 @@
-
 /* 
     Run this with icarus verilog using "../simulate.sh gen_alu.v"
 
