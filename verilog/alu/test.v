@@ -558,13 +558,13 @@ module test();
         `FLAGS(Z|EQ) 
 
 
-        ////////////////////////////////////////////////////////////// A_PLUS_B_PLUS_1
+        ////////////////////////////////////////////////////////////// A_PLUS_B_PLUS_C
 
         // -86 + -127 is the same as 
         assign a = 8'b10101010; // -86 = 170 unsigned
         assign b = 8'b10000001; // -127 = 129 unsigned
         assign _flag_c_in=0;
-        assign alu_op = OP_A_PLUS_B_PLUS_1;
+        assign alu_op = OP_A_PLUS_B_PLUS_C;
         PD;
         `Equals(o, 8'b00101100); // +43 so this is signed overflow but also carry because 170+129=42 carry 1
         `FLAGS(C | O | NE | GT)
@@ -603,13 +603,13 @@ module test();
         `FLAGS(EQ) 
 
 
-        ////////////////////////////////////////////////////////////// A_MINUS_B_MINUS_1
+        ////////////////////////////////////////////////////////////// A_MINUS_B_MINUS_C
 
         // zero boundary tests
         assign a = 1;
         assign b = 0;
         assign _flag_c_in = 1; 
-        assign alu_op = OP_A_MINUS_B_MINUS_1; 
+        assign alu_op = OP_A_MINUS_B_MINUS_C; 
         PD;
         `Equals(o, 1);
         `FLAGS(NE|GT)
@@ -650,7 +650,6 @@ module test();
         assign a = 0;
         assign b = (`MAX_POS-1);
         assign _flag_c_in = 1;
-        assign alu_op = OP_A_MINUS_B_MINUS_1;
         PD;
         `Equals(o, 8'b10000010); // -126
         `FLAGS(C|N|NE|LT)
@@ -669,11 +668,11 @@ module test();
         `Equals(o, 8'b10000000); // -128
         `FLAGS(C|N|NE|LT)
 
-        ////////////////////////////////////////////////////////////// B_MINUS_A_MINUS_1
+        ////////////////////////////////////////////////////////////// B_MINUS_A_MINUS_C
         assign a = 1;
         assign b = 1;
         assign _flag_c_in = 0;
-        assign alu_op = OP_B_MINUS_A_MINUS_1;
+        assign alu_op = OP_B_MINUS_A_MINUS_C;
         PD;
         `Equals(o, 8'd255);
         `FLAGS(C|N|EQ)

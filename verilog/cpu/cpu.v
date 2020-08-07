@@ -45,9 +45,7 @@ module cpu(
 
     parameter LOG=0;
     
-    tri [15:0] address_bus;
-    pulldown pd1[15:0](address_bus);
-
+    tri0 [15:0] address_bus;
     tri0 [7:0] abus; // when NA device is selected we don't want Z going into ALU sim as this is not a value so we get X out
     tri0 [7:0] bbus;
     tri [7:0] alu_result_bus;

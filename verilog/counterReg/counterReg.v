@@ -9,67 +9,54 @@
 `timescale 1ns/1ns
 
 module counterReg(
-input CP,
-input _MR,
-input CEP,
-input CET,
-input _PE,
-input [7:0] D,
+    input CP,
+    input _MR,
+    input CEP,
+    input CET,
+    input _PE,
+    input [7:0] D,
 
-output [7:0] Q,
-output TC
+    output [7:0] Q,
+    output TC
 );
 
 // internal wiring 
-logic CEPlo;
-logic CEPhi;
-logic CETlo;
-logic CEThi;
 logic [3:0] Dlo;
 logic [3:0] Dhi;
 logic [3:0] Qlo;
 logic [3:0] Qhi;
-wire TClo;
-wire TChi;
 
 // naming from https://www.ti.com/lit/ds/symlink/sn74f163a.pdf
 hct74163 LO4
 (
   .CP(CP),
   ._MR(_MR),
-  .CEP(CEPlo),
-  .CET(CETlo),
+  .CEP(CEP),
+  .CET(CET),
   ._PE(_PE),
   .D(Dlo),
 
-  .Q(Qlo),
-  .TC(TClo)
+  .Q(Qlo)
 );
 
 hct74163 HI4
 (
   .CP(CP),
   ._MR(_MR),
-  .CEP(CEPhi),
-  .CET(CEThi),
+  .CEP(CEP),
+  .CET(LO4.TC),
   ._PE(_PE),
   .D(Dhi),
 
-  .Q(Qhi),
-  .TC(TChi)
+  .Q(Qhi)
 );
 
-  
-  assign CEPlo = CEP;
-  assign CETlo = CET;
-  assign CEPhi = CEP;
-  assign CEThi = TClo; // CHAIN 
   
   assign Dlo = D[3:0];
   assign Dhi = D[7:4];
 
   assign Q = {Qhi, Qlo};
-  assign TC = TChi;
+  assign TC = HI4.TC;
 
 
 endmodule

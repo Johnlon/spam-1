@@ -22,9 +22,9 @@ package alu_ops;
     localparam [4:0] OP_A_MINUS_B=10;
     localparam [4:0] OP_B_MINUS_A=11;
     localparam [4:0] OP_A_MINUS_B_SIGNEDMAG=12;
-    localparam [4:0] OP_A_PLUS_B_PLUS_1=13;
-    localparam [4:0] OP_A_MINUS_B_MINUS_1=14;
-    localparam [4:0] OP_B_MINUS_A_MINUS_1=15;
+    localparam [4:0] OP_A_PLUS_B_PLUS_C=13;
+    localparam [4:0] OP_A_MINUS_B_MINUS_C=14;
+    localparam [4:0] OP_B_MINUS_A_MINUS_C=15;
 
     localparam [4:0] OP_A_TIMES_B_LO=16;
     localparam [4:0] OP_A_TIMES_B_HI=17;

@@ -126,8 +126,7 @@ module test();
                  " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
                  " addbbus=0x%4x", CPU.address_bus);
             `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
-            `DD " direct8=%08b", CPU.direct8,
-                 " immed8=%08b", CPU.immed8);
+            `DD " immed8=%08b", CPU.immed8);
             `DD " ram=%08b", CPU.ram64.D);
             `DD " tdev=%5b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
                 " adev=%4b(%s)", CPU.abus_dev, control::devname(CPU.abus_dev),

@@ -9,7 +9,6 @@
 `include "../lib/assertion.v"
 `include "../counterReg/counterReg.v"
 `include "../74377/hct74377.v"
-`include "../7474/hct7474.v"
 
 `timescale 1ns/1ns
 
@@ -44,8 +43,6 @@ wire countEn;
 // 74163 counts when CEP/CET/PE are all high
 // _pclo_load is synchronous and must be held low DURING a +ve clk
 
-wire TC;
-
 assign countEn = _pclo_load; // _pclo_load is always involved in a jump so the inverse of this signal can enable count
 
 counterReg LO
@@ -57,8 +54,7 @@ counterReg LO
   ._PE(_pclo_load),
   .D(D),
 
-  .Q(PCLO),
-  .TC(TC)
+  .Q(PCLO)
 );
 
 counterReg HI
@@ -66,7 +62,7 @@ counterReg HI
   .CP(clk),
   ._MR(_MR),
   .CEP(countEn),
-  .CET(TC),
+  .CET(LO.TC),
   ._PE(_pc_in),
   .D(PCHITMP),
 

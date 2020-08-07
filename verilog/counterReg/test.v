@@ -5,6 +5,8 @@
 `include "../lib/assertion.v"
 `include "counterReg.v"
 
+`timescale 1ns/1ns
+
 module test();
 logic CP;
 logic _MR;

@@ -1,0 +1,81 @@
+
+`include "./alu.v"
+
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
+
+`timescale 1ns/1ns
+
+module gen_alu();
+    import alu_ops::*;
+
+	integer a, b, alu_op;
+
+    wire [7:0] o;
+    wire _flag_c;
+    wire _flag_n;
+    wire _flag_z;
+    wire _flag_o;
+    wire _flag_gt;
+    wire _flag_lt;
+    wire _flag_eq;
+    wire _flag_ne;
+	
+    OpName op_name = "";
+    OpName last_opname = "";
+
+	alu_rom #(.LOG(0)) Alu( .o, .a(8'(a)), .b(8'(b)), .alu_op(5'(alu_op)), ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_gt, ._flag_lt, ._flag_eq, ._flag_ne);
+
+    integer counter=0;
+    int block, sub_block;
+    int n_file = 0;
+    string block_file;
+    int opnum=0;
+
+    initial begin
+
+        for (block=0; block < 8; block++) begin
+
+            for (sub_block=0; sub_block < 4; sub_block++) begin
+
+                for (a=0; a <= 255 ; a++) begin
+                    for (b=0; b <= 255 ; b++) begin
+
+                        alu_op = {3'(block), 2'(sub_block)};
+                        op_name = aluopNameR(alu_op);
+
+                        if (op_name != last_opname) begin
+                            if (n_file != 0) $fclose(n_file);
+                            block_file = $sformatf("rom%-1d_%1s.rom", opnum, op_name);
+
+                            $display("opening %s", op_name);
+                            n_file = $fopen(block_file, "wb");
+                            opnum++;
+                        end
+                        last_opname = op_name;
+
+                        #(Alu.PD+1)
+                        $fwrite(n_file, "%c", o[7:0]);
+                        //$fwrite(n_file, "%c", { _flag_c, _flag_n, _flag_z, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne });
+                        $fwrite(n_file, "%c", 0);
+
+                        if (0) 
+                        $display ("%9t", $time, " (%5d) ALU: a=%8b(d%4d/h%02h) b=%8b(d%4d/h%02h)  op=%02d %10s  result=%8b(%4d/%02h)   _flags (_c=%b _z=%1b _n=%1b _o=%1b _eq=%1b _ne=%1b _gt=%1b _lt=%b)", 
+                            counter, 8'(a), 8'(a), 8'(a), 8'(b), 8'(b), 8'(b), alu_op,
+                            op_name, o, o, o, _flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_ne, _flag_eq
+                        );
+
+
+                        #1
+                        counter++;
+                        if (counter % (256*256) == 0 ) $display("DONE %s", op_name);
+
+                    end    
+                end    
+            end    
+            if (n_file != 0) $fclose(n_file);
+            n_file = 0;
+            $display("DONE file %s", block_file);
+        end    
+    end
+endmodule : gen_alu
