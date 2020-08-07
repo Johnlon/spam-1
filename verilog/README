@@ -1,3 +1,16 @@
 goto cpu
 run simulateSync.sh
 
+
+Known to work on 8 Aug 2020 using iverlog commit ...
+
+    commit 9d15b771b15141c7f394cf7f2e5f935da47f6534 (HEAD -> master, origin/master, origin/HEAD)
+    Author: Martin Whitaker <icarus@martin-whitaker.me.uk>
+    Date:   Thu Aug 6 14:20:16 2020 +0100
+
+        Fix GitHub issue #356 - use pull strength for tri0/tri1 tie-offs.
+
+        When connecting module inout ports, an island is created. If there
+        is no other driver on one of the island ports, a tie-off is added.
+        In the case of a tri0 or tri1 net, this must have the correct (pull)
+        drive strength.
