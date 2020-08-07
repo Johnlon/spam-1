@@ -25,7 +25,7 @@ logic [3:0] Dlo;
 logic [3:0] Dhi;
 logic [3:0] Qlo;
 logic [3:0] Qhi;
-
+// cascaded as per http://upgrade.kongju.ac.kr/data/ttl/74163.html
 // naming from https://www.ti.com/lit/ds/symlink/sn74f163a.pdf
 hct74163 LO4
 (

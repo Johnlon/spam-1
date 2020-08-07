@@ -50,7 +50,7 @@ counterReg LO
   .CP(clk),
   ._MR(_MR),
   .CEP(countEn),
-  .CET(1'b1),
+  .CET(countEn),
   ._PE(_pclo_load),
   .D(D),
 
@@ -61,7 +61,7 @@ counterReg HI
 (
   .CP(clk),
   ._MR(_MR),
-  .CEP(countEn),
+  .CEP(LO.TC),
   .CET(LO.TC),
   ._PE(_pc_in),
   .D(PCHITMP),
