@@ -97,7 +97,7 @@ package alu_ops;
     function string aluopName; input [4:0] opcode;
         string ret;
         begin
-            $sformat(ret,"%-s",aluopNameR(opcode));
+            $sformat(ret,"%-1s",aluopNameR(opcode));
             aluopName = ret;
         end
     endfunction

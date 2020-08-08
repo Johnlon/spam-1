@@ -420,19 +420,19 @@ module test();
     task DUMP;
             DUMP_OP;
             `DD " phase=%-6s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
-            `DD " PC=%1d (0x%4h) PCHItmp=%d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
+            `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
             `DD " FE=%1b%1b(%-s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
             `DD " _amode=%-2s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
                 " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
-                " addbbus=0x%4x", CPU.address_bus);
+                " address_bus=0x%4x", CPU.address_bus);
             `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
             `DD " immed8=%08b", CPU.immed8);
             `DD " ram=%08b", CPU.ram64.D);
             `DD " tdev=%5b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
                 " adev=%4b(%s)", CPU.abus_dev, control::devname(CPU.abus_dev),
                 " bdev=%4b(%s)", CPU.bbus_dev,control::devname(CPU.bbus_dev),
-                " alu_op=%5b(%s)", CPU.alu_op, aluopName(CPU.alu_op)
+                " alu_op=%5b(%1s)", CPU.alu_op, aluopName(CPU.alu_op)
             );            
             `DD " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
             `DD " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU.flags_czonGLEN.Q, CPU.gated_flags_clk);
@@ -453,7 +453,7 @@ module test();
         $display ("%9t ", $time,  "MON     ",
                  "rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
                  " _amode=%-2s", control::fAddrMode(_addrmode_register, _addrmode_direct),
-                 " addbbus=0x%4x", address_bus,
+                 " address_bus=0x%4x", address_bus,
                  " FE=%-6s (%1b%1b)", control::fPhase(phaseFetch, phaseExec), phaseFetch, phaseExec,
                  " bbus=%8b abus=%8b alu_result_bus=%8b", bbus, abus, alu_result_bus,
                  " bdev=%04b adev=%04b targ=%05b alu_op=%05b (%1s)", bbus_dev, abus_dev, targ_dev, alu_op, aluopName(alu_op),
