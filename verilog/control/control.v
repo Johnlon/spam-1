@@ -227,53 +227,45 @@ import control::*;
 
 
 `define CONTROL_WIRES(FN, SEP)  \
-    ```FN``_TDEV_SEL(ram) SEP \
-    ```FN``_BDEV_SEL(ram) SEP\
-    \
-    ```FN``_BDEV_SEL(rom)    SEP\
-    \
-    ```FN``_ADEV_SEL(marlo)    SEP\
-    ```FN``_BDEV_SEL(marlo)    SEP\
-    ```FN``_TDEV_SEL(marlo)    SEP\
-    \
+    ```FN``_ADEV_SEL(flags)    SEP\
     ```FN``_ADEV_SEL(marhi)    SEP\
-    ```FN``_BDEV_SEL(marhi)    SEP\
-    ```FN``_TDEV_SEL(marhi)    SEP\
-    \
+    ```FN``_ADEV_SEL(marlo)    SEP\
     ```FN``_ADEV_SEL(rega)    SEP\
-    ```FN``_BDEV_SEL(rega)    SEP\
-    ```FN``_TDEV_SEL(rega)    SEP\
-    \
     ```FN``_ADEV_SEL(regb)    SEP\
-    ```FN``_BDEV_SEL(regb)    SEP\
-    ```FN``_TDEV_SEL(regb)    SEP\
-    \
     ```FN``_ADEV_SEL(regc)    SEP\
-    ```FN``_BDEV_SEL(regc)    SEP\
-    ```FN``_TDEV_SEL(regc)    SEP\
-    \
     ```FN``_ADEV_SEL(regd)    SEP\
-    ```FN``_BDEV_SEL(regd)    SEP\
-    ```FN``_TDEV_SEL(regd)    SEP\
-    \
     ```FN``_ADEV_SEL(uart)    SEP\
-    ```FN``_TDEV_SEL(uart)    SEP\
-    \
+    ```FN``_ADEV_SEL(not_used)    SEP\
     ```FN``_BDEV_SEL(immed)    SEP\
-       \
-    ```FN``_TDEV_SEL(pchitmp)    SEP\
-    ```FN``_TDEV_SEL(pclo)    SEP\
-    ```FN``_TDEV_SEL(pc)    SEP\
+    ```FN``_BDEV_SEL(marhi)    SEP\
+    ```FN``_BDEV_SEL(marlo)    SEP\
+    ```FN``_BDEV_SEL(ram) SEP\
+    ```FN``_BDEV_SEL(rega)    SEP\
+    ```FN``_BDEV_SEL(regb)    SEP\
+    ```FN``_BDEV_SEL(regc)    SEP\
+    ```FN``_BDEV_SEL(regd)    SEP\
+    ```FN``_BDEV_SEL(rom)    SEP\
     ```FN``_TDEV_SEL(jmpc)    SEP\
-    ```FN``_TDEV_SEL(jmpn)    SEP\
-    ```FN``_TDEV_SEL(jmpz)    SEP\
+    ```FN``_TDEV_SEL(jmpdi)    SEP\
+    ```FN``_TDEV_SEL(jmpdo)    SEP\
     ```FN``_TDEV_SEL(jmpeq)    SEP\
-    ```FN``_TDEV_SEL(jmpne)    SEP\
     ```FN``_TDEV_SEL(jmpgt)    SEP\
     ```FN``_TDEV_SEL(jmplt)    SEP\
+    ```FN``_TDEV_SEL(jmpn)    SEP\
+    ```FN``_TDEV_SEL(jmpne)    SEP\
     ```FN``_TDEV_SEL(jmpo)    SEP\
-    ```FN``_TDEV_SEL(jmpdi)    SEP\
-    ```FN``_TDEV_SEL(jmpdo)    
+    ```FN``_TDEV_SEL(jmpz)    SEP\
+    ```FN``_TDEV_SEL(marhi)    SEP\
+    ```FN``_TDEV_SEL(marlo)    SEP\
+    ```FN``_TDEV_SEL(pc)    SEP\
+    ```FN``_TDEV_SEL(pchitmp)    SEP\
+    ```FN``_TDEV_SEL(pclo)    SEP\
+    ```FN``_TDEV_SEL(ram) SEP \
+    ```FN``_TDEV_SEL(rega)    SEP\
+    ```FN``_TDEV_SEL(regb)    SEP\
+    ```FN``_TDEV_SEL(regc)    SEP\
+    ```FN``_TDEV_SEL(regd)    SEP\
+    ```FN``_TDEV_SEL(uart)    
 
 `define SEMICOLON ;
 `define COMMA ,
