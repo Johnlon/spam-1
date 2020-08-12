@@ -34,8 +34,8 @@ module test();
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
 
     // CLOCK ===================================================================================
-    //localparam HALF_CLK=44;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
-    localparam HALF_CLK=1335;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    localparam HALF_CLK=350;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    //localparam HALF_CLK=1335;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;

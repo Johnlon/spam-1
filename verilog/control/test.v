@@ -1,3 +1,0 @@
-// Run the separate ...
-// test_address_mode_decoder.v
-// test_instruction_decoder.v

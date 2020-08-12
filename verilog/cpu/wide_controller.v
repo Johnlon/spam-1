@@ -8,8 +8,7 @@
 `include "../cpu/cast.v"
 `include "../rom/rom.v"
 `include "../alu/alu.v"
-`include "../control/control.v"
-
+`include "control_lines.v"
 `include "psuedo_assembler.v"
 
 `timescale 1ns/1ns

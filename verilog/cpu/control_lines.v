@@ -55,9 +55,9 @@ package control;
     localparam [3:0] DEV_regg = 6; 
     localparam [3:0] DEV_regh = 7; 
     localparam [3:0] DEV_flags =8;
-    localparam [3:0] DEV_immed = 9;
+    localparam [3:0] DEV_immed = 9; // READ FROM THE INSTRUCTION
     localparam [3:0] DEV_ram = 10;
-    localparam [3:0] DEV_rom = 11;
+    localparam [3:0] DEV_rom = 11; // READ FROM ????
     localparam [3:0] DEV_marlo = 12;
     localparam [3:0] DEV_marhi = 13;
     localparam [3:0] DEV_uart = 14;
