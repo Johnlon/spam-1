@@ -57,7 +57,7 @@ package control;
     localparam [3:0] DEV_flags =8;
     localparam [3:0] DEV_immed = 9; // READ FROM THE INSTRUCTION
     localparam [3:0] DEV_ram = 10;
-    localparam [3:0] DEV_rom = 11; // READ FROM ????
+    localparam [3:0] DEV_not_used2 = 11;
     localparam [3:0] DEV_marlo = 12;
     localparam [3:0] DEV_marhi = 13;
     localparam [3:0] DEV_uart = 14;
@@ -94,7 +94,7 @@ package control;
 
     // define constants
     `TARGL(ram)
-    `TARGL(rom)
+    `TARGL(immed)
     `TARGL(marlo)
     `TARGL(marhi)
     `TARGL(uart)
@@ -125,7 +125,7 @@ package control;
     begin
         case (dev)
             DEV_ram: devname = "RAM";
-            DEV_rom: devname = "ROM";
+            DEV_not_used2: devname = "NOT_USED2";
             DEV_marlo: devname = "MARLO";
             DEV_marhi: devname = "MARHI";
             DEV_uart: devname = "UART";
@@ -244,7 +244,7 @@ import control::*;
     ```FN``_BDEV_SEL(regb)    SEP\
     ```FN``_BDEV_SEL(regc)    SEP\
     ```FN``_BDEV_SEL(regd)    SEP\
-    ```FN``_BDEV_SEL(rom)    SEP\
+    ```FN``_BDEV_SEL(not_used2)    SEP\
     ```FN``_TDEV_SEL(jmpc)    SEP\
     ```FN``_TDEV_SEL(jmpdi)    SEP\
     ```FN``_TDEV_SEL(jmpdo)    SEP\

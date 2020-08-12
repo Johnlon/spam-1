@@ -449,6 +449,7 @@ module test();
     endtask 
 
 
+/*
     if (0) always @* begin
         $display ("%9t ", $time,  "MON     ",
                  "rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
@@ -462,6 +463,8 @@ module test();
                  "     : %1s", label
                  );
     end
+
+*/
 
     always @* 
         if (_RESET_SWITCH)  
