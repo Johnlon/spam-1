@@ -5,7 +5,7 @@
 
 `include "../74139/hct74139.v"
 `include "../74138/hct74138.v"
-`include "../cpu/cast.v"
+`include "../lib/cast.v"
 `include "../rom/rom.v"
 `include "../alu/alu.v"
 `include "control_lines.v"
