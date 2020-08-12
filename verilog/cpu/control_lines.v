@@ -35,16 +35,6 @@ package control;
     localparam _AMODE_REG=2'b01;
     localparam _AMODE_DIR=2'b10;
 
-    // ops
-    localparam [2:0] OP_dev_eq_xy_alu =0;
-    localparam [2:0] OP_dev_eq_const8 =1;
-    localparam [2:0] OP_dev_eq_const16 =2;
-    localparam [2:0] OP_3_unused =3;
-    localparam [2:0] OP_dev_eq_rom_direct =4;
-    localparam [2:0] OP_dev_eq_ram_direct =5;
-    localparam [2:0] OP_ram_direct_eq_dev =6;
-    localparam [2:0] OP_7_unused =7;
-
     // sources or dests
     localparam [3:0] DEV_rega = 0; 
     localparam [3:0] DEV_regb = 1; 
@@ -193,31 +183,6 @@ package control;
     function string fAddrMode(_addrmode_register, _addrmode_direct); 
     begin
             fAddrMode = `DECODE_ADDRMODES;
-    end
-    endfunction
-
-
-    function string opName([2:0] opcode); 
-    begin
-        string ret;
-
-        begin
-            case(opcode)
-                 OP_dev_eq_xy_alu : opName = "dev_eq_xy_alu";
-                 OP_dev_eq_const8 : opName = "dev_eq_const8";
-                 OP_dev_eq_const16 : opName = "dev_eq_const16";
-                 OP_3_unused : opName = "3_unused";
-                 OP_dev_eq_rom_direct : opName = "dev_eq_rom_direct";
-                 OP_dev_eq_ram_direct : opName = "dev_eq_ram_direct";
-                 OP_ram_direct_eq_dev : opName = "ram_direct_eq_dev";
-                 OP_7_unused : opName = "7_unused";
-
-                 default: begin
-                    $sformat(ret,"??unknown(%b)",opcode);
-                    opName = ret;
-                 end
-            endcase
-        end
     end
     endfunction
 
