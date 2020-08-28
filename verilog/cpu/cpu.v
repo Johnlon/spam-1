@@ -1,9 +1,4 @@
-
-// FIXME Use Warrens ALU ROM and my external logic
-// TODO option: Implement conditional instructions with spare ROM bits
-// TODO option: If use 16 immediate then can do a direct jump - but needs an alternative route into the PC for that
-
-
+// FIXME: Add random number generator - eg use an unused device as a readonly source - connect it to a 8 bit counter running at an arbitraty speed
 // ADDRESSING TERMINOLOGY
 //  IMMEDIATE ADDRESSING = INSTRUCTION CONTAINS THE CONSTANT VALUE DATA TO USE
 //  DIRECT ADDRESSING = INSTRUCTION CONTAINS THE ADDRESS IN MEMORY OF THE DATA TO USE
