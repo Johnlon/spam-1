@@ -1,15 +1,3 @@
 
+WAVEDROM BUG - DOESN'T OBEY CONFIG
 ![signal step4](https://svg.wavedrom.com/github/johnlon/spam-1/master/docs/instruction-bits.json5)
-
-![signal step5](https://svg.wavedrom.com/github/wavedrom/wavedrom/master/test/signal-step4.json5)
-
-3
-
-![reg vl](https://svg.wavedrom.com/github/wavedrom/wavedrom/master/test/reg-vl.json5)
-
-
-```html
-<img src="https://svg.wavedrom.com/{signal:[{name:'clk',wave:'p......'},{name:'bus',wave:'x.34.5x',data:'head body tail'},{name:'wire',wave:'0.1..0.'}]}"/>
-```
-
-<img src="https://svg.wavedrom.com/{signal:[{name:'clk',wave:'p......'},{name:'bus',wave:'x.34.5x',data:'head body tail'},{name:'wire',wave:'0.1..0.'}]}"/>
