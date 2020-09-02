@@ -1,0 +1,13 @@
+{reg: [
+  {bits: 8,  name: 'immediate',         attr: 'immediate operand to alu used by source device "IMMED"', type: 3},
+  {bits: 16, name: 'direct address',    attr: ['direct RAM address used when address mode=DIRECT, otherwise redundant'], type: 5},
+  {bits: 1,  name: 'AM',                attr: ['address mode', '0-REGISTER','1-DIRECT', ''],   type: 0},
+  {bits: 5,  name: 'unused',            attr: ['future use']},
+  {bits: 4,  name: 'sourceB',           attr: ['devices 0-16',], type: 4},
+  {bits: 4,  name: 'sourceA',           attr: ['devices 0-16',], type: 6},
+  {bits: 5,  name: 'destination',       attr: ['devices 0-31', 'includes program counter devices'], type: 7},
+  {bits: 5,  name: 'aluop',             attr: ['operation'], type: 2}
+], 
+ config:{bits: 48, hspace: 1200, lanes: 2, fontsize:10}
+}
+
