@@ -1,13 +1,15 @@
-{reg: [
-  {bits: 8,  name: 'immediate',         attr: 'immediate operand to alu used by source device "IMMED"', type: 3},
-  {bits: 16, name: 'direct address',    attr: ['direct RAM address used when address mode=DIRECT, otherwise redundant'], type: 5},
-  {bits: 1,  name: 'AM',                attr: ['address mode', '0-REGISTER','1-DIRECT', ''],   type: 0},
-  {bits: 5,  name: 'unused',            attr: ['future use']},
-  {bits: 4,  name: 'sourceB',           attr: ['devices 0-16',], type: 4},
-  {bits: 4,  name: 'sourceA',           attr: ['devices 0-16',], type: 6},
-  {bits: 5,  name: 'destination',       attr: ['devices 0-31', 'includes program counter devices'], type: 7},
-  {bits: 5,  name: 'aluop',             attr: ['operation'], type: 2}
-], 
- config:{bits: 48, hspace: 1200, lanes: 2, fontsize:10}
-}
-
+{reg:[
+    {bits: 7,  name: 0x07, attr: [
+      'VLxU,VLE zero-extended',
+      'VLxU,VLE zero-extended, fault-only-first',
+      'VLxU sign-extended',
+      'VLxU sign-extended, fault-only-first',
+    ]},
+    {bits: 5,  name: 'vd', attr: 'destination of load', type: 2},
+    {bits: 3,  name: 'width'},
+    {bits: 5,  name: 'rs1', attr: 'base address', type: 4},
+    {bits: 5,  name: 'lumop', attr: [0, 16, 0, 16]},
+    {bits: 1,  name: 'vm'},
+    {bits: 3,  name: 'mop', attr: [0, 0, 4, 4]},
+    {bits: 3,  name: 'nf'},
+]}
