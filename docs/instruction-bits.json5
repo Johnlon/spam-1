@@ -1,3 +1,4 @@
+/*paste into wavedrom editor https://wavedrom.com/editor.html and copy image */
 {reg: [
   {bits: 8,  name: 'immediate',      	attr: ['immediate operand to alu','used by source device IMMED'], type: 3},
   {bits: 16, name: 'direct address',    attr: ['direct RAM address used when address mode=DIRECT, otherwise redundant'], type: 5},
