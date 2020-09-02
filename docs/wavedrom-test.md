@@ -1,5 +1,7 @@
 
-![signal step4](https://svg.wavedrom.com/github/Johnlon/spam-1/master/docs/instruction_bitfield.json5)
+![signal step4](https://svg.wavedrom.com/github/johnlon/spam-1/master/docs/instruction_bitfield.json5)
+
+![signal step5](https://svg.wavedrom.com/github/wavedrom/wavedrom/master/test/signal-step4.json5)
 
 
 ```html
