@@ -45,12 +45,16 @@ wire countEn;
 
 assign countEn = _pclo_load; // _pclo_load is always involved in a jump so the inverse of this signal can enable count
 
+// see applications here https://www.ti.com/lit/ds/symlink/sn54ls161a-sp.pdf?ts=1599773093420&ref_url=https%253A%252F%252Fwww.google.com%252F
+// see ripple mode approach - CEP/CET can be tied high because _PE overrides those and so they can be left enabled.
+// TC/CET chains the count enable as per the data sheet for > 4 bits counting.
+
 counterReg LO
 (
   .CP(clk),
   ._MR(_MR),
-  .CEP(countEn),
-  .CET(countEn),
+  .CEP(1'b1),
+  .CET(1'b1),
   ._PE(_pclo_load),
   .D(D),
 
@@ -61,7 +65,7 @@ counterReg HI
 (
   .CP(clk),
   ._MR(_MR),
-  .CEP(LO.TC),
+  .CEP(1'b1),
   .CET(LO.TC),
   ._PE(_pc_in),
   .D(PCHITMP),
@@ -71,7 +75,7 @@ counterReg HI
 );
 
 
-always @(posedge clk)
+if (LOG) always @(posedge clk)
 begin
   if (~_MR)
   begin
