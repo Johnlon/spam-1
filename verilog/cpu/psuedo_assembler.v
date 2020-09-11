@@ -12,7 +12,14 @@
 
 // Instruction populates the ROM and adds a text version of the instruction to the CODE array
 `define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP, AMODE, ADDRESS, IMMED) \
-    `ROM(LOCN) = { `toALUOP(ALUOP), cast.to5(`toDEV(TARGET)), cast.to4(`toDEV(SRCA)), cast.to4(`toDEV(SRCB)), 5'bz, 1'(AMODE), cast.to16(ADDRESS), cast.to8(IMMED) }; \
+    `ROM(LOCN) = { `toALUOP(ALUOP), \
+     cast.to5(`toDEV(TARGET)), \
+     cast.to4(`toDEV(SRCA)), \
+     cast.to4(`toDEV(SRCB)), \
+     5'bz, \
+     1'(AMODE), \
+     cast.to16(ADDRESS), \
+     cast.to8(IMMED) }; \
     CODE[LOCN] = "TARGET=SRCA(ALUOP)SRCB  amode=AMODE immed8=IMMED addr=ADDRESS";
 
 `define NA 'z
