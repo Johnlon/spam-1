@@ -9,8 +9,8 @@
 module test();
 logic clk;
 logic _MR;
-logic _pclo_in;
-logic _pc_in;
+logic _local_jump;
+logic _long_jump;
 logic _pchitmp_in;
 logic [7:0] D;
 wire [7:0] PCHI, PCLO;
@@ -20,7 +20,7 @@ wire #8 _clk = ! clk;
 localparam T=25;
 localparam SETTLE=50;
 
-pc PC ( .clk, ._MR, ._pc_in, ._pclo_in, ._pchitmp_in, .D, .PCLO, .PCHI);
+pc PC ( .clk, ._MR, ._long_jump, ._local_jump, ._pchitmp_in, .D, .PCLO, .PCHI);
 
 task clkpulse;
   begin
@@ -34,7 +34,7 @@ endtask
 logic LOG=1;
 
   always @(*)
-    if (LOG) $display("%8d TEST : clk=%1b    PC=%8b,%8b _pc_in=%1b _pclo_in=%1b _pchitmp_in=%1b ", $time, clk, PCHI, PCLO, _pc_in, _pclo_in, _pchitmp_in);
+    if (LOG) $display("%8d TEST : clk=%1b    PC=%8b,%8b _long_jump=%1b _local_jump=%1b _pchitmp_in=%1b ", $time, clk, PCHI, PCLO, _long_jump, _local_jump, _pchitmp_in);
 
 int c;
 
@@ -43,9 +43,9 @@ initial begin
   $display("initial undefined");
   `Equals(PCLO, 8'bxxxxxxxx);
   `Equals(PCHI, 8'bxxxxxxxx);
-  _pc_in = 1'b1;
+  _long_jump = 1'b1;
   _pchitmp_in = 1'b1;
-  _pclo_in = 1'b1;
+  _local_jump = 1'b1;
   _MR = 1'b0;
   D = 8'b0;
   clk = 1'b0;
@@ -96,9 +96,9 @@ initial begin
   // Set PCHITmp + PC advances
   D = 8'b11111111;
   $display("load PCHITmp with %8b - PC should advance on +ve edge", D);
-  _pc_in = 1'b1;
+  _long_jump = 1'b1;
   _pchitmp_in = 1'b0;
-  _pclo_in = 1'b1;
+  _local_jump = 1'b1;
   clk= 1'b0;
   #SETTLE
   `Equals(PCLO, 8'b00000010);
@@ -132,9 +132,9 @@ initial begin
 
   D = 8'b10101010; // distinctive value that should be loaded to LO
   $display("load PCLO with %8b - PCHI should load with PCHITMP and PC not advance", D);
-  _pc_in = 1'b0;
+  _long_jump = 1'b0;
   _pchitmp_in = 1'b1;
-  _pclo_in = 1'b1;
+  _local_jump = 1'b1;
   clkpulse();
   #SETTLE
   `Equals(PCLO, 8'b10101010);
@@ -143,9 +143,9 @@ initial begin
 // Set only PCLO - PC should not advance
   D = 8'b11111110;
   $display("load PCLO with %8b - PCLO should load and PC not advance", D);
-  _pc_in = 1'b1;
+  _long_jump = 1'b1;
   _pchitmp_in = 1'b1;
-  _pclo_in = 1'b0;
+  _local_jump = 1'b0;
   clkpulse();
   #SETTLE
   `Equals(PCLO, 8'b11111110);
@@ -153,9 +153,9 @@ initial begin
 
 // count PC
   $display("count - Should count to ff:ff");
-  _pc_in = 1'b1;
+  _long_jump = 1'b1;
   _pchitmp_in = 1'b1;
-  _pclo_in = 1'b1;
+  _local_jump = 1'b1;
   clkpulse();
   #SETTLE
   `Equals(PCLO, 8'b11111111);
@@ -173,9 +173,9 @@ initial begin
   #SETTLE
   `Equals({PCHI,PCLO}, 8'b0);
 
-  _pc_in = 1'b1;
+  _long_jump = 1'b1;
   _pchitmp_in = 1'b1;
-  _pclo_in = 1'b1;
+  _local_jump = 1'b1;
   _MR = 1'b1;
   LOG=0; // no logging or it's slow
   #SETTLE

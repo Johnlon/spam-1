@@ -120,14 +120,13 @@ module cpu(
     wire #(8) _do_jmpdi = _jmpdi_in | _flag_di;
     wire #(8) _do_jmpdo = _jmpdo_in | _flag_do;
 
-   wire #(8) _do_jmp = _pc_in & _do_jmpc & _do_jmpz & _do_jmpn & _do_jmpo & _do_jmpeq & _do_jmpne & _do_jmpgt & _do_jmplt & _do_jmpdi & _do_jmpdo; // use two 7411 triple 3-input AND
-    
+    wire #(8) _long_jump = _pc_in & _do_jmpc & _do_jmpz & _do_jmpn & _do_jmpo & _do_jmpeq & _do_jmpne & _do_jmpgt & _do_jmplt & _do_jmpdi & _do_jmpdo; // use two 7411 triple 3-input AND
     // PC reset is sync with +ve edge of clock
     pc #(.LOG(0))  PC (
         .clk(clk),
         ._MR(_mrN),
-        ._pc_in(_do_jmp),  // load both
-        ._pclo_in(_pclo_in), // load lo
+        ._long_jump(_long_jump),  // load both
+        ._local_jump(_pclo_in), // load lo
         ._pchitmp_in(_pchitmp_in), // load tmp
         .D(alu_result_bus),
 
@@ -185,7 +184,9 @@ module cpu(
         ._flag_ne(_flag_ne_out)
     );
 
-    wire #(9) gated_flags_clk = phaseExec & _pclo_in & _pchitmp_in & _do_jmp;
+    // don't set flags on a jump - preserve them - makes for two stage jumps if I need them
+    // NOTE perhaps simpler if I use a spare bit to select which operations set the flags explicitely like ARM.
+    wire #(9) gated_flags_clk = phaseExec & _pclo_in & _pchitmp_in & _long_jump;
 
     hct74574 #(.LOG(0)) flags_czonGLEN( .D({_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out}),
                                        .Q(_flags),
