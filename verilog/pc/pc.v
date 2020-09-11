@@ -24,30 +24,20 @@ module pc(
     output [7:0] PCHI
 );
 
-parameter LOG = 1;
+parameter LOG = 0;
 
 wire [7:0] PCHITMP;
 
-// low is loaded if separately loaded or both loaded
-wire #11 _do_jump = _pclo_in & _pc_in;
-
-//wire #11 _gated_pchitmp_in = _pchitmp_in | clk;
-    
 hct74377 PCHiTmpReg(
   .D, .Q(PCHITMP), .CP(clk), ._EN(_pchitmp_in)
 );
 
-// count disabled for this clock cycle if we've just loaded PC
-wire countEn;
-
-// 74163 counts when CEP/CET/PE are all high
 // _do_jump is synchronous and must be held low DURING a +ve clk
-
-assign countEn = _do_jump; // inverse logic of this signal can enable count
+wire #11 _do_jump = _pclo_in & _pc_in;
 
 // see applications here https://www.ti.com/lit/ds/symlink/sn54ls161a-sp.pdf?ts=1599773093420&ref_url=https%253A%252F%252Fwww.google.com%252F
 // see ripple mode approach - CEP/CET can be tied high because _PE overrides those and so they can be left enabled.
-// TC/CET chains the count enable as per the data sheet for > 4 bits counting.
+// feed of TC->CET chains the count enable as per the data sheet for > 4 bits counting.
 
 // cascaded as per http://upgrade.kongju.ac.kr/data/ttl/74163.html
 // naming from https://www.ti.com/lit/ds/symlink/sn74f163a.pdf
@@ -109,8 +99,8 @@ if (LOG) always @(*) begin
       PCHI, PCLO, PCHITMP,
       "clk=%1b ",  clk, 
       "_MR=%1b ",  _MR, 
-      " countEn=%1b _pclo_in=%1b _pc_in=%1b _do_jump=%1b _pchitmp_in=%1b     Din=%8b ",
-      countEn, _pclo_in, _pc_in, _do_jump, _pchitmp_in, D 
+      " _pclo_in=%1b _pc_in=%1b _do_jump=%1b _pchitmp_in=%1b     Din=%8b ",
+      _pclo_in, _pc_in, _do_jump, _pchitmp_in, D 
       );
 end
 
