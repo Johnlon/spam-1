@@ -41,7 +41,7 @@ wire #11 _do_jump = _local_jump & _long_jump;
 
 // cascaded as per http://upgrade.kongju.ac.kr/data/ttl/74163.html
 // naming from https://www.ti.com/lit/ds/symlink/sn74f163a.pdf
-hct74163 PC_3_0
+hct74163 PCLO_3_0
 (
   .CP(clk),
   ._MR(_MR),
@@ -50,36 +50,37 @@ hct74163 PC_3_0
   ._PE(_do_jump),
   .D(D[3:0])
 );
-hct74163 PC_7_4
+hct74163 PCLO_7_4
 (
   .CP(clk),
   ._MR(_MR),
   .CEP(1'b1),
-  .CET(PC_3_0.TC),
+  .CET(PCLO_3_0.TC),
   ._PE(_do_jump),
   .D(D[7:4])
 );
-hct74163 PC_11_8
+
+hct74163 PCHI_3_0
 (
   .CP(clk),
   ._MR(_MR),
   .CEP(1'b1),
-  .CET(PC_7_4.TC),
+  .CET(PCLO_7_4.TC),
   ._PE(_long_jump),
   .D(PCHITMP[3:0])
 );
-hct74163 PC_16_12
+hct74163 PCHI_7_4
 (
   .CP(clk),
   ._MR(_MR),
   .CEP(1'b1),
-  .CET(PC_11_8.TC),
+  .CET(PCHI_3_0.TC),
   ._PE(_long_jump),
   .D(PCHITMP[7:4])
 );
 
-assign PCLO = {PC_7_4.Q, PC_3_0.Q};
-assign PCHI = {PC_16_12.Q, PC_11_8.Q};
+assign PCLO = {PCLO_7_4.Q, PCLO_3_0.Q};
+assign PCHI = {PCHI_7_4.Q, PCHI_3_0.Q};
 
 if (LOG) always @(posedge clk)
 begin
