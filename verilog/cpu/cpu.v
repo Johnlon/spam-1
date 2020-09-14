@@ -198,21 +198,23 @@ module cpu(
 
     // REGISTER FILE =====================================================================================
     // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
-    wire #(8) _gated_regfile_in = _phaseExec | (_rega_in & _regb_in & _regc_in & _regd_in);
+    // NOTE !!!! THIS CODE USES _phaseExec AS THE REGFILE GATING MEANING _WE IS LOW ONLY ON SECOND PHASE OF CLOCK - THIS PREVENTS A SPURIOUS WRITE TO REGFILE FROM IT'S INPUT LATCH
+    wire #(2*8) _gated_regfile_in = _phaseExec | (_rega_in & _regb_in & _regc_in & _regd_in);
     wire #(8) _regfile_rdL_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ;
     wire #(8) _regfile_rdR_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ;
     wire [1:0] regfile_rdL_addr = abus_dev[1:0];
     wire [1:0] regfile_rdR_addr = bbus_dev[1:0];
     wire [1:0] regfile_wr_addr = targ_dev[1:0];
 
-    if (1) always @* $display("regfile gated in=", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
-    if (1) always @* $display("regfile abus out=", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
-    if (1) always @* $display("regfile bbus out=", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
+    if (0) always @* $display("regfile gated in=", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
+    if (0) always @* $display("regfile abus out=", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
+    if (0) always @* $display("regfile bbus out=", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
 
 
+    // !!!!!!! NOTE THAT THIS USES THE phaseExec AS CLOCK !!!
     syncRegisterFile #(.LOG(0)) regFile(
-        .clk(phaseExec), // only on the execute otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
-        ._wr_en(_gated_regfile_in),
+        .clk(phaseExec), // only on the execute phase edge (clock going low) otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
+        ._wr_en(_gated_regfile_in), // only enabled on the execute phase (low clock)
         .wr_addr(regfile_wr_addr),
         .wr_data(alu_result_bus),
         
