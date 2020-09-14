@@ -1,3 +1,7 @@
+`ifndef  V_RF
+`define  V_RF
+
+
 /* 4x8 dual port register file
  */
 
@@ -110,3 +114,5 @@ module registerFile #(parameter LOG=0) (
 */
     
 endmodule
+
+`endif
