@@ -119,7 +119,7 @@ module alu #(parameter LOG=0, PD=120) (
 if (1) begin
     wire [20:0] A = { alu_op_effective, a, b};
     tri [15:0] D;
-    rom #(.AWIDTH(21), .DWIDTH(16), .FILENAME("../alu/roms/alu-hex.rom"), .LOG(1)) ALU_ROM(._CS(1'b0), ._OE(1'b0), .A, .D);
+    rom #(.AWIDTH(21), .DWIDTH(16), .FILENAME("../alu/roms/alu-hex.rom"), .LOG(0)) ALU_ROM(._CS(1'b0), ._OE(1'b0), .A, .D);
     assign { _flag_c, _flag_z, _flag_n, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt, o} = D;
 end
 else  
