@@ -212,15 +212,15 @@ module alu_code #(parameter LOG=0, PD=120) (
                 _overflow = _subOv(a[7], b[7], o[7]);
             end
 
-            OP_A_PLUS_B_PLUS_1: begin  // OP ONLY USED WHEN CARRY IS ACTIVE
+            OP_A_PLUS_B_PLUS_C: begin  // OP ONLY USED WHEN CARRY IS ACTIVE
                 set_result9((a + b) + 1); 
                 _overflow = _addOv(a[7], b[7], o[7]);
             end
-            OP_A_MINUS_B_MINUS_1: begin // OP ONLY USED WHEN CARRY IS ACTIVE
+            OP_A_MINUS_B_MINUS_C: begin // OP ONLY USED WHEN CARRY IS ACTIVE
                 set_result9((a - b) - 1); 
                 _overflow = _subOv(a[7],b[7],o[7]);
             end
-            OP_B_MINUS_A_MINUS_1: begin // OP ONLY USED WHEN CARRY IS ACTIVE
+            OP_B_MINUS_A_MINUS_C: begin // OP ONLY USED WHEN CARRY IS ACTIVE
                 set_result9((b - a) - 1); 
                 _overflow = _subOv(b[7],a[7],o[7]);
             end
