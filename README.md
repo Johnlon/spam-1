@@ -4,6 +4,19 @@ An 8 bit home brew CPU built using 1970's logic chips.
 
 This project is currently in it's 3rd incarnation. 
 
+![signal step4](https://svg.wavedrom.com/github/wavedrom/wavedrom/master/test/signal-step4.json5)
+
+![signal step4](https://svg.wavedrom.com/{signal:[{name:'clk',wave:'p......'},{name:'bus',wave:'x.34.5x',data:'head body tail'},{name:'wire',wave:'0.1..0.'}]})
+
+
+
+```html
+<img src="https://svg.wavedrom.com/{signal:[{name:'clk',wave:'p......'},{name:'bus',wave:'x.34.5x',data:'head body tail'},{name:'wire',wave:'0.1..0.'}]}"/>
+```
+
+<img src="https://svg.wavedrom.com/{signal:[{name:'clk',wave:'p......'},{name:'bus',wave:'x.34.5x',data:'head body tail'},{name:'wire',wave:'0.1..0.'}]}"/>
+
+
 ## Version 1a
 
 You can see the first incarnation here on the [OriginalDesign branch](https://github.com/Johnlon/spam-1/tree/OriginalDesign)
@@ -131,7 +144,7 @@ Prior to that I extended the address space to 16 bits and started thinking about
 
 ## v1a
 
-The first incarnnation.
+The first incarnation.
 
 ![Block diagram](docs/blocks-orig.png)
 
