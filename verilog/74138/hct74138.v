@@ -37,19 +37,20 @@ begin
   for (i = 0; i < WIDTH_OUT; i++)
   begin
 /* verilator lint_off WIDTH */
-    // BUG FIX - ORIGINAL VERSION OF THIS CODE SKIRTS OVER A being x or z
-    if (!Enable1_bar && !Enable2_bar && Enable3) begin
-        if (A === 'z) computed[i] = 1'bz;
-        else if (A === 'x) computed[i] = 1'bx;
+    // BUG FIX - ORIGINAL VERSION OF THIS CODE SKIRTS OVER A being x or z WHICH IS INVALID AND OUTPUTS SHOULDN'T BE VALID
+    // SO EMIT INVALID OUTPUTS WHEN THIS IS THE CASE TO DRAW ATTENTION TO THE PROBLEM
+    if ($isunknown(A) || $isunknown(Enable1_bar) || $isunknown(Enable2_bar) || $isunknown(Enable3))
+        computed[i] = 1'bx;
+    else if (!Enable1_bar && !Enable2_bar && Enable3) begin
         // END BUG FIX
-        else if (i == A)
+        if (i == A)
     /* verilator lint_on WIDTH */
           computed[i] = 1'b0;
         else
           computed[i] = 1'b1;
     end
     else
-      computed[i] = 1'b1;
+        computed[i] = 1'b1;
   end
 end
 //------------------------------------------------//
