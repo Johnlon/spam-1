@@ -13,9 +13,9 @@
 // Instruction populates the ROM and adds a text version of the instruction to the CODE array
 `define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP, AMODE, ADDRESS, IMMED) \
     `ROM(LOCN) = { `toALUOP(ALUOP), \
-     cast.to5(`toDEV(TARGET)), \
-     cast.to4(`toDEV(SRCA)), \
-     cast.to4(`toDEV(SRCB)), \
+     cast.to5(`toTDEV(TARGET)), \
+     cast.to4(`toADEV(SRCA)), \
+     cast.to4(`toBDEV(SRCB)), \
      5'bz, \
      1'(AMODE), \
      cast.to16(ADDRESS), \
