@@ -102,20 +102,32 @@ module test();
             $display("TOOK %-d", ($time - timer));
 
       #50
-        `DISPLAY("enable 1 x");
+        `DISPLAY("all enables x");
         Enable1_bar <= 'x;
+        Enable2_bar <= 'x;
+        Enable3 <= 'x;
         #40
         `Equals(Y, 8'bxxxxxxxx)
         
-      #50
-        `DISPLAY("enable 1 z");
-        Enable1_bar <= 'z;
+        `DISPLAY("if E1=disable then this overrides X in other fields - should be disabled");
+        Enable1_bar <= 1;
+        Enable2_bar <= 'x;
+        Enable3 <= 'x;
         #40
-        `Equals(Y, 8'bxxxxxxxx)
-        
+        `Equals(Y, 8'b11111111)
+
+        `DISPLAY("if E2=disable then this overrides X in other fields - should be disabled");
+        Enable1_bar <= 'x;
+        Enable2_bar <= 1;
+        Enable3 <= 'x;
+        #40
+        `Equals(Y, 8'b11111111)
+
       #50
         `DISPLAY("A as x");
         Enable1_bar <= '0;
+        Enable2_bar <= '0;
+        Enable3 <= '1;
         A <= 3'b10x;
         #40
         `Equals(Y, 8'bxxxxxxxx)
