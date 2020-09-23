@@ -46,10 +46,10 @@ module wide_controller(
     assign direct_address_lo = instruction_2;
     assign direct_address_hi = instruction_3;
 
-    assign bbus_dev = {instruction_5[1:0], instruction_4[7:6]};
-    assign abus_dev = instruction_5[5:2];
-    assign targ_dev = {instruction_6[2:0],instruction_5[7:6]};
     wire [4:0] alu_op   = {instruction_6[7:3]};
+    assign targ_dev = {instruction_6[2:0],instruction_5[7]};
+    assign abus_dev = instruction_5[6:4];
+    assign bbus_dev = instruction_5[3:1];
 
     wire amode_bit = instruction_4[0];
     wire _addrmode_register = amode_bit; // low = reg

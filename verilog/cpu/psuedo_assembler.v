@@ -14,10 +14,10 @@
 `define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP, AMODE, ADDRESS, IMMED) \
     `ROM(LOCN) = { \
     `toALUOP(ALUOP), \
-     cast.to5(`toTDEV(TARGET)), \
-     cast.to4(`toADEV(SRCA)), \
-     cast.to4(`toBDEV(SRCB)), \
-     5'bz, \
+     cast.to4(`toTDEV(TARGET)), \
+     cast.to3(`toADEV(SRCA)), \
+     cast.to3(`toBDEV(SRCB)), \
+     8'bz, \
      1'(AMODE), \
      cast.to16(ADDRESS), \
      cast.to8(IMMED) }; \
