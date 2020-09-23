@@ -125,28 +125,34 @@ end
     Transmit only valid when _TXE is low.
     Transmit occurs when WR goes low.
 */
+always @*  begin
+                $display("UART: _RD %1b _RXF %1b", _RD, _RXF);
+end
+
 always @(negedge _RD) begin
     if (_MR) begin
-    if (_RXF) begin
-            $display("%9t ", $time, "UART: ERROR _RD low while _RXF not ready");
-            $finish_and_return(1);
-    end
+        if (_RXF) begin
+                $display("%9t ", $time, "UART: ERROR _RD low while _RXF not ready");
+                $finish_and_return(1);
+        end
 
-    if (! dataAvailable) begin
-            $display("%9t ", $time, "UART: ERROR _RD low while data not available");
-            $finish_and_return(1);
-    end
+        if (! dataAvailable) begin
+                $display("%9t ", $time, "UART: ERROR _RD low while data not available");
+                $finish_and_return(1);
+        end
 
-    if (LOG>1) $display("%9t ", $time, "UART: READING AT %-d", absReadPos);
-    Drx = rxBuf[absReadPos%BUFFER_SIZE];
+        if (LOG>1) $display("%9t ", $time, "UART: READING AT %-d", absReadPos);
+        Drx = rxBuf[absReadPos%BUFFER_SIZE];
 
-    if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x (%c) from serial at pos %-d", Drx, printable(Drx), absReadPos);
-//    if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x from serial at pos %-d", Drx, Drx, absReadPos);
+        if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x (%c) from serial at pos %-d", Drx, printable(Drx), absReadPos);
+    //    if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x from serial at pos %-d", Drx, Drx, absReadPos);
     end
 end
 
+logic _RD_prev;
+
 always @(posedge _RD) begin
-    if (_MR) begin
+    if (_MR && !_RD_prev) begin
         if (_RXF) begin
                 $display("%9t ", $time, "UART: ERROR _RD going high while _RXF not ready");
                 $finish_and_return(1);
@@ -166,11 +172,16 @@ always @(posedge _RD) begin
     end
 end
 
+always @*
+    _RD_prev = _RD;
 
 
 initial 
     begin : file_block 
     $timeformat(-9, 0, "ns", 6); 
+
+    // gather inital value of _RD - it might be x
+    _RD_prev = _RD;
 
     for(int i=0; i<BUFFER_SIZE; i++) begin
         rxBuf[i] = i;
