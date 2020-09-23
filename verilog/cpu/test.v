@@ -429,10 +429,10 @@ module test();
             `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
             `DD " immed8=%08b", CPU.immed8);
             `DD " ram=%08b", CPU.ram64.D);
-            `DD " tdev=%5b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
-                " adev=%4b(%s)", CPU.abus_dev, control::adevname(CPU.abus_dev),
-                " bdev=%4b(%s)", CPU.bbus_dev,control::bdevname(CPU.bbus_dev),
-                " alu_op=%5b(%1s)", CPU.alu_op, aluopName(CPU.alu_op)
+            `DD " tdev=%b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
+                " adev=%b(%s)", CPU.abus_dev, control::adevname(CPU.abus_dev),
+                " bdev=%b(%s)", CPU.bbus_dev,control::bdevname(CPU.bbus_dev),
+                " alu_op=%b(%1s)", CPU.alu_op, aluopName(CPU.alu_op)
             );            
             `DD " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
             `DD " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU.flags_czonGLEN.Q, CPU.gated_flags_clk);

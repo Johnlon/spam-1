@@ -44,8 +44,8 @@ module cpu(
     tri0 [7:0] abus; // when NA device is selected we don't want Z going into ALU sim as this is not a value so we get X out
     tri0 [7:0] bbus;
     tri [7:0] alu_result_bus;
-    wire [3:0] bbus_dev, abus_dev;
-    wire [4:0] targ_dev;
+    wire [2:0] bbus_dev, abus_dev;
+    wire [3:0] targ_dev;
     wire [4:0] alu_op;
     wire [7:0] _flags;
 

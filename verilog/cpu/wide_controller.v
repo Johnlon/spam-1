@@ -24,8 +24,8 @@ module wide_controller(
     output [7:0] direct_address_lo, direct_address_hi,
     output [7:0] immed8,
     output [4:0] alu_op,
-    output [3:0] bbus_dev, abus_dev,
-    output [4:0] targ_dev
+    output [2:0] bbus_dev, abus_dev,
+    output [3:0] targ_dev
 );
      
     rom #(.AWIDTH(16)) rom_6(._CS(1'b0), ._OE(1'b0), .A(pc));
