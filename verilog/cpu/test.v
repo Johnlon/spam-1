@@ -532,6 +532,7 @@ module test();
             end
             if (prev_alu_result_bus != CPU.alu_result_bus) begin
                 $display("\n\n%9t ", $time, " DATA CHANGED WHILE GATED RAM WRITE ENABLED");
+                $display("%9t ", $time, " prev = %8b, now = %8b", prev_alu_result_bus, CPU.alu_result_bus);
                 $display("\n\n%9t ", $time, " ABORT");
                 $finish();
             end

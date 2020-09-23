@@ -31,7 +31,7 @@ module test();
 
     import alu_ops::*;
 
-    `include "../lib/display_snippet.v"
+   `include "../lib/display_snippet.v"
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
 
@@ -88,14 +88,13 @@ module test();
          `JMP_IMMED16(icount, WAIT_UART_OUT); icount+=2;
 
          icount = `WRITE_UART;
-         `DEV_EQ_XY_ALU(icount, uart, rega, rega, A); icount++;
+         `DEV_EQ_XY_ALU(icount, uart, rega, not_used, A); icount++;
          `JMP_IMMED16(icount, ADD_ONE); icount+=2;
 
          icount = `READ_UART;
-         `DEV_EQ_XY_ALU(icount, marhi, uart, uart, A); icount++;
+         `DEV_EQ_XY_ALU(icount, marhi, uart, not_used, A); icount++;
          `JMP_IMMED16(icount, ADD_ONE); icount+=2;
             
-
     end
     endtask : INIT_ROM
 
@@ -104,7 +103,7 @@ module test();
 
         INIT_ROM();
 
-        `DISPLAY("init : _RESET_SWITCH=0")
+        //`DISPLAY("init : _RESET_SWITCH=0")
         _RESET_SWITCH = 0;
         clk=0;
 
@@ -115,8 +114,8 @@ module test();
 
    // $timeformat [(unit_number, precision, suffix, min_width )] ;
     task DUMP;
-            DUMP_OP;
-            `define DD $display ("%9t ", $time,  "DUMP  ",
+         //   DUMP_OP;
+            `define DD $display ("%9t ", $time,  "DUMP  ", 
 
             `DD " phase=%-6s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
             `DD " PC=%1d (0x%4h) PCHItmp=%d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
@@ -129,8 +128,8 @@ module test();
             `DD " immed8=%08b", CPU.immed8);
             `DD " ram=%08b", CPU.ram64.D);
             `DD " tdev=%5b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
-                " adev=%4b(%s)", CPU.abus_dev, control::devname(CPU.abus_dev),
-                " bdev=%4b(%s)", CPU.bbus_dev,control::devname(CPU.bbus_dev),
+                " adev=%4b(%s)", CPU.abus_dev, control::adevname(CPU.abus_dev),
+                " bdev=%4b(%s)", CPU.bbus_dev,control::bdevname(CPU.bbus_dev),
                 " alu_op=%5b(%s)", CPU.alu_op, aluopName(CPU.alu_op)
             );            
             `DD " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
@@ -231,7 +230,7 @@ module test();
     always @(*) begin
         if (CPU._mrN && CPU.phaseExec && CPU.ctrl.instruction_6 === 'x) begin
             #1
-            DUMP;
+            //DUMP;
             $display("rom value instruction_6", CPU.ctrl.instruction_6); 
             $error("ERROR END OF PROGRAM - PROGRAM BYTE = XX "); 
             $finish_and_return(1);

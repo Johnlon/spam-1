@@ -153,6 +153,7 @@ module test();
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // CONSTRAINTS
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
     always @(*) begin
         if (CPU.phaseExec & CPU.ctrl.instruction_6 === 'x) begin
            $display("instruction_6", CPU.ctrl.instruction_6); 
@@ -160,6 +161,7 @@ module test();
             $finish_and_return(1);
         end
     end
+*/
 
 
 endmodule : test

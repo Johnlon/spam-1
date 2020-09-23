@@ -156,6 +156,7 @@ package control;
             ADEV_marlo: adevname = "MARLO";
             ADEV_marhi: adevname = "MARHI";
             ADEV_uart: adevname = "UART";
+            ADEV_not_used: adevname = "NOT_USED";
             default: begin
                 string n; 
                 $sformat(n,"??(unknown A device %3b)", dev);
@@ -176,6 +177,7 @@ package control;
             BDEV_marhi: bdevname = "MARHI";
             BDEV_immed: bdevname = "IMMED";
             BDEV_ram: bdevname = "RAM";
+            BDEV_not_used: bdevname = "NOT_USED";
             default: begin
                 string n; 
                 $sformat(n,"??(unknown B device %3b)", dev);

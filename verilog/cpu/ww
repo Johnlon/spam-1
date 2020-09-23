@@ -14,6 +14,7 @@
 `timescale 1ns/1ns
 
 module wide_controller(
+    input _mr,
     input [15:0] pc,
     input [7:0] _flags,
 
@@ -60,7 +61,7 @@ module wide_controller(
     hct74138 bbus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(bbus_dev[2:0]));
 
     hct74138 targ_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(targ_dev[3]), .A(targ_dev[2:0]));
-    hct74138 targ_dev_16_demux(.Enable3(targ_dev[3]), .Enable2_bar(1'b0),.Enable1_bar(1'b0), .A(targ_dev[2:0]));
+    hct74138 targ_dev_16_demux(.Enable3(1'b1), .Enable2_bar(targ_dev[3]), .Enable1_bar(1'b0), .A(targ_dev[2:0]));
 
     // control lines for device selection
     wire [7:0] lsel = {abus_dev_08_demux.Y};

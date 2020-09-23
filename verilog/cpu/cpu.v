@@ -51,6 +51,15 @@ module cpu(
 
     wire _mr, _mrN, clk;
 
+    always @(pc_addr) begin
+        if (ctrl.rom_6.Mem[pc_addr][7] === 'x) begin // just check leftmost but as this is part of the op and is mandatory
+            $display ("%9t ", $time,  "CPU HALT");
+            $error("CPU : END OF PROGRAM - NO CODE FOUND AT PC %4h", pc_addr); 
+            $finish_and_return(1);
+        end
+    end
+
+
     reset RESET(
         .system_clk,
         ._RESET_SWITCH,
@@ -70,8 +79,8 @@ module cpu(
     wire #8 _clk = ! clk; // GATE + PD
 
 
-    wire  phaseFetch = clk;
-    wire _phaseExec = clk;
+    wire  phaseFetch = clk; // FETCH ON HIGH
+    wire _phaseExec = clk;  // EXEC ON LOW
     wire  #(10) _phaseFetch = !phaseFetch;
     wire  #(10) phaseExec = !_phaseExec;
     

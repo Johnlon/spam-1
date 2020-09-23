@@ -40,7 +40,7 @@ module test();
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;
 
-    logic clk=0;
+    bit clk=0;
 
     always begin
        #TCLK clk = !clk;
@@ -64,6 +64,9 @@ module test();
     integer icount;
     task INIT_ROM;
     begin
+        for (icount=0; icount<MAX_PC; icount++) begin
+            CODE[icount]="";
+        end
 
          // implement 16 bit counter
          icount = 0;
@@ -111,12 +114,10 @@ module test();
 
     integer pcval;
     assign pcval={CPU.PCHI, CPU.PCLO};
-    string_bits currentCode; // create field so it can appear in dump file
     always @(CPU.PCHI or CPU.PCLO) begin
         $display("");
         $display("%9t ", $time, "INCREMENTED PC=%-d ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", {CPU.PCHI, CPU.PCLO});
-        currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
-        $display ("%9t ", $time,  "DUMP  ", ": OPERATION: %-1s        PC=%4h", currentCode,pcval);
+        $display ("%9t ", $time,  "DUMP  ", ": OPERATION: '%-1s'        PC=%4h", CODE[pcval],pcval);
         $display ("%9t ", $time,  "DUMP  ", ": PC    : %04h", pcval);
     end
 
@@ -162,9 +163,30 @@ module test();
             );
     end
 
+    always @* begin
+        $display("%9t", $time, " DEVICES ",
+            " tdev=%5b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
+            " adev=%4b(%s)", CPU.abus_dev, control::adevname(CPU.abus_dev),
+            " bdev=%4b(%s)", CPU.bbus_dev,control::bdevname(CPU.bbus_dev),
+            " alu_op=%5b(%1s)", CPU.alu_op, aluopName(CPU.alu_op)
+        );            
+    end
+
+    always @* begin
+            `define LOG_ADEV_SEL(DNAME) " _adev_``DNAME``=%1b", CPU._adev_``DNAME``
+            `define LOG_BDEV_SEL(DNAME) " _bdev_``DNAME``=%1b", CPU._bdev_``DNAME``
+            `define LOG_TDEV_SEL(DNAME) " _``DNAME``_in=%1b",  CPU._``DNAME``_in
+            $display("%9t", $time, " DUMP   WIRES ", `CONTROL_WIRES(LOG, `COMMA));
+    end
+
+    initial begin
+            $display("%9t", $time, " DUMP   WIRES ", `CONTROL_WIRES(LOG, `COMMA));
+    end
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // CONSTRAINTS
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
     always @(*) begin
         if (CPU._mrN && CPU.phaseExec && CPU.ctrl.instruction_6 === 'x) begin
             #1
@@ -173,6 +195,7 @@ module test();
             $finish_and_return(1);
         end
     end
+*/
 
 
 endmodule : test
