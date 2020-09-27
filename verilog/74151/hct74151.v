@@ -44,9 +44,9 @@ module hct74151(_E, I, S, Y, _Y);
     assign Y = _Ed==0 ? O : 0;
     assign _Y = Ed==1 ? !O : 1;
 
-    always @*
+    if (LOG) always @*
     begin 
-        if (LOG) $display("%9t %m ", $time, "_E=%1b  I=%8b  S=%1d   Y=%b _Y=%b (_Ed=%b, Ed=%b)", _E, I, S, Y, _Y, _Ed, Ed);
+        $display("%9t %m ", $time, "_E=%1b  I=%8b  S=%1d   Y=%b _Y=%b (_Ed=%b, Ed=%b)", _E, I, S, Y, _Y, _Ed, Ed);
     end
 
 endmodule
