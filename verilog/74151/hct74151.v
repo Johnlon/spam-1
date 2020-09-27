@@ -1,6 +1,11 @@
+`timescale 1ns/1ns
+
+// regarding approach to delays see https://stackoverflow.com/questions/64083950/why-are-icarus-verilog-specify-times-not-respected/64085508?noredirect=1#comment113337822_64085508
+// where my question is answered arount how to create delays that allow glitches through.
+
 // https://assets.nexperia.com/documents/data-sheet/74HC_HCT151_Q100.pdf
 // The data sheet says this chips glitches during transitions - this shows up in the test
-`timescale 1ns/1ns
+
 module hct74151(_E, I, S, Y, _Y);
     parameter LOG=0;
     output Y, _Y;
@@ -9,11 +14,21 @@ module hct74151(_E, I, S, Y, _Y);
     input _E;
 
     // setup timing be delaying the signals according to the data PD then combine them at last minute
-    wire [7:0] #19 Id = I;
-    wire [2:0] #20 Sd = S;
+    logic [7:0] Id;
+    logic [2:0] Sd;
+
+    always @*
+        Id <= #(19) I;
+
+    always @*
+        Sd <= #(19) S;
+
     // according to nexperia _E->_Y is slower than _E->Y
-    wire #13 _Ed = _E;
-    wire #18 Ed = !_E;
+    logic _Ed, Ed;
+    always @* 
+        _Ed <= #(13) _E;
+    always @* 
+        Ed <= #(18) ! _E;
 
     // combine
     wire O =
@@ -29,9 +44,9 @@ module hct74151(_E, I, S, Y, _Y);
     assign Y = _Ed==0 ? O : 0;
     assign _Y = Ed==1 ? !O : 1;
 
-    if (LOG)
-    always @* begin
-        $display("%9t ", $time, "_E=%1b  I=%8b  S=%1d   Y=%b _Y=%b (_Ed=%b, Ed=%b)", _E, I, S, Y, _Y, _Ed, Ed);
+    always @*
+    begin 
+        if (LOG) $display("%9t %m ", $time, "_E=%1b  I=%8b  S=%1d   Y=%b _Y=%b (_Ed=%b, Ed=%b)", _E, I, S, Y, _Y, _Ed, Ed);
     end
 
 endmodule
