@@ -8,71 +8,87 @@
 
 module test();
 
-    wire Y, _Y;
-    logic [2:0] S;
-    logic [7:0] I;
-    logic _E;
+  logic [2:0] S;
+  logic [7:0] I;
+  logic _E;
 
-    initial begin
-        $dumpfile("dumpfile.vcd");
-        $dumpvars(0, test);
+  hct74151 demux(._E, .S, .I);
+
+  always @*
+    begin
+      $display("%9t %m ", $time, "_E=%1b  I=%8b  S=%1d   Y=%b _Y=%b", demux._E, demux.I, demux.S, demux.Y, demux._Y);
     end
-     
-    `include "../lib/display_snippet.v"
-
-    hct74151 #(.LOG(1)) demux(
-        .Y, ._Y,
-        ._E,
-        .S,
-        .I);
-
-
+  
     initial begin
-      
-        `DISPLAY("disabled");
-        _E=1;
-        #100
-        `Equals(Y, 1'b0);
-        `Equals(_Y, 1'b1);
-                
-        `DISPLAY("enabled s0 i0");
-        _E=0;
-        S=0;
-        I=8'b00000000;
-        #100
-        `Equals(Y, 1'b0);
-        `Equals(_Y, 1'b1);
-                
-        `DISPLAY("enabled s0 i1");
-        _E=0;
-        S=0;
-        I=8'b00000001;
-        #100
-        `Equals(Y, 1'b1);
-        `Equals(_Y, 1'b0);
 
-        `DISPLAY("enabled s1 i2 - Y will glitch low because S is faster than I");
+      
+      $display("%9t ",$time, "disabled - _Y lags behind Y by 5ns");
+      _E=1;
+
+      `TIMEOUT((demux.Y === 0), 14, "Y changes first")
+      `TIMEOUT((demux._Y === 'x), 0, "_Y lags")
+      `TIMEOUT((demux._Y === 1), 5, "_Y set later")
+      
+
+      $display("%9t ",$time, "enabled s0 i0");
+      _E=0;
+      S=0;
+      I=8'b00000000;
+      #100
+      `TIMEOUT((demux.Y === 0), 0, "ok")
+      `TIMEOUT((demux._Y === 1), 0, "ok")
+      
+
+      $display("%9t ",$time, "enabled s0 i1");
+      _E=0;
+      S=0;
+      I=8'b00000001;
+      `TIMEOUT((demux.Y === 1), 20, "ok")
+      `TIMEOUT((demux._Y === 0), 0, "ok")
+
+      $display("%9t ",$time, "enabled s1 i2 - Y will glitch low during the transution because S is faster than I <<<<<<<");
         _E=0;
         S=1;
         I=8'b00000010;
-        #100
-        `Equals(Y, 1'b1);
-        `Equals(_Y, 1'b0);
-                
-                
-        `DISPLAY("disabled");
-        _E=1;
-        S=0;
-        I=8'b00000000;
-        #100
-        `Equals(Y, 1'b0);
-        `Equals(_Y, 1'b1);
-                
 
-        #1000
-        `DISPLAY("done");
-        $finish;
+      `TIMEOUT((demux.Y === 1), 0, "ok")
+      `TIMEOUT((demux.Y === 0), 20, "ok")
+      `TIMEOUT((demux.Y === 1), 1, "ok")
+
+      $display("%9t ",$time, "disabled");
+      _E=1;
+      S=0;
+      I=8'b00000000;
+
+      `TIMEOUT((demux.Y === 0), 14, "Y set first")
+      `TIMEOUT((demux._Y === 0), 0, "_Y lags")
+      `TIMEOUT((demux._Y === 1), 5, "_Y set later")
+
+      
+       $display("%9t ",$time, "demonstrate passing thru transient glitches");
+      _E=0;
+      S=0;
+      I=8'b00000001;
+      #1
+      I=8'b00000000;
+      #1
+      I=8'b00000001;
+      #1
+      
+      `TIMEOUT((demux.Y === 1), (20-3), "Y wiggle")
+      `TIMEOUT((demux.Y === 0), 1, "Y wiggle")
+      `TIMEOUT((demux.Y === 1), 1, "Y wiggle");
+      
+      
+      #1000
+      $display("%9t ",$time, "PASS");
+      $finish;
     end
 
+    initial begin
+      #10000
+      $display("FAIL DIDN'T FINISH");
+      $finish_and_return(1);
+    end
 endmodule : test
 
