@@ -21,7 +21,7 @@ module hct74151(_E, I, S, Y, _Y);
         Id <= #(19) I;
 
     always @*
-        Sd <= #(19) S;
+        Sd <= #(20) S;
 
     // according to nexperia _E->_Y is slower than _E->Y
     logic _Ed, Ed;
