@@ -55,3 +55,23 @@ end
 `endif
 
 
+`define TIMEOUT(EXPR,TIMEOUT,STR) begin \
+   bit timed_out; \
+           fork begin \
+              fork \
+                begin \
+                  #TIMEOUT; \
+                  if (!(EXPR)) begin \ 
+                    $display("%9t", $time, " !!! TIMED OUT WAITING FOR EXPR (got %b)", EXPR , "   LINE",  `__LINE__); \
+                    timed_out = '1; \
+                    $finish_and_return(1); \
+                  end \
+                end \
+             join_none \
+             /*$display("%9t", $time, " !!! WAITING FOR EXPR"); */\
+             wait(EXPR || timed_out); \
+             $display("%9t", $time, "\t EXPR \t\t ", STR); \
+             disable fork; \
+           end join \ 
+           end
+
