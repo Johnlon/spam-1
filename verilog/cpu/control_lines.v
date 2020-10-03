@@ -16,6 +16,7 @@
 `define toADEV(DEVNAME) control::ADEV_``DEVNAME``
 `define toBDEV(DEVNAME) control::BDEV_``DEVNAME``
 `define toTDEV(DEVNAME) control::TDEV_``DEVNAME``
+`define COND(COND) control::CONDITION_``COND``
 
 `define AMODE_TUPLE    wire [1:0] _addrmode = {CPU._addrmode_register, CPU._addrmode_direct}; 
 
@@ -72,79 +73,20 @@ package control;
     localparam [3:0] TDEV_pclo= 14; // only load pclo
     localparam [3:0] TDEV_pc= 15;   // load pclo from instruction and load pchi from pchitmp
 
-    localparam [3:0] TDEV_jmpc= 15;   // load pclo from instruction and load pchi from pchitmp
-    localparam [3:0] TDEV_jmpz= 15;   // load pclo from instruction and load pchi from pchitmp
-    localparam [3:0] TDEV_jmpo= 15;   // load pclo from instruction and load pchi from pchitmp
-    localparam [3:0] TDEV_jmpn= 15;   // load pclo from instruction and load pchi from pchitmp
-    localparam [3:0] TDEV_jmpeq= 15;   // load pclo from instruction and load pchi from pchitmp
-    localparam [3:0] TDEV_jmpne= 15;   // load pclo from instruction and load pchi from pchitmp
-    localparam [3:0] TDEV_jmpgt= 15;   // load pclo from instruction and load pchi from pchitmp
-    localparam [3:0] TDEV_jmplt= 15;   // load pclo from instruction and load pchi from pchitmp
-    localparam [3:0] TDEV_jmpdi= 15;   // load pclo from instruction and load pchi from pchitmp
-    localparam [3:0] TDEV_jmpdo= 15;   // load pclo from instruction and load pchi from pchitmp
+
+    localparam [3:0] CONDITION_A= 0; 
+    localparam [3:0] CONDITION_C= 1; 
+    localparam [3:0] CONDITION_Z= 2; 
+    localparam [3:0] CONDITION_O= 3; 
+    localparam [3:0] CONDITION_N= 4; 
+    localparam [3:0] CONDITION_EQ=5; 
+    localparam [3:0] CONDITION_NE=6; 
+    localparam [3:0] CONDITION_GT=7; 
+    localparam [3:0] CONDITION_LT=8; 
+    localparam [3:0] CONDITION_DI=9; 
+    localparam [3:0] CONDITION_DO=10; 
 
     // ALL
-/*
-    localparam [3:0] DEV_rega = 0; 
-    localparam [3:0] DEV_regb = 1; 
-    localparam [3:0] DEV_regc = 2; 
-    localparam [3:0] DEV_regd = 3; 
-    localparam [3:0] DEV_nu4 = 4; 
-    localparam [3:0] DEV_nu5 = 5; 
-    localparam [3:0] DEV_nu6 = 6; 
-    localparam [3:0] DEV_pchitmp = 7; // only load pchitmp
-    localparam [3:0] DEV_pclo= 8; // only load pclo
-    localparam [3:0] DEV_pc= 9;   // load pclo from instruction and load pchi from pchitmp
-    localparam [3:0] DEV_nu10 = 10;
-    localparam [3:0] DEV_immed = 11; // READ FROM THE INSTRUCTION
-    localparam [3:0] DEV_ram = 12;
-    localparam [3:0] DEV_marlo = 13;
-    localparam [3:0] DEV_marhi = 14;
-    localparam [3:0] DEV_uart = 15;
-*/
-
-    // targets
- /*   function [4:0] TDEV([3:0] x);
-        TDEV = {1'b0, x};
-    endfunction
-*/
-
-    // these can be src or dest
-    //`define TARGL(DNAME) localparam [4:0] TDEV_``DNAME`` = {1'b0, DEV_``DNAME``};
-
-    // dest only
-    //`define TARGH(DNAME) localparam [4:0] TDEV_``DNAME`` = DEV_``DNAME``;
-
-    // define constants
-/*
-    `TARGL(ram)
-    `TARGL(immed)
-    `TARGL(marlo)
-    `TARGL(marhi)
-    `TARGL(uart)
-    `TARGL(rega)
-    `TARGL(regb)
-    `TARGL(regc)
-    `TARGL(regd)
-
-    // 9-15 - todo
-    `TARGH(pchitmp)
-    `TARGH(pclo)
-    `TARGH(pc)
-    `TARGH(jmpc)
-    `TARGH(jmpz)
-    `TARGH(jmpo)
-    `TARGH(jmpn)
-    `TARGH(jmpgt)
-    `TARGH(jmplt)
-    `TARGH(jmpeq)
-    `TARGH(jmpne)
-    `TARGH(jmpdi)
-    `TARGH(jmpdo)
-    `TARGH(nu1)
-    `TARGH(nu2)
-    `TARGH(nu3)
-*/
 
     function string adevname([2:0] dev); 
     begin
@@ -212,6 +154,29 @@ package control;
     end
     endfunction    
 
+    function string condname([3:0] cond); 
+    begin
+        case (cond)
+            CONDITION_A: condname = "A";
+            CONDITION_C: condname = "C";
+            CONDITION_Z: condname = "Z";
+            CONDITION_O: condname = "O";
+            CONDITION_N: condname = "N";
+            CONDITION_EQ: condname = "EQ";
+            CONDITION_NE: condname = "NE";
+            CONDITION_GT: condname = "GT";
+            CONDITION_LT: condname = "LT";
+            CONDITION_DI: condname = "DI";
+            CONDITION_DO: condname = "DO";
+            default: begin
+                string n; 
+                $sformat(n,"??(unknown condition %4b)", cond);
+                condname = n;
+            end
+        endcase
+    end
+    endfunction    
+
     function string fPhase(phaseFetch, phaseExec); 
     begin
             fPhase = `DECODE_PHASES;
@@ -256,25 +221,11 @@ import control::*;
     ```FN``_TDEV_SEL(not_used)    SEP\
     ```FN``_TDEV_SEL(pc)    SEP\
     ```FN``_TDEV_SEL(pchitmp)    SEP\
-    ```FN``_TDEV_SEL(jmpc)    SEP\
-    ```FN``_TDEV_SEL(jmpz)    SEP\
-    ```FN``_TDEV_SEL(jmpo)    SEP\
-    ```FN``_TDEV_SEL(jmpn)    SEP\
-    ```FN``_TDEV_SEL(jmpeq)    SEP\
-    ```FN``_TDEV_SEL(jmpne)    SEP\
-    ```FN``_TDEV_SEL(jmpgt)    SEP\
-    ```FN``_TDEV_SEL(jmplt)    SEP\
-    ```FN``_TDEV_SEL(jmpdi)    SEP\
-    ```FN``_TDEV_SEL(jmpdo)    SEP\
     ```FN``_TDEV_SEL(pclo)    
 
 `define SEMICOLON ;
 `define COMMA ,
 
-
-`define OUT_ADEV_SEL(DNAME) output _adev_``DNAME``
-`define OUT_BDEV_SEL(DNAME) output _bdev_``DNAME``
-`define OUT_TDEV_SEL(DNAME) output _``DNAME``_in
 
 `endif
 

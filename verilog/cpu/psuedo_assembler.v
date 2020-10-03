@@ -7,21 +7,31 @@
 `define REGISTER 1'b0
 `define NA_AMODE 1'b0
 
+
+`define SET_FLAGS 1'b0
+`define NA_FLAGS 1'b1
+
 // PSEUDO ASSEMBLER
 `define ROM(A) { CPU.ctrl.rom_6.Mem[A], CPU.ctrl.rom_5.Mem[A], CPU.ctrl.rom_4.Mem[A], CPU.ctrl.rom_3.Mem[A], CPU.ctrl.rom_2.Mem[A], CPU.ctrl.rom_1.Mem[A] }
 
 // Instruction populates the ROM and adds a text version of the instruction to the CODE array
-`define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP, AMODE, ADDRESS, IMMED) \
+`define INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
     `ROM(LOCN) = { \
     `toALUOP(ALUOP), \
      cast.to4(`toTDEV(TARGET)), \
      cast.to3(`toADEV(SRCA)), \
      cast.to3(`toBDEV(SRCB)), \
-     8'bz, \
+     cast.to4(`COND(CONDITION)), \
+     bit'(FLAG_CTL), \
+     3'bz, \
      1'(AMODE), \
      cast.to16(ADDRESS), \
      cast.to8(IMMED) }; \
-    CODE[LOCN] = "TARGET=SRCA(ALUOP)SRCB  amode=AMODE immed8=IMMED addr=ADDRESS";
+    CODE[LOCN] = "TARGET=SRCA(ALUOP)SRCB  cond=CONDITION setf=FLAG_CTL amode=AMODE immed8=IMMED addr=ADDRESS";
+
+`define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP, AMODE, ADDRESS, IMMED) \
+     `INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, A, `SET_FLAGS, AMODE, ADDRESS, IMMED) \
+
 
 `define NA 'z
 
@@ -35,19 +45,19 @@
 `define RAM_DIRECT_EQ_DEV(INST,ADDRESS, SRC)           `INSTRUCTION(INST, ram,    not_used, SRC,  B,     `DIRECT,   ADDRESS, `NA)
 `define RAM_DIRECT_EQ_IMMED8(INST,ADDRESS, IMMED8)     `INSTRUCTION(INST, ram,    not_used, immed,B,     `DIRECT,   ADDRESS, IMMED8)
 
-`define CLEAR_CARRY(INST)   `DEV_EQ_IMMED8(INST, not_used, 0);
+`define CLEAR_CARRY(INST)   `DEV_EQ_IMMED8(INST, not_used, 0); // assign zero to a non-reg to clear
 `define SET_CARRY(INST)     `DEV_EQ_XI_ALU(INST, not_used, not_used, 255, B_PLUS_1)  // FIXME BROKEN COS B_PLUS_1 doesn't add
 
 // prep jump sourcing the PCHI from the immed8
-`define JMP_PREP_IMMED(INST, ADDRESS_HI)   `INSTRUCTION(INST, pchitmp, not_used, immed,    B,     `NA_AMODE, `NA, ADDRESS_HI) 
+`define JMP_PREP_IMMED(INST, ADDRESS_HI)   `INSTRUCTION_S(INST, pchitmp, not_used, immed,    B,A, `NA_FLAGS,  `NA_AMODE, `NA, ADDRESS_HI) 
 // jump sourcing the PCLO from the immed8
-`define JMP_IMMED(INST, ADDRESS_LO)        `INSTRUCTION(INST, pc,      not_used, immed,    B,     `NA_AMODE, `NA, ADDRESS_LO) 
+`define JMP_IMMED(INST, ADDRESS_LO)        `INSTRUCTION_S(INST, pc, not_used, immed, B, A, `NA_FLAGS, `NA_AMODE, `NA, ADDRESS_LO) 
 // conditional jump sourcing the PCLO from the immed8
-`define JMPZ_IMMED(INST, ADDRESS_LO)       `INSTRUCTION(INST, jmpz,    not_used, immed,    B,     `NA_AMODE, `NA, ADDRESS_LO) 
+`define JMPZ_IMMED(INST, ADDRESS_LO)       `INSTRUCTION_S(INST, pc, not_used, immed, B, Z, `NA_FLAGS,     `NA_AMODE, `NA, ADDRESS_LO) 
 // conditional jump sourcing the PCLO from the immed8
-`define JMPC_IMMED(INST, ADDRESS_LO)       `INSTRUCTION(INST, jmpc,    not_used, immed,    B,     `NA_AMODE, `NA, ADDRESS_LO) 
-`define JMPDO_IMMED(INST, ADDRESS_LO)      `INSTRUCTION(INST, jmpdo,   not_used, immed,    B,     `NA_AMODE, `NA, ADDRESS_LO) 
-`define JMPDI_IMMED(INST, ADDRESS_LO)      `INSTRUCTION(INST, jmpdi,   not_used, immed,    B,     `NA_AMODE, `NA, ADDRESS_LO) 
+`define JMPC_IMMED(INST, ADDRESS_LO)       `INSTRUCTION_S(INST, pc, not_used, immed, B, C, `NA_FLAGS,    `NA_AMODE, `NA, ADDRESS_LO) 
+`define JMPDO_IMMED(INST, ADDRESS_LO)      `INSTRUCTION_S(INST, pc, not_used, immed, B, DO, `NA_FLAGS,     `NA_AMODE, `NA, ADDRESS_LO) 
+`define JMPDI_IMMED(INST, ADDRESS_LO)      `INSTRUCTION_S(INST, pc, not_used, immed, B, DI, `NA_FLAGS,     `NA_AMODE, `NA, ADDRESS_LO) 
 
 `define JMP_IMMED16(INST, ADDRESS_LONG)       \
   `JMP_PREP_IMMED(INST, ADDRESS_LONG >>  8) \

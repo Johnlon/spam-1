@@ -11,8 +11,8 @@ module reset(
     input _RESET_SWITCH,
     input system_clk,
     
-    output _mr,  // clears on the 1st positive edge after _RESET_SWITH is released
-    output _mrN, // clears later - on the 1st negative edge after the positive edge that cleared _mr
+    output _mrPos,  // clears on the 1st positive edge after _RESET_SWITH is released
+    output _mrNeg, // clears later - on the 1st negative edge after the positive edge that cleared _mr
     output clk   // gated clock - clock stops in low state during reset
 );
     parameter LOG=0;
@@ -22,7 +22,7 @@ module reset(
           ._RD(_RESET_SWITCH),
           .D(1'b1),
           .CP(system_clk),
-          .Q(_mr)
+          .Q(_mrPos)
           //._Q(_mr)
         );
 
@@ -32,13 +32,13 @@ module reset(
 
     hct7474 #(.BLOCKS(1), .LOG(0)) pcresetff(
           ._SD(1'b1),
-          ._RD(_mr), // wont set back to H until after _mr clears
+          ._RD(_mrPos), // wont set back to H until after _mrPos clears
           .D(1'd1),
-          .CP(_system_clk), // resets on the -ve edge after _mr is released
-          .Q(_mrN),
+          .CP(_system_clk), // resets on the -ve edge after _mrPos is released
+          .Q(_mrNeg),
           ._Q()
         );
 
-    assign #(10) clk = system_clk & _mr; // AND GATE
+    assign #(10) clk = system_clk & _mrPos; // AND GATE
 
 endmodule 

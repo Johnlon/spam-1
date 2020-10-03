@@ -69,7 +69,7 @@ if (LOG>1)
         " _RXF_SUPPRESS=%1b", _RXF_SUPPRESS
         );
 
-end
+    end
 
 integer cycle_count=0;
 integer tx_count=0;
@@ -79,9 +79,10 @@ assign _RXF = !(dataAvailable && _RXF_SUPPRESS && _MR);
 assign #T3 D= _RD? 8'bzzzzzzzz: dataAvailable ? Drx : 8'bxzxzxzxz; // xzxzxzxz is a distinctive signal that we're reading uninitialised data
 
 function [7:0] printable([7:0] c);
-    if (ASCIIONLY) begin
+    if (ASCIIONLY==1) begin
         if (c == 0) return 32;
-        if (c >= 128) return 32;
+        else if (c < 32 && c != 12 && c != 13) return 32; // allow CR/LF
+        else if (c >= 128) return 32;
     end
     return c;
 endfunction
@@ -125,8 +126,8 @@ end
     Transmit only valid when _TXE is low.
     Transmit occurs when WR goes low.
 */
-always @*  begin
-                $display("UART: _RD %1b _RXF %1b", _RD, _RXF);
+if (LOG) always @*  begin
+    $display("UART: _RD %1b _RXF %1b", _RD, _RXF);
 end
 
 always @(negedge _RD) begin
@@ -277,7 +278,7 @@ initial
                         if (LOG>1) $display("%9t ", $time, "UART: #%1d delay begin", tDelta);
                         #tDelta 
 
-                        $display("%9t ", $time, "UART: #%1d delay end", tDelta);
+                        if (LOG>1) $display("%9t ", $time, "UART: #%1d delay end", tDelta);
                     end
 
                     if (c == "q") // quit

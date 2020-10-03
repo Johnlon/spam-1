@@ -195,21 +195,21 @@ module test();
         `DISPLAY("_RESET_SWITCH releasing");
         _RESET_SWITCH = 1;
         `Equals(CPU._mr, 0);
-        `Equals(CPU._mrN, 0);
+        `Equals(CPU._mrPC, 0);
         `Equals(phaseFE, control::PHASE_EXEC)
 
         `DISPLAY("CLOCK DOWN - NOTHING SHOULD HAPPEN");
         CLK_DN;
         #1000
         `Equals(CPU._mr, 0);
-        `Equals(CPU._mrN, 0);
+        `Equals(CPU._mrPC, 0);
         `Equals({CPU.PCHI,CPU.PCLO}, 16'bx)
 
         `DISPLAY("CLOCK UP - PC SHOULD RESET");
         CLK_UP;
         #1000
         `Equals(CPU._mr, 1);
-        `Equals(CPU._mrN, 0);
+        `Equals(CPU._mrPC, 0);
         `Equals({CPU.PCHI,CPU.PCLO}, 16'b0)
         `Equals(phaseFE, control::PHASE_FETCH)
         `Equals( _addrmode, control::_AMODE_DIR);
@@ -221,7 +221,7 @@ module test();
         CLK_DN;
         #HALF_CLK
         `Equals(CPU._mr, 1);
-        `Equals(CPU._mrN, 1);
+        `Equals(CPU._mrPC, 1);
 
         `Equals(phaseFE, control::PHASE_EXEC)
 
@@ -435,6 +435,7 @@ module test();
                 " alu_op=%b(%1s)", CPU.alu_op, aluopName(CPU.alu_op)
             );            
             `DD " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
+            `DD " condition=%02d(%1s) _do_exec=%b", CPU.ctrl.condition, control::condname(CPU.ctrl.condition), CPU.ctrl._do_exec);
             `DD " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU.flags_czonGLEN.Q, CPU.gated_flags_clk);
             `DD " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);
             `DD "  REGA:%08b", CPU.regFile.get(0),
@@ -544,7 +545,7 @@ module test();
     always @* begin
         // permits a situation where the control lines conflict.
         // this is ok as long as they settle quickly and are settled before exec phase.
-        if (CPU._mrN & CPU.phaseExec) begin
+        if (CPU._mrPC & CPU.phaseExec) begin
             if (CPU._addrmode_register === 1'bx |  CPU._addrmode_direct === 1'bx) begin
                 $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _REG=%1b/_IMM=%1b", CPU._addrmode_register , CPU._addrmode_direct );
                 DUMP;

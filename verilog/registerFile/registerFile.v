@@ -82,7 +82,7 @@ module registerFile #(parameter LOG=0) (
     endfunction
 
     // only need to bind to L or R as they have the same value
-    always @(   
+    if (LOG) always @(   
                     _wr_en//, wr_addr, wr_data, 
                     //_rdL_en, rdL_addr, rdL_data, 
                     //_rdL_en, rdR_addr, rdR_data
@@ -94,7 +94,7 @@ module registerFile #(parameter LOG=0) (
                     );
     end
 
-    always @(   
+    if (LOG) always @(   
                 bankR_hi.registers[0] or bankR_lo.registers[0] or
                 bankR_hi.registers[1] or bankR_lo.registers[1] or
                 bankR_hi.registers[2] or bankR_lo.registers[2] or
