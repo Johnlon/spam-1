@@ -179,7 +179,7 @@ module alu_code #(parameter LOG=0, PD=120) (
             OP_B_PLUS_1: begin 
                 // UNLIKE B_PLUS_A this sets carry but doesn't consume it 
                 // - useful for low byte of a counter where we always want CLC first  
-                // FIXME - not needed?  CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
+                // THIS INST USED TO ADD ONE TO IMMED 255 TO ACHIEVE A "SET CARRY" OPERATION
                 set_result9(b + 1);
                 _overflow = _addOv(b[7], 1'b0, result_sign());
             end
@@ -187,7 +187,6 @@ module alu_code #(parameter LOG=0, PD=120) (
             OP_B_MINUS_1: begin 
                 // UNLIKE B_MINUS_A this sets carry but doesn't consume it 
                 // - useful for low byte of a counter where we always want CLC first  
-                //FIXME - not needed? FIXME CAN BE DONE USING "LOWER" A_+_B OP IN MULTIPLEXED "ALU[4]|CIN" APPROACH
                 set_result9(b - 1);
                 _overflow = _subOv(b[7], 1'b0, result_sign());
             end
@@ -212,15 +211,15 @@ module alu_code #(parameter LOG=0, PD=120) (
                 _overflow = _subOv(a[7], b[7], o[7]);
             end
 
-            OP_A_PLUS_B_PLUS_1: begin  // OP ONLY USED WHEN CARRY IS ACTIVE
+            OP_A_PLUS_B_PLUS_C: begin  // OP ONLY USED WHEN CARRY IS ACTIVE
                 set_result9((a + b) + 1); 
                 _overflow = _addOv(a[7], b[7], o[7]);
             end
-            OP_A_MINUS_B_MINUS_1: begin // OP ONLY USED WHEN CARRY IS ACTIVE
+            OP_A_MINUS_B_MINUS_C: begin // OP ONLY USED WHEN CARRY IS ACTIVE
                 set_result9((a - b) - 1); 
                 _overflow = _subOv(a[7],b[7],o[7]);
             end
-            OP_B_MINUS_A_MINUS_1: begin // OP ONLY USED WHEN CARRY IS ACTIVE
+            OP_B_MINUS_A_MINUS_C: begin // OP ONLY USED WHEN CARRY IS ACTIVE
                 set_result9((b - a) - 1); 
                 _overflow = _subOv(b[7],a[7],o[7]);
             end
@@ -377,14 +376,6 @@ module alu_code #(parameter LOG=0, PD=120) (
         " b=%08b (u%-3d/s%-4d/h%-02h) ", b, b, signed_b, b,
         "  ",
         " out=%08b (u%-3d/s%-4d/h%-02h) ", o, o, signed_o, o,
-        //" _c=%1b",  _flag_c,
-        //" _z=%1b",  _flag_z,
-        //" _n=%1b",  _flag_n,
-        //" _o=%1b",  _flag_o,
-        //" _gt=%1b", _flag_gt,
-        //" _lt=%1b", _flag_lt,
-        //" _eq=%1b", _flag_eq,
-        //" _ne=%1b", _flag_ne,
         " _c%1b",  _flag_c,
         " _z%1b",  _flag_z,
         " _n%1b",  _flag_n,

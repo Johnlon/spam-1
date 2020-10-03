@@ -24,9 +24,14 @@ output [7:0] Q
     endspecify
     
     always @(posedge CLK) begin
-        if (LOG) $display("%9t", $time, " REGISTER %m   CLK=%1b _OE=%1b D=%08b Q=%08b", CLK, _OE, D, Q);
+        if (LOG) $display("%9t", $time, " REGISTER %m   CLK=+ve _OE=%1b Data=%08b D=%08b oldQ=%08b", _OE, data, D, Q);
         data <= dSetup;
     end
+
+    always @(data)
+        if (LOG)
+        //$display("%9t", $time, " REGISTER %m changed  CLK=%1b _OE=%1b Data=%08b D=%08b Q=%08b", CLK, _OE, data, D, Q);
+        $display("%9t", $time, " REGISTER %m updated  Data=%08b", data);
     
     assign #(19) Q = _OE ? 8'bz: data;
     

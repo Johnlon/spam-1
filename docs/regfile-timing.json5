@@ -1,0 +1,31 @@
+{signal: [
+  {name: 'clk', wave: 'lh.l.h.l.h.l.h.l.h.l', node: '...a...........h..'},
+  {name: '_regfile_we', wave: '10...1.......0...1..', node: '.....d.............'},
+  {},
+  {name: '_gated_regfile_we', wave: '1..0.1.........0.1..', node: '...b.e.........i', phase: -0.6},
+  {name: 'data_in', wave: '3....4...5...6...7..', data: ['1', '2', '3','4','5']},
+  {},
+  {},
+  {name: 'sync register value', wave: '.x.3...........6....', data: ['1','4'], node: '...f...........j.', phase: -1},
+  {name: 'write_addr', wave: '7.......x....8......', data: ['0', '1']},
+  {},
+  {name: 'regfile value[0]', wave: '.x.3................', data: ['1'], phase: -1.2, node: '...g'},
+  {name: 'regfile value[1]', wave: '.x.............6....', data: ['4'], phase: -1.4, node: '...............k'},
+  {name: 'regfile value[2]', wave: '.x..................', phase: -1.4},
+  {name: 'regfile value[3]', wave: '.x..................', phase: -1.4},
+ 
+],
+
+  config: { hscale: 1 },
+  
+  edge: [ 
+     "a|->b write en gated by clock",
+     "d-|>e write en ends",
+     "b|->f falling edge of _gated_regfile_we clocks data into sync register and enables write on the regfile",
+     "b|->g ",
+  	 "h|->i",
+	 "i|->j",
+     "i|->k",
+  ],
+  
+}

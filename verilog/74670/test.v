@@ -40,6 +40,7 @@ module icarus_tb();
         parameter undefined_data = 4'bx;
         parameter zed_data       = 4'bz;
         
+        $display("%9t ", $time, " init");
         _rd_en   = enabled;
         wr_addr = 0;
         wr_data = 10;
@@ -48,12 +49,14 @@ module icarus_tb();
         `equals(rd_data , undefined_data, "nothing written so all data should be x");
         
         _wr_en = enabled;
+        $display("%9t ", $time, " _wr_en=0");
         #5
         `equals(rd_data , undefined_data, "nothing written yet due to PD so all data should be x");
         #25
         `equals(rd_data , 10, "write propagated");
         
         wr_data = 1;
+        $display("%9t ", $time, " wr_data=1");
         #5
         `equals(rd_data , 10, "write enabled - data changed - output not propagated yet");
         #24
@@ -62,15 +65,18 @@ module icarus_tb();
         #5
         
         wr_data = 15;
+        $display("%9t ", $time, " wr_data=15 _wr_en=1");
         _wr_en   = disabled;
         #1
         `equals(rd_data , 1, "write disabled - retains value");
         
         _wr_en = enabled;
+        $display("%9t ", $time, " _wr_en=0");
         #29
         `equals(rd_data , 15, "write enabled location 2");
         
         _rd_en = disabled;
+        $display("%9t ", $time, " _rd_en=1");
         #29
         `equals(rd_data , zed_data, "read disabled");
         

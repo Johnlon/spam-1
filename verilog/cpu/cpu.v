@@ -5,7 +5,7 @@
 //  REGISTER ADDRESSING = INSTRUCTION CONTAINS THE NAME OF THE REGISTER FROM WHICH TO FETCH THE DATA
 
 //#!/usr/bin/iverilog -Ttyp -Wall -g2012 -gspecify -o test.vvp 
-`include "../cpu/wide_controller.v"
+`include "../cpu/controller.v"
 `include "../reset/reset.v"
 `include "../phaser/phaser.v"
 `include "../registerFile/syncRegisterFile.v"
@@ -44,19 +44,31 @@ module cpu(
     tri0 [7:0] abus; // when NA device is selected we don't want Z going into ALU sim as this is not a value so we get X out
     tri0 [7:0] bbus;
     tri [7:0] alu_result_bus;
-    wire [3:0] bbus_dev, abus_dev;
-    wire [4:0] targ_dev;
+    wire [2:0] bbus_dev, abus_dev;
+    wire [3:0] targ_dev;
     wire [4:0] alu_op;
-    wire [7:0] _flags;
+    wire [7:0] _registered_flags;
+    wire _flag_di;
+    wire _flag_do;
+    wire _set_flags;
 
-    wire _mr, _mrN, clk;
+    wire _mr, _mrPC, clk;
+
+    always @(pc_addr) begin
+        if (ctrl.rom_6.Mem[pc_addr][7] === 'x) begin // just check leftmost but as this is part of the op and is mandatory
+            $display ("%9t ", $time,  "CPU HALT");
+            $error("CPU : END OF PROGRAM - NO CODE FOUND AT PC %4h", pc_addr); 
+            $finish_and_return(1);
+        end
+    end
+
 
     reset RESET(
         .system_clk,
         ._RESET_SWITCH,
         .clk,
-        ._mr,
-        ._mrN
+        ._mrPos(_mr),
+        ._mrNeg(_mrPC)
     );
 
 
@@ -70,8 +82,8 @@ module cpu(
     wire #8 _clk = ! clk; // GATE + PD
 
 
-    wire  phaseFetch = clk;
-    wire _phaseExec = clk;
+    wire  phaseFetch = clk; // FETCH ON HIGH
+    wire _phaseExec = clk;  // EXEC ON LOW
     wire  #(10) _phaseFetch = !phaseFetch;
     wire  #(10) phaseExec = !_phaseExec;
     
@@ -95,39 +107,29 @@ module cpu(
     wire [7:0] PCHI, PCLO; // output of PC
     wire [15:0] pc_addr = {PCHI, PCLO}; 
 
-    wide_controller ctrl(
+    controller ctrl(
         .pc(pc_addr),
-        ._flags(_flags),
+        ._flags_czonGLEN(_registered_flags),
+        ._flag_di, ._flag_do,
 
         ._addrmode_register, ._addrmode_direct,
         `CONTROL_WIRES(BIND, `COMMA),
         .direct_address_hi, .direct_address_lo,
         .immed8,
         .alu_op,
-        .bbus_dev, .abus_dev, .targ_dev
+        .bbus_dev, .abus_dev, .targ_dev,
+        ._set_flags
     );
 
     // PROGRAM COUNTER ======================================================================================
+    wire #(8) _long_jump = _pc_in; // FIXME - need to include _do_Exec somehow
 
-    wire #(8) _do_jmpc = _jmpc_in | _flag_c;
-    wire #(8) _do_jmpz = _jmpz_in | _flag_z;
-    wire #(8) _do_jmpo = _jmpo_in | _flag_o;
-    wire #(8) _do_jmpn = _jmpn_in | _flag_n;
-    wire #(8) _do_jmpeq = _jmpeq_in | _flag_eq;
-    wire #(8) _do_jmpne = _jmpne_in | _flag_ne;
-    wire #(8) _do_jmpgt = _jmpgt_in | _flag_gt;
-    wire #(8) _do_jmplt = _jmplt_in | _flag_lt;
-    wire #(8) _do_jmpdi = _jmpdi_in | _flag_di;
-    wire #(8) _do_jmpdo = _jmpdo_in | _flag_do;
-
-   wire #(8) _do_jmp = _pc_in & _do_jmpc & _do_jmpz & _do_jmpn & _do_jmpo & _do_jmpeq & _do_jmpne & _do_jmpgt & _do_jmplt & _do_jmpdi & _do_jmpdo; // use two 7411 triple 3-input AND
-    
     // PC reset is sync with +ve edge of clock
     pc #(.LOG(0))  PC (
         .clk(clk),
-        ._MR(_mrN),
-        ._pc_in(_do_jmp),  // load both
-        ._pclo_in(_pclo_in), // load lo
+        ._MR(_mrPC),
+        ._long_jump(_long_jump),  // load both
+        ._local_jump(_pclo_in), // load lo
         ._pchitmp_in(_pchitmp_in), // load tmp
         .D(alu_result_bus),
 
@@ -185,33 +187,40 @@ module cpu(
         ._flag_ne(_flag_ne_out)
     );
 
-    wire #(9) gated_flags_clk = phaseExec & _pclo_in & _pchitmp_in & _do_jmp;
+    // don't set flags on a jump - preserve them - makes for two stage jumps if I need them
+    //wire #(9) gated_flags_clk = _set_flags | (phaseExec & _pclo_in & _pchitmp_in & _long_jump);
+    // NOTE perhaps simpler if I use a spare bit to select which operations set the flags explicitely like ARM.
+    wire #(9) gated_flags_clk = _set_flags | phaseExec; // don't need to hard wire exclude jump ops as I can do that using the flag option directly 
 
-    hct74574 #(.LOG(0)) flags_czonGLEN( .D({_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out}),
-                                       .Q(_flags),
+    wire [7:0] alu_flags = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
+
+    hct74574 #(.LOG(0)) flags_czonGLEN( .D(alu_flags),
+                                       .Q(_registered_flags),
                                         //.CLK(phaseExec), 
                                         .CLK(gated_flags_clk), 
                                         ._OE(1'b0)); 
 
-    assign {_flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne} = _flags;
+    assign {_flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne} = _registered_flags;
 
     // REGISTER FILE =====================================================================================
     // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
-    wire #(8) _gated_regfile_in = _phaseExec | (_rega_in & _regb_in & _regc_in & _regd_in);
+    // NOTE !!!! THIS CODE USES _phaseExec AS THE REGFILE GATING MEANING _WE IS LOW ONLY ON SECOND PHASE OF CLOCK - THIS PREVENTS A SPURIOUS WRITE TO REGFILE FROM IT'S INPUT LATCH
+    wire #(2*8) _gated_regfile_in = _phaseExec | (_rega_in & _regb_in & _regc_in & _regd_in);
     wire #(8) _regfile_rdL_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ;
     wire #(8) _regfile_rdR_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ;
     wire [1:0] regfile_rdL_addr = abus_dev[1:0];
     wire [1:0] regfile_rdR_addr = bbus_dev[1:0];
     wire [1:0] regfile_wr_addr = targ_dev[1:0];
 
-    if (1) always @* $display("regfile gated in=", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
-    if (1) always @* $display("regfile abus out=", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
-    if (1) always @* $display("regfile bbus out=", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
+    if (0) always @* $display("regfile gated in=", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
+    if (0) always @* $display("regfile abus out=", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
+    if (0) always @* $display("regfile bbus out=", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
 
 
+    // !!!!!!! NOTE THAT THIS USES THE phaseExec AS CLOCK !!!
     syncRegisterFile #(.LOG(0)) regFile(
-        .clk(phaseExec), // only on the execute otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
-        ._wr_en(_gated_regfile_in),
+        .clk(phaseExec), // only on the execute phase edge (clock going low) otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
+        ._wr_en(_gated_regfile_in), // only enabled on the execute phase (low clock)
         .wr_addr(regfile_wr_addr),
         .wr_data(alu_result_bus),
         
@@ -226,8 +235,6 @@ module cpu(
 
 
     // UART =============================================================
-    wire _flag_di;
-    wire _flag_do;
     wire #(10) _gated_uart_wr = _uart_in | _phaseExec;   // sync clock data into uart -- FIXME gate with EXEC
 
     wire [7:0] uart_d;

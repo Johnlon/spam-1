@@ -4,6 +4,9 @@
 `timescale 1ns/1ns
 module cast();
 
+    function [2:0] to3([2:0] IN);
+        to3 = IN;
+    endfunction  
     function [3:0] to4([3:0] IN);
         to4 = IN;
     endfunction  

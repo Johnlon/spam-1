@@ -37,19 +37,26 @@ begin
   for (i = 0; i < WIDTH_OUT; i++)
   begin
 /* verilator lint_off WIDTH */
-    // BUG FIX - ORIGINAL VERSION OF THIS CODE SKIRTS OVER A being x or z
-    if (!Enable1_bar && !Enable2_bar && Enable3) begin
-        if (A === 'z) computed[i] = 1'bz;
-        else if (A === 'x) computed[i] = 1'bx;
+    // BUG FIX - ORIGINAL VERSION OF THIS CODE SKIRTS OVER A being x or z WHICH IS INVALID AND OUTPUTS SHOULDN'T BE VALID
+    // SO EMIT INVALID OUTPUTS WHEN THIS IS THE CASE TO DRAW ATTENTION TO THE PROBLEM
+
+    // a disabled device returns 1 on all pins
+    if (Enable1_bar || Enable2_bar || !Enable3)
+        computed[i] = 1'b1;
+
+    // a device with uncertain enablement returns X on all pins
+    else if ($isunknown(A) || $isunknown(Enable1_bar) || $isunknown(Enable2_bar) || $isunknown(Enable3))
+        computed[i] = 1'bx;
+
+    // a device that is enabled returns a single 0 according to the address
+    else begin
         // END BUG FIX
-        else if (i == A)
+        if (i == A)
     /* verilator lint_on WIDTH */
           computed[i] = 1'b0;
         else
           computed[i] = 1'b1;
     end
-    else
-      computed[i] = 1'b1;
   end
 end
 //------------------------------------------------//

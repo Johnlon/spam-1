@@ -1,9 +1,12 @@
+`ifndef  V_RFA
+`define  V_RFA
+
 `include "registerFile.v"
 `include "../lib/assertion.v"
 
 `timescale 1ns/1ns
 
-module icarus_tb();
+module testAsync();
     
     logic _wr_en;
     logic [1:0] wr_addr;
@@ -59,38 +62,7 @@ module icarus_tb();
          */
     end
 
-    task check;
-        input [7:0] A,B,C,D;
-    begin
-        _rdL_en  = enabled;
-        _rdR_en  = enabled;
-
-        rdL_addr = 0;
-        rdR_addr = 0;
-        #cycle;
-        `Equals(rdL_data, A);
-        `Equals(rdR_data, A);
-        
-        rdL_addr = 1;
-        rdR_addr = 1;
-        #cycle;
-        `Equals(rdL_data, B);
-        `Equals(rdR_data, B);
-        
-        rdL_addr = 2;
-        rdR_addr = 2;
-        #cycle;
-        `Equals(rdL_data, C);
-        `Equals(rdR_data, C);
-        
-        rdL_addr = 3;
-        rdR_addr = 3;
-        #cycle;
-        `Equals(rdL_data, D);
-        `Equals(rdR_data, D);
-        
-    end
-    endtask
+`include "check.v"
 
     
     initial begin
@@ -193,8 +165,11 @@ module icarus_tb();
         
         check(1, 255, 2, 'x);
 
+
         #cycle;
         $finish;
     end
     
 endmodule
+
+`endif

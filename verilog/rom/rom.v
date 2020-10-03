@@ -38,7 +38,7 @@ module rom (A, D, _CS, _OE);
 /* verilator lint_on ASSIGNDLY */
 
     if (LOG) always @(*) begin
-        $display("%9t ROM %m : A=x%x (b%b) D=x%x (b%b) _CS=%1b, _OE=%1b", $time, A, A,  D, D, _CS, _OE);
+        $display("%9t ROM %m : A=%x (b%b) D=%2x (b%b) _CS=%1b, _OE=%1b", $time, A, A, D, D, _CS, _OE);
     end
 
 endmodule
