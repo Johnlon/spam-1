@@ -153,6 +153,7 @@ module test();
        `Equals(CPU.flags_czonGLEN.Q, 8'b11111010); // Flags ARE overwritten
        `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd0,8'd4,8'd3,8'bx});
 
+        $display("DONE - advance to no op");
        clk = 1; // END OF PROGRAM
 
     end

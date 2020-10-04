@@ -213,6 +213,7 @@ module test();
         `Equals({CPU.PCHI,CPU.PCLO}, 16'b0)
         `Equals(phaseFE, control::PHASE_FETCH)
         `Equals( _addrmode, control::_AMODE_DIR);
+DUMP();
         `Equals(CPU.address_bus, 16'hffaa);
 
         `DISPLAY("FIRST INSTRUCTION FETCHED");
@@ -423,6 +424,7 @@ module test();
             `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
             `DD " FE=%1b%1b(%-s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
+            `DD " DIRECT=%02x:%02x", CPU.direct_address_hi, CPU.direct_address_lo);
             `DD " _amode=%-2s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
                 " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
                 " address_bus=0x%4x", CPU.address_bus);

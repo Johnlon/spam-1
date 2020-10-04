@@ -68,8 +68,6 @@ module controller(
     hct74138 abus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(abus_dev[2:0]));
     hct74138 bbus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(bbus_dev[2:0]));
 
-    //hct74138 targ_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(targ_dev[3]), .A(targ_dev[2:0]));
-    //hct74138 targ_dev_16_demux(.Enable3(targ_dev[3]), .Enable2_bar(1'b0),.Enable1_bar(1'b0), .A(targ_dev[2:0]));
     hct74138 targ_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(_do_exec), .Enable1_bar(targ_dev[3]), .A(targ_dev[2:0]));
     hct74138 targ_dev_16_demux(.Enable3(targ_dev[3]), .Enable2_bar(_do_exec), .Enable1_bar(1'b0),        .A(targ_dev[2:0]));
 
@@ -113,34 +111,8 @@ module controller(
     hct74151 #(.LOG(0)) do_exec_lo(._E(conditionTopBit),  .S(condition[2:0]), .I(_flags_lo));
     hct74151 #(.LOG(0)) do_exec_hi(._E(_conditionTopBit), .S(condition[2:0]), .I(_flags_hi));
 
-    nand #(9) (_do_exec, do_exec_lo._Y, do_exec_hi._Y); // nor
+    nand #(9) (_do_exec, do_exec_lo._Y, do_exec_hi._Y); 
     
-/*
-    task dump;
-        $display("%9t", $time);
-        $display("CONDITION top=%d", conditionTopBit);
-        $display("CONDITION condition=%d", condition);
-        $display("CONDITION _cond_flags oic:zonGLENA=%8b:%8b", _flags_hi, _flags_lo);
-        $display("CONDITION do_exec_lo.Y=%b", do_exec_lo.Y);
-        $display("CONDITION do_exec_hi.Y=%b", do_exec_hi.Y);
-        $display("CONDITION do_exec_lo._Y=%b", do_exec_lo._Y);
-        $display("CONDITION do_exec_hi._Y=%b", do_exec_hi._Y);
-        $display("CONDITION _do_exec=%b", _do_exec);
-    endtask
-
-    always @* begin
-        $display("%9t", $time);
-        $display("CONDITION top=%d", conditionTopBit);
-        $display("CONDITION condition=%d", condition);
-        $display("CONDITION _cond_flags oic:zonGLENA=%8b:%8b", _flags_hi, _flags_lo);
-        $display("CONDITION do_exec_lo.Y=%b", do_exec_lo.Y);
-        $display("CONDITION do_exec_hi.Y=%b", do_exec_hi.Y);
-        $display("CONDITION do_exec_lo._Y=%b", do_exec_lo._Y);
-        $display("CONDITION do_exec_hi._Y=%b", do_exec_hi._Y);
-        $display("CONDITION _do_exec=%b", _do_exec);
-    end
-
-*/
 endmodule
 
 

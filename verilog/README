@@ -1,6 +1,10 @@
+
+
 goto cpu
 run simulateSync.sh
 
+
+Known to work using iverilog commit bd0a1c75edc2644ec093c8e6940a4d0f6373f4b2
 
 Known to work on 8 Aug 2020 using iverlog commit ...
 
@@ -14,3 +18,5 @@ Known to work on 8 Aug 2020 using iverlog commit ...
         is no other driver on one of the island ports, a tie-off is added.
         In the case of a tri0 or tri1 net, this must have the correct (pull)
         drive strength.
+
+

@@ -35,9 +35,9 @@ module tb();
     hct74245ab #(.LOG(1), .NAME("BUFZ")) buf245pd(.A(Ay), .B(B_pulldown), .nOE(1'b1));
     pulldown pd[7:0](B_pulldown);
 
-    tri0 [15:0] B_tri0;
-    hct74245ab #(.LOG(1), .NAME("BUFZ")) buf245triH(.A(Ay), .B(B_tri0[15:8]), .nOE(1'b1));
-    hct74245ab #(.LOG(1), .NAME("BUFZ")) buf245triL(.A(Ay), .B(B_tri0[7:0]), .nOE(1'b1));
+    tri0 [7:0] B_tri0;
+    hct74245ab #(.LOG(1), .NAME("BUFZ")) buf245tri(.A(Ay), .B(B_tri0), .nOE(1'b1));
+    hct74245ab #(.LOG(1), .NAME("BUFZ")) buf245triNL(.A(Ay), .B(B_tri0), .nOE(1'b1));
 
     always @*
         $display($time, " => dir=%1b", dir, " nOEX=%1b", nOEX, " Va=%8b", Va, " Vb=%8b ", Vb, " A=%8b ", A," B=%8b ", B);
@@ -218,7 +218,7 @@ $display("-------------------------");
     
     $display("tri0 integration test");
       #60
-      `equals(B_tri0 , 16'b0, "pulldown");
+      `equals(B_tri0 , 8'b0, "pulldown");
 
     end
 

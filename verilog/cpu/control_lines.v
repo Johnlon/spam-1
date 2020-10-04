@@ -91,10 +91,10 @@ package control;
     function string adevname([2:0] dev); 
     begin
         case (dev)
-            ADEV_rega: adevname = "REGA"; // 1
-            ADEV_regb: adevname = "REGB"; // 2
-            ADEV_regc: adevname = "REGC"; // 3
-            ADEV_regd: adevname = "REGD"; // 4
+            ADEV_rega: adevname = "REGA";
+            ADEV_regb: adevname = "REGB";
+            ADEV_regc: adevname = "REGC";
+            ADEV_regd: adevname = "REGD";
             ADEV_marlo: adevname = "MARLO";
             ADEV_marhi: adevname = "MARHI";
             ADEV_uart: adevname = "UART";
@@ -111,15 +111,14 @@ package control;
     function string bdevname([2:0] dev); 
     begin
         case (dev)
-            BDEV_rega: bdevname = "REGA"; // 1
-            BDEV_regb: bdevname = "REGB"; // 2
-            BDEV_regc: bdevname = "REGC"; // 3
-            BDEV_regd: bdevname = "REGD"; // 4
+            BDEV_rega: bdevname = "REGA"; 
+            BDEV_regb: bdevname = "REGB";
+            BDEV_regc: bdevname = "REGC";
+            BDEV_regd: bdevname = "REGD";
             BDEV_marlo: bdevname = "MARLO";
             BDEV_marhi: bdevname = "MARHI";
-            BDEV_immed: bdevname = "IMMED";
+            BDEV_immed: bdevname = "IMMED/NU";
             BDEV_ram: bdevname = "RAM";
-            BDEV_not_used: bdevname = "NOT_USED";
             default: begin
                 string n; 
                 $sformat(n,"??(unknown B device %3b)", dev);
@@ -202,6 +201,7 @@ import control::*;
     ```FN``_ADEV_SEL(marhi)    SEP\
     ```FN``_ADEV_SEL(marlo)    SEP\
     ```FN``_ADEV_SEL(uart)    SEP\
+    ```FN``_ADEV_SEL(not_used)    SEP\
     ```FN``_BDEV_SEL(rega)    SEP\
     ```FN``_BDEV_SEL(regb)    SEP\
     ```FN``_BDEV_SEL(regc)    SEP\
