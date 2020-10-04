@@ -1,22 +1,27 @@
 
 
-goto cpu
-run simulateSync.sh
+
+Setup
+-----
+
+Obtain specific version of iverilog.
+
+    Clone: https://github.com/steveicarus/iverilog
+
+    Checkout one of the revisions known to work. Previous or later versions may have bugs or missing features.
+
+    Latest : commit bd0a1c75edc2644ec093c8e6940a4d0f6373f4b2
+    Earlier: commit 9d15b771b15141c7f394cf7f2e5f935da47f6534 
 
 
-Known to work using iverilog commit bd0a1c75edc2644ec093c8e6940a4d0f6373f4b2
+Build iverilog and install iverilog - see the iverilog docs.
 
-Known to work on 8 Aug 2020 using iverlog commit ...
 
-    commit 9d15b771b15141c7f394cf7f2e5f935da47f6534 (HEAD -> master, origin/master, origin/HEAD)
-    Author: Martin Whitaker <icarus@martin-whitaker.me.uk>
-    Date:   Thu Aug 6 14:20:16 2020 +0100
 
-        Fix GitHub issue #356 - use pull strength for tri0/tri1 tie-offs.
+Running main cpu simulation
+-----
 
-        When connecting module inout ports, an island is created. If there
-        is no other driver on one of the island ports, a tie-off is added.
-        In the case of a tri0 or tri1 net, this must have the correct (pull)
-        drive strength.
+cd cpu/
+../simulate.sh
 
 
