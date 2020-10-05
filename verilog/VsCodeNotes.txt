@@ -1,3 +1,13 @@
+vscode setup 
+
+
+Install :
+
+"SystemVerilog - Language Support" Eirik  
+"Verilog HDL" leafmaple
+"Verilog HDL/SystemVerilog" mshr-h
+
+
 Edit this to add options ....
 /home/john/.vscode-server/extensions/leafvmaple.verilog-0.0.6/out/commands.js
 
