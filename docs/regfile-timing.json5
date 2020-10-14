@@ -14,5 +14,18 @@
   {name: 'regfile value[2]', wave: '.x..................', phase: -1.4},
   {name: 'regfile value[3]', wave: '.x..................', phase: -1.4},
  
-]  
+],
+
+  config: { hscale: 1 },
+  
+  edge: [ 
+     "a|->b write en gated by clock",
+     "d-|>e write en ends",
+     "b|->f falling edge of _gated_regfile_we clocks data into sync register and enables write on the regfile",
+     "b|->g ",
+  	 "h|->i",
+	 "i|->j",
+     "i|->k",
+  ]
+  
 }
