@@ -44,7 +44,9 @@ module test();
         _en=0;
         $dumpfile("dumpfile.vcd");
         $dumpvars(0, test );
+`ifndef verilator
         $monitor(0, " CP=%1b _en=%1b _clocked_en=%1b", CP, _en, _clocked_en_or, _clocked_en_and, gated_clock );
+`endif
 
         #2000  $finish; 
 

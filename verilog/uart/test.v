@@ -7,7 +7,7 @@
 
 module test();
 
-    integer verbose = 0;
+    localparam verbose = 0;
 
     // 33 exclamation mark
     tri [7:0] BUS;
@@ -82,7 +82,7 @@ module test();
         if (verbose) $display("TEST: Strobing WR=1 BEGIN write of countTx=%-d", countTx);
         WR=1;
 
-        Dtx=countTx;
+        Dtx=8'(countTx);
         #T9
         if (verbose) $display("TEST: Strobing WR=0 LATCH TRANSMIT");
 

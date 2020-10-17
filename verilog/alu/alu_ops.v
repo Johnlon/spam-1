@@ -1,4 +1,5 @@
 `ifndef ALU_OPS_V
+`define ALU_OPS_V
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY

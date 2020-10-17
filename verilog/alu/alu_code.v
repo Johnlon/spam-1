@@ -1,4 +1,6 @@
-/* verilator lint_off ASSIGNDLY */
+// verilator lint_off ASSIGNDLY 
+// verilator lint_off UNOPTFLAT 
+// verilator lint_off WIDTH 
 
 // EG USE M27C322 21bit address x16 data
 
@@ -6,6 +8,7 @@
 
 `ifndef  V_ALU_ROM
 `define  V_ALU_ROM
+`include "alu_ops.v"
 
 `timescale 1ns/1ns
 
@@ -127,7 +130,7 @@ module alu_code #(parameter LOG=0, PD=120) (
 
     always @* begin
 
-        c_buf_c = 1'bx; // use x to ensure this isn't relied upon unless expicitely set
+        c_buf_c = 'x; // use x to ensure this isn't relied upon unless expicitely set
         _overflow = 1'b1;
         _force_neg = 1'b1;
         force_pos = 1'b0;

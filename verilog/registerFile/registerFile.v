@@ -24,7 +24,9 @@ module registerFile #(parameter LOG=0) (
 
     
     wire [3:0] wr_data_hi, wr_data_lo;
+// verilator lint_off UNOPTFLAT
     wire [3:0] rdL_data_hi, rdL_data_lo, rdR_data_hi, rdR_data_lo;
+// verilator lint_on UNOPTFLAT
 
     assign {wr_data_hi, wr_data_lo} = wr_data;
     assign rdL_data                 = {rdL_data_hi, rdL_data_lo};
@@ -94,6 +96,7 @@ module registerFile #(parameter LOG=0) (
                     );
     end
 
+`ifndef verilator
     if (LOG) always @(   
                 bankR_hi.registers[0] or bankR_lo.registers[0] or
                 bankR_hi.registers[1] or bankR_lo.registers[1] or
@@ -106,6 +109,7 @@ module registerFile #(parameter LOG=0) (
                 get(2), get(2), 
                 get(3), get(3));
     end
+`endif
 
 /*
     if (LOG) always @(posedge _wr_en) begin

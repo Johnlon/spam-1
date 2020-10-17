@@ -1,6 +1,5 @@
-
-/* verilator lint_off ASSIGNDLY */
-/* verilator lint_off STMTDLY */
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
 
 
 `ifndef V_74245
@@ -12,9 +11,9 @@ module hct74245(
     input dir,
     input nOE,
     inout [7:0] A,
-    inout [7:0] B
+    inout tri [7:0] B
 );
-    parameter [8*10:0] NAME="74245";
+    parameter NAME="74245";
     parameter LOG=0;
 
     // HCT typical @ 5v according to https://assets.nexperia.com/documents/data-sheet/74HC_HCT245.pdf
@@ -31,7 +30,7 @@ module hct74245(
     if (LOG) 
         always @(*) 
         begin
-            $display("%8d", $time,  " %m BUF %-s: A=%8b ", NAME, A, "B=%-8b ", B, "dir=%1b", dir, " nOE=%1b", nOE);
+            $display("%9t", $time,  " %m BUF %s: A=%8b ", NAME, A, "B=%8b ", B, "dir=%1b", dir, " nOE=%1b", nOE);
         end
 
     assign A= nOE ? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
@@ -47,7 +46,7 @@ module hct74245ab(
     inout [7:0] B
 );
 
-    parameter [8*10:0] NAME="74245";
+    parameter NAME="74245ab";
     parameter LOG=0;
 
     wire [7:0] Ain;
@@ -62,12 +61,10 @@ module hct74245ab(
     );
 
     
-    if (LOG) 
+    //if (LOG) 
         always @(*) 
-        begin
-            $display("%8d", $time,  " %m BUF %-s: A=%8b ", NAME, A, "B=%-8b ", B, " nOE=%1b", nOE);
-        end
-
+            $display("%9t", $time, " BUF %s", NAME, ": A=%8b ", A, "B=%8b ", B, " nOE=%1b", nOE);
+        
 endmodule: hct74245ab
 
 `endif

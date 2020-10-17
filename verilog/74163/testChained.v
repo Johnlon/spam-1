@@ -1,6 +1,7 @@
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
+// verilator lint_off UNOPTFLAT
 
 `include "../lib/assertion.v"
 `include "hct74163.v"

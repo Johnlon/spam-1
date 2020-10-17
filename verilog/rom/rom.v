@@ -1,12 +1,16 @@
 
+
+// verilator lint_off COMBDLY
+// needed because I am using non blocking inside a nonclocked always
+// as per section 4.1 https://www-inst.eecs.berkeley.edu/~cs152/fa06/handouts/CummingsHDLCON1999_BehavioralDelays_Rev1_1.pdf
+// because I'm modelling transport delays
+
 `ifndef ROM_V
 `define  ROM_V
 
 `timescale 1ns/1ns
 
-// https://raw.githubusercontent.com/DoctorWkt/CSCvon8/master/rom.v
-// ROM component
-// (c) 2019 Warren Toomey, GPL3
+// timing from AT28C64 EEPROM http://www.farnell.com/datasheets/1469975.pdf
 // verilator lint_off UNOPTFLAT
 
 module rom (A, D, _CS, _OE);
@@ -14,9 +18,9 @@ module rom (A, D, _CS, _OE);
   parameter DWIDTH=8,AWIDTH=16, DEPTH= 1 << AWIDTH;
   localparam DEFAULT_FILENAME = "";
   parameter FILENAME = DEFAULT_FILENAME;
-  parameter DELAY_RISE = 45;
-  parameter DELAY_FALL = 45;
-  parameter DELAY = 120;
+  parameter tACC = 150;
+  parameter tCE = 150;
+  parameter tOE = 70;
   parameter LOG = 0;
 
   input  [AWIDTH-1:0] A;
@@ -25,20 +29,32 @@ module rom (A, D, _CS, _OE);
 
   reg [DWIDTH-1:0] Mem [0:DEPTH-1];
 
-  // Initialise ROM from file lazily
     initial begin
-//  always @(_CS)
- //   if (!_CS) 
-    if (DEFAULT_FILENAME != FILENAME)
-        $readmemh(FILENAME , Mem);
+// verilator lint_off WIDTH
+        if (DEFAULT_FILENAME != FILENAME)
+            $readmemh(FILENAME , Mem);
+// verilator lint_on WIDTH
     end
 
-/* verilator lint_off ASSIGNDLY */
-  assign #(DELAY) D = (!_CS && !_OE) ? Mem[A] : {DWIDTH{1'bz}};
-/* verilator lint_on ASSIGNDLY */
+    logic  [AWIDTH-1:0] Ad;
+    logic _CSd, _OEd;
 
-    if (LOG) always @(*) begin
-        $display("%9t ROM %m : A=%x (b%b) D=%2x (b%b) _CS=%1b, _OE=%1b", $time, A, A, D, D, _CS, _OE);
+    always @*
+        Ad <= #(tACC) A;
+
+    always @*
+        _CSd <= #(tCE) _CS;
+
+    always @*
+        _OEd <= #(tOE) _OE;
+
+    /* verilator lint_off ASSIGNDLY */
+      //assign #(tACC) D = (!_CS && !_OE) ? Mem[A] : {DWIDTH{1'bz}};
+      assign D = (!_CSd && !_OEd) ? Mem[Ad] : {DWIDTH{1'bz}};
+    /* verilator lint_on ASSIGNDLY */
+
+    if (1) always @(*) begin
+         $display("%9t ROM %m : Ad=%x A=%x (b%b) D=%2x (b%b) _CS=%1b, _OE=%1b", $time, Ad, A, A, D, D, _CS, _OE);
     end
 
 endmodule

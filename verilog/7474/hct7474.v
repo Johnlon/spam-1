@@ -1,5 +1,7 @@
+// verilator lint_off UNOPTFLAT 
 `ifndef  V_7474
 `define  V_7474
+
 // Dual D flip-flop with set and clear; positive-edge-triggered
 // Timings from https://assets.nexperia.com/documents/data-sheet/74HC_HCT74.pdf
 
@@ -31,7 +33,7 @@ reg [BLOCKS-1:0] Qb_current;
 reg [BLOCKS-1:0] _SD_previous;
 reg [BLOCKS-1:0] Q_defined = 0;
 
-if (LOG) 
+if (1) 
     always @* 
         $display("%9t ", $time, "%m  CP=%1b D=%1b _SD=%1b _RD=%1b  =>  Q=%1b _Q=%1b", CP,D,_SD, _RD, Q, _Q);
 
@@ -46,10 +48,10 @@ generate
       if (_RD[i] && _SD[i])
       begin
         if (LOG>1) $display("%9t", $time, " %s CLOCK IN DATA Q=%1b", NAME, D);
-        Q_defined[i] <= 1'b1;
+        Q_defined[i] = 1'b1;
 
-        Q_current[i] <= D[i];
-        Qb_current[i] <= !D[i];
+        Q_current[i] = D[i];
+        Qb_current[i] = !D[i];
       end
         else
         begin
@@ -62,32 +64,32 @@ generate
       if (!_RD[i] && !_SD[i])
         begin
             if (LOG>1) $display("%9t", $time, " %s FORCE Q=_Q=1", NAME);
-            Q_current[i] <= 1'b1;
-            Qb_current[i] <= 1'b1;
+            Q_current[i] = 1'b1;
+            Qb_current[i] = 1'b1;
         end
       else if (!_RD[i])
         begin
             if (LOG>1) $display("%9t", $time, " %s Q=0", NAME);
-            Q_defined[i] <= 1'b1;
+            Q_defined[i] = 1'b1;
 
-            Q_current[i] <= 1'b0;
-            Qb_current[i] <= 1'b1;
+            Q_current[i] = 1'b0;
+            Qb_current[i] = 1'b1;
         end
       else if (!_SD[i])
         begin
             if (LOG>1) $display("%9t", $time, " %s Q=1", NAME);
-            Q_defined[i] <= 1'b1;
+            Q_defined[i] = 1'b1;
 
-            Q_current[i] <= 1'b1;
-            Qb_current[i] <= 1'b0;
+            Q_current[i] = 1'b1;
+            Qb_current[i] = 1'b0;
         end
       else //
         begin
             if (!Q_defined[i]) begin
                 if (LOG) $display("%9t", $time, " %s Q=X NOT CLEAR AND NOT PRESET", NAME);
                 // no value has been defined - realistically a random value would be settled on, we'll use X
-                Q_current[i] <= 1'bx;
-                Qb_current[i] <= 1'bx;
+                Q_current[i] = 1'bx;
+                Qb_current[i] = 1'bx;
             end
             else
                 if (LOG>1) $display("%9t", $time, " %s Q=%1b - HOLD", NAME, Q_current);

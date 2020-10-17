@@ -1,3 +1,5 @@
+`ifndef  V_GEN_ALU
+`define  V_GEN_ALU
 /* 
     Run this with icarus verilog using "../simulate.sh gen_alu.v"
 
@@ -12,6 +14,7 @@
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
+// verilator lint_off MULTITOP
 
 `timescale 1ns/1ns
 
@@ -85,4 +88,5 @@ module gen_alu();
         $fclose(hex_file);
     end
 
-endmodule : gen_alu
+endmodule
+`endif

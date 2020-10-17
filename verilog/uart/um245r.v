@@ -3,10 +3,13 @@
 
 /* verilator lint_off ASSIGNDLY */
 
-`timescale 1ns/1ns
 `define EOF 32'hFFFF_FFFF 
 `define NULL 0 
 `define NL 10
+
+`include "../lib/assertion.v"
+
+`timescale 1ns/1ns
 
 module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80, HEXMODE=0, ASCIIONLY=1, LOG=0)  (
     inout [7:0] D,    // Input data
@@ -43,7 +46,7 @@ string str = "";
 
 localparam BUFFER_SIZE=255;
 
-int rxBuf[BUFFER_SIZE]; // Line of text read from file 
+byte rxBuf[BUFFER_SIZE]; // Line of text read from file 
 int absWritePos = 0; // next place to write
 int absReadPos = 0; // next place to read
 
@@ -96,7 +99,7 @@ always @(negedge WR) begin
     if (_TXE) begin
             $display("%9t ", $time, "UART: TRANSMITTING %8b", D);
             $error("%9t ", $time, "UART: ERROR WR low while _TXE not ready");
-            $finish_and_return(1);
+            `FINISH_AND_RETURN(1);
     end
 
     if (LOG) $display("%9t ", $time, "UART: TRANSMITTING 0x%02x (c='%c' b=%08b)", D, printable(D), D);
@@ -112,7 +115,7 @@ always @(negedge WR) begin
     tx_count --;
     if (tx_count < 0) begin
             $error("%9t ", $time, "UART: ERROR tx_count went negative");
-            $finish_and_return(1);
+            `FINISH_AND_RETURN(1);
     end
 
     #T12 // min inactity period
@@ -134,18 +137,18 @@ always @(negedge _RD) begin
     if (_MR) begin
         if (_RXF) begin
                 $display("%9t ", $time, "UART: ERROR _RD low while _RXF not ready");
-                $finish_and_return(1);
+                `FINISH_AND_RETURN(1);
         end
 
         if (! dataAvailable) begin
                 $display("%9t ", $time, "UART: ERROR _RD low while data not available");
-                $finish_and_return(1);
+                `FINISH_AND_RETURN(1);
         end
 
         if (LOG>1) $display("%9t ", $time, "UART: READING AT %-d", absReadPos);
         Drx = rxBuf[absReadPos%BUFFER_SIZE];
 
-        if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x (%c) from serial at pos %-d", Drx, printable(Drx), absReadPos);
+        if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x (%c) from serial at pos %1d", Drx, printable(Drx), absReadPos);
     //    if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x from serial at pos %-d", Drx, Drx, absReadPos);
     end
 end
@@ -156,7 +159,7 @@ always @(posedge _RD) begin
     if (_MR && !_RD_prev) begin
         if (_RXF) begin
                 $display("%9t ", $time, "UART: ERROR _RD going high while _RXF not ready");
-                $finish_and_return(1);
+                `FINISH_AND_RETURN(1);
         end
 
         // only advance the read position at the END of the read otherwise _RXF goes high too early
@@ -184,8 +187,9 @@ initial
     // gather inital value of _RD - it might be x
     _RD_prev = _RD;
 
+    // fill buffer with garbage
     for(int i=0; i<BUFFER_SIZE; i++) begin
-        rxBuf[i] = i;
+        rxBuf[i] = 0;
     end
 
     _RXF_SUPPRESS=0; // suppressed
@@ -200,7 +204,9 @@ initial
 
     if (1) begin
         $display("%9t ", $time, "UART: opening uart.control");
+`ifndef verilator
         fControl = $fopenr("uart.control"); 
+`endif
         //fControl = $fopenr("/dev/stdin"); 
         if (fControl == `NULL) // If error opening file 
         begin
@@ -209,7 +215,9 @@ initial
         end
 
         $display("%9t ", $time, "UART: opening uart.out");
+`ifndef verilator
         fOut = $fopen("uart.out", "w+"); 
+`endif
         //fOut = $fopen("/dev/stdout", "w+"); 
         if (fOut == `NULL) // If error opening file 
         begin
@@ -285,7 +293,7 @@ initial
                     begin
                         r = $fgets(line, fControl);  // consumes the line ending and space chars 
                         $display("%9t ", $time, "UART: QUIT");
-                        $finish;
+                        `FINISH_AND_RETURN(0);
                     end
 
                     if (c == "\n") // quit

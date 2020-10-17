@@ -1,5 +1,6 @@
-/* verilator lint_off ASSIGNDLY */
-/* verilator lint_off STMTDLY */
+// verilator lint_off ASSIGNDLY 
+// verilator lint_off STMTDLY 
+// verilator lint_off PINMISSING 
 
 
 `include "../lib/assertion.v"
@@ -88,7 +89,9 @@ module test();
     initial begin
       #10000
       $display("FAIL DIDN'T FINISH");
+`ifndef verilator
       $finish_and_return(1);
+`endif
     end
 endmodule : test
 

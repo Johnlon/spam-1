@@ -19,37 +19,37 @@ module tb();
      
     initial begin
       
-        _E0 <= 1;
-        _E1 <= 1;
+        _E0 = 1;
+        _E1 = 1;
         #20 
         `Equals(Y , 16'b1111111111111111)
 
-        _E0 <= 0;
-        _E1 <= 1;
+        _E0 = 0;
+        _E1 = 1;
         #20 
         `Equals(Y , 16'b1111111111111111)
 
-        _E0 <= 1;
-        _E1 <= 0;
+        _E0 = 1;
+        _E1 = 0;
         #20 
         `Equals(Y , 16'b1111111111111111)
 
         #20
-        _E0 <= 0;
-        _E1 <= 0;
-        A <= 0; 
+        _E0 = 0;
+        _E1 = 0;
+        A = 0; 
         #20 // not enought time to stabilise
         `Equals(Y , 16'b1111111111111110)
 
-        A <= 1; 
+        A = 1; 
         #20 // not enought time to stabilise
         `Equals(Y , 16'b1111111111111101)
 
-        A <= 15; 
+        A = 15; 
         #20 // not enought time to stabilise
         `Equals(Y , 16'b0111111111111111)
-
+A = 15; 
     end
 
-endmodule : tb
+endmodule
 

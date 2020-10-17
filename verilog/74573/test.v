@@ -7,21 +7,23 @@
 module icarus_tb();
     
 	logic [7:0] D, Q;
-	logic LE, OE_N;
+	logic LE, _OE;
     
 	hct74573 latch(
 	.D, .Q,
-	.LE, .OE_N
+	.LE, ._OE
 	);
     
     
     initial begin
         $dumpfile("dumpfile.vcd");
-        $dumpvars(0,  D, Q, LE, OE_N);
+        $dumpvars(0,  latch);
         
         $display ("");
-        $display ($time, "   D         Q         LE  OE_N");
-        $monitor ($time, "   %8b  %8b  %b   %b", D,   Q,   LE,  OE_N);
+        $display ($time, "   D         Q         LE  _OE");
+`ifndef verilator
+        $monitor ($time, "   %8b  %8b  %b   %b", D,   Q,   LE,  _OE);
+`endif
     end
 
     initial begin
@@ -41,12 +43,12 @@ module icarus_tb();
 	#30 
         `equals(Q , undefined, "initial");
 
-	OE_N=disabled;
+	_OE=disabled;
 	LE=transparent;
 	#16 
         `equals(Q , zed, "latch transparent - output enabled");
 
-	OE_N=enabled;
+	_OE=enabled;
 	#19 
         `equals(Q , zero, "latch transparent - D0 zero");
 
@@ -63,7 +65,7 @@ module icarus_tb();
 	#16
         `equals(Q , zero, "D0 zero because transparent");
 
-	OE_N=disabled;
+	_OE=disabled;
 	#19
         `equals(Q , zed, "D0 zero because transparent");
 

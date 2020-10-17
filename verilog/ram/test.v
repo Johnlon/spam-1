@@ -13,11 +13,11 @@ module test();
  logic [7:0] Vd;
  assign D=Vd;
 
- `include "../lib/display_snippet.v"
+ `include "../lib/display_snippet.sv"
 
  localparam PD=1000;
 
-  ram #(.AWIDTH(8), .DEPTH(16), .LOG(1)) RAM(._OE, ._WE, .A, .D);
+  ram #(.AWIDTH(8), .LOG(1)) RAM(._OE, ._WE, .A, .D);
 
   always @*
       $display("%9t", $time, " MON : _OE=%1b, _WE=%1b, A=%8b, D=%8b - setup write 1 @ 1",_OE, _WE, A, D);

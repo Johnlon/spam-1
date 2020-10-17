@@ -1,0 +1,6 @@
+// permit transmit of 512 chars
+t512
+// give program time to do the transmit
+#100000
+// tell uart to exit the program
+q

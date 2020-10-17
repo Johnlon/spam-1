@@ -1,4 +1,5 @@
 
+// verilator lint_off WIDTH
 `ifndef V_CAST
 `define  V_CAST
 `timescale 1ns/1ns
@@ -32,3 +33,4 @@ module cast();
 
 endmodule
 `endif
+// verilator lint_on WIDTH

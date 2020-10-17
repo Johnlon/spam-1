@@ -8,15 +8,17 @@ module ram(_OE, _WE, A, D);
 
     input _OE, _WE;
     input [AWIDTH-1:0] A;
-    inout [DWIDTH-1:0] D;
+    inout tri [DWIDTH-1:0] D;
 
+    // sadly verilator barfs with the other values so just for linting set them lower
+    // depth is # elements
     parameter DWIDTH=8,AWIDTH=16, DEPTH= 1 << AWIDTH;
     parameter LOG=0;
 
     parameter [DWIDTH-1:0] UNDEF = {(DWIDTH/4){4'bxzzx}};
     parameter [DWIDTH-1:0] HIZ = {DWIDTH{1'bz}};
 
-    reg [DWIDTH-1:0] Mem [DEPTH-1:0];
+    reg [DWIDTH-1:0] Mem [0:DEPTH-1];
 
     localparam t_a_a = 70;
     localparam t_dis_w = 25;
@@ -77,7 +79,8 @@ end
      else if (!_OE) begin
         if (LOG) $display("%9t ", $time, "RAM : READ - D=%08b  A=%04h  delayed : %08d=RAM[0x%04x]", D, A, Mem[delayedA], delayedA);
 
-        if (LOG && Mem[delayedA] === UNDEF) begin
+        //if (LOG && (Mem[delayedA] === UNDEF)) begin
+        if (LOG && $isunknown(Mem[delayedA])) begin
            $display("%9t", $time, " RAM ALERT - READING UNINITIALISED VALUE AT RAM[0x%04x]=%08b A=%04h", delayedA, Mem[delayedA], A );
         end
      end
@@ -85,8 +88,10 @@ end
 
   integer i;
   initial begin
+`ifndef verilator
     for(i=0;i<DEPTH;i=i+1)
        Mem[i]=UNDEF;
+`endif
   end
 
 endmodule

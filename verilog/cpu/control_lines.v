@@ -20,11 +20,6 @@
 
 `define AMODE_TUPLE    wire [1:0] _addrmode = {CPU._addrmode_register, CPU._addrmode_direct}; 
 
-// verilator lint_off ASSIGNDLY
-// verilator lint_off STMTDLY
-// verilator lint_off MULTITOP
-// verilator lint_off DECLFILENAME
-// verilator lint_off DISABLED-UNUSED
 `timescale 1ns/1ns
 
 package control;
@@ -39,25 +34,25 @@ package control;
     localparam _AMODE_DIR=2'b10;
 
     // A BUS
-    localparam [3:0] ADEV_rega = 0; 
-    localparam [3:0] ADEV_regb = 1; 
-    localparam [3:0] ADEV_regc = 2; 
-    localparam [3:0] ADEV_regd = 3; 
-    localparam [3:0] ADEV_marlo = 4;
-    localparam [3:0] ADEV_marhi = 5;
-    localparam [3:0] ADEV_uart = 6;
-    localparam [3:0] ADEV_not_used = 7;
+    localparam [2:0] ADEV_rega = 0; 
+    localparam [2:0] ADEV_regb = 1; 
+    localparam [2:0] ADEV_regc = 2; 
+    localparam [2:0] ADEV_regd = 3; 
+    localparam [2:0] ADEV_marlo = 4;
+    localparam [2:0] ADEV_marhi = 5;
+    localparam [2:0] ADEV_uart = 6;
+    localparam [2:0] ADEV_not_used = 7;
 
     // B BUS
-    localparam [3:0] BDEV_rega = 0; 
-    localparam [3:0] BDEV_regb = 1; 
-    localparam [3:0] BDEV_regc = 2; 
-    localparam [3:0] BDEV_regd = 3; 
-    localparam [3:0] BDEV_marlo = 4;
-    localparam [3:0] BDEV_marhi = 5;
-    localparam [3:0] BDEV_immed = 6; // READ FROM THE INSTRUCTION
-    localparam [3:0] BDEV_ram = 7;
-    localparam [3:0] BDEV_not_used = BDEV_immed; // noop alias
+    localparam [2:0] BDEV_rega = 0; 
+    localparam [2:0] BDEV_regb = 1; 
+    localparam [2:0] BDEV_regc = 2; 
+    localparam [2:0] BDEV_regd = 3; 
+    localparam [2:0] BDEV_marlo = 4;
+    localparam [2:0] BDEV_marhi = 5;
+    localparam [2:0] BDEV_immed = 6; // READ FROM THE INSTRUCTION
+    localparam [2:0] BDEV_ram = 7;
+    localparam [2:0] BDEV_not_used = BDEV_immed; // noop alias
 
     // DEST
     localparam [3:0] TDEV_rega = 0; 
@@ -228,7 +223,3 @@ import control::*;
 
 
 `endif
-
-// verilator lint_on ASSIGNDLY
-// verilator lint_on ASSIGNDLY
-// verilator lint_on MULTITOP

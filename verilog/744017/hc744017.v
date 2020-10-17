@@ -9,7 +9,9 @@ module hc744017(cp0, _cp1, mr, q, _co);
     output [9:0] q;
     output _co;
 
+// verilator lint_off UNOPTFLAT
     reg [9:0] o;
+// verilator lint_on UNOPTFLAT
 
     `ifndef verilator
     if (LOG) always @*
@@ -22,12 +24,12 @@ module hc744017(cp0, _cp1, mr, q, _co);
 
     always@(posedge d_cp0 , negedge d__cp1)
     begin
-        o <= d_mr ? o : (o + 1) < 10 ? o+1: 0;
+        o = d_mr ? o : (o + 1) < 10 ? o+1: 0;
     end
 
     always @* begin
         if (d_mr) begin
-            o <= 0;
+            o = 0;
         end
     end
 

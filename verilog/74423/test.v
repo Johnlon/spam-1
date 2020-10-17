@@ -13,7 +13,7 @@ module icarus_tb();
     
     initial begin
         $dumpfile("dumpfile.vcd");
-        $dumpvars(0,  _A, B, _R, Q, _Q);
+        $dumpvars(0, monostable);
     end
 
     always @* $display ($time, "_A=%1b B=%1b _R=%1b  ->  Q=%1b _Q=%1b", _A, B, _R, Q, _Q);

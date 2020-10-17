@@ -58,7 +58,7 @@ module cpu(
         if (ctrl.rom_6.Mem[pc_addr][7] === 'x) begin // just check leftmost but as this is part of the op and is mandatory
             $display ("%9t ", $time,  "CPU HALT");
             $error("CPU : END OF PROGRAM - NO CODE FOUND AT PC %4h", pc_addr); 
-            $finish_and_return(1);
+            `FINISH_AND_RETURN(1);
         end
     end
 
@@ -148,15 +148,22 @@ module cpu(
 
     // RAM =============================================================================================
 
+// verilator lint_off PINMISSING
     wire #(8) _gated_ram_in = _phaseExec | _ram_in;
     ram #(.AWIDTH(16), .LOG(0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
+// verilator lint_on PINMISSING
     
+`ifndef verilator
+    // verilator complains about tristate
     hct74245ab ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in));
+`endif
     hct74245ab ram_bbus_buf(.A(ram64.D), .B(bbus), .nOE(_bdev_ram));
 
     // MAR =============================================================================================
+// verilator lint_off PINMISSING
     hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
     hct74377 #(.LOG(0)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
+// verilator lint_on PINMISSING
 
     hct74245ab marlo_abus_buf(.A(MARLO.Q), .B(abus), .nOE(_adev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
     hct74245ab marlo_bbus_buf(.A(MARLO.Q), .B(bbus), .nOE(_bdev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register

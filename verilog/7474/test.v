@@ -9,17 +9,12 @@ wire q, qb;
 localparam BLOCKS = 1;
 
 // names: https://assets.nexperia.com/documents/data-sheet/74HC_HCT74.pdf
-hct7474 #(.BLOCKS(BLOCKS), .DELAY_RISE(9), .DELAY_FALL(9)) dut(
-  ._SD(_sd),
-  ._RD(_rd),
-  .D(d),
-  .CP(cp),
-  .Q(q),
-  ._Q(qb)
-);
+hct7474 #(.BLOCKS(BLOCKS), .DELAY_RISE(9), .DELAY_FALL(9)) dut( ._SD(_sd), ._RD(_rd), .D(d), .CP(cp), .Q(q), ._Q(qb)); 
 
 initial begin
-    $monitor("%6d ", $time, " : cp=%1b,d=%1b,_sd=%1b, _rd=%1b, q=%1b, qb=%1b", cp,d,_sd, _rd, q, qb);
+`ifndef verilator
+    $monitor("%9t ", $time, " : cp=%1b,d=%1b,_sd=%1b, _rd=%1b, q=%1b, qb=%1b", cp,d,_sd, _rd, q, qb);
+`endif
 
     cp=0;
     d=1;

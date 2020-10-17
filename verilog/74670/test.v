@@ -1,3 +1,6 @@
+// verilator lint_off UNOPTFLAT
+
+
 `include "hct74670.v"
 `include "../lib/assertion.v"
 
@@ -19,11 +22,13 @@ module icarus_tb();
     
     initial begin
         $dumpfile("dumpfile.vcd");
-        $dumpvars(0,  _wr_en, _rd_en,   wr_addr, rd_addr, wr_data, rd_data);
+        $dumpvars(0, regfile);
         
         $display ("");
         $display ($time,"   %s   %s | %s <= %s  | %s => %s", "_wr_en", "_rd_en",   "wr_addr", "wr_data", "rd_addr", "rd_data");
+`ifndef verilator        
         $monitor ($time,"   %5b   %5b | %7b <= %7b  | %7b => %7b", _wr_en, _rd_en,   wr_addr, wr_data, rd_addr, rd_data);
+`endif
     end
     
     

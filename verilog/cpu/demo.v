@@ -28,13 +28,13 @@
 module test();
     import alu_ops::*;
 
-    `include "../lib/display_snippet.v"
+    `include "../lib/display_snippet.sv"
     `AMODE_TUPLE
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
 
     // CLOCK ===================================================================================
-    localparam HALF_CLK=350;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    localparam HALF_CLK=365;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
     //localparam HALF_CLK=1335;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
@@ -388,12 +388,14 @@ DUMP();
 */
 
         // consume any remaining code
+        // verilator lint_off INFINITELOOP
          while (1==1) begin
              #HALF_CLK
              CLK_UP;
              #HALF_CLK
              CLK_DN;
          end
+        // verilator lint_on INFINITELOOP
 
         $display("END OF TEST");
         $finish();
@@ -408,24 +410,24 @@ DUMP();
 
     always @(CPU.PCHI or CPU.PCLO) begin
         currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
-        $display("%9t ", $time, "INCREMENTED PC=%-d    INSTRUCTION: %-1s", {CPU.PCHI, CPU.PCLO}, currentCode);
+        $display("%9t ", $time, "INCREMENTED PC=%1d    INSTRUCTION: %1s", {CPU.PCHI, CPU.PCLO}, currentCode);
     end
 
     `define DD  $display ("%9t ", $time,  "DUMP  ",
     task DUMP_OP;
-          `DD ": CODE: %-s", currentCode);
-          `DD ": %-s", label);
+          `DD ": CODE: %1s", currentCode);
+          `DD ": %1s", label);
     endtask
 
 
     task DUMP;
             DUMP_OP;
-            `DD " phase=%-6s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
+            `DD " phase=%1s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
             `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
-            `DD " FE=%1b%1b(%-s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
+            `DD " FE=%1b%1b(%1s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
             `DD " DIRECT=%02x:%02x", CPU.direct_address_hi, CPU.direct_address_lo);
-            `DD " _amode=%-2s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
+            `DD " _amode=%2s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
                 " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
                 " address_bus=0x%4x", CPU.address_bus);
             `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
@@ -517,7 +519,7 @@ DUMP();
            $display("instruction_6", CPU.ctrl.instruction_6); 
             DUMP;
             $display("ERROR END OF PROGRAM - PROGRAM BYTE = XX "); 
-            $finish_and_return(1);
+            `FINISH_AND_RETURN(1);
         end
     end
 
@@ -565,7 +567,7 @@ DUMP();
 
                 #SETTLE_TOLERANCE 
                 if (CPU._addrmode_register + CPU._addrmode_direct < 1) begin
-                    $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _REGISTER=%1b/_DIRECT=%1b sAddrMode=%-s", CPU._addrmode_register , CPU._addrmode_direct,
+                    $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _REGISTER=%1b/_DIRECT=%1b sAddrMode=%1s", CPU._addrmode_register , CPU._addrmode_direct,
                                                 control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct));
 
                     DUMP;

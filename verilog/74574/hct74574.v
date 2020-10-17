@@ -11,16 +11,19 @@ input [7:0] D,
 output [7:0] Q
 );
     parameter LOG=0;
+    parameter SETUP_TIME=12;
+    parameter PD_CLK_Q=15;
+    parameter PD_OE_Q=19;
 
     reg [7:0] data;
     wire [7:0] dSetup;
 
     // setup time 
-    assign #(12) dSetup = D;
+    assign #(SETUP_TIME) dSetup = D;
     
     specify
-        (CLK *> Q) = (15);
-        (_OE *> Q) = (19);
+        (CLK *> Q) = (PD_CLK_Q);
+        (_OE *> Q) = (PD_OE_Q);
     endspecify
     
     always @(posedge CLK) begin
@@ -33,7 +36,7 @@ output [7:0] Q
         //$display("%9t", $time, " REGISTER %m changed  CLK=%1b _OE=%1b Data=%08b D=%08b Q=%08b", CLK, _OE, data, D, Q);
         $display("%9t", $time, " REGISTER %m updated  Data=%08b", data);
     
-    assign #(19) Q = _OE ? 8'bz: data;
+    assign Q = _OE ? 8'bz: data;
     
 endmodule
 

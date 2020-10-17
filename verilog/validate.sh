@@ -8,7 +8,7 @@ fi
 for TEST in $TESTS 
 do
 
-    echo ================ $TEST ===============
+    echo ================ $TEST 
     root=/home/john/wslapps/iverilog/iverilog/
     iverilog=$root/driver/iverilog
     vvp=$root/vvp/vvp
@@ -19,15 +19,10 @@ do
     filename=$(basename $TEST)
     rootname=$(basename $filename .v)
 
-    $iverilog -Ttyp -Wall -g2012 -gspecify -grelative-include -o $rootname.vvp  $filename
+    /home/john/wslapps/verilator/verilator/bin/verilator --sv --lint-only --language 1800-2012  +systemverilogext+v --relative-includes --Wno-MULTITOP --Wno-STMTDLY +1800-2012ext+v $filename
     if [ $? != 0 ] ; then
-        echo ERROR exit code iverilog
+        echo ERROR 
         exit 1
     fi
-#    echo $vvp
-    $vvp -N -i $rootname.vvp
-    if [ $? != 0 ] ; then
-        echo ERROR exit code vvp
-        exit 1
-    fi
+    echo $filename ok
 done

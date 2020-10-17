@@ -1,9 +1,6 @@
 // see also ../../docs/reset_timings_waveform.json
 `include "../7474/hct7474.v"
 
-// verilator lint_off ASSIGNDLY
-// verilator lint_off STMTDLY
-
 `timescale 1ns/1ns
 
 // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
@@ -17,13 +14,15 @@ module reset(
 );
     parameter LOG=0;
 
+    wire _Qnotused;
+
     hct7474 #(.BLOCKS(1), .LOG(0)) resetff(
           ._SD(1'b1),
           ._RD(_RESET_SWITCH),
           .D(1'b1),
           .CP(system_clk),
-          .Q(_mrPos)
-          //._Q(_mr)
+          .Q(_mrPos),
+          ._Q(_Qnotused)
         );
 
 

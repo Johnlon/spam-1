@@ -1,5 +1,5 @@
-/* verilator lint_off ASSIGNDLY */
-/* verilator lint_off STMTDLY */
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
 
 `include "../lib/assertion.v"
 `include "./hct74157.v"
@@ -29,8 +29,8 @@ module tb();
       
       Va='x;
       Vb='x;
-      S <= 1; // a->b
-      _E <= 1;
+      S = 1; // a->b
+      _E = 1;
       #2 // not enought time to stabilise
       `Equals(Y , 4'bxxxx)
 
@@ -40,17 +40,16 @@ module tb();
       Va=4'b1010;
       Vb=4'b0101;
 
-      S <= 1; 
-      _E <= 0;
+      S = 1; 
+      _E = 0;
       #20
       `Equals(Y , 4'b0101)
 
-      S <= 0; 
+      S = 0; 
       #20 
       `Equals(Y , 4'b1010)
-
-
+      
     end
 
-endmodule : tb
+endmodule
 

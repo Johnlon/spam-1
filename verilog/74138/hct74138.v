@@ -61,9 +61,7 @@ begin
 end
 //------------------------------------------------//
 
-/* verilator lint_off ASSIGNDLY */
 assign Y = computed;
-/* verilator lint_on ASSIGNDLY */
 
 endmodule
 /* verilator lint_on DECLFILENAME */

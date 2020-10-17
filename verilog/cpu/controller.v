@@ -1,4 +1,7 @@
 // FIXME MAKE ALL THE tri WIRES tri0
+// verilator lint_off PINMISSING
+// verilator lint_off MULTITOP
+
 
 `ifndef V_CONTROLLER_WIDE
 `define V_CONTROLLER_WIDE
@@ -10,7 +13,7 @@
 `include "../rom/rom.v"
 `include "../alu/alu.v"
 `include "control_lines.v"
-`include "psuedo_assembler.v"
+`include "psuedo_assembler.sv"
 
 `timescale 1ns/1ns
 
@@ -55,14 +58,14 @@ module controller(
     assign direct_address_lo = instruction_2;
     assign direct_address_hi = instruction_3;
 
-    wire [4:0] alu_op   = {instruction_6[7:3]};
+    assign alu_op   = {instruction_6[7:3]};
     assign targ_dev = {instruction_6[2:0],instruction_5[7]};
     assign abus_dev = instruction_5[6:4];
     assign bbus_dev = instruction_5[3:1];
 
     wire amode_bit = instruction_4[0];
-    wire _addrmode_register = amode_bit; // low = reg
-    wire #(10) _addrmode_direct = ! amode_bit;  // NAND GATE
+    assign _addrmode_register = amode_bit; // low = reg
+    assign #(10) _addrmode_direct = ! amode_bit;  // NAND GATE
 
     // device decoders
     hct74138 abus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(abus_dev[2:0]));
@@ -108,9 +111,9 @@ module controller(
             _flags_czonGLEN[7],
             1'b0};
 
+    // organise two 8-to-1 multiplexers as a 16-1 multiulexer
     hct74151 #(.LOG(0)) do_exec_lo(._E(conditionTopBit),  .S(condition[2:0]), .I(_flags_lo));
     hct74151 #(.LOG(0)) do_exec_hi(._E(_conditionTopBit), .S(condition[2:0]), .I(_flags_hi));
-
     nand #(9) (_do_exec, do_exec_lo._Y, do_exec_hi._Y); 
     
 endmodule

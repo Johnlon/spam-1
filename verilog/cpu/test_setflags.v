@@ -31,12 +31,12 @@ module test();
 
     import alu_ops::*;
 
-   `include "../lib/display_snippet.v"
+   `include "../lib/display_snippet.sv"
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
 
     // CLOCK ===================================================================================
-    localparam TCLK=350;   // clock cycle
+    localparam TCLK=390;   // clock cycle
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;
@@ -155,6 +155,8 @@ module test();
 
         $display("DONE - advance to no op");
        clk = 1; // END OF PROGRAM
+        $finish();
+        
 
     end
 
@@ -163,11 +165,11 @@ module test();
          //   DUMP_OP;
             `define DD $display ("%9t ", $time,  "DUMP  ", 
 
-            `DD " phase=%-6s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
+            `DD " phase=%1s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
             `DD " PC=%1d (0x%4h) PCHItmp=%d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
-            `DD " FDE=%1b%1b(%-s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
-            `DD " _amode=%-1s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
+            `DD " FDE=%1b%1b(%1s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
+            `DD " _amode=%1s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
                  " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
                  " addbbus=0x%4x", CPU.address_bus);
             `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
@@ -232,14 +234,14 @@ module test();
     int clk_count =0;
     always @(CPU.PCHI or CPU.PCLO) begin
         $display("");
-        $display("%9t ", $time, "INCREMENTED PC=%-d ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", {CPU.PCHI, CPU.PCLO});
+        $display("%9t ", $time, "INCREMENTED PC=%1d ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", {CPU.PCHI, CPU.PCLO});
         currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
-        $display ("%9t ", $time,  "OPERATION %1d ", clk_count, ": %-s", currentCode);
+        $display ("%9t ", $time,  "OPERATION %1d ", clk_count, ": %1s", currentCode);
         clk_count ++;
     end
 
     task DUMP_OP;
-        $display ("%9t ", $time,  "DUMP  ", ": OPERATION: %-1s        PC=%4h", currentCode,pcval);
+        $display ("%9t ", $time,  "DUMP  ", ": OPERATION: %11s        PC=%4h", currentCode,pcval);
         $display ("%9t ", $time,  "DUMP  ", ": PC    : %04h", pcval);
         $display ("%9t ", $time,  "DUMP  ", ": ROM 1 : %02h     %8b", CPU.ctrl.instruction_1, CPU.ctrl.instruction_1);
         $display ("%9t ", $time,  "DUMP  ", ": ROM 2 : %02h     %8b", CPU.ctrl.instruction_2, CPU.ctrl.instruction_2);
@@ -259,7 +261,7 @@ module test();
             //DUMP;
             $display("rom value instruction_6", CPU.ctrl.instruction_6); 
             $error("ERROR END OF PROGRAM - PROGRAM BYTE = XX "); 
-            $finish_and_return(1);
+            `FINISH_AND_RETURN(1);
         end
     end
 

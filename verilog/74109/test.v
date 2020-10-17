@@ -144,9 +144,10 @@ module test;
       #TEST_INTERVAL $finish;
    end
  
+`ifndef verilator
    initial
       $monitor ($time, " TEST   clk ", clk, " j %0d _k %0d q %0d", j, _k, q);
-
+`endif
 endmodule  
  
 

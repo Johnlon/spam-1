@@ -31,12 +31,12 @@ module test();
 
     import alu_ops::*;
 
-   `include "../lib/display_snippet.v"
+   `include "../lib/display_snippet.sv"
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
 
     // CLOCK ===================================================================================
-    localparam TCLK=350;   // clock cycle
+    localparam TCLK=380;   // clock cycle
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;
@@ -149,19 +149,19 @@ module test();
         if (last_count !== not_initialised) begin
             if (last_count == 65535 && count != 0) begin 
                 $error("ERROR wrong count roll value : count=%d  last_count=%d but expected count=0", count , last_count);
-                $finish_and_return(2);
+                `FINISH_AND_RETURN(2);
             end
             
             if (last_count != 65535 && count != last_count+1) begin 
                 $error("ERROR wrong count next +1 value : count=%d  last_count=%d but expected count=%d", count , last_count, last_count+1);
-                $finish_and_return(2);
+                `FINISH_AND_RETURN(2);
             end
         end
         else 
         begin
             if (count != 0) begin 
                 $error("ERROR wrong initial count : count=%d", count);
-                $finish_and_return(2);
+                `FINISH_AND_RETURN(2);
             end
     
         end
@@ -180,7 +180,7 @@ module test();
             //DUMP;
             $display("rom value instruction_6", CPU.ctrl.instruction_6); 
             $error("ERROR END OF PROGRAM - PROGRAM BYTE = XX "); 
-            $finish_and_return(1);
+            `FINISH_AND_RETURN(1);
         end
     end
 

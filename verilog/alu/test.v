@@ -35,21 +35,22 @@ module test();
     string s;
     always @* begin
         op_name = aluopNameR(alu_op);
+`ifndef verilator // verilator doesn't like left aligned format strings with a hyphen
         $display ("%9t", $time, " MON: a=%b b=%b  _flag_c_in=%b   op=%02d %-10s  result=%8b   _flags (_c=%b _z=%1b _n=%1b _o=%1b _eq=%1b _ne=%1b _gt=%1b _lt=%b)", 
             a, b, _flag_c_in, alu_op,
             op_name,
             o, _flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_ne, _flag_eq
         );
+`endif
     end
 
-    `define  ERROR begin $display("ERROR @ %d", `__LINE__); $finish_and_return(1); end
+    `define  ERROR begin $display("ERROR @ %d", `__LINE__); `FINISH_AND_RETURN(1)  end
 
 
     logic started = 0;
     always @* begin
         // detect inconsistent values
         if (started) begin
-            if (!(o >=0 && o <= 255)) `ERROR
             if (_flag_c === 'x) `ERROR
             if (_flag_z === 'x) `ERROR
             if (_flag_n === 'x) `ERROR

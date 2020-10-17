@@ -1,6 +1,8 @@
 `timescale 1ns/1ns
-`include "../lib/assertion.v"
+`include "../../lib/assertion.v"
 
+// verilator lint_off MULTITOP
+// verilator lint_off UNOPT
 
 // going straight from 11 to 00 will cause oscillation
 module SR_latch_gate_as (input R, input S, output Q, output _Q);
@@ -29,76 +31,78 @@ module test();
     initial begin
         $dumpfile("dumpfile.vcd");
         $dumpvars(0, test );
+`ifndef verilator
         $monitor("%9t", $time, " s=", s, " r=", r, " q=", q, " _q=", _q);
+`endif
 
         $display("s=r=0");
-        s <= 0;
-        r <= 0;
+        s = 0;
+        r = 0;
         #100
         `Equals({q, _q}, 2'bxx)
 
         $display("s=r=1");
-        s <= 1;
-        r <= 1;
+        s = 1;
+        r = 1;
         #100
         `Equals({q, _q}, 2'b00)
 
         $display("hold after s=r=1 - will oscillate if there are nonzero propdelays");
-        s <= 0;
-        r <= 0;
+        s = 0;
+        r = 0;
         #100
         // CANNOT MAKE MAKE VALID ASSERTION
 
         $display("set");
-        s <= 1;
-        r <= 0;
+        s = 1;
+        r = 0;
         #100
         `Equals({q, _q}, 2'b10)
 
         $display("hold");
-        s <= 0;
-        r <= 0;
+        s = 0;
+        r = 0;
         #100
 
         $display("reset");
-        s <= 0;
-        r <= 1;
+        s = 0;
+        r = 1;
         #100
         `Equals({q, _q}, 2'b01)
 
         $display("hold");
-        s <= 0;
-        r <= 0;
+        s = 0;
+        r = 0;
         #100
         `Equals({q, _q}, 2'b01)
 
         $display("set");
-        s <= 1;
-        r <= 0;
+        s = 1;
+        r = 0;
         #100
         `Equals({q, _q}, 2'b10)
 
         $display("hold");
-        s <= 0;
-        r <= 0;
+        s = 0;
+        r = 0;
         #100
         `Equals({q, _q}, 2'b10)
 
         $display("reset");
-        s <= 0;
-        r <= 1;
+        s = 0;
+        r = 1;
         #100
         `Equals({q, _q}, 2'b01)
 
         $display("hold");
-        s <= 0;
-        r <= 0;
+        s = 0;
+        r = 0;
         #100
         `Equals({q, _q}, 2'b01)
 
         $display("both high");
-        s <= 1;
-        r <= 1;
+        s = 1;
+        r = 1;
         #100
         `Equals({q, _q}, 2'b00)
 

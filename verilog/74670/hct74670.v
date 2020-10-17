@@ -15,8 +15,12 @@ module hct74670 (input _wr_en,
     
     parameter LOG=0;
 
+// verilator lint_off UNOPTFLAT
     // Register file storage
     reg [3:0] registers[3:0];
+// verilator lint_on UNOPTFLAT
+      
+    reg [3:0] out_val;
     
     specify
     (_rd_en *> rd_data)  = 18;
@@ -39,9 +43,6 @@ module hct74670 (input _wr_en,
     begin
         out_val = registers[rd_addr];
     end
-    
-    
-    reg [7:0] out_val;
     
     assign rd_data = _rd_en ? 4'bz : out_val;
     

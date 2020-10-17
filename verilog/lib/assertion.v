@@ -1,3 +1,7 @@
+`ifndef LIB_ASSERTION
+`define LIB_ASSERTION
+
+
 // assertion macro used in tests - is there a built for this??
 `ifndef verilator
 `define FAIL $finish_and_return(1); 
@@ -30,7 +34,7 @@ begin  \
 end
 
 `ifdef verilator
-  `define Equals(ACTUAL, EXPECTED)  // PASS
+  `define Equals(ACTUAL, EXPECTED)  $write(""); // noop
 `else
 `define Equals(ACTUAL, EXPECTED) \
 if (ACTUAL === EXPECTED) begin \
@@ -45,7 +49,7 @@ end
 
 
 `ifdef verilator
-  `define assertTrue(ACTUAL)  // PASS
+  `define assertTrue(ACTUAL)  $write(""); // noop
 `else
 `define assertTrue(ACTUAL) \
 if (!(ACTUAL)) begin \
@@ -55,13 +59,14 @@ end
 `endif
 
 
+`ifndef verilator
 `define TIMEOUT(EXPR,TIMEOUT,STR) begin \
    bit timed_out; \
            fork begin \
               fork \
                 begin \
                   #TIMEOUT; \
-                  if (!(EXPR)) begin \ 
+                  if (!(EXPR)) begin \
                     $display("%9t", $time, " !!! TIMED OUT WAITING FOR EXPR (got %b)", EXPR , "   LINE",  `__LINE__); \
                     timed_out = '1; \
                     $finish_and_return(1); \
@@ -72,6 +77,31 @@ end
              wait(EXPR || timed_out); \
              $display("%9t", $time, "\t EXPR \t\t ", STR); \
              disable fork; \
-           end join \ 
+           end join \
            end
 
+`else
+`define TIMEOUT(EXPR,TIMEOUT,STR) $write(""); // noop
+`endif
+
+
+`ifndef verilator
+`define WAIT(X)  wait(X);
+`else
+`define WAIT(X)  $write(""); // noop
+`endif
+
+`ifndef verilator
+`define FINISH_AND_RETURN(X)  $finish_and_return(X);
+`else
+`define FINISH_AND_RETURN(X)  $write(""); // noop
+`endif
+
+`timescale 1ns/1ns
+
+module dummy;
+    initial 
+        $display("loading dummy");
+endmodule
+
+`endif 

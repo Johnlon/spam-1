@@ -5,6 +5,7 @@
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
+// verilator lint_off PINMISSING
 
 `include "../lib/assertion.v"
 `include "../74377/hct74377.v"
@@ -104,6 +105,9 @@ if (LOG) always @(*) begin
       _local_jump, _long_jump, _do_jump, _pchitmp_in, D 
       );
 end
+// verilator lint_on ASSIGNDLY
+// verilator lint_on STMTDLY
+// verilator lint_on PINMISSING
 
 endmodule :pc
 

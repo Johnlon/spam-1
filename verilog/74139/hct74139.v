@@ -50,19 +50,19 @@ output logic [3:0] _Yb
     logic [1:0] Ab_d;
 
     always @*
-         Aa_d <= #(AY_PD) Aa;
+         Aa_d = #(AY_PD) Aa;
     always @*
-         Ab_d <= #(AY_PD) Ab;
+         Ab_d = #(AY_PD) Ab;
     always @*
-         _Ea_d <= #(EY_PD) _Ea;
+         _Ea_d = #(EY_PD) _Ea;
     always @*
-         _Eb_d <= #(EY_PD) _Eb;
+         _Eb_d = #(EY_PD) _Eb;
 
     always @*
-         _Ya <= f74139(Aa_d,_Ea_d);
+         _Ya = f74139(Aa_d,_Ea_d);
 
     always @*
-        _Yb <= f74139(Ab_d,_Eb_d);
+        _Yb = f74139(Ab_d,_Eb_d);
 
    if (LOG) always @*
         $display("%9t ", $time, " DEMUX   _Ea=%1b", _Ea, " Aa=%2b", Aa, " _Ya=%4b", _Ya, "  /  _Eb=%1b", _Eb, " Ab=%2b", Ab, " _Yb=%4b", _Yb);

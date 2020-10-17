@@ -1,4 +1,11 @@
+`ifndef V_74109
+`define V_74109
 // JK flipflop https://assets.nexperia.com/documents/data-sheet/74HC_HCT109.pdf
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
+// verilator lint_off INITIALDLY
+// verilator lint_off COMBDLY
+
 `timescale 1ns/1ns
 
 module hct74109 ( 
@@ -78,3 +85,4 @@ module hct74109 (
 
 endmodule
 
+`endif

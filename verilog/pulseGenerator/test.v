@@ -9,20 +9,21 @@ module icarus_tb();
     
 	logic clk;
 	logic clk_en;
+// verilator lint_off UNOPTFLAT
 	wire pulse;
+// verilator lint_on UNOPTFLAT
     
 	pulseGenerator gen( clk, clk_en, pulse);
     
     initial begin
         $dumpfile("dumpfile.vcd");
-        $dumpvars(0,  
-		clk, clk_en,
-		pulse
-	);
+        $dumpvars(0, gen);
         
         $display ("");
         $display ($time, "   clk  clk_en pulse");
-	$monitor ($time, "   %b    %b      %b", clk, clk_en, pulse);
+`ifndef verilator
+        $monitor ($time, "   %b    %b      %b", clk, clk_en, pulse);
+`endif 
 
     end
 

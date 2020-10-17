@@ -13,9 +13,6 @@ clock 10 is dead
 `include "../744017/hc744017.v"
 `include "../srflipflop/sr.v"
 
-// verilator lint_off ASSIGNDLY
-// verilator lint_off STMTDLY
-
 `timescale 1ns/1ns
 
 module phaser #(parameter LOG=0)
@@ -23,7 +20,9 @@ module phaser #(parameter LOG=0)
     input clk, 
     input mr,
 
+// verilator lint_off UNOPT
     output [9:0] seq,
+// verilator lint_on UNOPT
 
     output _phaseFetch, phaseFetch , _phaseExec, phaseExec
 );
@@ -44,8 +43,10 @@ module phaser #(parameter LOG=0)
     wire phaseExec_begin = seq[PHASE_FETCH_LEN];   // 2 clock
     wire phaseExec_end = mr |seq[0]; // ensure phase is reset when MR triggers
 
+// verilator lint_off PINMISSING
     sr phase1(.s(phaseFetch_begin), .r(phaseFetch_end), .q(phaseFetch));
     sr phase3(.s(phaseExec_begin), .r(phaseExec_end), .q(phaseExec));
+// verilator lint_on PINMISSING
 
     assign #(9) _phaseFetch = !phaseFetch; // INVERTER : dont use _Q as this is NOT guaranteed to be invcerse of Q
     assign #(9) _phaseExec = !phaseExec; // INVERTER : dont use _Q as this is NOT guaranteed to be invcerse of Q
@@ -63,7 +64,6 @@ module phaser #(parameter LOG=0)
             );
 
 endmodule : phaser
-// verilator lint_on ASSIGNDLY
 
 `endif
 

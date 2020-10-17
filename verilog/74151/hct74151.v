@@ -1,4 +1,5 @@
 `timescale 1ns/1ns
+// verilator lint_off COMBDLY
 
 // regarding approach to delays see https://stackoverflow.com/questions/64083950/why-are-icarus-verilog-specify-times-not-respected/64085508?noredirect=1#comment113337822_64085508
 // where my question is answered arount how to create delays that allow glitches through.
@@ -51,3 +52,4 @@ module hct74151(_E, I, S, Y, _Y);
 
 endmodule
 
+// verilator lint_on COMBDLY

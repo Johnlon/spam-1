@@ -1,5 +1,11 @@
+
 `ifndef  V_74573
 `define  V_74573
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
+// verilator lint_off UNOPTFLAT
+
+
 /* octal d-type transparent latch.
  Same model as 74373 but with timings from HCT573
  
@@ -31,17 +37,17 @@ module hct74573 (
     always @(D or LE)
         if (LE)
         begin 
-            data <= D;
+            data = D;
         end
     
     assign Q = _OE ? 8'bz : data;
 
     if (LOG) always @* 
         $display("%09t ", $time, 
-                " le=%1b", le,
-                " _oe=%1b", _oe,
-                " d=%8b", d,
-                " q=%8b", q,
+                " LE=%1b", LE,
+                " _OE=%1b", _OE,
+                " D=%8b", D,
+                " Q=%8b", D,
                 "%m");
         
     

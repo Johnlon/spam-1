@@ -17,7 +17,9 @@ initial
     begin : file_block 
     $timeformat(-9, 0, "ns", 6); 
 
+`ifndef verilator
     fControl = $fopenr("/tmp/fifo"); 
+`endif
     if (fControl == `NULL) // If error opening file 
         disable file_block; // Just quit 
 
@@ -80,7 +82,9 @@ initial
     
       $fclose(fControl); 
             
+`ifndef verilator
       fControl = $fopenr("/tmp/fifo"); 
+`endif
       if (fControl == `NULL) // If error opening file 
           disable file_block; // Just quit 
 

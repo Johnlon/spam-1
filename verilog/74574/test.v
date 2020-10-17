@@ -9,19 +9,21 @@ module icarus_tb();
 	logic [7:0] D, Q;
 	logic CLK, _OE;
     
-	hct74574 register(
-	.D, .Q,
-	.CLK, ._OE
-	);
+	hct74574 register( .D, .Q, .CLK, ._OE);
     
+    integer pdOE = register.PD_OE_Q;
+    integer pdCLK = register.PD_CLK_Q;
+    integer setup = register.SETUP_TIME;
     
     initial begin
         $dumpfile("dumpfile.vcd");
-        $dumpvars(0,  D, Q, CLK, _OE);
+        $dumpvars(0,  register);
         
         $display ("");
         $display ($time, "   D         Q         CLK  _OE");
+`ifndef verilator
         $monitor ($time, "   %8b  %8b  %b   %b", D,   Q,   CLK,  _OE);
+`endif
     end
 
     initial begin
@@ -33,49 +35,53 @@ module icarus_tb();
         parameter high  = 1;
         parameter disabled = 1;
         parameter enabled = 0;
-        parameter tPD = 19+1;
 
 	D=zero;
 	CLK=low;
-	#tPD 
-        `equals(Q , undefined, "initial");
+	#pdOE 
+    `equals(Q , undefined, "initial");
 
 	_OE=disabled;
-	#tPD 
-        `equals(Q , zed, "output disabled");
+	#(pdOE+1) 
+    `equals(Q , zed, "output disabled");
 
 	_OE=enabled;
-	#tPD 
-        `equals(Q , undefined, "unclocked - D = X");
+	#(pdOE+1)
+    `equals(Q , undefined, "unclocked - D = X");
 
 	D=aa;
 	CLK=high;
-	#10
-        `equals(Q , undefined, "clocked - but not yet propagated");
+	#1000
+    `equals(Q , 0, "clocked - but AA not setup prior to serup interval so pickup the earlier 00");
+
+	CLK=low;
+	#pdOE 
 
 	D=1;
+	#(setup+1)
+
 	CLK=high;
-	#tPD
-        `equals(Q , aa, "transition to high - wth AA");
+	#(pdCLK+1)
+    `equals(Q , 8'b1, "transition to high - wth 1");
 
 	D=255;
-	#tPD
-        `equals(Q , aa, "remain high - wth 255");
+	#1000
+    `equals(Q , 8'b1, "remain high - wth 1");
 
-	D=zero;
 	CLK=low;
-	#tPD
-        `equals(Q , aa, "transition to low - wth zero");
+	#1000
+    `equals(Q , 1, "transition to low - with 255 should still be 1");
 
 	D=255;
-	CLK=high;
 	_OE=disabled;
-	#tPD
-        `equals(Q , zed, "transition to high - wth 255 but _OE disabled");
+	#(setup+1)
+	CLK=high;
+	#pdOE
+    `equals(Q , zed, "transition to high - should clock in 255 when _OE disabled");
 
 	_OE=enabled;
-	#tPD
-        `equals(Q , 255, "oe enabled");
+	#(pdOE+1)
+    `equals(Q , 8'd255, "oe enabled");
 
 
     end

@@ -10,17 +10,21 @@
 
 module test();
 
-    `include "../lib/display_snippet.v"
+    `include "../lib/display_snippet.sv"
 
     logic clk;
     logic mr;
 
     wire [9:0] seq;
 
-    wire _phaseFetch, phaseFetch , phaseDecode , phaseExec;
-	phaser #(.LOG(1)) ctrl( .clk, .mr, .seq, ._phaseFetch, .phaseFetch , .phaseDecode , .phaseExec);
+// verilator lint_off PINMISSING
+// verilator lint_off UNOPTFLAT
+    wire _phaseFetch, phaseFetch , _phaseExec, phaseExec;
+	phaser #(.LOG(1)) ctrl( .clk, .mr, .seq, ._phaseFetch, .phaseFetch , ._phaseExec, .phaseExec);
+// verilator lint_on UNOPTFLAT
+// verilator lint_on PINMISSING
 
-    wire [2:0] FDE = {phaseFetch , phaseDecode , phaseExec};    
+    wire [1:0] FE = {phaseFetch , phaseExec};    
 
     initial begin
 
@@ -31,7 +35,7 @@ module test();
 
         $monitor ("%9t ", $time,  "TEST    clk=%1b", clk, 
                 " seq=%10b", seq,
-                " phase(FDE=%1b%1b%1b)", phaseFetch , phaseDecode , phaseExec,
+                " phase(FE=%1b%1b)", phaseFetch , phaseExec,
                 " mr=%1b", mr,
                 " %s", label
                 );
@@ -41,114 +45,97 @@ module test();
  // constraints
      always @* begin
          // only one may be low at a time
-         if (phaseFetch + phaseDecode + phaseExec >1 ) begin
-             $display("\n%9t ", $time, " ERROR CONFLICTING PHASE  F=%1b/D=%1b/E=%1b", phaseFetch , phaseDecode , phaseExec);
+         if (phaseFetch + phaseExec >1 ) begin
+             $display("\n%9t ", $time, " ERROR CONFLICTING PHASE  F=%1b/E=%1b", phaseFetch , phaseExec);
              $finish();
          end
-         if (phaseFetch === 1'bx |  phaseDecode === 1'bx |  phaseExec === 1'bx) begin
-             $display("\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE PHASE F=%1b/D=%1b/E=%1b", phaseFetch , phaseDecode , phaseExec );
+         if (phaseFetch === 1'bx |  phaseExec === 1'bx) begin
+             $display("\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE PHASE F=%1b/E=%1b", phaseFetch , phaseExec );
              $finish();
          end
      end
 
     integer count;
-    integer pFetch_count=3;
-    integer pDecode_count=4;
+    integer pFetch_count=1;
 
     initial begin
         localparam T=100;   // clock cycle
         localparam SMALL_DELAY=20; // come gate delay
 
         `DISPLAY("init");
-        mr <= 1;
-        clk <= 0;
+        mr = 1;
+        clk = 0;
 
         #T
         `Equals( seq, 10'b1);
-        `Equals( FDE, 3'b000);
+        `Equals( FE, 2'b00);
 
         #T
         `DISPLAY("mr no clocking is ineffective = stay in NONE mode")
-        count = 0;
-        while (count++ < 3) begin
+        for (count=0; count<3; count++) begin
             $display("count %-5d", count);
-            clk <= 1;
+            clk = 1;
             #T
-            `Equals( FDE, 3'b000);
+            `Equals( FE, 2'b00);
 
-            clk <= 0;
+            clk = 0;
             #T
-            `Equals( FDE, 3'b000);
+            `Equals( FE, 2'b00);
         end
-        `Equals( seq, 10'b1);
+        `Equals( seq, 10'd1);
         
         `DISPLAY("mr released = still in NONE mode after settle")
-         mr <= 0;
+         mr = 0;
          #T
-         `Equals( FDE, 3'b100);
+         `Equals( FE, 2'b10);
          `Equals( seq, 10'b1);
 
-        `DISPLAY("stay in FETCH mode for 3 clocks")
-        count = 0;
-        while (count++ < pFetch_count) begin
+        `DISPLAY("FETCH mode ")
+        for (count=0; count<pFetch_count; count++) begin
             $display("count %-5d", count);
-            clk <= 1;
+            clk = 1;
             #T
-            `Equals( FDE, 3'b100);
+            `Equals( FE, 2'b01);
 
-            clk <= 0;
+            clk = 0;
             #T
-            `Equals( FDE, 3'b100);
+            `Equals( FE, 2'b01);
         end
-        `Equals( seq, 10'b1000);
+        `Equals( seq, 10'd2);
         
 
-        `DISPLAY("stay in DECODE mode for 4 clocks");
-        count = 0;
-        while (count++ < pDecode_count) begin
-            $display("count %-5d", count);
-            clk <= 1;
-            #T
-            `Equals( FDE, 3'b010);
-
-            clk <= 0;
-            #T
-            `Equals( FDE, 3'b010);
-        end
-        `Equals( seq, 10'b10000000);
-
-        `DISPLAY("stay in EXEC mode for 2 clocks");
-        clk <= 1;
+        `DISPLAY("EXEC mode ");
+        clk = 1;
         #T
-        clk <= 0;
+        clk = 0;
         #T
-        `Equals( FDE, 3'b001);
-        `Equals( seq, 10'b100000000);
+        `Equals( FE, 2'b10);
+        `Equals( seq, 10'd1);
 
         `DISPLAY("no mode for 1 clocks");
-        clk <= 1;
+        clk = 1;
         #T
-        clk <= 0;
+        clk = 0;
         #T
-        `Equals( FDE, 3'b001);
-        `Equals( seq, 10'b1000000000);
+        `Equals( FE, 2'b01);
+        `Equals( seq, 10'd2);
 
         `DISPLAY("return to FETCH mode");
-        clk <= 1;
+        clk = 1;
         #T
-        `Equals( FDE, 3'b100);
-        clk <= 0;
+        `Equals( FE, 2'b10);
+        clk = 0;
         #T
-        `Equals( FDE, 3'b100);
-        `Equals( seq, 10'b0000000001);
+        `Equals( FE, 2'b10);
+        `Equals( seq, 10'd1);
 
         // free run
 
         for (count = 0; count < 20; count++) begin
             #T
-            clk <= 1;
+            clk = 1;
             #T
-            clk <= 0;
+            clk = 0;
         end
 
         $display("testing end");

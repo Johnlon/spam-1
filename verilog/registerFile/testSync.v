@@ -45,11 +45,13 @@ module testSync();
     
     initial begin
         $dumpfile("dumpfileSync.vcd");
+`ifndef verilator
         $dumpvars(0, clk, _wr_en, wr_addr, wr_data, _rdL_en, rdL_addr, rdL_data, _rdR_en, rdR_addr, rdR_data);
         
         $display ("");
         $monitor ("%9t ", $time, " clk=%1b _wr_en=%1b wr_addr=%d   wr_data=%d  _rdL_en=%1b   rdL_addr=%d  rdL_data=%d  _rdR_en=%1b  rdR_addr=%d  rdR_data=%d",
                                     clk, _wr_en, wr_addr, wr_data, _rdL_en, rdL_addr, rdL_data, _rdR_en, rdR_addr, rdR_data);
+`endif
     end
     
     initial begin

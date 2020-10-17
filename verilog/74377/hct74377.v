@@ -31,8 +31,9 @@ always @(posedge CP)
 begin
   if (!_EN) begin
     if (LOG)  $display("%9t", $time, " REGISTER %m   ASSIGNING D=%08b to Q_current", D);
-    Q_current <= D;
+    Q_current = D;
   end
+  
 end
 //------------------------------------------------//
 

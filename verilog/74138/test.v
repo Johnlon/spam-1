@@ -1,5 +1,5 @@
-/* verilator lint_off ASSIGNDLY */
-/* verilator lint_off STMTDLY */
+// verilator lint_off ASSIGNDLY 
+// verilator lint_off STMTDLY
 
 
 `include "../lib/assertion.v"
@@ -15,14 +15,14 @@ module test();
     logic Enable2_bar;
     logic Enable3;
 
-    `include "../lib/display_snippet.v"
+    `include "../lib/display_snippet.sv"
 
     initial begin
         $dumpfile("dumpfile.vcd");
         $dumpvars(0, test);
     end
      
-    integer timer;
+    time timer;
 
     hct74138 demux(
         .Enable1_bar,
@@ -39,48 +39,50 @@ module test();
         `Equals(Y, 8'bx)
 
         `DISPLAY("setting address=0");
-        A <= 0;
+        A = 0;
         #400
         //`Equals(Y, 4'bx)
 
         `DISPLAY("disable");
-        Enable1_bar <= 1;
-        Enable2_bar <= 1;
-        Enable3 <= 1;
+        Enable1_bar = 1;
+        Enable2_bar = 1;
+        Enable3 = 1;
         #40
         `Equals(Y, 8'b11111111)
 
         `DISPLAY("enable");
-        Enable1_bar <= 0;
-        Enable2_bar <= 0;
-        Enable3 <= 1;
+        Enable1_bar = 0;
+        Enable2_bar = 0;
+        Enable3 = 1;
         #40
         `Equals(Y, 8'b11111110)
 
         `DISPLAY("address=1");
-        A <= 1;
+        A = 1;
         #400
         `Equals(Y, 8'b11111101)
 
         `DISPLAY("address=2");
-        A <= 2;
+        A = 2;
         #400
         `Equals(Y, 8'b11111011)
 
         `DISPLAY("address=3");
-        A <= 3;
+        A = 3;
         #400
         `Equals(Y, 8'b11110111)
 
         `DISPLAY("disable");
-        Enable1_bar <= 1;
+        Enable1_bar = 1;
         #40
         `Equals(Y, 8'b11111111)
         
         `DISPLAY("enable output");
         timer=$time;
-        Enable1_bar <= 0; // b->a
+        Enable1_bar = 0; // b->a
+`ifndef verilator
         wait(Y === 8'b11110111);
+`endif
         if ($time - timer != 19) begin
             $display("BAD SPEED - EXPECTED 19ns - TOOK %-d", ($time - timer));
             $finish();
@@ -92,8 +94,10 @@ module test();
 
         `DISPLAY("change address");
         timer=$time;
-        A <= 0; // b->a
+        A = 0; // b->a
+`ifndef verilator
         wait(Y === 8'b11111110);
+`endif
         if ($time - timer != 17)  begin
             $display("BAD SPEED - EXPECTED 17ns - TOOK %-d", ($time - timer));
             $finish();
@@ -103,36 +107,35 @@ module test();
 
       #50
         `DISPLAY("all enables x");
-        Enable1_bar <= 'x;
-        Enable2_bar <= 'x;
-        Enable3 <= 'x;
+        Enable1_bar = 'x;
+        Enable2_bar = 'x;
+        Enable3 = 'x;
         #40
         `Equals(Y, 8'bxxxxxxxx)
         
         `DISPLAY("if E1=disable then this overrides X in other fields - should be disabled");
-        Enable1_bar <= 1;
-        Enable2_bar <= 'x;
-        Enable3 <= 'x;
+        Enable1_bar = 1;
+        Enable2_bar = 'x;
+        Enable3 = 'x;
         #40
         `Equals(Y, 8'b11111111)
 
         `DISPLAY("if E2=disable then this overrides X in other fields - should be disabled");
-        Enable1_bar <= 'x;
-        Enable2_bar <= 1;
-        Enable3 <= 'x;
+        Enable1_bar = 'x;
+        Enable2_bar = 1;
+        Enable3 = 'x;
         #40
         `Equals(Y, 8'b11111111)
 
       #50
         `DISPLAY("A as x");
-        Enable1_bar <= '0;
-        Enable2_bar <= '0;
-        Enable3 <= '1;
-        A <= 3'b10x;
+        Enable1_bar = '0;
+        Enable2_bar = '0;
+        Enable3 = '1;
+        A = 3'b10x;
         #40
         `Equals(Y, 8'bxxxxxxxx)
         
-
         `DISPLAY("done");
         $finish;
     end

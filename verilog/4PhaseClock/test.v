@@ -44,8 +44,11 @@ module test;
    end
 
    wire [3:0] phased = {clk_1, clk_2, clk_3, clk_4};
+
+`ifndef verilator
    initial
       $monitor ($time, " clk ", clk, " phase=%4b", phased);
+`endif
 
 endmodule  
  
