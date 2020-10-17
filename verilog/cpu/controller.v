@@ -54,18 +54,23 @@ module controller(
     wire [7:0] instruction_2 = rom_2.D;
     wire [7:0] instruction_1 = rom_1.D;
 
-    assign immed8 = instruction_1;
-    assign direct_address_lo = instruction_2;
-    assign direct_address_hi = instruction_3;
-
+    // instruction decompose
     assign alu_op   = {instruction_6[7:3]};
     assign targ_dev = {instruction_6[2:0],instruction_5[7]};
     assign abus_dev = instruction_5[6:4];
     assign bbus_dev = instruction_5[3:1];
-
+    wire [3:0] condition = {instruction_5[0],instruction_4[7:5]};
+    assign _set_flags = instruction_4[4];
     wire amode_bit = instruction_4[0];
+
+    assign direct_address_hi = instruction_3;
+    assign direct_address_lo = instruction_2;
+    assign immed8 = instruction_1;
+
+
+    // addressing mode
     assign _addrmode_register = amode_bit; // low = reg
-    assign #(10) _addrmode_direct = ! amode_bit;  // NAND GATE
+    nand #(9) (_addrmode_direct, amode_bit, amode_bit);  // NAND GATE
 
     // device decoders
     hct74138 abus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(abus_dev[2:0]));
@@ -85,33 +90,27 @@ module controller(
     
     `CONTROL_WIRES(HOOKUP, `SEMICOLON);
 
-    // conditional flag setting
-    assign _set_flags = instruction_4[4];
-
-    // conditional instruction logic
-    wire [3:0] condition = {instruction_5[0],instruction_4[7:5]};
-    
-    wire conditionTopBit = condition[3];
-    wire #(8) _conditionTopBit = !conditionTopBit; // NAND GATE
 
     wire [7:0] _flags_hi = {
             5'b0,
-            _flag_do,
-            _flag_di,
-            _flags_czonGLEN[0]
+            _flag_do, //DO
+            _flag_di, // DI
+            _flags_czonGLEN[0]  // LT
             };
 
     wire [7:0] _flags_lo = {
-            _flags_czonGLEN[1],
+            _flags_czonGLEN[1], // GT
             _flags_czonGLEN[2],
             _flags_czonGLEN[3],
             _flags_czonGLEN[4],
             _flags_czonGLEN[5],
             _flags_czonGLEN[6],
-            _flags_czonGLEN[7],
-            1'b0};
+            _flags_czonGLEN[7], // Carry
+            1'b0}; // Always
 
     // organise two 8-to-1 multiplexers as a 16-1 multiulexer
+    wire conditionTopBit = condition[3];
+    wire #(8) _conditionTopBit = !conditionTopBit; // NAND GATE
     hct74151 #(.LOG(0)) do_exec_lo(._E(conditionTopBit),  .S(condition[2:0]), .I(_flags_lo));
     hct74151 #(.LOG(0)) do_exec_hi(._E(_conditionTopBit), .S(condition[2:0]), .I(_flags_hi));
     nand #(9) (_do_exec, do_exec_lo._Y, do_exec_hi._Y); 

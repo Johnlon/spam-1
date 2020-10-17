@@ -4,6 +4,11 @@ if [ "$TESTS" == "" ]
 then
     TESTS='test*.v'
 fi 
+if [ "$TESTS" == "" ]
+then
+    TESTS='demo*.v'
+fi 
+
 
 for TEST in $TESTS 
 do
