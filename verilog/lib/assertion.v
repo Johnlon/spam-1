@@ -12,24 +12,18 @@
 
 
 `define equals(actual, expected, msg) \
-if (actual === expected) begin \
-  if (1==2) $display("%d passed:  %b == %b - %s", `__LINE__,actual, expected, msg); \
-end \
-else \
+if (actual !== expected) \
 begin  \
-  $display("%d FAILED: '%b' is not '%b' - %s", `__LINE__,actual, expected, msg); 	\
+  $display("Line %d: FAILED: '%b' is not '%b' - %s", `__LINE__,actual, expected, msg); 	\
   `FAIL \
 end
 
 
 `define assertEquals(actual, expected_value) \
-if (actual === expected_value) begin \
-  if (1==2) $display("Passed %-d %b == %b", `__LINE__,actual, expected_value); \
-end \
-else \
+if (actual !== expected_value) \
 begin  \
-  $display("FAILED @ %-4d : expected '%b'", `__LINE__, expected_value); 	\
-  $display("              : but got  '%b'", actual); 	\
+  $display("FAILED Line %-4d : expected '%b'", `__LINE__, expected_value); 	\
+  $display("                : but got  '%b'", actual); 	\
   `FAIL \
 end
 
@@ -37,11 +31,7 @@ end
   `define Equals(ACTUAL, EXPECTED)  $write(""); // noop
 `else
 `define Equals(ACTUAL, EXPECTED) \
-if (ACTUAL === EXPECTED) begin \
-  if (0) $display("%9t ", $time, " Line:%-5d PASSED: '%b' == '%b'    : ACTUAL != EXPECTED", `__LINE__, ACTUAL, EXPECTED); \
-end \
-else \
-begin  \
+if (ACTUAL === EXPECTED) begin  \
   $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : ACTUAL != EXPECTED", `__LINE__, ACTUAL, EXPECTED, ACTUAL, EXPECTED, ACTUAL, EXPECTED); 	\
   `FAIL \
 end
@@ -53,27 +43,25 @@ end
 `else
 `define assertTrue(ACTUAL) \
 if (!(ACTUAL)) begin \
-  $display("%9t ", $time, " Line:%-5d FAILED: 'ACTUAL' was not True,   (d%1d)(h%2h)", `__LINE__, (ACTUAL), (ACTUAL), (ACTUAL)); 	\
+  $display("%9t ", $time, " Line:%-5d FAILED: 'ACTUAL' was not True,   (d%1d)(h%2h) ", `__LINE__, (ACTUAL), (ACTUAL), (ACTUAL)); 	\
   `FAIL \
 end
 `endif
 
-
 `ifndef verilator
-`define TIMEOUT(EXPR,TIMEOUT,STR) begin \
+`define TIMEOUT1(EXPR,TIMEOUT,STR) begin \
    bit timed_out; \
            fork begin \
               fork \
                 begin \
-                  #TIMEOUT; \
+                  #(TIMEOUT); \
                   if (!(EXPR)) begin \
-                    $display("%9t", $time, " !!! TIMED OUT WAITING FOR EXPR (got %b)", EXPR , "   LINE",  `__LINE__); \
+                    $display("%9t", $time, " !!! TIMED OUT WAITING FOR EXPR (got %b)", EXPR , "   LINE %1d",  `__LINE__); \
                     timed_out = '1; \
                     $finish_and_return(1); \
                   end \
                 end \
              join_none \
-             /*$display("%9t", $time, " !!! WAITING FOR EXPR"); */\
              wait(EXPR || timed_out); \
              $display("%9t", $time, "\t EXPR \t\t ", STR); \
              disable fork; \
@@ -85,11 +73,102 @@ end
 `endif
 
 
+
+`ifndef verilator
+// never returns
+`define DOUBLE_CHECK(EXPR,TIMEOUT, st) begin \
+            fork \
+              begin \
+                  #(TIMEOUT) \
+                  $display("%9t", $time, " !!! TIMED OUT - NEVER MET AFTER HARD TIME OUT %1d FOR EXPR (got %b)", ($time-st), EXPR , "   LINE %1d",  `__LINE__); \                
+                  $finish_and_return(1); \
+              end \
+              begin \
+                wait(EXPR); \
+                if (EXPR) begin \
+                  $display("%9t", $time, " !!! TIMED OUT - BUT CONDITION MET AFTER %1d FOR EXPR (got %b)", ($time-st), EXPR , "   LINE %1d",  `__LINE__); \
+                end \
+                $finish_and_return(12); \
+              end \
+            join_none \
+            #(TIMEOUT) \
+            $display("%9t", $time, " !!! TIMED OUT - NEVER MET AFTER HARD TIME OUT %1d FOR EXPR (got %b)", ($time-st), EXPR , "   LINE %1d",  `__LINE__); \                
+            $finish_and_return(1); \
+          end
+
+`else
+`define DOUBLE_CHECK(EXPR,TIMEOUT,STR, st) $write(""); // noop
+`endif
+
+
+`ifndef verilator
+`define ASSERT_TOOK(EXPR,TIMEOUT) \
+        begin \
+          bit timed_out; \
+          bit ok; \
+          time st;\
+          time took; \
+          st=$time;\
+          took=0;\
+            begin \
+              fork \
+                begin \
+                  wait(EXPR); \
+                  ok = '1; \
+                  took = $time-st; \
+                  end \
+                begin \
+                  #(TIMEOUT+1); \
+                  timed_out = '1; \
+                end \
+              join_none \
+              wait (timed_out || ok);\
+              \
+              if (ok && (took < TIMEOUT)) \
+              begin \
+                $display("%9t", $time, " !!! TOO QUICK FOR EXPR - EXPECTED %1d - BUT TOOK %1d", (TIMEOUT), ($time-st),  "   LINE %1d",  `__LINE__);\
+                $finish_and_return(1); \
+              end \
+              else \
+              if (ok && (took == TIMEOUT)) \
+              begin \
+                $display("%9t", $time, " DELAY OK- TOOK %1d  - EXPR ", ($time-st-1)); \
+              end \
+              else \
+              if (timed_out == 1) \
+              begin \
+                `DOUBLE_CHECK(EXPR, 10*TIMEOUT, st) /* HARD LIMIT IIS A MULTIPLE */  \
+                $finish_and_return(1); \
+              end \
+              else \
+              begin \
+                $display("%9t", $time, " !!! SW ERROR: DIDN'T TIME OUT 'EXPR' BUT DIDN'T SUCCEED EITHER - LINE %1d",  `__LINE__);\
+                $finish_and_return(1); \
+              end \
+              disable fork; \
+            end\
+        end
+
+`else
+`define ASSERT_TOOK(EXPR,TIMEOUT) $write(""); // noop
+`endif
+
 `ifndef verilator
 `define WAIT(X)  wait(X);
 `else
 `define WAIT(X)  $write(""); // noop
 `endif
+
+
+`define  ASSERT_LONGER_THAN(ACTUAL, EXPECTED, CHECK) \
+  `WAIT(CHECK);\
+  if ((ACTUAL) < (EXPECTED)) begin\
+    $display("TOO QUICK FOR 'CHECK' - EXPECTED DELAY ns - BUT TOOK %-d     @ line %1d", (ACTUAL), `__LINE__);\
+    $finish;\
+  end else begin\
+    $display("TOOK %-d", (ACTUAL));\
+  end
+
 
 `ifndef verilator
 `define FINISH_AND_RETURN(X)  $finish_and_return(X);

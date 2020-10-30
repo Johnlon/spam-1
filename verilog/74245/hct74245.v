@@ -10,22 +10,24 @@
 module hct74245( 
     input dir,
     input nOE,
-    inout [7:0] A,
+    inout tri [7:0] A,
     inout tri [7:0] B
 );
     parameter NAME="74245";
     parameter LOG=0;
-
     // HCT typical @ 5v according to https://assets.nexperia.com/documents/data-sheet/74HC_HCT245.pdf
-    specify
-        (A => B) = (10);
-        (B => A) = (10);
-        (dir *> A) = (16);
-        (dir *> B) = (16);
-        (nOE *> A) = (16);
-        (nOE *> B) = (16);
-    endspecify
+    parameter PD_TRANS=10;
+    parameter PD_DIR=16;
+    parameter PD_OE=16;
 
+    specify
+        (A => B) = (PD_TRANS);
+        (B => A) = (PD_TRANS);
+        (dir *> A) = (PD_DIR);
+        (dir *> B) = (PD_DIR);
+        (nOE *> A) = (PD_OE);
+        (nOE *> B) = (PD_OE);
+    endspecify
 
     if (LOG) 
         always @(*) 
@@ -33,17 +35,24 @@ module hct74245(
             $display("%9t", $time,  " %m BUF %s: A=%8b ", NAME, A, "B=%8b ", B, "dir=%1b", dir, " nOE=%1b", nOE);
         end
 
-    assign A= nOE ? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
-    assign B= nOE ? 8'bzzzzzzzz :dir?A:8'bzzzzzzzz;
+    
+    wire #(PD_DIR)  dir_d = dir;
+    wire #(PD_OE)   nOE_d = nOE;
+    wire [7:0] #(PD_TRANS) A_d = A;
+    wire [7:0] #(PD_TRANS) B_d = B;
+
+    assign A= nOE_d ? 8'bzzzzzzzz :dir_d?8'bzzzzzzzz:B_d;
+    assign B= nOE_d ? 8'bzzzzzzzz :dir_d?A_d:8'bzzzzzzzz;
 
 endmodule: hct74245
+
 
 `timescale 1ns/1ns
 
 module hct74245ab( 
     input nOE,
     input [7:0] A,
-    inout [7:0] B
+    inout tri [7:0] B
 );
 
     parameter NAME="74245ab";
