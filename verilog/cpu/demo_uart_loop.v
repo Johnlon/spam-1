@@ -36,7 +36,7 @@ module test();
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
 
     // CLOCK ===================================================================================
-    localparam TCLK=380;   // clock cycle
+    localparam TCLK=1380;   // clock cycle
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;
@@ -80,6 +80,7 @@ module test();
          `DEV_EQ_IMMED8(icount, rega, '0); icount++;
          `DEV_EQ_IMMED8(icount, regb, '0); icount++;
          `DEV_EQ_IMMED8(icount, marlo, '0); icount++;
+         `DEV_EQ_IMMED8(icount, marhi, '0); icount++;
 
 
         // jump to read or write if 
@@ -127,40 +128,52 @@ module test();
     integer pcval;
     assign pcval={CPU.PCHI, CPU.PCLO};
     string_bits currentCode; // create field so it can appear in dump file
-    if (0) always @(CPU.PCHI or CPU.PCLO) begin
+    if (1) always @(CPU.PCHI or CPU.PCLO) begin
         $display("");
         $display("%9t ", $time, "INCREMENTED PC=%-d ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", {CPU.PCHI, CPU.PCLO});
         currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
         $display ("%9t ", $time,  "OPERATION (cycle %1d): ", exec_count, " %-s", currentCode);
+    end
+    if (1) always @(CPU.phaseExec) begin
+        $display("");
+        if (CPU.phaseExec) begin
+            $display("%9t ", $time, "PC=%-d    ====  ENTERTED EXEC PHASE ", {CPU.PCHI, CPU.PCLO});
+            $display("%9t ", $time, "_GRFIN", CPU._gated_regfile_in , " _phaseExec",  CPU._phaseExec , " _REGA_IN ", CPU._rega_in);
+        end
     end
 
     // verify count each time MARLO changes
     integer not_initialised = 16'hffff + 1;
     integer last_count = not_initialised;
     integer count;
+    integer last_marlo;
 
 
     always @( CPU.MARLO.Q )
     begin
         count = { CPU.regFile.get(1), CPU.regFile.get(0) };
 
-        //$display("%9t", $time, " REGISTER COUNT = %4h ", 16'(count));
+        $display("%9t", $time, " REGISTER COUNT = %4h ", 16'(count));
+        $display("%9t", $time, " LAST MARLO = %2h ", last_marlo);
+        $display("%9t", $time, " THIS MARLO = %2h ", CPU.MARLO.Q);
+        last_marlo = CPU.MARLO.Q;
+        
 
         if (last_count !== not_initialised) begin
             if (last_count == 65535 && count != 0) begin 
-                $error("ERROR wrong count roll value : count=%d  last_count=%d but expected count=0", count , last_count);
+                $error("ERROR wrong count roll value : count=%1d  last_count=%1d but expected count=0", count , last_count);
                 `FINISH_AND_RETURN(2);
             end
             
-            if (last_count != 65535 && count != last_count+1) begin 
-                $error("ERROR wrong count next +1 value : count=%d  last_count=%d but expected count=%d", count , last_count, last_count+1);
+            if (count != 0 && last_count != 65535 && count != last_count+1) begin 
+                $error("ERROR wrong count next +1 value : count=%1d  last_count=%1d but expected count=%1d", count , last_count, last_count+1);
                 `FINISH_AND_RETURN(2);
             end
         end
         else 
         begin
             if (count != 0) begin 
-                $error("ERROR wrong initial count : count=%d", count);
+                $error("ERROR wrong initial count : count=%1d", count);
                 `FINISH_AND_RETURN(2);
             end
     
