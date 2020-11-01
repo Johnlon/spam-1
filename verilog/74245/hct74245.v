@@ -1,5 +1,6 @@
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
+// verilator lint_off COMBDLY
 
 
 `ifndef V_74245
@@ -20,29 +21,42 @@ module hct74245(
     parameter PD_DIR=16;
     parameter PD_OE=16;
 
-    specify
-        (A => B) = (PD_TRANS);
-        (B => A) = (PD_TRANS);
-        (dir *> A) = (PD_DIR);
-        (dir *> B) = (PD_DIR);
-        (nOE *> A) = (PD_OE);
-        (nOE *> B) = (PD_OE);
-    endspecify
 
-    if (LOG) 
-        always @(*) 
-        begin
-            $display("%9t", $time,  " %m BUF %s: A=%8b ", NAME, A, "B=%8b ", B, "dir=%1b", dir, " nOE=%1b", nOE);
-        end
-
+    // TRANSMISSION DELAY MODEL
+    logic dir_d;
+    logic nOE_d;
     
-    wire #(PD_DIR)  dir_d = dir;
-    wire #(PD_OE)   nOE_d = nOE;
-    wire [7:0] #(PD_TRANS) A_d = A;
-    wire [7:0] #(PD_TRANS) B_d = B;
+    logic [7:0] A_d;
+    logic [7:0] B_d;
 
     assign A= nOE_d ? 8'bzzzzzzzz :dir_d?8'bzzzzzzzz:B_d;
     assign B= nOE_d ? 8'bzzzzzzzz :dir_d?A_d:8'bzzzzzzzz;
+    
+    always @* begin
+        dir_d <= #(PD_DIR) dir;
+        nOE_d <= #(PD_OE) nOE;
+        A_d <= #(PD_TRANS) A;
+        B_d <= #(PD_TRANS) B; 
+    end
+
+    // specify
+    //     (A => B) = (PD_TRANS);
+    //     (B => A) = (PD_TRANS);
+    //     (dir *> A) = (PD_DIR);
+    //     (dir *> B) = (PD_DIR);
+    //     (nOE *> A) = (PD_OE);
+    //     (nOE *> B) = (PD_OE);
+    // endspecify
+
+    // assign A= nOE ? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
+    // assign B= nOE ? 8'bzzzzzzzz :dir?A:8'bzzzzzzzz;
+
+    
+    if (LOG) 
+        always @(*) 
+        begin
+            $display("%9t", $time,  " BUF %m (%s) : A=%8b ", NAME, A, "B=%8b ", B, "dir=%1b", dir, " nOE=%1b", nOE);
+        end
 
 endmodule: hct74245
 
@@ -70,9 +84,9 @@ module hct74245ab(
     );
 
     
-    //if (LOG) 
+    if (0) 
         always @(*) 
-            $display("%9t", $time, " BUF %s", NAME, ": A=%8b ", A, "B=%8b ", B, " nOE=%1b", nOE);
+            $display("%9t", $time, "BUF %m (%s)", NAME, " : A=%8b ", A, "B=%8b ", B, " nOE=%1b", nOE);
         
 endmodule: hct74245ab
 

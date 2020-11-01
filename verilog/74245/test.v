@@ -69,6 +69,17 @@ module tb();
       `equals(A_muxX, 8'bzzzzzzzz, "OE disable A->B");
       `equals(B_mux , 8'bzzzzzzzz, "OE disable A->B");
 
+      $display("test output enabled a->b but A=Z");
+      Va=8'bzzzzzz10;
+      Vb=8'bzzzzzzzz;
+      dir = 1; // a->b
+      nOEX = 0;
+      #30
+      `equals(A_muxX, 8'bzzzzzz10, "OE disable A->B");
+      `equals(B_mux , 8'bxxxxxx10, "OE disable A->B");
+
+
+
       ////////////////////////////////
       #100      
       $display("test that when OE is disabled that other drivers can assert");
@@ -90,7 +101,6 @@ module tb();
       Vb=8'bzzzzzzzz; // avoid contention
 
       #50 // settle
-      $display($time, "start");
       nOEX = 0; // REENABLE
 
       // check that the timings in the chip actually work
@@ -100,6 +110,8 @@ module tb();
       #100      
       // necessary to setup A as Z before next timing test
       $display("switch dir and value while enabled");
+      dir = 1; // a->b
+      nOEX = 0;
       Va=8'bzzzzzzzz; // avoid contention
       #100
       nOEX = 0;
@@ -173,6 +185,7 @@ module tb();
       #100
       Va=8'b0000000z;
       Vb=8'b11111111;
+      #100
       `equals(A_muxX, 8'bxxxxxxx1, "OE B->A 1 conflicted's");
 
       #100
@@ -182,7 +195,7 @@ module tb();
       nOEX = 1;
       nOEY = 1;
       dir = 1; // a->b
-      #0
+      #100
       `equals(B_mux, 8'bzzzzzzzz, "no driver's");
       
       #100
@@ -190,6 +203,8 @@ module tb();
 
       nOEX = 0;
       nOEY = 1;
+       `ASSERT_TOOK( B_mux === 8'b10101010, buf245MuxX.PD_OE)
+
       #30
        `equals(B_mux , 8'b10101010, "OE A->B X driving");
        
