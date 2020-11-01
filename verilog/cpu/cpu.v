@@ -161,8 +161,8 @@ module cpu(
 
     // MAR =============================================================================================
 // verilator lint_off PINMISSING
-    hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
-    hct74377 #(.LOG(0)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
+    hct74377 #(.LOG(1)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
+    hct74377 #(.LOG(1)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
 // verilator lint_on PINMISSING
 
     hct74245ab marlo_abus_buf(.A(MARLO.Q), .B(abus), .nOE(_adev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
@@ -219,13 +219,15 @@ module cpu(
     wire [1:0] regfile_rdR_addr = bbus_dev[1:0];
     wire [1:0] regfile_wr_addr = targ_dev[1:0];
 
-    if (0) always @* $display("regfile gated in=", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
-    if (0) always @* $display("regfile abus out=", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
-    if (0) always @* $display("regfile bbus out=", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
+    if (0) begin
+        always @* $display("regfile _gated_regfile_in = ", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
+        always @* $display("regfile _regfile_rdL_en   = ", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
+        always @* $display("regfile _regfile_rdR_en   = ", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
+    end
 
 
     // !!!!!!! NOTE THAT THIS USES THE phaseExec AS CLOCK !!!
-    syncRegisterFile #(.LOG(0)) regFile(
+    syncRegisterFile #(.LOG(1)) regFile(
         .clk(phaseExec), // only on the execute phase edge (clock going low) otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
         ._wr_en(_gated_regfile_in), // only enabled on the execute phase (low clock)
         .wr_addr(regfile_wr_addr),
@@ -246,7 +248,7 @@ module cpu(
 
     wire [7:0] uart_d;
 
-    um245r #(.LOG(0), .HEXMODE(1))  uart (
+    um245r #(.LOG(1), .HEXMODE(1))  uart (
         .D(uart_d),
         .WR(_gated_uart_wr),// Writes data on -ve edge
         ._RD(_adev_uart),	// When goes from high to low then the FIFO data is placed onto D (equates to _OE)
