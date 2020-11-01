@@ -53,7 +53,7 @@ module rom (A, D, _CS, _OE);
       assign D = (!_CSd && !_OEd) ? Mem[Ad] : {DWIDTH{1'bz}};
     /* verilator lint_on ASSIGNDLY */
 
-    if (1) always @(*) begin
+    if (0) always @(*) begin
          $display("%9t ROM %m : Ad=%x A=%x (b%b) D=%2x (b%b) _CS=%1b, _OE=%1b", $time, Ad, A, A, D, D, _CS, _OE);
     end
 
