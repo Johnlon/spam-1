@@ -33,7 +33,7 @@ reg [BLOCKS-1:0] Qb_current;
 reg [BLOCKS-1:0] _SD_previous;
 reg [BLOCKS-1:0] Q_defined = 0;
 
-if (1) 
+if (LOG) 
     always @* 
         $display("%9t ", $time, "%m  CP=%1b D=%1b _SD=%1b _RD=%1b  =>  Q=%1b _Q=%1b", CP,D,_SD, _RD, Q, _Q);
 
