@@ -372,7 +372,7 @@ module alu_code #(parameter LOG=0, PD=120) (
 
     if (LOG) 
     always @(*) 
-        $display("%9t ALU", $time,
+        $display("%9t ALU_CODE", $time,
         " aluop=%-1s (op:%d)", aluopName(alu_op), alu_op, // %1s causes string to lose trailing space
         "  ",
         " a=%08b (u%-3d/s%-4d/h%-02h) ", a, a, signed_a, a,

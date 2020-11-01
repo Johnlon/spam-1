@@ -36,31 +36,33 @@ module test();
     always @* begin
         op_name = aluopNameR(alu_op);
 `ifndef verilator // verilator doesn't like left aligned format strings with a hyphen
-        $display ("%9t", $time, " MON: a=%b b=%b  _flag_c_in=%b   op=%02d %-10s  result=%8b   _flags (_c=%b _z=%1b _n=%1b _o=%1b _eq=%1b _ne=%1b _gt=%1b _lt=%b)", 
-            a, b, _flag_c_in, alu_op,
-            op_name,
-            o, _flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_ne, _flag_eq
-        );
+//        $display ("%9t", $time, " MON: a=%b b=%b  _flag_c_in=%b   op=%02d %-10s  result=%8b   _flags (_c=%b _z=%1b _n=%1b _o=%1b _eq=%1b _ne=%1b _gt=%1b _lt=%b)", 
+ //           a, b, _flag_c_in, alu_op,
+  //          op_name,
+   //         o, _flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_ne, _flag_eq
+    //    );
 `endif
     end
 
-    `define  ERROR begin $display("ERROR @ %d", `__LINE__); `FINISH_AND_RETURN(1)  end
+    `define  BAD_FLAG(X) begin $display("BAD FLAG VALUE FOR X @ line %d", `__LINE__); `FINISH_AND_RETURN(1)  end
 
 
+/* REMOVED THIS BECAUSE ADDRESS CAN GLITCH WITH 'X' IN THE SIM WHEN EG CARRY NOT YET SET
     logic started = 0;
     always @* begin
         // detect inconsistent values
         if (started) begin
-            if (_flag_c === 'x) `ERROR
-            if (_flag_z === 'x) `ERROR
-            if (_flag_n === 'x) `ERROR
-            if (_flag_o === 'x) `ERROR
-            if (_flag_gt === 'x) `ERROR
-            if (_flag_lt === 'x) `ERROR
-            if (_flag_ne === 'x) `ERROR
-            if (_flag_eq === 'x) `ERROR
+            if (_flag_c === 'x) `BAD_FLAG(c)
+            if (_flag_z === 'x) `BAD_FLAG(z)
+            if (_flag_n === 'x) `BAD_FLAG(n)
+            if (_flag_o === 'x) `BAD_FLAG(o)
+            if (_flag_gt === 'x) `BAD_FLAG(gt)
+            if (_flag_lt === 'x) `BAD_FLAG(lt)
+            if (_flag_ne === 'x) `BAD_FLAG(ne)
+            if (_flag_eq === 'x) `BAD_FLAG(eq)
         end
     end
+*/
 
     initial begin
         `ifndef verilator
@@ -117,13 +119,14 @@ module test();
         `endif \
         end
 
-    localparam PropDelay=1000;
+    localparam PropDelay=2000;
 
     function [7:0] to8([7:0] i);
         to8 = i;
     endfunction
 
     integer testcount=0;
+
     task PD;
         #PropDelay
         // $display("");
@@ -145,7 +148,7 @@ module test();
         `Equals(o, 8'b0); 
         `FLAGS(NE | Z | LT)
 
-        started=1;
+        //started=1;
 
         ////////////////////////////////////////////////////////////// A
         assign a = 1;
@@ -707,7 +710,6 @@ module test();
         PD;
         `Equals(o, 8'd0);
         `FLAGS(Z|EQ)
-
 
         ////////////////////////////////////////////////////////////// A_TIMES_B_HI
         // TIMES

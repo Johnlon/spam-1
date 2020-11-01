@@ -104,7 +104,12 @@ module alu #(parameter LOG=0, PD=120) (
       .Y(_decoded)
     );
 
-    wire #(8) _use_cin = _decoded[7] & _decoded[6] & _decoded[5]; // AND GATE - BUT USE TRIPLE 3 INPUT NAND AS WE NEED A NOT ON THE _flag_c_in ABOVE
+    //wire #(8) _use_cin = _decoded[7] & _decoded[6] & _decoded[5]; // AND GATE - BUT USE TRIPLE 3 INPUT NAND AS WE NEED A NOT ON THE _flag_c_in ABOVE
+    wire use_cin;
+    nand #(8) cinSel(use_cin,_decoded[7],_decoded[6],_decoded[5]); // AND GATE - BUT USE TRIPLE 3 INPUT NAND AS WE NEED A NOT ON THE _flag_c_in ABOVE
+
+    wire  _use_cin;
+    nand #(8) _cinSel(_use_cin, use_cin, use_cin, use_cin);
 
     wire #(19) effective_bit3 = _use_cin ? alu_op[2]: flag_c_in; // multiplexer 74157
         
@@ -119,13 +124,46 @@ module alu #(parameter LOG=0, PD=120) (
 if (1) begin
     wire [20:0] A = { alu_op_effective, a, b};
     tri [15:0] D;
+
+    always @* begin
+        if ($isunknown(A)) begin
+            $display("GLITCHING ADDRESS = %21b", A, " EFF  %5b", alu_op_effective);
+        end
+    end
+
     rom #(.AWIDTH(21), .DWIDTH(16), .FILENAME("../alu/roms/alu-hex.rom"), .LOG(0)) ALU_ROM(._CS(1'b0), ._OE(1'b0), .A, .D);
+
     assign { _flag_c, _flag_z, _flag_n, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt, o} = D;
+
+    if (1) 
+    always @(*) 
+        $display("%9t ALU", $time,
+        " aluop_eff=%-1s (op:%d)", aluopName(alu_op_effective), alu_op_effective, 
+        " aluop=%-1s (op:%d)", aluopName(alu_op), alu_op, 
+        "  ",
+        " a=%08b (u%-3d/h%-02h) ", a, a, a,
+        " b=%08b (u%-3d/h%-02h) ", b, b, b,
+        "  ",
+        " address = %021b (d %d, h %04x)", A, A, A,
+        " data = %16b (d %d, h %04x)", D,D,D,
+        "  ",
+        " out=%08b (u%-3d/h%-02h) ", o, o, o,
+        " _c%1b",  _flag_c,
+        " _z%1b",  _flag_z,
+        " _n%1b",  _flag_n,
+        " _o%1b",  _flag_o,
+        " _eq%1b", _flag_eq,
+        " _ne%1b", _flag_ne,
+        " _gt%1b", _flag_gt,
+        " _lt%1b", _flag_lt
+         );
+
 end
 else  
 begin
     alu_code ALU_CODE( .o, ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt, .a, .b, .alu_op(alu_op_effective));
 end
+
 
 endmodule: alu
 
