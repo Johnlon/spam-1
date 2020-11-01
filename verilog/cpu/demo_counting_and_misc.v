@@ -1,5 +1,5 @@
 
-//////////////// TO RUN TEST ... RUN AND GREP FOR  "MAR=" TO SEE COUNTER
+//////////////// TO RUN TEST ... RUN AND GREP FOR  "OK" TO SEE COUNTER
 
 // ADDRESSING TERMINOLOGY
 //  IMMEDIATE ADDRESSING = INSTRUCTION CONTAINS THE CONSTANT VALUE DATA TO USE
@@ -584,5 +584,9 @@ DUMP();
         end
     end
 
+    always @( * )
+    begin
+        $display("%9t", $time, " OK MARHI:MARLO = %2h:%2h  = %d", CPU.MARHI.Q, CPU.MARLO.Q, (256*CPU.MARHI.Q)+ CPU.MARLO.Q);
+    end
 
 endmodule : test
