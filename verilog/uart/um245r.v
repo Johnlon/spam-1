@@ -1,7 +1,11 @@
+`ifndef V_UM245r
+`define V_UM245r
+
 // UART Verilog for https://www.ftdichip.com/Support/Documents/DataSheets/Modules/DS_UM245R.pdf
 // see also https://hackaday.io/project/166922-spam-1-8-bit-cpu-with-a-tool-chain-twist/log/176325-interactive-verilog-um245r-uart
 
 /* verilator lint_off ASSIGNDLY */
+/* verilator lint_off STMTDLY */
 
 `define EOF 32'hFFFF_FFFF 
 `define NULL 0 
@@ -77,13 +81,14 @@ if (LOG>1)
 integer cycle_count=0;
 integer tx_count=0;
 assign _TXE = !(fOut != `NULL && _TXE_SUPPRESS && tx_count > 0 && _MR);
-assign _RXF = !(dataAvailable && _RXF_SUPPRESS && _MR);
+assign #T6 _RXF = !(dataAvailable && _RXF_SUPPRESS && _MR);
 
 assign #T3 D= _RD? 8'bzzzzzzzz: dataAvailable ? Drx : 8'bxzxzxzxz; // xzxzxzxz is a distinctive signal that we're reading uninitialised data
 
 function [7:0] printable([7:0] c);
     if (ASCIIONLY==1) begin
         if (c == 0) return 32;
+        else if ($isunknown(c)) return 32; 
         else if (c < 32 && c != 12 && c != 13) return 32; // allow CR/LF
         else if (c >= 128) return 32;
     end
@@ -102,8 +107,8 @@ always @(negedge WR) begin
             `FINISH_AND_RETURN(1);
     end
 
-    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING 0x%02x (c='%c' b=%08b)", D, printable(D), D);
-//    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING 0x%02x (b=%08b)", D, D, D);
+    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING h%02x (c='%c' b=%08b)", D, printable(D), D);
+//    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING h%02x (b=%08b)", D, D, D);
 
     $fwrite(fOut, "%02x\n", D);
     $fflush(fOut);
@@ -130,7 +135,7 @@ end
     Transmit occurs when WR goes low.
 */
 if (LOG) always @*  begin
-    $display("UART: _RD %1b _RXF %1b", _RD, _RXF);
+    $display("%9t ", $time, "UART: _RD %1b _RXF %1b", _RD, _RXF);
 end
 
 always @(negedge _RD) begin
@@ -166,11 +171,11 @@ always @(posedge _RD) begin
         if (LOG>1) $display("%9t ", $time, "UART: ADVANCING READ POS FROM %3d", absReadPos);
         absReadPos++;
 
-        #T11 // -WR to _TXE inactive delay
+        #(T11) // -WR to _TXE inactive delay
         if (LOG>1) $display("%9t ", $time, "UART: RX NOT READY");
-        _RXF_SUPPRESS=0; 
+        _RXF_SUPPRESS=0;
 
-        #T12 // min inactity period
+        #(T12) // min inactity period
         if (LOG>1) $display("%9t ", $time, "UART: RX INACTIVE PERIOD ENDS");
         _RXF_SUPPRESS=1;
     end
@@ -192,7 +197,7 @@ initial
         rxBuf[i] = 0;
     end
 
-    _RXF_SUPPRESS=0; // suppressed
+    _RXF_SUPPRESS=0; // suppressed/
     _TXE_SUPPRESS=0;
 
     #50 // arbitrary delay before device is available
@@ -319,6 +324,4 @@ end // initial
 
 endmodule
 
-
-
-
+`endif
