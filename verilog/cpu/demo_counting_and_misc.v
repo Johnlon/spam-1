@@ -10,6 +10,7 @@
 //`include "../control/controller.v"
 `include "cpu.v"
 `include "../lib/assertion.v"
+`include "psuedo_assembler.sv"
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
 
@@ -55,6 +56,7 @@ module test();
     `define DATA(D) {40'bz, D} /* padded to rom width with z */
 
     localparam MAX_PC=2048;
+    string_bits CODE_TEXT [MAX_PC];
     string_bits CODE [MAX_PC];
 
     integer counter =0;
@@ -83,13 +85,22 @@ module test();
         `RAM_DIRECT_EQ_DEV(counter, 'hdcba, regb); counter++;
 
         // test all registers read write
+        `TEXT(counter, "WRITING TO ALL REGISTERS");
         `DEV_EQ_IMMED8(counter, rega, 1); counter++;
+        `TEXT(counter, "WRITING TO ALL REGISTERS");
         `DEV_EQ_IMMED8(counter, regb, 2); counter++;
+        `TEXT(counter, "WRITING TO ALL REGISTERS");
         `DEV_EQ_IMMED8(counter, regc, 3); counter++;
+        `TEXT(counter, "WRITING TO ALL REGISTERS");
         `DEV_EQ_IMMED8(counter, regd, 4); counter++;
+
+        `TEXT(counter, "READING FROM ALL REGISTERS");
         `RAM_DIRECT_EQ_DEV(counter, 'h0001, rega); counter++;
+        `TEXT(counter, "READING FROM ALL REGISTERS");
         `RAM_DIRECT_EQ_DEV(counter, 'h0002, regb); counter++;
+        `TEXT(counter, "READING FROM ALL REGISTERS");
         `RAM_DIRECT_EQ_DEV(counter, 'h0003, regc); counter++;
+        `TEXT(counter, "READING FROM ALL REGISTERS");
         `RAM_DIRECT_EQ_DEV(counter, 'h0004, regd); counter++;
 
         // test all registers on L and R channel into ALU
@@ -104,6 +115,7 @@ module test();
 
         // LONG JUMP 
 `define FAR_AWAY 1024
+        `TEXT(counter, "TEST LONGJUMP TO FAR_AWAY");
         `JMP_IMMED16(counter, `FAR_AWAY); counter++;
 
 
@@ -111,6 +123,7 @@ module test();
 `define ADD_ONE 256
 `define DO_CARRY 512
         counter=`ADD_ONE;
+        `TEXT(counter, "START OF MAIN LOOP BLOCK - ADD ONE TO MARLO");
         `DEV_EQ_XY_ALU(counter, marlo, not_used, marlo, B_PLUS_1)  ; counter++;
         `JMPC_IMMED16(counter, `DO_CARRY); counter+=2;
         `JMP_IMMED16(counter, `ADD_ONE); counter+=2;
@@ -407,10 +420,13 @@ DUMP();
     assign pcval={CPU.PCHI, CPU.PCLO};
 
     string_bits currentCode; // create field so it can appear in dump file
+    string_bits currentCodeText; // create field so it can appear in dump file
 
     always @(CPU.PCHI or CPU.PCLO) begin
         currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
+        currentCodeText = string_bits'(CODE_TEXT[pcval]);
         $display("%9t ", $time, "INCREMENTED PC=%1d    INSTRUCTION: %1s", {CPU.PCHI, CPU.PCLO}, currentCode);
+        if (currentCodeText != "") $display("%9t ", $time, "COMMENT: %1s", currentCodeText);
     end
 
     `define DD  $display ("%9t ", $time,  "DUMP  ",
@@ -586,7 +602,7 @@ DUMP();
 
     always @( * )
     begin
-        $display("%9t", $time, " OK MARHI:MARLO = %2h:%2h  = %d", CPU.MARHI.Q, CPU.MARLO.Q, (256*CPU.MARHI.Q)+ CPU.MARLO.Q);
+        $display("%9t", $time, " OK MARHI:MARLO = %2h:%2h = %1d", CPU.MARHI.Q, CPU.MARLO.Q, (256*CPU.MARHI.Q)+ CPU.MARLO.Q);
     end
 
 endmodule : test

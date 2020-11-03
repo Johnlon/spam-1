@@ -15,6 +15,8 @@
 `define ROM(A) { CPU.ctrl.rom_6.Mem[A], CPU.ctrl.rom_5.Mem[A], CPU.ctrl.rom_4.Mem[A], CPU.ctrl.rom_3.Mem[A], CPU.ctrl.rom_2.Mem[A], CPU.ctrl.rom_1.Mem[A] }
 
 // Instruction populates the ROM and adds a text version of the instruction to the CODE array
+`define TEXT(LOCN,TXT)    CODE_TEXT[LOCN] = TXT;
+
 `define INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
     `ROM(LOCN) = { \
     `toALUOP(ALUOP), \
@@ -27,7 +29,7 @@
      1'(AMODE), \
      cast.to16(ADDRESS), \
      cast.to8(IMMED) }; \
-    CODE[LOCN] = "TARGET=SRCA(ALUOP)SRCB  cond=CONDITION setf=FLAG_CTL amode=AMODE immed8=IMMED addr=ADDRESS";
+    CODE[LOCN] = "TARGET=SRCA(ALUOP)SRCB  cond=CONDITION setf=FLAG_CTL amode=AMODE immed8=IMMED addr=ADDRESS"; 
 
 `define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP, AMODE, ADDRESS, IMMED) \
      `INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, A, `SET_FLAGS, AMODE, ADDRESS, IMMED) \

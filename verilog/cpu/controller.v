@@ -13,7 +13,6 @@
 `include "../rom/rom.v"
 `include "../alu/alu.v"
 `include "control_lines.v"
-`include "psuedo_assembler.sv"
 
 `timescale 1ns/1ns
 
