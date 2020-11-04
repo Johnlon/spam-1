@@ -60,8 +60,6 @@ module test();
 
         `TEXT(counter, "GOTO LOOP");
         `JMP_IMMED16(counter, start); counter+=2;
-
-            
     end
     endtask : INIT_ROM
 
