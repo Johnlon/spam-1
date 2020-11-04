@@ -111,30 +111,23 @@ module test();
         `DEV_EQ_XY_ALU(counter, marlo, regc,     not_used, A)  ; counter++;
         `DEV_EQ_XY_ALU(counter, marhi, not_used, regc,     B)  ; counter++;
         `DEV_EQ_XY_ALU(counter, marlo, regd,     not_used, A)  ; counter++;
+        `TEXT(counter, "REG D into marhi");
         `DEV_EQ_XY_ALU(counter, marhi, not_used, regd,     B)  ; counter++;
 
-        // LONG JUMP 
-`define FAR_AWAY 1024
-        `TEXT(counter, "TEST LONGJUMP TO FAR_AWAY");
-        `JMP_IMMED16(counter, `FAR_AWAY); counter++;
+        `INSTRUCTION_S(counter, marlo, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 0); counter++;
+        `INSTRUCTION_S(counter, marhi, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 0); counter++;
 
+`define ADD_ONE 256
+        `JMP_IMMED16(counter, `ADD_ONE); counter+=2;
 
         // implement 16 bit counter
-`define ADD_ONE 256
-`define DO_CARRY 512
         counter=`ADD_ONE;
         `TEXT(counter, "START OF MAIN LOOP BLOCK - ADD ONE TO MARLO");
-        `DEV_EQ_XY_ALU(counter, marlo, not_used, marlo, B_PLUS_1)  ; counter++;
-        `JMPC_IMMED16(counter, `DO_CARRY); counter+=2;
+        `INSTRUCTION_S(counter, marlo, not_used, marlo, B_PLUS_1, A, `SET_FLAGS, `NA_AMODE, 1'bz, 'z); counter++;
+        `TEXT(counter, "CONDITIONAL ADD ONE TO MARHI");
+        `INSTRUCTION_S(counter, marhi, not_used, marhi, B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 'z); counter++;
+        `TEXT(counter, "GOTO LOOP");
         `JMP_IMMED16(counter, `ADD_ONE); counter+=2;
-
-        counter=`DO_CARRY;
-        `DEV_EQ_XY_ALU(counter, marhi, not_used, marhi, B_PLUS_1)  ; counter++;
-        `JMP_IMMED16(counter, `ADD_ONE); counter+=2;
-
-        counter=`FAR_AWAY;
-        `JMP_IMMED16(counter, `ADD_ONE) ; counter+=2; // JUMP BACK AGAIN
-
 
     end
     endtask : INIT_ROM
@@ -402,6 +395,7 @@ DUMP();
 
         // consume any remaining code
         // verilator lint_off INFINITELOOP
+        $display("FREE RUN CPU ==================================");
          while (1==1) begin
              #HALF_CLK
              CLK_UP;
@@ -433,6 +427,7 @@ DUMP();
     task DUMP_OP;
           `DD ": CODE: %1s", currentCode);
           `DD ": %1s", label);
+          label="";
     endtask
 
 
@@ -527,6 +522,12 @@ DUMP();
 // CONSTRAINTS
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    always @(posedge CPU.gated_flags_clk) begin
+        if (CPU._phaseExec) begin
+            $display("ILLEGAL FLAGS LOAD DURING FETCH PHASE");
+            $finish();
+        end
+    end 
         
     // constraints
 

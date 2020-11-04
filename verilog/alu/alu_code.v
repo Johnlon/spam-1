@@ -373,11 +373,11 @@ module alu_code #(parameter LOG=0, PD=120) (
     if (LOG) 
     always @(*) 
         $display("%9t ALU_CODE", $time,
-        " aluop=%-1s (op:%d)", aluopName(alu_op), alu_op, // %1s causes string to lose trailing space
-        "  ",
+        " aluop=%-10s (op:%d)", aluopName(alu_op), alu_op, // %1s causes string to lose trailing space
+        " ",
         " a=%08b (u%-3d/s%-4d/h%-02h) ", a, a, signed_a, a,
         " b=%08b (u%-3d/s%-4d/h%-02h) ", b, b, signed_b, b,
-        "  ",
+        " ",
         " out=%08b (u%-3d/s%-4d/h%-02h) ", o, o, signed_o, o,
         " _c%1b",  _flag_c,
         " _z%1b",  _flag_z,
@@ -388,7 +388,7 @@ module alu_code #(parameter LOG=0, PD=120) (
         " _gt%1b", _flag_gt,
         " _lt%1b", _flag_lt,
         " ",
-        " unsigned_magnitude=%b ", unsigned_magnitude
+        " u_magnitude=%b ", unsigned_magnitude
          );
 
 endmodule: alu_code

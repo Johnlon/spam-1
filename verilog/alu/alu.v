@@ -42,7 +42,7 @@
 `include "alu_ops.v"
 `include "alu_code.v"
 
-// See also http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt#:~:text=The%20ALU%20doesn't%20know,after%20the%20math%20is%20done.
+// See also carry vs overflow http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt#:~:text=The%20ALU%20doesn't%20know,after%20the%20math%20is%20done.
 
 
 `timescale 1ns/1ns
@@ -85,8 +85,6 @@ module alu #(parameter LOG=0, PD=120) (
     // CARRY-IN LOGIC - EXTERNAL LOGIC
     //////////////////////////////////////////////////////
 
-    wire #(8) flag_c_in = !_flag_c_in; // inverter
-
     wire selD,selE,selC,selB,selA;
     assign selE=alu_op[4];
     assign selD=alu_op[3];
@@ -95,25 +93,17 @@ module alu #(parameter LOG=0, PD=120) (
     assign selA=alu_op[0];
 
     wire [7:0] _decoded;
-    hct74138 decoder
-    (
-      .Enable1_bar(selE),
-      .Enable2_bar(1'b0),
-      .Enable3(selD),
-      .A({selC,selB,selA}),
-      .Y(_decoded)
-    );
+    hct74138 decoder(.Enable1_bar(selE), .Enable2_bar(1'b0), .Enable3(selD), .A({selC,selB,selA}), .Y(_decoded) );
 
-    //wire #(8) _use_cin = _decoded[7] & _decoded[6] & _decoded[5]; // AND GATE - BUT USE TRIPLE 3 INPUT NAND AS WE NEED A NOT ON THE _flag_c_in ABOVE
-    wire use_cin;
-    nand #(8) cinSel(use_cin,_decoded[7],_decoded[6],_decoded[5]); // AND GATE - BUT USE TRIPLE 3 INPUT NAND AS WE NEED A NOT ON THE _flag_c_in ABOVE
+    wire _use_cin;
+    and #(8) hct7411(_use_cin, _decoded[7], _decoded[6],  _decoded[5]); 
 
-    wire  _use_cin;
-    nand #(8) _cinSel(_use_cin, use_cin, use_cin, use_cin);
+    wire flag_c_in;
+    not #(8) hct7404(flag_c_in, _flag_c_in); // inverter
 
-    wire #(19) effective_bit3 = _use_cin ? alu_op[2]: flag_c_in; // multiplexer 74157
-        
-    wire [4:0] alu_op_effective = {alu_op[4:3], effective_bit3, alu_op[1:0]};
+    wire #(19) effective_bit3 = _use_cin ? selC: flag_c_in; // multiplexer 74157
+
+    wire [4:0] alu_op_effective = {selE, selD, effective_bit3, selB, selA};
 
 
     //////////////////////////////////////////////////////

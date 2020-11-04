@@ -197,11 +197,16 @@ module cpu(
     // don't set flags on a jump - preserve them - makes for two stage jumps if I need them
     //wire #(9) gated_flags_clk = _set_flags | (phaseExec & _pclo_in & _pchitmp_in & _long_jump);
     // NOTE perhaps simpler if I use a spare bit to select which operations set the flags explicitely like ARM.
-    wire #(9) gated_flags_clk = _set_flags | phaseExec; // don't need to hard wire exclude jump ops as I can do that using the flag option directly 
+    //wire #(9) gated_flags_clk = _set_flags | phaseExec; // don't need to hard wire exclude jump ops as I can do that using the flag option directly 
+    wire #(9) gated_flags_clk = phaseExec & (!_set_flags); // don't need to hard wire exclude jump ops as I can do that using the flag option directly 
+
+    always @*  begin
+        $display("!!!! gated_flags_clk %b  = _set_flags %b | phaseExec %b" , gated_flags_clk , _set_flags , phaseExec);
+    end
 
     wire [7:0] alu_flags = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
 
-    hct74574 #(.LOG(0)) flags_czonGLEN( .D(alu_flags),
+    hct74574 #(.LOG(1)) flags_czonGLEN( .D(alu_flags),
                                        .Q(_registered_flags),
                                         //.CLK(phaseExec), 
                                         .CLK(gated_flags_clk), 

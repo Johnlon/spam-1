@@ -1,26 +1,6 @@
-
-
-//// RUN  and grep for OK to see counter incrementing
-/*
-
-Unit number Time unit Unit number Time unit 
-    0        1 s        -8         10 ns 
-   -1        100 ms     -9         1 ns 
-   -2        10 ms      -10        100 ps 
-   -3        1 ms       -11        10 ps 
-   -4        100 us     -12        1 ps 
-   -5        10 us      -13        100 fs 
-   -6        1 us       -14        10 fs 
-   -7        100 ns     -15        1 fs 
-*/
-
 `include "cpu.v"
 `include "../lib/assertion.v"
 `include "psuedo_assembler.sv"
-// verilator lint_off ASSIGNDLY
-// verilator lint_off STMTDLY
-
-//`timescale 1ns/1ns
 `timescale 1ns/1ns
 
 
@@ -44,14 +24,7 @@ module test();
 
     logic clk=0;
 
-/*
-    always begin
-       #TCLK clk = !clk;
-    end
-*/
-
     cpu CPU(_RESET_SWITCH, clk);
-
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     // TESTS ===========================================================================================
@@ -61,6 +34,7 @@ module test();
 
     localparam MAX_PC=100;
     string_bits CODE [MAX_PC];
+    string_bits CODE_TEXT [MAX_PC];
 
     integer ADD_ONE;
     `define WRITE_UART 60
@@ -68,93 +42,183 @@ module test();
     integer WAIT_UART_OUT;
 
     // SETUP ROM
-    integer icount;
+    integer counter=0;
+    integer start;
     task INIT_ROM;
     begin
 
-         icount = 0;
-        // A = 0, carry set
-        `INSTRUCTION_S(icount, rega, not_used, immed, B_PLUS_1, A, `SET_FLAGS, `NA_AMODE, 1'bz, 255); icount++;
-        // B = 1, carry persisted
-        `INSTRUCTION_S(icount, regb, not_used, immed, B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 1); icount++;
-        // B = 2, carry persisted
-        `INSTRUCTION_S(icount, regb, not_used, regb,  B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 1); icount++;
-        // B = 3, carry persisted
-        `INSTRUCTION_S(icount, regb, not_used, regb,  B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 1); icount++;
-        // C = 2, carry cleared
-        `INSTRUCTION_S(icount, regc, not_used, immed, B_PLUS_1, C, `SET_FLAGS, `NA_AMODE, 1'bz, 2); icount++;
+        `INSTRUCTION_S(counter, marlo, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 254); counter++;
+        `INSTRUCTION_S(counter, marhi, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 0); counter++;
+
+        start = counter;
+
+        `TEXT(counter, "START OF MAIN LOOP BLOCK - ADD ONE TO MARLO");
+        `INSTRUCTION_S(counter, marlo, not_used, marlo, B_PLUS_1, A, `SET_FLAGS, `NA_AMODE, 1'bz, 'z); counter++;
+
+        `TEXT(counter, "CONDITIONAL ADD ONE TO MARHI");
+        `INSTRUCTION_S(counter, marhi, not_used, marhi, B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 'z); counter++;
+
+        `TEXT(counter, "GOTO LOOP");
+        `JMP_IMMED16(counter, start); counter+=2;
+
             
     end
     endtask : INIT_ROM
+
+    always @(posedge CPU.gated_flags_clk) begin
+        if (CPU._phaseExec) begin
+            $display("ILLEGAL FLAGS LOAD AT PC %d", CPU.pc_addr);
+            $finish();
+        end
+    end 
 
     initial begin
         //$timeformat(-3, 0, "ms", 10);
 
         INIT_ROM();
 
-        //`DISPLAY("init : _RESET_SWITCH=0")
         _RESET_SWITCH = 0;
         clk=0;
         #1000
-       `Equals(CPU._mr,'0);
-       `Equals(CPU._mrPC,'0);
-       `Equals(CPU.pc_addr, 'x); 
-       
+
         _RESET_SWITCH = 1;
-       clk = 1; // high fetch phase - +ve clk reset _mr
-       #TCLK;
-       `Equals(CPU._mr,'1);
-       `Equals(CPU._mrPC,'0);
+        clk=1;
+        #1000
        `Equals(CPU.pc_addr, 0); 
-       `Equals(CPU.flags_czonGLEN.Q[7],'x);
+       `Equals(CPU._phaseExec, 1); 
+       `Equals(CPU._flag_c, 'x); 
 
-       clk = 0; // low = execute phase
-       #TCLK
-       `Equals(CPU._mr,'1);
-       `Equals(CPU._mrPC,'1);
+        // exec marlo load
+        clk=0;
+        #1000
        `Equals(CPU.pc_addr, 0); 
-       `Equals(CPU.flags_czonGLEN.Q, 8'b00111010); // 255 rolled over to 0
-       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd0,8'bx,8'bx,8'bx});
+       `Equals(CPU._phaseExec, 0); 
+       `Equals(CPU._flag_c, 1); 
+       `Equals(CPU.MARLO.Q, 254); 
+       `Equals(CPU.MARHI.Q, CPU.MARHI.UNDEF); 
 
-       clk = 1; // +ve updates PC
-       #TCLK
+        // exec marhi load
+        clk=1;
+        #1000
+        clk=0;
+        #1000
        `Equals(CPU.pc_addr, 1); 
+       `Equals(CPU._flag_c, 1); 
+       `Equals(CPU.MARLO.Q, 254); 
+       `Equals(CPU.MARHI.Q, 0); 
 
-       clk = 0;
-       #TCLK
-       `Equals(CPU.pc_addr, 1); 
-       `Equals(CPU.flags_czonGLEN.Q, 8'b00111010); // Flags not overwritten
-       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd0,8'd2,8'bx,8'bx});
-
-       clk = 1;
-       #TCLK
+        // inc marlo 
+        clk=1;
+        #1000
+        clk=0;
+        #1000
        `Equals(CPU.pc_addr, 2); 
+       `Equals(CPU._flag_c, 1); 
+       `Equals(CPU.MARLO.Q, 255); 
+       `Equals(CPU.MARHI.Q, 0); 
 
-       clk = 0;
-       #TCLK
-       `Equals(CPU.pc_addr, 2); 
-       `Equals(CPU.flags_czonGLEN.Q, 8'b00111010); // Flags not overwritten
-       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd0,8'd3,8'bx,8'bx});
-
-       clk = 1;
-       #TCLK
+        // int marhi - skipped
+        clk=1;
+        #1000
+        clk=0;
+        #1000
        `Equals(CPU.pc_addr, 3); 
+       `Equals(CPU._flag_c, 1); 
+       `Equals(CPU.MARLO.Q, 255); 
+       `Equals(CPU.MARHI.Q, 0); 
 
-       clk = 0;
-       #TCLK
-       `Equals(CPU.flags_czonGLEN.Q, 8'b00111010); // Flags not overwritten
-       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd0,8'd4,8'bx,8'bx});
-
-       clk = 1;
-       #TCLK
+        // setup jump hi
+        clk=1;
+        #1000
+        clk=0;
+        #1000
        `Equals(CPU.pc_addr, 4); 
+       `Equals(CPU._flag_c, 1); 
+       `Equals(CPU.PC.PCHITMP, CPU.PC.PCHiTmpReg.UNDEF); 
+       `Equals(CPU.MARLO.Q, 255); 
+       `Equals(CPU.MARHI.Q, 0); 
 
-       clk = 0;
-       #TCLK
-       `Equals(CPU.flags_czonGLEN.Q, 8'b11111010); // Flags ARE overwritten
-       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd0,8'd4,8'd3,8'bx});
+        // setup pc load
+        clk=1;
+        #1000
+        clk=0;
+        #1000
+       `Equals(CPU.pc_addr, 5); 
+       `Equals(CPU._flag_c, 1); 
+       `Equals(CPU.PC.PCHITMP, 0); 
+       `Equals(CPU.MARLO.Q, 255); 
+       `Equals(CPU.MARHI.Q, 0); 
 
-        $display("DONE - advance to no op");
+        // inc marlo gives carry
+        clk=1;
+        #1000
+       `Equals(CPU._flag_c, 1); 
+        clk=0;
+        #1000
+       `Equals(CPU.pc_addr, 2); 
+       `Equals(CPU._flag_c, 0); 
+       `Equals(CPU.PC.PCHITMP, 0); 
+       `Equals(CPU.MARLO.Q, 0); 
+       `Equals(CPU.MARHI.Q, 0); 
+       
+        // inc marhi does not overwrite flags
+        clk=1;
+        #1000
+       `Equals(CPU._flag_c, 0); 
+        clk=0;
+        #1000
+       `Equals(CPU.pc_addr, 3); 
+       `Equals(CPU._flag_c, 0);  // preserved
+       `Equals(CPU.PC.PCHITMP, 0); 
+       `Equals(CPU.MARLO.Q, 0); 
+       `Equals(CPU.MARHI.Q, 1); 
+       
+        // setup jump hi
+        clk=1;
+        #1000
+        clk=0;
+        #1000
+       `Equals(CPU.pc_addr, 4); 
+       `Equals(CPU._flag_c, 0); // flags preserved during PC assignments
+       `Equals(CPU.PC.PCHITMP, 0);
+       `Equals(CPU.MARLO.Q, 0); 
+       `Equals(CPU.MARHI.Q, 1); 
+
+        // setup pc load
+        clk=1;
+        #1000
+        clk=0;
+        #1000
+       `Equals(CPU.pc_addr, 5); 
+       `Equals(CPU._flag_c, 0); // flags preserved during PC assignments
+       `Equals(CPU.PC.PCHITMP, 0); 
+       `Equals(CPU.MARLO.Q, 0); 
+       `Equals(CPU.MARHI.Q, 1); 
+
+        // inc marlo gives carry
+        clk=1;
+        #1000
+        clk=0;
+        #1000
+       `Equals(CPU.pc_addr, 2); 
+       `Equals(CPU._flag_c, 1); 
+       `Equals(CPU.PC.PCHITMP, 0); 
+       `Equals(CPU.MARLO.Q, 1); 
+       `Equals(CPU.MARHI.Q, 1); 
+       
+        // inc marhi gives no carry
+        clk=1;
+        #1000
+        clk=0;
+        #1000
+       `Equals(CPU.pc_addr, 3); 
+       `Equals(CPU._flag_c, 1); 
+       `Equals(CPU.PC.PCHITMP, 0); 
+       `Equals(CPU.MARLO.Q, 1); 
+       `Equals(CPU.MARHI.Q, 1); 
+       
+       
+        $display("DONE - no more clocks");
        clk = 1; // END OF PROGRAM
         $finish();
         

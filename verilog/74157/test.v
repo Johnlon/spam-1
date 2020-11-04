@@ -1,3 +1,6 @@
+`ifndef V_74157 
+`define V_74157 
+
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
 
@@ -7,28 +10,28 @@
 
 module tb();
 
-      wire [3:0]A;
-      wire [3:0]B;
+      wire [3:0]I0;
+      wire [3:0]I1;
       wire [3:0]Y;
 
-      logic [3:0] Vb='0;
-      logic [3:0] Va='1;
+      logic [3:0] VI1='0;
+      logic [3:0] VI0='1;
 
       logic _E;
-      logic S=1;
+      logic S;
 
-      assign B=Vb;
-      assign A=Va;
+      assign I1=VI1;
+      assign I0=VI0;
 
-      hct74157 mux(.A, .B, .S, ._E, .Y);
+      hct74157 mux(.I0, .I1, .S, ._E, .Y);
 
     always @*
-        $display($time, " => S=%1b", S, " _E=%1b", _E, " A=%4b", Va, " B=%4b ", B," Y=%4b ", Y);
+        $display($time, " => S=%1b", S, " _E=%1b", _E, " I0=%4b", VI0, " I1=%4b ", I1," Y=%4b ", Y);
      
     initial begin
       
-      Va='x;
-      Vb='x;
+      VI0='x;
+      VI1='x;
       S = 1; // a->b
       _E = 1;
       #2 // not enought time to stabilise
@@ -37,8 +40,8 @@ module tb();
       #20
       `Equals(Y , 4'b0)
 
-      Va=4'b1010;
-      Vb=4'b0101;
+      VI0=4'b1010;
+      VI1=4'b0101;
 
       S = 1; 
       _E = 0;
@@ -51,5 +54,7 @@ module tb();
       
     end
 
-endmodule
+endmodule: tb
 
+
+`endif
