@@ -12,7 +12,7 @@
 
 `timescale 1ns/1ns
 
-module alu_code #(parameter LOG=0, PD=120) (
+module alu_code #(parameter LOG=0, PD=80) (
     output [7:0] o,
 
     output _flag_c,

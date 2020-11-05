@@ -426,11 +426,25 @@ module test();
 
         ////////////////////////////////////////////////////////////// A_PLUS_B
 
+        assign a = 8'b00000000;
+        assign b = 8'b00000000;
+        assign _flag_c_in='x;
+        assign alu_op = OP_A_PLUS_B;
+        PD;
+        `Equals(o, 8'b00000000);
+        `FLAGS(Z | EQ ) // CORRECT 
+
+        assign a = 8'b00000000;
+        assign b = 8'b11111111;
+        assign _flag_c_in='x;
+        PD;
+        `Equals(o, 8'b11111111);
+        `FLAGS(N | NE|  LT )
+
         // -86 + -127 is the same as 
         assign a = 8'b10101010; // -86 = 170 unsigned
         assign b = 8'b10000001; // -127 = 129 unsigned
         assign _flag_c_in='x;
-        assign alu_op = OP_A_PLUS_B;
         PD;
         `Equals(o, 8'b00101011); // +43 so this is signed overflow but also carry because 170+129=42 carry 1
         `FLAGS(C | O | NE | GT)
@@ -517,7 +531,7 @@ module test();
         PD;
         `Equals(o, 8'd252); // -3 -1 = -4    but also 253 - 1 = 252
         `Equals(o, -8'd4); // also can write a negative twos complement like this
-        `FLAGS(N|NE|LT)   // BUG !!!!!!! O IS BEING SET
+        `FLAGS(N|NE|LT)   
 
         // 255=0-255  is (9'b100000001) too big for 8 bits so overflow
         assign a = 0;
@@ -564,7 +578,23 @@ module test();
 
         ////////////////////////////////////////////////////////////// A_PLUS_B_PLUS_C
 
-        // -86 + -127 is the same as 
+        assign a = 8'b00000000; 
+        assign b = 8'b00000000; 
+        assign _flag_c_in=1;
+        assign alu_op = OP_A_PLUS_B_PLUS_C;
+        PD;
+        `Equals(o, 8'b00000000); // +43 so this is signed overflow but also carry because 170+129=42 carry 1
+        `FLAGS(Z | EQ) // CORRECT
+
+        assign a = 8'b00000000; 
+        assign b = 8'b00000000; 
+        assign _flag_c_in=0;
+        assign alu_op = OP_A_PLUS_B_PLUS_C;
+        PD;
+        `Equals(o, 8'b00000001); // +43 so this is signed overflow but also carry because 170+129=42 carry 1
+        `FLAGS(EQ)
+
+
         assign a = 8'b10101010; // -86 = 170 unsigned
         assign b = 8'b10000001; // -127 = 129 unsigned
         assign _flag_c_in=0;
@@ -694,7 +724,7 @@ module test();
         PD;
         `Equals(o, 8'd251); // (-3 -1 = -4) -1c = -5    but also 253 - 1 -1 = 251
         `Equals(o, -8'd5); 
-        `FLAGS(N|NE|LT)   // BUG !!!!!!! O IS BEING SET
+        `FLAGS(N|NE|LT)   
 
         // 255=0-255  is (9'b100000001) too big for 8 bits so overflow
         assign a = 0;

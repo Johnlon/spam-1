@@ -125,7 +125,7 @@ if (1) begin
 
     assign { _flag_c, _flag_z, _flag_n, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt, o} = D;
 
-    if (1) 
+    if (0) 
     always @(*) 
         $display("%9t ALU", $time,
         " aluop_eff=%-1s (op:%d)", aluopName(alu_op_effective), alu_op_effective, 
@@ -154,6 +154,25 @@ begin
     alu_code ALU_CODE( .o, ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt, .a, .b, .alu_op(alu_op_effective));
 end
 
+if (1) 
+    always @(*) 
+        $display("%9t ALU", $time,
+        " aluop_eff=%-10s (op:%d)", aluopName(alu_op_effective), alu_op_effective, 
+        " aluop=%-10s (op:%d)", aluopName(alu_op), alu_op, 
+        "  ",
+        " a=%08b (u%-3d/h%-02h) ", a, a, a,
+        " b=%08b (u%-3d/h%-02h) ", b, b, b,
+        "  ",
+        " out=%08b (u%-3d/h%-02h) ", o, o, o,
+        " _c%1b",  _flag_c,
+        " _z%1b",  _flag_z,
+        " _n%1b",  _flag_n,
+        " _o%1b",  _flag_o,
+        " _eq%1b", _flag_eq,
+        " _ne%1b", _flag_ne,
+        " _gt%1b", _flag_gt,
+        " _lt%1b", _flag_lt
+         );
 
 endmodule: alu
 

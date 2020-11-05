@@ -58,7 +58,8 @@ module gen_alu();
 
                 for (a=0; a <= 255 ; a++) begin
                     for (b=0; b <= 255 ; b++) begin
-                        #(Alu.PD+1)
+                        // long enough for any settling
+                        #(10*Alu.PD)
 
                         // little endian 
                         $fwrite(n_file, "%c", o[7:0]);
@@ -67,7 +68,7 @@ module gen_alu();
                         // hex
                         $fwrite(hex_file, "%04x ", { _flag_c, _flag_z, _flag_n, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt, o });
 
-                        if (0) 
+                        if (0)
                         $display ("%9t", $time, " (%5d) ALU: a=%8b(d%4d/h%02h) b=%8b(d%4d/h%02h)  op=%02d %10s  result=%8b(%4d/%02h)   _flags (_c=%b _z=%1b _n=%1b _o=%1b _eq=%1b _ne=%1b _gt=%1b _lt=%b)", 
                             counter, 8'(a), 8'(a), 8'(a), 8'(b), 8'(b), 8'(b), alu_op,
                             op_name, o, o, o, _flag_c, _flag_z, _flag_n, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt
