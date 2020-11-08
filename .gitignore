@@ -17,3 +17,12 @@ l
 **/ll
 uart.out
 **/*.swo
+out/
+build/
+.gradle/
+.classpath
+.project
+.settings
+verilog/assembler/bin
+verilog/assembler/antlr
+verilog/assembler/.vscode
