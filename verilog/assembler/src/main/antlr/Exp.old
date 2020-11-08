@@ -1,0 +1,62 @@
+
+grammar Exp;
+
+/* This will be the entry point of our parser. */
+eval
+    :    t=additionExp
+    {
+            System.out.println("found zNUMt " + $t.text);
+        } ;
+
+/* Addition and subtraction have the lowest precedence. */
+additionExp
+    :    t=multiplyExp
+         ( '+' b=multiplyExp
+         | '-' a=multiplyExp
+         )*
+    {
+        System.out.println("found aeNUMt " + $t.text);
+        System.out.println("found aeNUMa " + $a.text);
+        System.out.println("found aeNUMb " + $b.text);
+                }
+        ;
+
+/* Multiplication and division have a higher precedence. */
+multiplyExp
+    :    t=atomExp
+         ( om='*' a=atomExp
+         | od='/' b=atomExp
+         )*
+    {
+    System.out.println("found mNUMt " + $t.text);
+    System.out.println("found mNUMom " + $om.text);
+    System.out.println("found mNUMod " + $od.text);
+    System.out.println("found mNUMa " + $a.text);
+    System.out.println("found mNUMb " + $b.text);
+            }
+        ;
+
+/* An expression atom is the smallest part of an expression: a number. Or 
+   when we encounter parenthesis, we're making a recursive call back to the
+   rule 'additionExp'. As you can see, an 'atomExp' has the highest precedence. */
+atomExp
+    :   N=Number
+    {
+                System.out.println("found ATOM  " + $N.text);
+         }
+         |   N='(' e=additionExp ')'
+     {
+            System.out.println("found ATOM  " + $N.text);
+            System.out.println("found ATOM  " + $e.text);
+            }
+            ;
+
+/* A number: can be an integer value, or a decimal value */
+Number
+    :    ('0'..'9')+ ('.' ('0'..'9')+)?;
+
+/* We're going to ignore all white space characters */
+WS  
+    :   (' ' | '\t' | '\r'| '\n') -> channel(HIDDEN)
+    ;
+
