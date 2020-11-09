@@ -1,11 +1,16 @@
 ; directives
-A           EQU 1 ; ignore comments
+SOMEADDR EQU (1+2+(A+33)) ; ignore comments
+TOP EQU <SOMEADDR ; ignore comments
+BOT EQU >SOMEADDR
 
 ; code
-LABEL1      REGA=REGB
+LABEL1:     REGA=REGB
             REGA=REGB'S
-B1
-B           REGA=A
-            REGA=:LABEL1
-            REGA=:LABEL2;comment
+LABEL2:
+LABEL3:
+            REGA=:TOP ; value of define
+            REGA=:SOMEADDR  ; should fail!!
+            REGA=<:LABEL1 ; address of label
+
+A EQU 2 ; override illegal for now - make this fail
 

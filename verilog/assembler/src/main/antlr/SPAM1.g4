@@ -6,7 +6,7 @@ line: (statement EOL) | EOL;
 
 statement:
       label                                       # LabelInstruction
-    | label 'EQU' expr                            # EquInstruction
+    | NAME 'EQU' expr                            # EquInstruction
     | label? target  '=' adev ALUOP FLAG? bdev    # AssignABInstruction
     | label? target  '=' adev FLAG?               # AssignAInstruction
     | label? target  '=' bdevOnly FLAG?           # AssignBInstruction
@@ -37,15 +37,14 @@ target:
 expr:
    number            #Num
  | '**'              #PC
- | LABEL             #Name
+ | NAME        #Name
  | LABEL_REF         #Var
- | expr '+' expr     #Times
- | '(' expr ')'      #Parents
+ | expr '+' expr     #Plus
+ | '(' expr ')'      #Parens
  | '<' expr          #LoByte
  | '>' expr          #HiHyte
 ;
 
-label : LABEL;
 
 ALUOP: 'AND' | 'OR' | 'TIMES' | 'PLUS' | 'PLUSC'; // more
 FLAG: '\'S';
@@ -64,10 +63,10 @@ MARHI: M A R H I;
 UART: U A R T;
 NU: N U;
 
-LABEL: [a-zA-Z][0-9a-zA-Z_]*;
-LABEL_REF: ':'[a-zA-Z][0-9a-zA-Z_]*;
+NAME: [a-zA-Z][0-9a-zA-Z_]*;
 
-//NAME: [a-zA-Z][0-9a-zA-Z_]*;
+label : NAME ':';
+LABEL_REF: ':' NAME;
 
 ramDirect:    '[' number ']';
 
