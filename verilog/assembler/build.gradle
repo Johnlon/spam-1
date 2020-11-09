@@ -1,4 +1,10 @@
 
+plugins {
+    id 'antlr'
+    id 'application'
+    id 'scala'
+    id 'java'
+}
 
 repositories {
     mavenCentral()
@@ -10,13 +16,19 @@ dependencies {
 //    antlr "org.antlr:antlr4:4.5" // use ANTLR version 4
 }
 */
-
-apply plugin: 'antlr'
-apply plugin: 'application'
+//apply plugin: 'antlr'
+//apply plugin: 'application'
+//apply plugin: 'scala'
 
 dependencies {
     antlr "org.antlr:antlr4:4.7.1"
     compile "org.antlr:antlr4-runtime:4.7.1"
+
+    implementation 'org.scala-lang:scala-library:2.11.12'
+    testImplementation 'org.scalatest:scalatest_2.11:3.0.0'
+
+    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.3'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.3'
 }
 
 application {

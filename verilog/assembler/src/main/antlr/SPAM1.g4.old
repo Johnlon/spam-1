@@ -1,0 +1,281 @@
+
+grammar SPAM1;
+
+@header{
+    import java.util.*;
+}
+
+@members {
+    HashMap<String, Integer> labels=new HashMap<String, Integer>();
+    HashMap<String, Character> labelValues=new HashMap<String, Character>();
+
+    ArrayList<Long> bytes=new ArrayList<Long>();
+    ArrayList lines=new ArrayList();
+
+    int addr=0;
+
+    interface Instruction {};
+}
+
+
+
+//compile: 'A' {System.out.println("START");} ;
+compile: (line EOL)*;
+
+line: (instruction_label| instruction_equ | instruction_comment | instruction_op ) {
+      // runs after other handlers
+    System.out.println("LINE " + _localctx.getText());
+    System.out.println("ADDR " + addr);
+    addr++;
+    System.out.println("");
+};
+
+instruction_comment: comment?;
+instruction_label: label WS* comment?;
+instruction_equ: l=label WS* 'EQU' WS+ v=immed16 WS* comment? {
+    System.out.println($l.text + " IS EQU " + $v.text);
+    //labelValues.put($l.text, $v.text);
+};
+
+instruction_op: label? WS* (instruction) WS* comment?;
+
+instruction: (instruction_both | instruction_passright | instruction_passleft);
+
+instruction_both: target WS* '=' WS* adev WS+ op WS+ bdev;
+instruction_passleft: target WS* '=' WS* passa;
+instruction_passright: target WS* '=' WS* passb;
+
+comment : COMMENT {
+    System.out.println("COMMENT " + $COMMENT.text);
+};
+
+adev: REGA | REGB | REGC | REGD | MARLO | MARHI | UART | NU;
+bdev: REGA | REGB | REGC | REGD | MARLO | MARHI | immed8 | RAM | ram_direct | NU;
+target: REGA | REGB | REGC | REGD | MARLO | MARHI | UART | RAM | ram_direct | PC | PCLO | PCHITMP | NU;
+
+immed8: v=(IMMED_DEC3 | IMMED_HEX2 |IMMED_LABEL);
+
+immed16: (immed8 | IMMED_DEC5 | IMMED_HEX4 |IMMED_LABEL);
+
+ram_direct:  RAM_ADDR_DEC | RAM_ADDR_HEX| RAM_ADDR_LABEL;
+
+ALUOP: 'AND' | 'OR' | 'TIMES' | 'PLUS' | 'PLUSC'; // more
+ALUOPS: ALUOP FLAG;
+
+op:  ALUOP | ALUOPS;
+
+FLAG: '\'S';
+
+passa:adev FLAG?;
+passb: (immed8 | RAM | ram_direct) FLAG?;
+
+label : LABEL {
+    System.out.println("LABEL " + $LABEL.text + " @ " + addr);
+    labels.put($LABEL.text, addr);
+    labelValues.put($LABEL.text, null);
+};
+
+PCHITMP: P C H I T M P;
+PCLO: P C L O;
+PC: P C;
+RAM: R A M;
+REGA: R E G A;
+REGB: R E G B;
+REGC: R E G C;
+REGD: R E G D;
+MARLO: M A R L O;
+MARHI: M A R H I;
+UART: U A R T;
+NU: N U;
+
+LABEL: NAME ':';
+LABEL_REF: ':' NAME;
+
+NAME: [a-zA-Z][0-9a-zA-Z_]*;
+
+DEC: ('0'..'9');
+HEX: [0-9a-fA-F];
+
+HEX2: HEX HEX?;
+HEX4: HEX HEX? HEX? HEX?;
+DEC3 : DEC DEC? DEC? {
+       int i = Integer.parseInt(getText());
+       if (i > 255) throw new RuntimeException(getText() + " is greater than " + 255);
+};
+
+DEC5 : DEC DEC? DEC? DEC? DEC? {
+       int i = Integer.parseInt(getText());
+       if (i > 65535) throw new RuntimeException(getText() + " is greater than " + 65535);
+};
+IMMED_LABEL: '#' LABEL_REF;
+
+IMMED_DEC3:  '#' DEC3 {
+    Integer i = Integer.parseInt($v.text);
+    System.out.println("DEC3="+ i);
+};
+IMMED_HEX2:  '#$' HEX2  {
+    Integer i = Integer.parseInt($HEX2.text, 16);
+    System.out.println("HEX2="+ i);
+};
+IMMED_DEC5:  '#' DEC5  {
+  Integer i = Integer.parseInt($HEX5.text);
+  System.out.println("DEC5="+ i);
+};
+IMMED_HEX4:  '#$' HEX4  {
+   Integer i = Integer.parseInt($HEX4.text, 16);
+   System.out.println("HEX4="+ i);
+};
+
+RAM_ADDR_DEC:    '[' IMMED_DEC5 ']';
+RAM_ADDR_HEX:    '[' IMMED_HEX4 ']';
+RAM_ADDR_LABEL:  '[' IMMED_LABEL ']';
+
+
+WS
+    :   (' ' | '\t') -> skip /// -> channel(HIDDEN)
+    ;
+
+EOL
+   : ('\r'? '\n') +
+   ;
+
+
+COMMENT
+   : ';' ~ [\r\n]* -> skip
+   ;
+
+STRING
+   : '"' ~ ["]* '"'
+   ;
+
+
+
+fragment A
+   : ('a' | 'A')
+   ;
+
+fragment B
+   : ('b' | 'B')
+   ;
+
+
+
+fragment C
+   : ('c' | 'C')
+   ;
+
+
+fragment D
+   : ('d' | 'D')
+   ;
+
+
+fragment E
+   : ('e' | 'E')
+   ;
+
+
+fragment F
+   : ('f' | 'F')
+   ;
+
+
+fragment G
+   : ('g' | 'G')
+   ;
+
+
+fragment H
+   : ('h' | 'H')
+   ;
+
+
+fragment I
+   : ('i' | 'I')
+   ;
+
+
+fragment J
+   : ('j' | 'J')
+   ;
+
+
+fragment K
+   : ('k' | 'K')
+   ;
+
+
+fragment L
+   : ('l' | 'L')
+   ;
+
+
+fragment M
+   : ('m' | 'M')
+   ;
+
+
+fragment N
+   : ('n' | 'N')
+   ;
+
+
+fragment O
+   : ('o' | 'O')
+   ;
+
+
+fragment P
+   : ('p' | 'P')
+   ;
+
+
+fragment Q
+   : ('q' | 'Q')
+   ;
+
+
+fragment R
+   : ('r' | 'R')
+   ;
+
+
+fragment S
+   : ('s' | 'S')
+   ;
+
+
+fragment T
+   : ('t' | 'T')
+   ;
+
+
+fragment U
+   : ('u' | 'U')
+   ;
+
+
+fragment V
+   : ('v' | 'V')
+   ;
+
+
+fragment W
+   : ('w' | 'W')
+   ;
+
+
+fragment X
+   : ('x' | 'X')
+   ;
+
+
+fragment Y
+   : ('y' | 'Y')
+   ;
+
+
+fragment Z
+   : ('z' | 'Z')
+   ;
+

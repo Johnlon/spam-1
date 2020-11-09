@@ -1,56 +1,55 @@
-
 grammar SPAM1;
 
-@header{
-    import java.util.*;
-}
+prog: (line)* EOF;
 
-@members {
-    List<Long> bytes=new ArrayList<Long>();
-    List lines=new ArrayList();
-    int addr=0;
+line: (statement EOL) | EOL;
 
-    interface Instruction {};
-}
-
-
-
-//compile: 'A' {System.out.println("START");} ;
-compile: line (EOL EOL* line?)* EOL*;
-
-line: (label WS* comment?| equ WS* comment?| comment | label? WS* (instruction) WS* comment?);
-
-instruction: (instruction_both | instruction_passright | instruction_passleft);
-
-instruction_both: target WS* '=' WS* adev WS+ op WS+ bdev;
-instruction_passleft: target WS* '=' WS* passa;
-instruction_passright: target WS* '=' WS* passb;
-equ: label WS* 'EQU' WS+ immed16;
-
-comment : COMMENT;
+statement:
+      label                                       # LabelInstruction
+    | label 'EQU' expr                            # EquInstruction
+    | label? target  '=' adev ALUOP FLAG? bdev    # AssignABInstruction
+    | label? target  '=' adev FLAG?               # AssignAInstruction
+    | label? target  '=' bdevOnly FLAG?           # AssignBInstruction
+    ;
 
 adev: REGA | REGB | REGC | REGD | MARLO | MARHI | UART | NU;
-bdev: REGA | REGB | REGC | REGD | MARLO | MARHI | immed8 | RAM | ram_direct | NU;
-target: REGA | REGB | REGC | REGD | MARLO | MARHI | UART | RAM | ram_direct | PC | PCLO | PCHITMP | NU;
 
-immed8: v=(IMMED_DEC3 | IMMED_HEX2 |IMMED_LABEL)
- { System.out.println("IMMED " + $v.text); };
+bdev:
+   bdevDevices      #BDevDevice
+ | ramDirect        #BDevRAMDirect
+ | expr             #BDevExpr
+ ;
 
-immed16: (immed8 | IMMED_DEC5 | IMMED_HEX4 |IMMED_LABEL);
+bdevOnly:
+   RAM              #BDevOnlyRAMRegister
+ | ramDirect        #BDevOnlyRAMDirect
+ | expr             #BDevOnlyExpr
+ ;
 
-ram_direct:  RAM_ADDR_DEC | RAM_ADDR_HEX| RAM_ADDR_LABEL;
+bdevDevices: REGA | REGB | REGC | REGD | MARLO | MARHI  | RAM | NU;
 
-ALUOP: 'AND' | 'OR' | 'TIMES' | 'PLUS' | 'PLUSC'; // more
-ALUOPS: ALUOP FLAG;
+target:
+   (REGA | REGB | REGC | REGD | MARLO | MARHI | UART | RAM | PC | PCLO | PCHITMP | NU)  #TargetDevice
+ | ramDirect                                                                            #TargetRamDirect
+ ;
 
-op:  ALUOP | ALUOPS;
-
-FLAG: '\'S';
-
-passa:adev FLAG?;
-passb: (immed8 | RAM | ram_direct) FLAG?;
+//  only immediate compile time values here
+expr:
+   number            #Num
+ | '**'              #PC
+ | LABEL             #Name
+ | LABEL_REF         #Var
+ | expr '+' expr     #Times
+ | '(' expr ')'      #Parents
+ | '<' expr          #LoByte
+ | '>' expr          #HiHyte
+;
 
 label : LABEL;
+
+ALUOP: 'AND' | 'OR' | 'TIMES' | 'PLUS' | 'PLUSC'; // more
+FLAG: '\'S';
+
 
 PCHITMP: P C H I T M P;
 PCLO: P C L O;
@@ -65,54 +64,41 @@ MARHI: M A R H I;
 UART: U A R T;
 NU: N U;
 
-LABEL: NAME ':';
-LABEL_REF: ':' NAME;
+LABEL: [a-zA-Z][0-9a-zA-Z_]*;
+LABEL_REF: ':'[a-zA-Z][0-9a-zA-Z_]*;
 
-NAME: [a-zA-Z][0-9a-zA-Z_]*;
+//NAME: [a-zA-Z][0-9a-zA-Z_]*;
 
-DEC: ('0'..'9');
-HEX: [0-9a-fA-F];
+ramDirect:    '[' number ']';
 
-HEX2: HEX HEX?;
-HEX4: HEX HEX? HEX? HEX?;
-DEC3 : DEC DEC? DEC? {
-       int i = Integer.parseInt(getText());
-       if (i > 255) throw new RuntimeException(getText() + " is greater than " + 255);
-};
+number: HEX
+      | OCT
+      | BIN
+      | INT
+      ;
 
-DEC5 : DEC DEC? DEC? DEC? DEC? {
-       int i = Integer.parseInt(getText());
-       if (i > 65535) throw new RuntimeException(getText() + " is greater than " + 65535);
-};
-IMMED_LABEL: '#' LABEL_REF;
-IMMED_DEC3:  '#' DEC3 ;
-IMMED_HEX2:  '#$' HEX2  ;
-IMMED_DEC5:  '#' DEC5 ;
-IMMED_HEX4:  '#$' HEX4  ;
-
-RAM_ADDR_DEC:    '[' IMMED_DEC5 ']';
-RAM_ADDR_HEX:    '[' IMMED_HEX4 ']';
-RAM_ADDR_LABEL:  '[' IMMED_LABEL ']';
-
+STRING: '"' ~["]* '"' ;
+INT: DIGIT+ ;
+HEX: '$' [0-9a-fA-F]+ ;
+OCT: '@' [0-7]+ ;
+BIN: '%' [01]+ ;
+CHAR: '\'' . ;
 
 WS
-    :   (' ' | '\t')// -> channel(HIDDEN)
+    :   (' ' | '\t')+ -> channel(HIDDEN) // skip
     ;
 
 EOL
-   : [\r\n] +
+   : ('\r'? '\n') +
    ;
 
 
 COMMENT
-   : ';' ~ [\r\n]*// -> skip
+   : ';' ~ [\r\n]* ->  channel(HIDDEN) //skip
    ;
 
-STRING
-   : '"' ~ ["]* '"'
-   ;
-
-
+fragment LETTER: [a-zA-Z] ;
+fragment DIGIT: [0-9] ;
 
 fragment A
    : ('a' | 'A')
