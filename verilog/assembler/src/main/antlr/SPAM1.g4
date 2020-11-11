@@ -68,7 +68,7 @@ NAME: [a-zA-Z][0-9a-zA-Z_]*;
 label : NAME ':';
 LABEL_REF: ':' NAME;
 
-ramDirect:    '[' number ']';
+ramDirect:    '[' expr ']';
 
 number: HEX
       | OCT
