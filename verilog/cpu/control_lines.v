@@ -63,7 +63,7 @@ package control;
     localparam [3:0] TDEV_marhi = 5;
     localparam [3:0] TDEV_uart = 6;
     localparam [3:0] TDEV_ram = 7;
-    localparam [3:0] TDEV_not_used = 12;
+//    localparam [3:0] TDEV_not_used = 12;
     localparam [3:0] TDEV_pchitmp = 13; // only load pchitmp
     localparam [3:0] TDEV_pclo= 14; // only load pclo
     localparam [3:0] TDEV_pc= 15;   // load pclo from instruction and load pchi from pchitmp
@@ -135,7 +135,7 @@ package control;
             TDEV_uart: tdevname = "UART";
             TDEV_ram: tdevname = "RAM";
 
-            TDEV_not_used: tdevname = "NOTUSED";
+            //TDEV_not_used: tdevname = "NOTUSED";
             TDEV_pchitmp: tdevname = "PCHITMP";
             TDEV_pclo: tdevname = "PCLO";
             TDEV_pc: tdevname = "PC";
@@ -213,10 +213,11 @@ import control::*;
     ```FN``_TDEV_SEL(marlo)    SEP\
     ```FN``_TDEV_SEL(uart)    SEP\
     ```FN``_TDEV_SEL(ram)    SEP\
-    ```FN``_TDEV_SEL(not_used)    SEP\
     ```FN``_TDEV_SEL(pc)    SEP\
     ```FN``_TDEV_SEL(pchitmp)    SEP\
     ```FN``_TDEV_SEL(pclo)    
+
+    //```FN``_TDEV_SEL(not_used)    SEP\
 
 `define SEMICOLON ;
 `define COMMA ,
