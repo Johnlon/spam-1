@@ -1,8 +1,8 @@
 grammar SPAM1;
 
-prog: (line)* EOF;
+prog: line line* EOF;
 
-line: (statement EOL) | EOL;
+line: statement EOL | EOL;
 
 statement:
       label                                       # LabelInstruction
@@ -83,13 +83,12 @@ OCT: '@' [0-7]+ ;
 BIN: '%' [01]+ ;
 CHAR: '\'' . ;
 
-WS
-    :   (' ' | '\t')+ -> channel(HIDDEN) // skip
-    ;
-
 EOL
    : ('\r'? '\n') +
    ;
+
+WS: [ \t\r\n]+ -> skip ;
+
 
 
 COMMENT

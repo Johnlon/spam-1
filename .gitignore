@@ -8,6 +8,7 @@ l
 **/a.out
 **/*.v.out
 
+**/.old
 /verilog/_old/
 **/venv*/
 **/old/

@@ -35,5 +35,6 @@ dependencies {
 }
 
 application {
-    mainClass = 'Assembler'
+    mainClass = 'Asm'
+
 }
