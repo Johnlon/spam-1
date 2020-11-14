@@ -3,6 +3,7 @@ ll
 l
 **/*~
 **/*.vvp
+**/*.log
 **/*.swp
 **/*.vcd
 **/a.out
