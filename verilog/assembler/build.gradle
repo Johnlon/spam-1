@@ -1,40 +1,25 @@
-
 plugins {
-    id 'antlr'
-    id 'application'
     id 'scala'
-    id 'java'
+    id 'java-library'
 }
 
 repositories {
     mavenCentral()
+
+    jcenter()
 }
 
-/*
 dependencies {
-    antlr "org.antlr:antlr:3.5.2" // use ANTLR version 3
-//    antlr "org.antlr:antlr4:4.5" // use ANTLR version 4
-}
-*/
-//apply plugin: 'antlr'
-//apply plugin: 'application'
-//apply plugin: 'scala'
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.scalatest:scalatest_2.13:3.2.0'
+    testImplementation 'org.scalatestplus:junit-4-12_2.13:3.2.0.0'
+    implementation 'org.scala-lang:scala-library:2.13.3'
+    compile group: "org.scala-lang.modules", name: "scala-parser-combinators_2.13", version: "1.1.2"
 
-dependencies {
-    antlr "org.antlr:antlr4:4.7.1"
-    compile "org.antlr:antlr4-runtime:4.7.1"
-
-    implementation 'org.scala-lang:scala-library:2.11.12'
-    testImplementation 'org.scalatest:scalatest_2.11:3.0.0'
+//    testRuntimeOnly 'org.scala-lang.modules:scala-xml_2.13:1.2.0'
 
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.3'
     compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.3'
 
-    compile group: "org.scala-lang.modules", name: "scala-parser-combinators_2.11", version: "1.1.2"
-
-}
-
-application {
-    mainClass = 'Asm'
 
 }

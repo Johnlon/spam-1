@@ -1,18 +1,12 @@
-import ADevice.{ADevice, NU}
 import AluOp._
-import BDevice.BDevice
-import BOnlyDevice.BOnlyDevice
-import Control.{A, A_S, Control, S}
-import Line.pc
-import TDevice.{RAM, TDevice}
+import Mode.{DIRECT, REGISTER}
 
+import scala.language.postfixOps
 import scala.util.parsing.combinator._
-import Know._
-import Mode.REGISTER
-import Mode.DIRECT
 
 // expr "calculator" code taken from https://www.scala-lang.org/api/2.12.8/scala-parser-combinators/scala/util/parsing/combinator/RegexParsers.html
 trait InstructionParser extends JavaTokenParsers {
+  self : Lines with Knowing =>
 
   def aluop: Parser[AluOp] = AluOp.values.toList map { m =>
     literal(m.toString) ^^^ m
@@ -115,33 +109,39 @@ trait InstructionParser extends JavaTokenParsers {
         case t: TDevice =>
           Instruction(t, a, BDevice.NU, AluOp.PASS_A, f, REGISTER, Irrelevant(), Irrelevant())
         case RamDirect(addr) =>
-          Instruction(RAM, a, BDevice.NU, AluOp.PASS_A, f, DIRECT, addr, Irrelevant())
+          Instruction(TDevice.RAM, a, BDevice.NU, AluOp.PASS_A, f, DIRECT, addr, Irrelevant())
       }
     }
   }
 
   def bInstruction: Parser[Line] = targets ~ "=" ~ bdeviceOrRamDirect ~ control ^^ {
     case t ~ _ ~ b ~ f => {
-      (t, b) match {
+      val t1: TDevices = t
+      val b1 : BOnlyDevices = b
+
+      (t1, b1) match {
         case (t: TDevice, b: BOnlyDevice) =>
-          Instruction(t, NU, BDevice.withName(b.toString), AluOp.PASS_B, f, REGISTER, Irrelevant(), Irrelevant())
+          Instruction(t, ADevice.NU, BDevice.valueOf(b.toString), AluOp.PASS_B, f, REGISTER, Irrelevant(), Irrelevant())
         case (t: TDevice, RamDirect(addr)) =>
-          Instruction(t, NU, BDevice.RAM, AluOp.PASS_B, f, DIRECT, addr, Irrelevant())
+          Instruction(t, ADevice.NU, BDevice.RAM, AluOp.PASS_B, f, DIRECT, addr, Irrelevant())
         case (RamDirect(addr), b: BOnlyDevice) =>
-          Instruction(TDevice.RAM, NU, BDevice.RAM, AluOp.PASS_B, f, DIRECT, addr, Irrelevant())
+          Instruction(TDevice.RAM, ADevice.NU, BDevice.RAM, AluOp.PASS_B, f, DIRECT, addr, Irrelevant())
         case (RamDirect(_), RamDirect(_)) =>
           sys.error("illegal instruction: both source and target cannot both be RAM")
+        case a  =>
+          sys.error("illegal bInstruction args: " + a)
       }
     }
   }
+
 
   def immedInstruction: Parser[Line] = targets ~ "=" ~ expr ~ control ^^ {
     case t ~ _ ~ immed ~ f => {
       t match {
         case t: TDevice =>
-          Instruction(t, NU, BDevice.IMMED, AluOp.PASS_B, f, REGISTER, Irrelevant(), immed)
+          Instruction(t, ADevice.NU, BDevice.IMMED, AluOp.PASS_B, f, REGISTER, Irrelevant(), immed)
         case RamDirect(addr) =>
-          Instruction(RAM, NU, BDevice.withName(immed.toString), AluOp.PASS_B, f, DIRECT, addr, immed)
+          Instruction(TDevice.RAM, ADevice.NU, BDevice.valueOf(immed.toString), AluOp.PASS_B, f, DIRECT, addr, immed)
       }
     }
   }
@@ -156,18 +156,18 @@ trait InstructionParser extends JavaTokenParsers {
       handleAB(t, a, op, b, f)
   }
 
-  private def handleAB(t: Serializable, a: ADevice, op: AluOp, b: Serializable, f: Control) = {
+  private def handleAB(t: TDevices, a: ADevice, op: AluOp, b: BDevices, f: Control) = {
     (t, b) match {
       case (t: TDevice, b: BDevice) =>
-        Instruction(t, a, BDevice.withName(b.toString), op, f, REGISTER, Irrelevant(), Irrelevant())
+        Instruction(t, a, BDevice.valueOf(b.toString), op, f, REGISTER, Irrelevant(), Irrelevant())
       case (t: TDevice, RamDirect(addr)) =>
         Instruction(t, a, BDevice.RAM, op, f, DIRECT, addr, Irrelevant())
       case (RamDirect(addr), b: BDevice) =>
         Instruction(TDevice.RAM, a, b, AluOp.A_PLUS_B, f, DIRECT, addr, Irrelevant())
       case (RamDirect(_), RamDirect(_)) =>
         sys.error("illegal instruction: source and target cannot both be RAM")
-      case (_, _) =>
-        sys.exit(1)
+      case a =>
+        sys.error("illegal abInstruction: " + a)
     }
   }
 
@@ -184,7 +184,7 @@ trait InstructionParser extends JavaTokenParsers {
         case t: TDevice =>
           Instruction(t, a, BDevice.IMMED, op, f, REGISTER, Irrelevant(), immed)
         case RamDirect(addr) =>
-          Instruction(RAM, a, BDevice.IMMED, op, f, DIRECT, addr, immed)
+          Instruction(TDevice.RAM, a, BDevice.IMMED, op, f, DIRECT, addr, immed)
       }
   }
 

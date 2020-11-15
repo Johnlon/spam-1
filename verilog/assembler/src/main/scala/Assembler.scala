@@ -1,10 +1,17 @@
 import scala.io.Source
 
-object Assembler extends InstructionParser {
+object Assembler {
 
   def main(args: Array[String]) = {
-    val code = Source.fromFile("operations.txt").getLines.mkString("\n")
+    val code = Source.fromFile("operations.txt").getLines().mkString("\n")
 
+    val asm = new Assembler()
+    val roms: List[List[String]] = asm.assemble(code)
+  }
+}
+
+class Assembler extends InstructionParser with Knowing with Lines {
+  def assemble(code: String): List[List[String]] = {
     parse(lines, code) match {
       case Success(matched, _) => {
         println("Statements:")
@@ -18,15 +25,16 @@ object Assembler extends InstructionParser {
           sys.exit(1)
         }
 
-        matched.collect { case x: Instruction => x }.foreach(l => println("CODE : " + l.bytes))
+        val instructions = matched.collect { case x: Instruction => x.bytes }
+        instructions.foreach(l => println("CODE : " + l))
+        instructions
       }
       case msg: Failure => {
-        println(s"FAILURE: $msg ")
-        System.exit(0)
+        sys.error(s"FAILURE: $msg ")
+
       }
       case msg: Error => {
-        println(s"ERROR: $msg")
-        System.exit(0)
+        sys.error(s"ERROR: $msg")
       }
     }
   }

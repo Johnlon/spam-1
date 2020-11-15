@@ -1,24 +1,32 @@
-REGA=REGA A_PLUS_B 1
-; directives
 
-SOMEADDR: EQU (%1010 + $f + 1+2+(:LABEL2+33)) ; ignore comments
 
-L2: EQU (1+2+(:SOMEADDR+33)) ; ignore comments
-TOP: EQU <:SOMEADDR ; ignore comments
-BOT: EQU >:SOMEADDR
+; define a constant called SOMEVAR using a constant expression
+; forward references to label addresses are permitted
 
-; code
-            REGA = :L2 S
-LABEL1:     REGA = REGB A_S
+SOMEVAR:    EQU ($0100 + %1010 + $f + 1+2+(:LABEL2+33)) ; some arbitrarily complicated constant expression
+
+; grab the top and botton bytes of the constant SOMEVAR into two constants
+
+TOPBYTE:    EQU <:SOMEVAR      
+BOTBYTE:    EQU >:SOMEVAR
+
+; demo setting registers to constants
+
+            REGA = $ff                          ; set A to the constant hex ff but do not set processor status flags
+            REGB = $ff    S                     ; set A to the constant hex ff and set the processor status flags
+
+; registers can be set to results of ALU operations
+
+LABEL1:     REGA = REGB   C_S                   ; if Carry is set then update A to value of B and set the flags 
             REGA = REGB
-            REGA = REGB A_PLUS_B REGC
-            REGA = REGB + REGC
+            REGA = REGA A_PLUS_B REGC           ; set A = A + B but do not set flags
+            REGA = REGB A_MINUS_B [:SOMEVAR]    ; set B to the data at RAM location :SOMEVAR
 LABEL2:
-LABEL3:
-            REGA=:TOP ; value of define
-            REGA=:SOMEADDR  ; should fail!!
-            REGA=<:LABEL1 ; address of label
-A: EQU 2 ; override illegal for now - make this fail
-            REGA=1
+            REGA = :TOPBYTE                     ; set A to the constant
+
+; unconditional jump to whatever SOMEVAR was pointing to 
+
+            PCHITMP = :TOPBYTE                  ; prepare the top PC register for a jump
+            PC      = :BOTBYTE                  ; execute the jump to the location defined by {TOPBYTE:PCHITMP}
 
 END

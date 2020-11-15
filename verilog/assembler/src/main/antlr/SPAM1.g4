@@ -84,15 +84,15 @@ BIN: '%' [01]+ ;
 CHAR: '\'' . ;
 
 EOL
-   : ('\r'? '\n') +
+   : ('\BOnlyDevice'? '\n') +
    ;
 
-WS: [ \t\r\n]+ -> skip ;
+WS: [ \t\BOnlyDevice\n]+ -> skip ;
 
 
 
 COMMENT
-   : ';' ~ [\r\n]* ->  channel(HIDDEN) //skip
+   : ';' ~ [\BOnlyDevice\n]* ->  channel(HIDDEN) //skip
    ;
 
 fragment LETTER: [a-zA-Z] ;
@@ -184,7 +184,7 @@ fragment Q
 
 
 fragment R
-   : ('r' | 'R')
+   : ('BOnlyDevice' | 'R')
    ;
 
 

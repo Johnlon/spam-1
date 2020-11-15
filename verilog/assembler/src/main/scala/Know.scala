@@ -1,6 +1,6 @@
 import scala.collection.mutable
 
-object Know {
+trait Knowing {
   val labels = mutable.Map.empty[String, Know]
 
   def remember(name: String, v: Int): Known = {
@@ -15,13 +15,12 @@ object Know {
     k
   }
 
-    def knowable(name: String): Know = {
-      val maybeKnow = labels.get(name)
-      maybeKnow.getOrElse(Knowable(name, () => get(name)))
-    }
+  def knowable(name: String): Know = {
+    val maybeKnow = labels.get(name)
+    maybeKnow.getOrElse(Knowable(name, () => recall(name)))
+  }
 
-
-  def get(name: String): Option[Int] = {
+  def recall(name: String): Option[Int] = {
     val maybeKnow: Option[Know] = labels.get(name)
     maybeKnow match {
       case Some(Known(n, v)) => Some(v)
@@ -29,99 +28,99 @@ object Know {
     }
   }
 
-}
-
-trait Know {
-  def eval: Know // none - means unknowable
-  def getVal: Option[Int]
-}
-
-case class Knowable(name: String, a: () => Option[Int]) extends Know {
-  def eval: Know = {
-    a().map(v => Known(name, v)).getOrElse(Unknown(name))
+  sealed trait Know {
+    def eval: Know // none - means unknowable
+    def getVal: Option[Int]
   }
 
-  def getVal = a()
+  case class Knowable(name: String, a: () => Option[Int]) extends Know {
+    def eval: Know = {
+      a().map(v => Known(name, v)).getOrElse(Unknown(name))
+    }
 
-  override def toString(): String = {
-    s"""${a().map(v => v.toString).getOrElse(s"unknown{${name}")})"""
-  }
-}
+    def getVal = a()
 
-case class Known(name: String, knownVal: Int) extends Know {
-  def eval = {
-    this
-  }
-
-  def getVal = Some(knownVal)
-
-  override def toString(): String = s"""${knownVal}${if (name.length > 0) "{" + name + "}" else ""}"""
-}
-
-case class Irrelevant() extends Know {
-  def eval = {
-    this
-  }
-
-  def getVal = Some(0)
-
-  override def toString(): String = "Irrelevant"
-}
-
-case class Unknown(name: String) extends Know {
-  def eval = this
-
-  override def getVal = None
-
-}
-
-
-case class UniKnowable(a: () => Know, op: Int => Int, name: String) extends Know {
-  def eval: Know = {
-    val eval1 = a().eval
-    eval1 match {
-      case Known(name, v) =>
-        Known(name, op(v))
-      case u =>
-        u
+    override def toString(): String = {
+      s"""${a().map(v => v.toString).getOrElse(s"unknown{${name}")})"""
     }
   }
 
-  def getVal: Option[Int] = a().getVal match {
-    case Some(v) =>
-      Some(op(v))
-    case None =>
-      None
+  case class Known(name: String, knownVal: Int) extends Know {
+    def eval = {
+      this
+    }
+
+    def getVal = Some(knownVal)
+
+    override def toString(): String = s"""${knownVal}${if (name.length > 0) "{" + name + "}" else ""}"""
   }
 
-  override def toString(): String = {
-    s"( ${name} ${a()} )"
-  }
-}
+  case class Irrelevant() extends Know {
+    def eval = {
+      this
+    }
 
-case class BiKnowable(a: () => Know, b: () => Know, op: (Int, Int) => Int, name: String) extends Know {
-  def eval: Know = {
-    val value = (a().eval, b().eval)
-    value match {
-      case (Known(a, av), Known(b, bv)) =>
-        Known("{" + a + "," + b + "}", op(av, bv))
-      case (u, Known(_, _)) =>
-        u
-      case (Known(_, _), u) =>
-        u
+    def getVal = Some(0)
+
+    override def toString(): String = "Irrelevant"
+  }
+
+  case class Unknown(name: String) extends Know {
+    def eval = this
+
+    override def getVal = None
+
+  }
+
+
+  case class UniKnowable(a: () => Know, op: Int => Int, name: String) extends Know {
+    def eval: Know = {
+      val eval1 = a().eval
+      eval1 match {
+        case Known(name, v) =>
+          Known(name, op(v))
+        case u =>
+          u
+      }
+    }
+
+    def getVal: Option[Int] = a().getVal match {
+      case Some(v) =>
+        Some(op(v))
+      case None =>
+        None
+    }
+
+    override def toString(): String = {
+      s"( ${name} ${a()} )"
     }
   }
 
-  def getVal = (a().getVal, b().getVal) match {
-    case (Some(av), Some(bv)) =>
-      Some(op(av, bv))
-    case _ =>
-      None
+  case class BiKnowable(a: () => Know, b: () => Know, op: (Int, Int) => Int, name: String) extends Know {
+    def eval: Know = {
+      val value = (a().eval, b().eval)
+      value match {
+        case (Known(a, av), Known(b, bv)) =>
+          Known("{" + a + "," + b + "}", op(av, bv))
+        case (u, Known(_, _)) =>
+          u
+        case (Known(_, _), u) =>
+          u
+       case _ =>
+          sys.error("UNMATCHED " + value )
+      }
+    }
+
+    def getVal = (a().getVal, b().getVal) match {
+      case (Some(av), Some(bv)) =>
+        Some(op(av, bv))
+      case _ =>
+        None
+    }
+
+    override def toString(): String = {
+      s"( ${a()} ${name} ${b()} )"
+    }
   }
 
-  override def toString(): String = {
-    s"( ${a()} ${name} ${b()} )"
-  }
 }
-
-
