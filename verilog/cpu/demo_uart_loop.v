@@ -16,6 +16,7 @@ Unit number Time unit Unit number Time unit
 
 `include "cpu.v"
 `include "../lib/assertion.v"
+`include "psuedo_assembler.sv"
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
 

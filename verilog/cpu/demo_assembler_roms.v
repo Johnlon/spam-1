@@ -150,7 +150,7 @@ endfunction
     begin
         $display("\n%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
         $display("\n%9t", $time, " EXECUTING ..."); 
-        //DUMP; 
+        DUMP; 
         clk = 0;
     end
     endtask

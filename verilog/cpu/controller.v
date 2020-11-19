@@ -34,7 +34,6 @@ module controller(
     output [4:0] alu_op,
     output [2:0] bbus_dev, abus_dev,
     output [3:0] targ_dev,
-
     output _set_flags
 );
     logic _do_exec;
@@ -59,7 +58,7 @@ module controller(
     assign abus_dev = instruction_5[6:4];
     assign bbus_dev = instruction_5[3:1];
     wire [3:0] condition = {instruction_5[0],instruction_4[7:5]};
-    assign _set_flags = instruction_4[4];
+    wire _set_flags_bit = instruction_4[4];
     wire amode_bit = instruction_4[0];
 
     assign direct_address_hi = instruction_3;
@@ -67,13 +66,16 @@ module controller(
     assign immed8 = instruction_1;
 
 
+    // only set flags is executing instruction
+    or #(9) (_set_flags, _set_flags_bit, _do_exec);
+
     // addressing mode
     assign _addrmode_register = amode_bit; // low = reg
     nand #(9) (_addrmode_direct, amode_bit, amode_bit);  // NAND GATE
 
     // device decoders
-    hct74138 abus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(abus_dev[2:0]));
-    hct74138 bbus_dev_08_demux(.Enable3(1'b1), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(bbus_dev[2:0]));
+    hct74138 abus_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(abus_dev[2:0]));
+    hct74138 bbus_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(bbus_dev[2:0]));
 
     hct74138 targ_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(_do_exec), .Enable1_bar(targ_dev[3]), .A(targ_dev[2:0]));
     hct74138 targ_dev_16_demux(.Enable3(targ_dev[3]), .Enable2_bar(_do_exec), .Enable1_bar(1'b0),        .A(targ_dev[2:0]));
@@ -112,8 +114,9 @@ module controller(
     wire #(8) _conditionTopBit = !conditionTopBit; // NAND GATE
     hct74151 #(.LOG(0)) do_exec_lo(._E(conditionTopBit),  .S(condition[2:0]), .I(_flags_lo));
     hct74151 #(.LOG(0)) do_exec_hi(._E(_conditionTopBit), .S(condition[2:0]), .I(_flags_hi));
+
     nand #(9) (_do_exec, do_exec_lo._Y, do_exec_hi._Y); 
-    
+
 endmodule
 
 
