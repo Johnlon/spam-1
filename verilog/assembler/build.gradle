@@ -1,7 +1,6 @@
 plugins {
     id 'scala'
-    id 'application'
-    //id 'java-library'
+    id 'java-library'
 }
 
 repositories {
@@ -17,11 +16,10 @@ dependencies {
     implementation 'org.scala-lang:scala-library:2.13.3'
     compile group: "org.scala-lang.modules", name: "scala-parser-combinators_2.13", version: "1.1.2"
 
+//    testRuntimeOnly 'org.scala-lang.modules:scala-xml_2.13:1.2.0'
+
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.3'
     compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.3'
-}
 
-application {
-    // --args=sourcefilename
-    mainClass = 'Assembler'
+
 }
