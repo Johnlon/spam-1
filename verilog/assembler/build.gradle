@@ -1,13 +1,20 @@
-plugins {
-    id 'scala'
-    id 'java-library'
-}
 
 repositories {
     mavenCentral()
-
-    jcenter()
 }
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
+    }
+}
+ 
+apply plugin: 'java'
+apply plugin: 'scala'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 dependencies {
     testImplementation 'junit:junit:4.12'
@@ -16,10 +23,27 @@ dependencies {
     implementation 'org.scala-lang:scala-library:2.13.3'
     compile group: "org.scala-lang.modules", name: "scala-parser-combinators_2.13", version: "1.1.2"
 
-//    testRuntimeOnly 'org.scala-lang.modules:scala-xml_2.13:1.2.0'
-
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.3'
     compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.3'
-
-
 }
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'Assembler'
+    }
+
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+/*
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'Assembler'
+    }
+    baseName = 'all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+*/
