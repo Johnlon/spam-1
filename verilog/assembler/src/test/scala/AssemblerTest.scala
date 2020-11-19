@@ -9,129 +9,154 @@ import org.scalatestplus.junit.JUnitRunner
 class AssemblerTest extends AnyFlatSpec with Matchers {
 
   "Assembler" should "compile EQU const" in {
-    val code = "CONST:    EQU ($10 + 1) ; some arbitrarily complicated constant expression\nEND"
+    val code = Seq("CONST:    EQU ($10 + 1) ; some arbitrarily complicated constant expression", "END")
+
     val asm = new Assembler()
-    val roms = asm.assemble(code)
-    val consts = asm.labels
+    asm.assemble(code.mkString("\n")) // comments run to end of line
 
     assertLabel(asm, "CONST", Some(17))
-    roms.size shouldBe 0
   }
 
   "it" should "compile reg assign immed dec" in {
-    val code = "REGA=17\nEND"
+    val code = Seq("REGA=17", "END")
     val asm = new Assembler()
-    val roms = asm.assemble(code)
+    import asm._
 
-    roms.size shouldBe 1
-    decode(roms(0)) shouldBe(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control.A, REGISTER, 0, 17)
+    instructions(code, asm) shouldBe Seq(
+      (AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 17)
+    )
   }
 
   "it" should "compile reg assign immed hex" in {
-    val code = "REGA=$11\nEND"
-    val asm = new Assembler()
-    val roms = asm.assemble(code)
+    val code = Seq("REGA=$11", "END")
 
-    roms.size shouldBe 1
-    decode(roms(0)) shouldBe(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control.A, REGISTER, 0, 17)
+    val asm = new Assembler()
+    import asm._
+
+    instructions(code, asm) shouldBe Seq(
+      (AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 17)
+    )
   }
 
-  "it" should "compile reg assign immed expr" in {
-    val code = "REGA=($11+%1+2+@7)\nEND"
-    val asm = new Assembler()
-    val roms = asm.assemble(code)
 
-    roms.size shouldBe 1
-    decode(roms(0)) shouldBe(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control.A, REGISTER, 0, 27)
+  "it" should "compile reg assign immed expr" in {
+    val code = Seq("REGA=($11+%1+2+@7)", "END")
+    val asm = new Assembler()
+    import asm._
+
+    instructions(code, asm) shouldBe Seq((AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 27))
   }
 
   "it" should "compile reg assign reg" in {
     val code = List(
       "REGA=REGB",
-      "END").mkString("\n")
+      "END")
 
     val asm = new Assembler()
-    val roms = asm.assemble(code)
+    import asm._
 
-    roms.size shouldBe 1
-    decode(roms(0)) shouldBe(AluOp.PASS_A, TDevice.REGA, ADevice.REGB, BDevice.NU, Control.A, REGISTER, 0, 0)
+    instructions(code, asm) shouldBe Seq((AluOp.PASS_A, TDevice.REGA, ADevice.REGB, BDevice.NU, Control._A, REGISTER, 0, 0))
   }
 
   "it" should "compile reg assign forward" in {
-    val code = List(
+    val code = Seq(
       "REGA=:LABEL",
       "LABEL: REGB=$ff",
-      "END").mkString("\n")
+      "END")
 
     val asm = new Assembler()
-    val roms = asm.assemble(code)
+    import asm._
 
-    roms.size shouldBe 2
-    decode(roms(0)) shouldBe(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control.A, REGISTER, 0, 1)
-    decode(roms(1)) shouldBe(AluOp.PASS_B, TDevice.REGB, ADevice.NU, BDevice.IMMED, Control.A, REGISTER, 0, 255)
+    instructions(code, asm) shouldBe Seq(
+      (AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 1),
+      (AluOp.PASS_B, TDevice.REGB, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 255)
+    )
   }
 
   "it" should "compile A+KONST setflags" in {
-    val code = List(
-      "REGB=REGC A_PLUS_B $ff S",
-      "END").mkString("\n")
+    val code = Seq(
+      "REGB=REGC A_PLUS_B $ff _S",
+      "END")
 
     val asm = new Assembler()
-    val roms = asm.assemble(code)
+    import asm._
 
-    roms.size shouldBe 1
-    decode(roms(0)) shouldBe(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control.S, REGISTER, 0, 255)
+    instructions(code, asm) shouldBe Seq(
+      (AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A_S, REGISTER, 0, 255)
+    )
+  }
+
+  "it" should "compile A+B" in {
+    val code = Seq(
+      "REGB=REGC A_PLUS_B REGA",
+      "END")
+
+    val asm = new Assembler()
+    import asm._
+
+    instructions(code, asm) shouldBe Seq(
+      (AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._A, REGISTER, 0, 0)
+    )
   }
 
   "it" should "compile A+B setflags C_S" in {
-    val code = List(
-      "REGB=REGC A_PLUS_B REGA C_S",
-      "END").mkString("\n")
+    val code = Seq(
+      "REGB=REGC A_PLUS_B REGA _C_S",
+      "END")
 
     val asm = new Assembler()
-    val roms = asm.assemble(code)
-
-    roms.size shouldBe 1
-    decode(roms(0)) shouldBe(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control.C_S, REGISTER, 0, 0)
+    import asm._
+    instructions(code, asm) shouldBe Seq(
+      (AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._C_S, REGISTER, 0, 0)
+    )
   }
 
   "it" should "compile A+[] setflags C_S" in {
-    val code = List(
-      "REGB=REGC A_PLUS_B [1000] C_S",
-      "END").mkString("\n")
+    val code = Seq(
+      "REGB=REGC A_PLUS_B [1000] _C_S",
+      "END")
 
     val asm = new Assembler()
-    val roms = asm.assemble(code)
-
-    roms.size shouldBe 1
-    decode(roms(0)) shouldBe(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.RAM, Control.C_S, DIRECT, 1000, 0)
+    import asm._
+    instructions(code, asm) shouldBe Seq(
+      (AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.RAM, Control._C_S, DIRECT, 1000, 0)
+    )
   }
 
-  "it" should "compile []=A setflags C_S" in {
-    val code = List(
-      "[1000]=REGA C_S",
-      "END").mkString("\n")
+  "it" should "compile []=A setflags _C_S" in {
+    val code = Seq(
+      "[1000]=REGA _C_S",
+      "END")
 
     val asm = new Assembler()
-    val roms = asm.assemble(code)
-
-    roms.size shouldBe 1
-    decode(roms(0)) shouldBe(AluOp.PASS_A, TDevice.RAM, ADevice.REGA, BDevice.NU, Control.C_S, DIRECT, 1000, 0)
+    import asm._
+    instructions(code, asm) shouldBe Seq(
+      (AluOp.PASS_A, TDevice.RAM, ADevice.REGA, BDevice.NU, Control._C_S, DIRECT, 1000, 0)
+    )
   }
 
   "it" should "compile []=[] " in {
     val code = List(
       "[1000]=[1]",
-      "END").mkString("\n")
+      "END")
 
     val asm = new Assembler()
+
     try {
-      asm.assemble(code)
+      instructions(code, asm)
     }
     catch {
       case e: RuntimeException =>
-        e.getMessage shouldBe "illegal instruction: both source and target cannot both be RAM"
+        e.getMessage shouldBe "illegal instruction: target '[1000]' and source '[1]' cannot both be RAM"
     }
+  }
+
+
+  private def instructions(code: Seq[String], asm: Assembler) = {
+    val roms = asm.assemble(code.mkString("\n")) // comments run to end of line
+
+    val inst = roms.map(decode(asm, _))
+    inst
   }
 
   def assertLabel(asm: Assembler, s: String, i: Some[Int]): Unit = {
@@ -143,7 +168,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     Integer.valueOf(str1, 2)
   }
 
-  def decode(rom: List[String]): (AluOp, TDevice, ADevice, BDevice, Control, Mode, Int, Int) = {
+  def decode[A <: Assembler](asm: A, rom: List[String]): (AluOp, A#TDevice, A#ADevice, A#BDevice, Control, Mode, Int, Int) = {
     val str = rom.mkString("");
     val sitr = str.iterator.buffered
 
@@ -160,9 +185,9 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
 
     (
       AluOp.valueOf(op),
-      TDevice.valueOf(t),
-      ADevice.valueOf(a),
-      BDevice.valueOf(b),
+      asm.TDevice.valueOf(t),
+      asm.ADevice.valueOf(a),
+      asm.BDevice.valueOf(b),
       Control.valueOf(cond, f),
       m,
       addr,

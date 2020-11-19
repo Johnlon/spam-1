@@ -72,7 +72,6 @@ trait Knowing {
 
   }
 
-
   case class UniKnowable(a: () => Know, op: Int => Int, name: String) extends Know {
     def eval: Know = {
       val eval1 = a().eval
@@ -92,7 +91,8 @@ trait Knowing {
     }
 
     override def toString(): String = {
-      s"( ${name} ${a()} )"
+      val value = s"( ${name} ${a()} )"
+      value
     }
   }
 

@@ -1,3 +1,5 @@
+// FIXME = don't set flags if instruction doesn't exec
+
 // FIXME: Add random number generator - eg use an unused device as a readonly source - connect it to a 8 bit counter running at an arbitraty speed
 // ADDRESSING TERMINOLOGY
 //  IMMEDIATE ADDRESSING = INSTRUCTION CONTAINS THE CONSTANT VALUE DATA TO USE
@@ -174,7 +176,7 @@ module cpu(
     wire _flag_c_out, _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out;
     wire _flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne;
 
-	alu #(.LOG(1)) Alu(
+	alu #(.LOG(0)) Alu(
         .o(alu_result_bus), 
         .a(abus),
         .b(bbus),
@@ -191,6 +193,7 @@ module cpu(
     );
 
     //wire #(9) gated_flags_clk = phaseExec & (!_set_flags);
+    // TODO FIXME: should flags set if the instruction doesn't exec? NO
     wire gated_flags_clk;
     nor #(9) gating( gated_flags_clk , _phaseExec , _set_flags);
 
@@ -246,7 +249,7 @@ module cpu(
 
     wire [7:0] uart_d;
 
-    um245r #(.LOG(1), .HEXMODE(1))  uart (
+    um245r #(.LOG(2))  uart (
         .D(uart_d),
         .WR(_gated_uart_wr),// Writes data on -ve edge
         ._RD(_adev_uart),	// When goes from high to low then the FIFO data is placed onto D (equates to _OE)

@@ -83,6 +83,12 @@ module test();
         `INSTRUCTION_S(icount, regb, not_used, regb,  B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 1); icount++;
         // C = 2, carry cleared
         `INSTRUCTION_S(icount, regc, not_used, immed, B_PLUS_1, C, `SET_FLAGS, `NA_AMODE, 1'bz, 2); icount++;
+
+        // carry is clear at the moment 
+        // carry flag should not be set by these two instructions because second instruction doesn't execute
+        `INSTRUCTION_S(icount, rega, not_used, immed, B,        A, `SET_FLAGS, `NA_AMODE, 1'bz, 255); icount++;
+        `INSTRUCTION_S(icount, regb, not_used, immed, B_PLUS_1, C, `SET_FLAGS, `NA_AMODE, 1'bz, 255); icount++; // should NOT update carry bit !!
+        
             
     end
     endtask : INIT_ROM
@@ -153,6 +159,27 @@ module test();
        #TCLK
        `Equals(CPU.flags_czonGLEN.Q, 8'b11111010); // Flags ARE overwritten
        `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd0,8'd4,8'd3,8'bx});
+
+        // pair of ops - second op shouldn't update the flags !!
+       clk = 1;
+       #TCLK
+       `Equals(CPU.pc_addr, 5); 
+
+       clk = 0;
+       #TCLK
+       `Equals(CPU.flags_czonGLEN.Q, 8'b11101010); // Flags ARE overwritten
+       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd255,8'd4,8'd3,8'bx});
+
+
+       clk = 1;
+       #TCLK
+       `Equals(CPU.pc_addr, 6); 
+
+       clk = 0;
+       #TCLK
+       `Equals(CPU.flags_czonGLEN.Q, 8'b11101010); // Flags ARE overwritten
+       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd255,8'd4,8'd3,8'bx});
+
 
         $display("DONE - advance to no op");
        clk = 1; // END OF PROGRAM

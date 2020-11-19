@@ -8,11 +8,33 @@ TOP: EQU <:SOMEADDR ; ignore comments
 BOT: EQU >:SOMEADDR
 
 ; code
-            REGA = :L2 S
-LABEL1:     REGA = REGB A_S
+            REGA = :L2 _S
+LABEL1:     REGA = REGB _A_S
+            REGA = REGB _A
+            REGA = REGB _S
+            REGA = REGB _A_S
             REGA = REGB
             REGA = REGB A_PLUS_B REGC
+            REGB = REGC A_PLUS_B [1000] _C_S
+            REGA = REGB + 123
             REGA = REGB + REGC
+            REGA = REGB - REGC
+            REGA = REGB / REGC
+            REGA = REGB *LO REGC
+            REGA = REGB *HI REGC
+            REGA = REGB % REGC
+            REGA = REGB & REGC
+            REGA = REGB | REGC
+            REGA = REGB ^ REGC
+            REGA = REGB !& REGC
+            REGA = REGB << REGC
+            REGA = REGB >> REGC
+            REGA = REGB >>> REGC
+            REGA = REGB >>> 15+1
+            MARHI = REGB >>> 15+1
+            MARHI = 15+1
+            REGA= RAM
+            ;[1234] = REGA >>> [1] ; illegal
 LABEL2:
 LABEL3:
             REGA=:TOP ; value of define

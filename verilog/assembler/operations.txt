@@ -13,12 +13,11 @@ BOTBYTE:    EQU >:SOMEVAR
 ; demo setting registers to constants
 
             REGA = $ff                          ; set A to the constant hex ff but do not set processor status flags
-            REGB = $ff    S                     ; set A to the constant hex ff and set the processor status flags
+            REGB = $ff    _S                     ; set A to the constant hex ff and set the processor status flags
 
 ; registers can be set to results of ALU operations
 
-LABEL1:     REGA = REGB   C_S                   ; if Carry is set then update A to value of B and set the flags 
-            REGA = REGB
+LABEL1:     REGA = REGB   _C_S                   ; if Carry is set then update A to value of B and set the flags
             REGA = REGA A_PLUS_B REGC           ; set A = A + B but do not set flags
             REGA = REGB A_MINUS_B [:SOMEVAR]    ; set B to the data at RAM location :SOMEVAR
 LABEL2:

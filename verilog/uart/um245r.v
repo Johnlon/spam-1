@@ -15,7 +15,10 @@
 
 `timescale 1ns/1ns
 
-module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80, HEXMODE=0, ASCIIONLY=1, LOG=0)  (
+`define PRINTMODE_ASCII 1
+`define PRINTMODE_NOCTRL 2
+
+module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80, PRINTMODE=`PRINTMODE_NOCTRL, LOG=0)  (
     inout [7:0] D,    // Input data
     input WR,        // Writes data on -ve edge
     input _RD,        // When goes from high to low then the FIFO data is placed onto D (equates to _OE)
@@ -86,10 +89,16 @@ assign #T6 _RXF = !(dataAvailable && _RXF_SUPPRESS && _MR);
 assign #T3 D= _RD? 8'bzzzzzzzz: dataAvailable ? Drx : 8'bxzxzxzxz; // xzxzxzxz is a distinctive signal that we're reading uninitialised data
 
 function [7:0] printable([7:0] c);
-    if (ASCIIONLY==1) begin
+    if (PRINTMODE==`PRINTMODE_ASCII) begin
         if (c == 0) return 32;
         else if ($isunknown(c)) return 32; 
         else if (c < 32 && c != 12 && c != 13) return 32; // allow CR/LF
+        else if (c >= 128) return 32;
+    end
+    if (PRINTMODE==`PRINTMODE_NOCTRL) begin
+        if (c == 0) return 32;
+        else if ($isunknown(c)) return 32; 
+        else if (c < 32 ) return 32; 
         else if (c >= 128) return 32;
     end
     return c;
@@ -107,7 +116,7 @@ always @(negedge WR) begin
             `FINISH_AND_RETURN(1);
     end
 
-    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING h%02x (c='%c' b=%08b)", D, printable(D), D);
+    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING h%02x (c='%c' b=%08b d=%d)", D, printable(D), D, D);
 //    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING h%02x (b=%08b)", D, D, D);
 
     $fwrite(fOut, "%02x\n", D);
@@ -183,6 +192,7 @@ end
 
 always @*
     _RD_prev = _RD;
+
 
 
 initial 

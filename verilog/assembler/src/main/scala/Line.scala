@@ -2,7 +2,7 @@
 import Mode.{DIRECT, Mode}
 
 trait Lines {
-  self : Knowing =>
+  self: Knowing with Devices =>
 
   var instNo = 0
   var pc = 0
@@ -19,10 +19,10 @@ trait Lines {
     instNo += 1
   }
 
-  case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, control: Control, amode: Mode, address: Know, immed: Know)
+  case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, control: Option[Control], amode: Mode, address: Know, immed: Know)
     extends Line {
 
-    pc +=1
+    pc += 1
 
     (bdev, immed) match {
       case (BDevice.IMMED, _: Irrelevant) =>
@@ -38,13 +38,13 @@ trait Lines {
 
     (tdev, bdev) match {
       case (TDevice.RAM, BDevice.RAM) =>
-        sys.error("sw error : source and target cannot both be RAM")
+        sys.error(s"sw error : target and source cannot both be RAM")
       case _ =>
     }
 
     (tdev, adev) match {
       case (TDevice.UART, ADevice.UART) =>
-        sys.error("sw error : source and target cannot both be UART")
+        sys.error("sw error : target and source cannot both be UART")
       case _ =>
     }
 
@@ -71,43 +71,17 @@ trait Lines {
       !isResolved
     }
 
-    def fctrl(control: Control): String = {
-      val (ctrl, flag) = control match {
-        case Control.A => (0, 1)
-        case Control.S => (0, 0)
-        case Control.A_S => (0, 0)
-        case Control.C => (1, 1)
-        case Control.Z => (2, 1)
-        case Control.O => (3, 1)
-        case Control.N => (4, 1)
-        case Control.EQ => (5, 1)
-        case Control.NE => (6, 1)
-        case Control.GT => (7, 1)
-        case Control.LT => (8, 1)
-        case Control.DI => (9, 1)
-        case Control.DO => (10, 1)
-        case Control.C_S => (1, 0)
-        case Control.Z_S => (2, 0)
-        case Control.O_S => (3, 0)
-        case Control.N_S => (4, 0)
-        case Control.EQ_S => (5, 0)
-        case Control.NE_S => (6, 0)
-        case Control.GT_S => (7, 0)
-        case Control.LT_S => (8, 0)
-        case Control.DI_S => (9, 0)
-        case Control.DO_S => (10, 0)
-      }
-
-      (((ctrl << 1) | flag).toBinaryString)
+    private def bitString(control: Control): String = {
+      val (cond, flag) = (control.cond, control.setflag)
+      ((cond << 1) | flag).toBinaryString
     }
-
 
     def bytes: List[String] = {
       val sAluop = bits("aluop", aluop.id.toBinaryString, 5)
       val sTDev = bits("tdev", tdev.id.toBinaryString, 4)
       val sADev = bits("adev", adev.id.toBinaryString, 3)
       val sBDev = bits("bdev", bdev.id.toBinaryString, 3)
-      val sFlags = bits("control", fctrl(control), 5)
+      val sFlags = bits("control", bitString(control.getOrElse(Control._A)), 5)
       val sNU = bits("nu", "", 3)
       val sMode = if (amode == DIRECT) "1" else "0"
       val sAddress = bits("address", address.getVal.map(_.toBinaryString).getOrElse(""), 16)
@@ -132,8 +106,7 @@ trait Lines {
     }
   }
 
-  case class EquInstruction(variable: String, value: Know)
-    extends Line {
+  case class EquInstruction(variable: String, value: Know) extends Line {
 
     remember(variable, value)
 
@@ -151,8 +124,14 @@ trait Lines {
   }
 
 
-  case class Comment(comment: String)
-    extends Line {
+  case class BlankLine() extends Line {
+    override def str: String =
+      s"""${this.getClass.getName}"""
+
+    override def unresolved: Boolean = false
+  }
+
+  case class Comment(comment: String) extends Line {
     def str = {
       s"""${this.getClass.getName} ${comment}"""
     }
@@ -160,17 +139,12 @@ trait Lines {
     def unresolved = false
   }
 
-  case class Label(name: String)
-    extends Line {
+  case class Label(name: String) extends Line {
     def str = {
       s"""${this.getClass.getName} ${name}"""
     }
 
     def unresolved = false
   }
-
-  case class RamDirect(addr: Know) extends TDevices with BDevices with BOnlyDevices
-
-  //case class Immediate(immed: Know)
 
 }

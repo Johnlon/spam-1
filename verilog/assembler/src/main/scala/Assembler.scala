@@ -1,17 +1,31 @@
+import java.io.{File, PrintWriter}
+
 import scala.io.Source
 
 object Assembler {
 
   def main(args: Array[String]) = {
-    val code = Source.fromFile("operations.txt").getLines().mkString("\n")
+    val code = Source.fromFile("fibonacci_stack_using_pointer_optimised.txt").getLines().mkString("\n")
 
     val asm = new Assembler()
     val roms: List[List[String]] = asm.assemble(code)
+
+    val pw = new PrintWriter(new File("build/program.rom"))
+    roms.foreach { line =>
+      line.foreach { rom =>
+        pw.write(rom)
+      }
+      pw.write("\n")
+    }
+    pw.close()
   }
 }
 
-class Assembler extends InstructionParser with Knowing with Lines {
+class Assembler extends InstructionParser with Knowing with Lines with Devices {
+
+
   def assemble(code: String): List[List[String]] = {
+
     parse(lines, code) match {
       case Success(matched, _) => {
         println("Statements:")
@@ -26,7 +40,7 @@ class Assembler extends InstructionParser with Knowing with Lines {
         }
 
         val instructions = matched.collect { case x: Instruction => x.bytes }
-        instructions.foreach(l => println("CODE : " + l))
+        instructions.zipWithIndex.foreach(l => println("CODE : " + l))
         instructions
       }
       case msg: Failure => {
