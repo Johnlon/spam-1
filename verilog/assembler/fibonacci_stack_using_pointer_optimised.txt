@@ -61,7 +61,7 @@ ret1:       REGB=REGA+REGB _S
 
 ret2:       PC      = >:loop
 
-send_uart:  PC      = >:transmit
+send_uart:  PC      = >:transmit _DO
             PC      = >:send_uart    ;loop wait
 transmit:
             ; start popping

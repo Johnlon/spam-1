@@ -1,0 +1,1 @@
+../simulate_one.sh demo_assembler_roms.v +rom_file=fibonacci_stack_using_pointer_optimised.txt.rom 

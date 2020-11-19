@@ -27,6 +27,17 @@
     end
 
 module test();
+    string rom_file;
+
+    initial begin
+        if (! $value$plusargs("rom_file=%s", rom_file)) begin
+            $display("ERROR: please specify +rom_file=<rom_file> to start.");
+`ifndef verilator
+            $finish_and_return(1);
+`endif
+        end
+    end
+
     import alu_ops::*;
 
     `include "../lib/display_snippet.sv"
@@ -80,16 +91,18 @@ endfunction
     integer fControl, c, r=0, rs=0;
     logic [47:0] b;
 
+
     // SETUP ROM
     task INIT_ROM;
     begin
+
 `ifndef verilator
-        $display("opening");
-        fControl = $fopenr("program.rom"); 
+        $display("opening rom file : %s", rom_file);
+        fControl = $fopenr(rom_file); 
 `endif
         if (fControl == `NULL) // If error opening file 
         begin
-                $error("%9t ERROR ", $time, "failed opening file");
+                $error("%9t ERROR ", $time, "failed opening file %s", rom_file);
 `ifndef verilator
                 $finish_and_return(1);
 `endif

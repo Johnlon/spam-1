@@ -180,7 +180,7 @@ end
 
 module dummy;
     initial 
-        $display("loading dummy");
+        $write("");
 endmodule
 
 `endif 

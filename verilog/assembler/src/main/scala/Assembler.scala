@@ -5,12 +5,18 @@ import scala.io.Source
 object Assembler {
 
   def main(args: Array[String]) = {
-    val code = Source.fromFile("fibonacci_stack_using_pointer_optimised.txt").getLines().mkString("\n")
+    if (args.size!=1) {
+      System.err.println("missing argument : asm file name")
+      sys.exit(1)
+    }
+    val fileName = args(0)
+
+    val code = Source.fromFile(fileName).getLines().mkString("\n")
 
     val asm = new Assembler()
     val roms: List[List[String]] = asm.assemble(code)
 
-    val pw = new PrintWriter(new File("build/program.rom"))
+    val pw = new PrintWriter(new File(s"${fileName}.rom"))
     roms.foreach { line =>
       line.foreach { rom =>
         pw.write(rom)
