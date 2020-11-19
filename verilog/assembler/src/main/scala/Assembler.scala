@@ -30,7 +30,10 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
       case Success(matched, _) => {
         println("Statements:")
         matched.zipWithIndex.foreach(
-          l => System.out.println(l._2.formatted("%03d") + " pc:" + l._1.instructionAddress.formatted("%04x") + " : " + l._1)
+          l => {
+            val address = l._1.instructionAddress
+            System.out.println(l._2.formatted("%03d") + " pc:" + address.formatted("%04x") + ":" + address.formatted("%05d") + ": " + l._1)
+          }
         )
         val unresolvedStatements = matched.zipWithIndex.filter(_._1.unresolved)
         if (unresolvedStatements.size > 0) {
