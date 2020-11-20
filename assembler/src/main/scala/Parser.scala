@@ -69,9 +69,9 @@ trait InstructionParser extends JavaTokenParsers {
     }
   }
 
-  def hiByte: Parser[Know] = "<" ~ expr ^^ { case _ ~ e => UniKnowable(() => e, i => ((i >> 8) & 0xff), "HI<") }
+  def hiByte: Parser[Know] = "<" ~> expr ^^ { case  e => UniKnowable(() => e, i => ((i >> 8) & 0xff), "HI<") }
 
-  def loByte: Parser[Know] = ">" ~ expr ^^ { case _ ~ e => UniKnowable(() => e, i => i & 0xff, "LO>") }
+  def loByte: Parser[Know] = ">" ~> expr ^^ { case  e => UniKnowable(() => e, i => i & 0xff, "LO>") }
 
   def factor: Parser[Know] = (dec | hex | bin | oct | "(" ~> expr <~ ")" | hiByte | loByte | labelAddr)
 
@@ -88,8 +88,8 @@ trait InstructionParser extends JavaTokenParsers {
 
   def ramDirect: Parser[RamDirect] = "[" ~ expr ~ "]" ^^ { case _ ~ v ~ _ => RamDirect(v) }
 
-  def comment: Parser[Comment] = ";" ~ ".*".r ^^ {
-    case _ ~ a => Comment(a)
+  def comment: Parser[Comment] = ";" ~> ".*".r ^^ {
+    case a => Comment(a)
   }
 
   def targets = (tdev | ramDirect)
@@ -98,8 +98,8 @@ trait InstructionParser extends JavaTokenParsers {
 
   def bdeviceOrRamDirect = (bdevonly | ramDirect)
 
-  def eqInstruction: Parser[EquInstruction] = name ~ ":" ~ "EQU" ~ expr ^^ {
-    case a ~ _ ~ _ ~ b => {
+  def eqInstruction: Parser[EquInstruction] = (name <~ ":" ~ "EQU") ~ expr ^^ {
+    case a ~ b => {
       EquInstruction(a, b)
     }
   }
@@ -117,40 +117,40 @@ trait InstructionParser extends JavaTokenParsers {
     }
   }
 
-  def abInstruction: Parser[Line] = targets ~ "=" ~ adev ~ aluop ~ bdevices ~  (controlCode ?) ^^ {
-    case t ~ _ ~ a ~ op ~ b ~ f =>
+  def abInstruction: Parser[Line] = (targets <~ "=") ~ adev ~ aluop ~ bdevices ~  (controlCode ?) ^^ {
+    case t ~ a ~ op ~ b ~ f =>
       inst(t, a, op, b, f, Irrelevant())
   }
 
-  def abInstructionShortform: Parser[Line] = targets ~ "=" ~ adev ~ shortOps ~ bdevices ~ (controlCode?) ^^ {
-    case t ~ _ ~ a ~ op ~ b ~ f =>
+  def abInstructionShortform: Parser[Line] = (targets <~ "=") ~ adev ~ shortOps ~ bdevices ~ (controlCode?) ^^ {
+    case t ~ a ~ op ~ b ~ f =>
       inst(t,a,op,b,f,Irrelevant())
   }
 
-  def abInstructionImmed: Parser[Line] = targets ~ "=" ~ adev ~ aluop ~ expr ~  (controlCode ?) ^^ {
-    case t ~ _ ~ a ~ op ~ immed ~ f =>
+  def abInstructionImmed: Parser[Line] = (targets <~ "=") ~ adev ~ aluop ~ expr ~  (controlCode ?) ^^ {
+    case t ~  a ~ op ~ immed ~ f =>
       inst(t,a,op,BDevice.IMMED,f, immed)
   }
 
-  def abInstructionShortformImmed: Parser[Line] = targets ~ "=" ~ adev ~ shortOps ~ expr ~ (controlCode?) ^^ {
-    case t ~ _ ~ a ~ op ~ immed ~ f =>
+  def abInstructionShortformImmed: Parser[Line] = (targets <~ "=") ~ adev ~ shortOps ~ expr ~ (controlCode?) ^^ {
+    case t ~ a ~ op ~ immed ~ f =>
       inst(t,a,op,BDevice.IMMED,f, immed)
   }
 
-  def bInstruction: Parser[Line] = targets ~ "=" ~ bdeviceOrRamDirect ~  (controlCode ?) ^^ {
-    case t ~ _ ~ b ~ f => {
+  def bInstruction: Parser[Line] = (targets <~ "=") ~ bdeviceOrRamDirect ~  (controlCode ?) ^^ {
+    case t ~ b ~ f => {
       inst(t,ADevice.NU,AluOp.PASS_B,b,f, Irrelevant())
     }
   }
 
-  def bInstructionImmed: Parser[Line] = targets ~ "=" ~ expr ~  (controlCode ?) ^^ {
-    case t ~ _ ~ immed ~ f => {
+  def bInstructionImmed: Parser[Line] = (targets <~ "=") ~ expr ~  (controlCode ?) ^^ {
+    case t ~ immed ~ f => {
       inst(t,ADevice.NU, AluOp.PASS_B ,BDevice.IMMED ,f, immed)
     }
   }
 
-  def aInstruction: Parser[Line] = targets ~ "=" ~ adev ~  (controlCode ?) ^^ {
-    case t ~ _ ~ a ~ f => {
+  def aInstruction: Parser[Line] = (targets <~ "=") ~ adev ~  (controlCode ?) ^^ {
+    case t ~ a ~ f => {
       inst(t,a, AluOp.PASS_A ,BDevice.NU ,f, Irrelevant())
     }
   }
@@ -167,8 +167,8 @@ trait InstructionParser extends JavaTokenParsers {
       x
   }
 
-  def lines: Parser[List[Line]] = line ~ (line *) ~ "END" ^^ {
-    case a ~ b ~ _ => a :: b
+  def lines: Parser[List[Line]] = line ~ (line *) <~ "END" ^^ {
+    case a ~ b => a :: b
   }
 
 }
