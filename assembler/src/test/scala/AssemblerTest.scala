@@ -23,7 +23,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     import asm._
 
     instructions(code, asm) shouldBe Seq(
-      (AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 17)
+      i(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 17)
     )
   }
 
@@ -34,7 +34,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     import asm._
 
     instructions(code, asm) shouldBe Seq(
-      (AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 17)
+      i(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 17)
     )
   }
 
@@ -44,7 +44,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     val asm = new Assembler()
     import asm._
 
-    instructions(code, asm) shouldBe Seq((AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 27))
+    instructions(code, asm) shouldBe Seq(i(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 27))
   }
 
   "it" should "compile reg assign reg" in {
@@ -55,7 +55,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     val asm = new Assembler()
     import asm._
 
-    instructions(code, asm) shouldBe Seq((AluOp.PASS_A, TDevice.REGA, ADevice.REGB, BDevice.NU, Control._A, REGISTER, 0, 0))
+    instructions(code, asm) shouldBe Seq(i(AluOp.PASS_A, TDevice.REGA, ADevice.REGB, BDevice.NU, Control._A, REGISTER, 0, 0))
   }
 
   "it" should "compile reg assign forward" in {
@@ -68,8 +68,8 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     import asm._
 
     instructions(code, asm) shouldBe Seq(
-      (AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 1),
-      (AluOp.PASS_B, TDevice.REGB, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 255)
+      i(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 1),
+      i(AluOp.PASS_B, TDevice.REGB, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 255.toByte)
     )
   }
 
@@ -82,7 +82,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     import asm._
 
     instructions(code, asm) shouldBe Seq(
-      (AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A_S, REGISTER, 0, 255)
+      i(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A_S, REGISTER, 0, 255.toByte)
     )
   }
 
@@ -95,7 +95,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     import asm._
 
     instructions(code, asm) shouldBe Seq(
-      (AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._A, REGISTER, 0, 0)
+      i(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._A, REGISTER, 0, 0)
     )
   }
 
@@ -106,8 +106,9 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
 
     val asm = new Assembler()
     import asm._
+
     instructions(code, asm) shouldBe Seq(
-      (AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._C_S, REGISTER, 0, 0)
+      i(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._C_S, REGISTER, 0, 0)
     )
   }
 
@@ -118,8 +119,9 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
 
     val asm = new Assembler()
     import asm._
+
     instructions(code, asm) shouldBe Seq(
-      (AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.RAM, Control._C_S, DIRECT, 1000, 0)
+      i(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.RAM, Control._C_S, DIRECT, 1000, 0)
     )
   }
 
@@ -130,8 +132,9 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
 
     val asm = new Assembler()
     import asm._
+
     instructions(code, asm) shouldBe Seq(
-      (AluOp.PASS_A, TDevice.RAM, ADevice.REGA, BDevice.NU, Control._C_S, DIRECT, 1000, 0)
+      i(AluOp.PASS_A, TDevice.RAM, ADevice.REGA, BDevice.NU, Control._C_S, DIRECT, 1000, 0)
     )
   }
 
@@ -143,14 +146,40 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     val asm = new Assembler()
     import asm._
 
-    instructions(code, asm) shouldBe Seq(
-      (AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
-      (AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 1, 'B'.toByte),
-      (AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 2, 0),
-      (AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 3, '\n')
-    )
+    val compiled = instructions(code, asm)
 
-//    assertLabel(asm, "MYSTR", Some(0))
+    asm.labels("MYSTR").getVal shouldBe Some(KnownByteArray(Seq(65, 66, 0, 10)))
+
+    compiled shouldBe Seq(
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 1, 'B'.toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 2, 0),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 3, '\n')
+    )
+  }
+
+  "it" should "compile strings len" in {
+    val code = Seq(
+      "MYSTR: STR     \"AB\"",
+      "MYSTRLEN: EQU len(:MYSTR)",
+      "[$ff]= :MYSTRLEN",
+      "[$ff]= :MYSTRLEN+1",
+      "END")
+
+    val asm = new Assembler()
+    import asm._
+
+    val compiled = instructions(code, asm)
+
+    asm.labels("MYSTRLEN").getVal shouldBe Some(KnownInt(2))
+    asm.labels("MYSTR").getVal shouldBe Some(KnownByteArray(Seq(65, 66)))
+
+    compiled shouldBe Seq(
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 1, 'B'.toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 255, 2),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 255, 3),
+    )
   }
 
   "it" should "compile []=[] " in {
@@ -169,47 +198,13 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     }
   }
 
-
   private def instructions(code: Seq[String], asm: Assembler) = {
     val roms = asm.assemble(code.mkString("\n")) // comments run to end of line
-
-    val inst = roms.map(decode(asm, _))
-    inst
+    roms.map(r => asm.decode(r))
   }
 
   def assertLabel(asm: Assembler, s: String, i: Some[Int]): Unit = {
-    asm.labels.get(s).get.getVal shouldBe i
+    asm.labels(s).getVal shouldBe i.map(asm.KnownInt)
   }
 
-  def fromBin(str: Iterator[Char], len: Int): Int = {
-    val str1 = str.take(len).mkString("")
-    Integer.valueOf(str1, 2)
-  }
-
-  def decode[A <: Assembler](asm: A, rom: List[String]): (AluOp, A#TDevice, A#ADevice, A#BDevice, Control, Mode, Int, Int) = {
-    val str = rom.mkString("");
-    val sitr = str.iterator.buffered
-
-    val op = fromBin(sitr, 5)
-    val t = fromBin(sitr, 4)
-    val a = fromBin(sitr, 3)
-    val b = fromBin(sitr, 3)
-    val cond = fromBin(sitr, 4)
-    val f = fromBin(sitr, 1)
-    sitr.take(3).mkString("")
-    val m = if (fromBin(sitr, 1) == 1) Mode.DIRECT else Mode.REGISTER
-    val addr = fromBin(sitr, 16)
-    val immed = fromBin(sitr, 8)
-
-    (
-      AluOp.valueOf(op),
-      asm.TDevice.valueOf(t),
-      asm.ADevice.valueOf(a),
-      asm.BDevice.valueOf(b),
-      Control.valueOf(cond, f),
-      m,
-      addr,
-      immed
-    )
-  }
 }

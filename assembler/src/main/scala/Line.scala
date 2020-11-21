@@ -19,7 +19,7 @@ trait Lines {
     instNo += 1
   }
 
-  case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, control: Option[Control], amode: Mode, address: Know, immed: Know)
+  case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, control: Option[Control], amode: Mode, address: Know[KnownInt], immed: Know[KnownInt])
     extends Line {
 
     pc += 1
@@ -76,7 +76,7 @@ trait Lines {
       ((cond << 1) | flag).toBinaryString
     }
 
-    def bytes: List[String] = {
+    def roms: List[String] = {
       val sAluop = bits("aluop", aluop.id.toBinaryString, 5)
       val sTDev = bits("tdev", tdev.id.toBinaryString, 4)
       val sADev = bits("adev", adev.id.toBinaryString, 3)
@@ -88,8 +88,10 @@ trait Lines {
       val sImmed = bits("immed", immed.getVal.map(_.toBinaryString).getOrElse(""), 8)
 
       val i = sAluop + sTDev + sADev + sBDev + sFlags + sNU + sMode + sAddress + sImmed
+      if (i.length!=48) throw new RuntimeException(s"sw error: expected 48 bits but got ${i.size} in '${i}''")
 
-      i.grouped(8).toList
+      val list = i.grouped(8).toList
+      list
     }
 
     private def bits(name: String, value: String, len: Int): String = {
@@ -106,9 +108,9 @@ trait Lines {
     }
   }
 
-  case class EquInstruction(variable: String, value: Know) extends Line {
+  case class EquInstruction(variable: String, value: Know[KnownInt]) extends Line {
 
-    remember(variable, value)
+    rememberKnown(variable, value)
 
     def str = {
       s"""${this.getClass.getName} ${variable} = ${value}"""
@@ -123,17 +125,17 @@ trait Lines {
     }
   }
 
-//  case class StrInstruction(variable: String, value: Seq[Byte]) extends Line {
-//
-//    def str = {
-//      s"""${this.getClass.getName} ${variable} = ${value}"""
-//    }
-//
-//    def unresolved = {
-//      false
-//    }
-//  }
-//
+  //  case class StrInstruction(variable: String, value: Seq[Byte]) extends Line {
+  //
+  //    def str = {
+  //      s"""${this.getClass.getName} ${variable} = ${value}"""
+  //    }
+  //
+  //    def unresolved = {
+  //      false
+  //    }
+  //  }
+  //
 
   case class BlankLine() extends Line {
     override def str: String =

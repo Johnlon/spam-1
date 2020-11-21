@@ -117,7 +117,7 @@ trait Devices {
 
   }
 
-  case class RamDirect(addr: Know) extends TExpression with BOnlyDevice {
+  case class RamDirect(addr: Know[KnownInt]) extends TExpression with BOnlyDevice {
     override def toString: String = s"[${addr}]"
   }
 }

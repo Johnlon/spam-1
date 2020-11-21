@@ -20,7 +20,7 @@ trait InstructionParser extends JavaTokenParsers {
     _ | _
   }
 
-  def aluop = enumToParser(AluOp.values)
+  def aluop: Parser[AluOp] = enumToParser(AluOp.values)
 
   def adev: Parser[ADevice] = enumToParser(ADevice.values)
 
@@ -34,39 +34,52 @@ trait InstructionParser extends JavaTokenParsers {
 
   def name: Parser[String] = "[a-zA-Z][a-zA-Z0-9_]*".r ^^ { case a => a }
 
-  def pcref: Parser[Know] = """.""" ^^ { case v => Known("pc", pc) }
+  def pcref: Parser[Know[KnownInt]] = """.""" ^^ { case v => Known("pc", pc) }
 
-  def dec: Parser[Know] = """\d+""".r ^^ { case v => Known("", v.toInt) }
+  def dec: Parser[Know[KnownInt]] = """\d+""".r ^^ { case v => Known("", v.toInt) }
 
-  def hex: Parser[Know] = "$" ~ """[0-9a-hA-H]+""".r ^^ { case _ ~ v => Known("$" + v, Integer.valueOf(v, 16)) }
+  def hex: Parser[Know[KnownInt]] = "$" ~ """[0-9a-hA-H]+""".r ^^ { case _ ~ v => Known("$" + v, Integer.valueOf(v, 16)) }
 
-  def bin: Parser[Know] = "%" ~ """[01]+""".r ^^ { case _ ~ v => Known("%" + v, Integer.valueOf(v, 2)) }
+  def bin: Parser[Know[KnownInt]] = "%" ~ """[01]+""".r ^^ { case _ ~ v => Known("%" + v, Integer.valueOf(v, 2)) }
 
-  def oct: Parser[Know] = "@" ~ """[0-7]+""".r ^^ { case _ ~ v => Known("@" + v, Integer.valueOf(v, 8)) }
+  def oct: Parser[Know[KnownInt]] = "@" ~ """[0-7]+""".r ^^ { case _ ~ v => Known("@" + v, Integer.valueOf(v, 8)) }
 
-  def labelAddr: Parser[Know] = ":" ~ name ^^ { case _ ~ v => knowable(v) }
+  def labelAddr: Parser[Know[KnownInt]] = ":" ~ name ^^ { case _ ~ v => forwardReference(v) }
+
+  def labelLen: Parser[Know[KnownInt]] = "len(" ~ ":" ~> name <~ ")" ^^ {
+    case v =>
+      val v1: Know[KnownValue] = forwardReference(v).eval
+      val k : Know[KnownInt] = v1 match {
+        case Known(name, knownVal) => knownVal match {
+          case KnownInt(_) => Known(s"len(:${v})", KnownInt(1))
+          case KnownByteArray(b) => Known(s"len(:${v})", KnownInt(b.length))
+        }
+        case x => sys.error(s"asm error : ${v} unknown")
+      }
+      k
+  }
 
   def label: Parser[Label] = name ~ ":" ^^ {
     case n ~ _ => {
-      remember(n, pc)
+      rememberValue(n, KnownInt(pc))
       Label(n)
     }
   }
 
-  def hiByte: Parser[Know] = "<" ~> expr ^^ { case e => UniKnowable(() => e, i => ((i >> 8) & 0xff), "HI<") }
+  def hiByte: Parser[Know[KnownInt]] = "<" ~> expr ^^ { case e: Know[KnownInt] => UniKnowable[KnownInt](() => e, i => KnownInt((i.v >> 8) & 0xff), "HI<") }
 
-  def loByte: Parser[Know] = ">" ~> expr ^^ { case e => UniKnowable(() => e, i => i & 0xff, "LO>") }
+  def loByte: Parser[Know[KnownInt]] = ">" ~> expr ^^ { case e: Know[KnownInt] => UniKnowable[KnownInt](() => e, i => KnownInt(i.v & 0xff), "LO>") }
 
-  def factor: Parser[Know] = (pcref | dec | hex | bin | oct | "(" ~> expr <~ ")" | hiByte | loByte | labelAddr)
+  def factor: Parser[Know[KnownInt]] = (labelLen | pcref | dec | hex | bin | oct | "(" ~> expr <~ ")" | hiByte | loByte | labelAddr)
 
-  def expr: Parser[Know] = factor ~ rep("*" ~ factor | "/" ~ factor | "&" ~ factor | "|" ~ factor | "+" ~ factor | "-" ~ factor) ^^ {
+  def expr: Parser[Know[KnownInt]] = factor ~ rep("*" ~ factor | "/" ~ factor | "&" ~ factor | "|" ~ factor | "+" ~ factor | "-" ~ factor) ^^ {
     case number ~ list => list.foldLeft(number) {
-      case (x, "*" ~ y) => BiKnowable(() => x, () => y, _ * _, "*")
-      case (x, "+" ~ y) => BiKnowable(() => x, () => y, _ + _, "+")
-      case (x, "/" ~ y) => BiKnowable(() => x, () => y, _ / _, "/")
-      case (x, "-" ~ y) => BiKnowable(() => x, () => y, _ - _, "-")
-      case (x, "&" ~ y) => BiKnowable(() => x, () => y, _ & _, "&")
-      case (x, "|" ~ y) => BiKnowable(() => x, () => y, _ | _, "|")
+      case (x, "*" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ * _, "*")
+      case (x, "+" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ + _, "+")
+      case (x, "/" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ / _, "/")
+      case (x, "-" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ - _, "-")
+      case (x, "&" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ & _, "&")
+      case (x, "|" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ | _, "|")
     }
   }
 
@@ -90,9 +103,10 @@ trait InstructionParser extends JavaTokenParsers {
 
   var dataAddress = 0
 
+
   // amended vs 'stringLiteral' to include the short form \0
   def quotedString: Parser[String] = ("\"" + """([^"\x01-\x1F\x7F\\]|\\[\\'"0bfnrt]|\\u[a-fA-F0-9]{4})*""" + "\"").r ^^ {
-    case s => s
+    case s =>
       val withoutQuotes = s.stripPrefix("\"").stripSuffix("\"")
       val str = org.apache.commons.text.StringEscapeUtils.unescapeJava(withoutQuotes)
       str
@@ -100,7 +114,10 @@ trait InstructionParser extends JavaTokenParsers {
 
   def strInstruction: Parser[List[Line]] = (name <~ ":" ~ "STR") ~ quotedString ^^ {
     case a ~ b => {
-      val bytes = b.getBytes
+      val bytes = b.getBytes("UTF-8").toSeq
+
+      rememberValue(a, KnownByteArray(bytes))
+
       Label(a) +: bytes.map { c => {
         val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Control._A), Known("", c))
         dataAddress += 1
@@ -110,7 +127,7 @@ trait InstructionParser extends JavaTokenParsers {
     }
   }
 
-  private def inst(t: TExpression, a: ADevice, op: AluOp, b: BExpression, f: Option[Control], immed: Know): Instruction = {
+  private def inst(t: TExpression, a: ADevice, op: AluOp, b: BExpression, f: Option[Control], immed: Know[KnownInt]): Instruction = {
     (t, b) match {
       case (t: TDevice, b: BDevice) =>
         Instruction(t, a, b, op, f, REGISTER, Irrelevant(), immed)
