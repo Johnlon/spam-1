@@ -135,6 +135,24 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     )
   }
 
+  "it" should "compile strings to RAM" in {
+    val code = Seq(
+      "MYSTR: STR     \"AB\\u0000\\n\"",
+      "END")
+
+    val asm = new Assembler()
+    import asm._
+
+    instructions(code, asm) shouldBe Seq(
+      (AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
+      (AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 1, 'B'.toByte),
+      (AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 2, 0),
+      (AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 3, '\n')
+    )
+
+//    assertLabel(asm, "MYSTR", Some(0))
+  }
+
   "it" should "compile []=[] " in {
     val code = List(
       "[1000]=[1]",

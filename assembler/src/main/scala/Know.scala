@@ -5,8 +5,9 @@ trait Knowing {
 
   def remember(name: String, v: Int): Known = {
     labels.get(name).map(e => sys.error(s"symbol '${name}' has already defined as ${e} can't assign new value ${v}"))
-    labels(name) = Known(name, v)
-    Known(name, v)
+    val k = Known(name, v)
+    labels(name) = k
+    k
   }
 
   def remember[T <: Know](name: String, k: T): T = {

@@ -10,24 +10,31 @@ object Mode extends Enumeration {
 
 // expr "calculator" code taken from https://www.scala-lang.org/api/2.12.8/scala-parser-combinators/scala/util/parsing/combinator/RegexParsers.html
 trait InstructionParser extends JavaTokenParsers {
-  self : Lines with Knowing with Devices =>
+  self: Lines with Knowing with Devices =>
 
-//  override val whiteSpace =  """[ \t\f\x0B]++""".r // whitespace not including line endings
+  //  override val whiteSpace =  """[ \t\f\x0B]++""".r // whitespace not including line endings
 
-  def enumToParser[A<:E](e: Seq[A]): Parser[A] = e map { m =>
+  def enumToParser[A <: E](e: Seq[A]): Parser[A] = e map { m =>
     literal(m.enumName) ^^^ m
   } reduceLeft {
     _ | _
   }
 
-  def aluop= enumToParser(AluOp.values)
+  def aluop = enumToParser(AluOp.values)
+
   def adev: Parser[ADevice] = enumToParser(ADevice.values)
+
   def bdev: Parser[BDevice] = enumToParser(BDevice.values)
+
   def bdevonly: Parser[BOnlyDevice] = enumToParser(BOnlyDevice.values)
+
   def tdev: Parser[TDevice] = enumToParser(TDevice.values)
+
   def controlCode: Parser[Control] = enumToParser(Control.values)
 
   def name: Parser[String] = "[a-zA-Z][a-zA-Z0-9_]*".r ^^ { case a => a }
+
+  def pcref: Parser[Know] = """.""" ^^ { case v => Known("pc", pc) }
 
   def dec: Parser[Know] = """\d+""".r ^^ { case v => Known("", v.toInt) }
 
@@ -46,11 +53,11 @@ trait InstructionParser extends JavaTokenParsers {
     }
   }
 
-  def hiByte: Parser[Know] = "<" ~> expr ^^ { case  e => UniKnowable(() => e, i => ((i >> 8) & 0xff), "HI<") }
+  def hiByte: Parser[Know] = "<" ~> expr ^^ { case e => UniKnowable(() => e, i => ((i >> 8) & 0xff), "HI<") }
 
-  def loByte: Parser[Know] = ">" ~> expr ^^ { case  e => UniKnowable(() => e, i => i & 0xff, "LO>") }
+  def loByte: Parser[Know] = ">" ~> expr ^^ { case e => UniKnowable(() => e, i => i & 0xff, "LO>") }
 
-  def factor: Parser[Know] = (dec | hex | bin | oct | "(" ~> expr <~ ")" | hiByte | loByte | labelAddr)
+  def factor: Parser[Know] = (pcref | dec | hex | bin | oct | "(" ~> expr <~ ")" | hiByte | loByte | labelAddr)
 
   def expr: Parser[Know] = factor ~ rep("*" ~ factor | "/" ~ factor | "&" ~ factor | "|" ~ factor | "+" ~ factor | "-" ~ factor) ^^ {
     case number ~ list => list.foldLeft(number) {
@@ -81,7 +88,29 @@ trait InstructionParser extends JavaTokenParsers {
     }
   }
 
-  private def inst(t: TExpression, a: ADevice, op: AluOp, b: BExpression, f: Option[Control], immed: Know) = {
+  var dataAddress = 0
+
+  // amended vs 'stringLiteral' to include the short form \0
+  def quotedString: Parser[String] = ("\"" + """([^"\x01-\x1F\x7F\\]|\\[\\'"0bfnrt]|\\u[a-fA-F0-9]{4})*""" + "\"").r ^^ {
+    case s => s
+      val withoutQuotes = s.stripPrefix("\"").stripSuffix("\"")
+      val str = org.apache.commons.text.StringEscapeUtils.unescapeJava(withoutQuotes)
+      str
+  }
+
+  def strInstruction: Parser[List[Line]] = (name <~ ":" ~ "STR") ~ quotedString ^^ {
+    case a ~ b => {
+      val bytes = b.getBytes
+      Label(a) +: bytes.map { c => {
+        val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Control._A), Known("", c))
+        dataAddress += 1
+        ni
+      }
+      }.toList
+    }
+  }
+
+  private def inst(t: TExpression, a: ADevice, op: AluOp, b: BExpression, f: Option[Control], immed: Know): Instruction = {
     (t, b) match {
       case (t: TDevice, b: BDevice) =>
         Instruction(t, a, b, op, f, REGISTER, Irrelevant(), immed)
@@ -94,41 +123,41 @@ trait InstructionParser extends JavaTokenParsers {
     }
   }
 
-  def abInstruction: Parser[Line] = (targets <~ "=") ~ adev ~ aluop ~ bdevices ~  (controlCode ?) ^^ {
+  def abInstruction: Parser[Line] = (targets <~ "=") ~ adev ~ aluop ~ bdevices ~ (controlCode ?) ^^ {
     case t ~ a ~ op ~ b ~ f =>
       inst(t, a, op, b, f, Irrelevant())
   }
 
-  def abInstructionShortform: Parser[Line] = (targets <~ "=") ~ adev ~ shortOps ~ bdevices ~ (controlCode?) ^^ {
+  def abInstructionShortform: Parser[Line] = (targets <~ "=") ~ adev ~ shortOps ~ bdevices ~ (controlCode ?) ^^ {
     case t ~ a ~ op ~ b ~ f =>
-      inst(t,a,op,b,f,Irrelevant())
+      inst(t, a, op, b, f, Irrelevant())
   }
 
-  def abInstructionImmed: Parser[Line] = (targets <~ "=") ~ adev ~ aluop ~ expr ~  (controlCode ?) ^^ {
-    case t ~  a ~ op ~ immed ~ f =>
-      inst(t,a,op,BDevice.IMMED,f, immed)
-  }
-
-  def abInstructionShortformImmed: Parser[Line] = (targets <~ "=") ~ adev ~ shortOps ~ expr ~ (controlCode?) ^^ {
+  def abInstructionImmed: Parser[Line] = (targets <~ "=") ~ adev ~ aluop ~ expr ~ (controlCode ?) ^^ {
     case t ~ a ~ op ~ immed ~ f =>
-      inst(t,a,op,BDevice.IMMED,f, immed)
+      inst(t, a, op, BDevice.IMMED, f, immed)
   }
 
-  def bInstruction: Parser[Line] = (targets <~ "=") ~ bdeviceOrRamDirect ~  (controlCode ?) ^^ {
+  def abInstructionShortformImmed: Parser[Line] = (targets <~ "=") ~ adev ~ shortOps ~ expr ~ (controlCode ?) ^^ {
+    case t ~ a ~ op ~ immed ~ f =>
+      inst(t, a, op, BDevice.IMMED, f, immed)
+  }
+
+  def bInstruction: Parser[Line] = (targets <~ "=") ~ bdeviceOrRamDirect ~ (controlCode ?) ^^ {
     case t ~ b ~ f => {
-      inst(t,ADevice.NU,AluOp.PASS_B,b,f, Irrelevant())
+      inst(t, ADevice.NU, AluOp.PASS_B, b, f, Irrelevant())
     }
   }
 
-  def bInstructionImmed: Parser[Line] = (targets <~ "=") ~ expr ~  (controlCode ?) ^^ {
+  def bInstructionImmed: Parser[Line] = (targets <~ "=") ~ expr ~ (controlCode ?) ^^ {
     case t ~ immed ~ f => {
-      inst(t,ADevice.NU, AluOp.PASS_B ,BDevice.IMMED ,f, immed)
+      inst(t, ADevice.NU, AluOp.PASS_B, BDevice.IMMED, f, immed)
     }
   }
 
-  def aInstruction: Parser[Line] = (targets <~ "=") ~ adev ~  (controlCode ?) ^^ {
+  def aInstruction: Parser[Line] = (targets <~ "=") ~ adev ~ (controlCode ?) ^^ {
     case t ~ a ~ f => {
-      inst(t,a, AluOp.PASS_A ,BDevice.NU ,f, Irrelevant())
+      inst(t, a, AluOp.PASS_A, BDevice.NU, f, Irrelevant())
     }
   }
 
@@ -139,13 +168,13 @@ trait InstructionParser extends JavaTokenParsers {
     _ | _
   }
 
-  def line: Parser[Line] = (eqInstruction | bInstruction | abInstructionImmed | abInstructionShortform | abInstructionShortformImmed | abInstruction | aInstruction  | bInstructionImmed | comment | label)  ^^ {
-    case x =>
-      x
+  def line: Parser[List[Line]] = (strInstruction | eqInstruction | bInstruction | abInstructionImmed | abInstructionShortform | abInstructionShortformImmed | abInstruction | aInstruction | bInstructionImmed | comment | label) ^^ {
+    case x: List[_] => x.asInstanceOf[List[Line]]
+    case x: Line => List(x)
   }
 
   def lines: Parser[List[Line]] = line ~ (line *) <~ "END" ^^ {
-    case a ~ b => a :: b
+    case a ~ b =>
+      (a ++ b.flatten)
   }
-
 }

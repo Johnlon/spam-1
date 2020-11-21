@@ -123,6 +123,17 @@ trait Lines {
     }
   }
 
+//  case class StrInstruction(variable: String, value: Seq[Byte]) extends Line {
+//
+//    def str = {
+//      s"""${this.getClass.getName} ${variable} = ${value}"""
+//    }
+//
+//    def unresolved = {
+//      false
+//    }
+//  }
+//
 
   case class BlankLine() extends Line {
     override def str: String =
