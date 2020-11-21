@@ -17,6 +17,18 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     assertLabel(asm, "CONST", Some(17))
   }
 
+  it should "compile EQU 'A'" in {
+    val code = Seq("CONSTA:    EQU 'A'",
+      "CONSTB: EQU :CONSTA+1",
+      "END")
+
+    val asm = new Assembler()
+    asm.assemble(code.mkString("\n")) // comments run to end of line
+
+    assertLabel(asm, "CONSTA", Some(65))
+    assertLabel(asm, "CONSTB", Some(66))
+  }
+
   "it" should "compile reg assign immed dec" in {
     val code = Seq("REGA=17", "END")
     val asm = new Assembler()

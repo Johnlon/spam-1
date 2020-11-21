@@ -38,6 +38,12 @@ trait InstructionParser extends JavaTokenParsers {
 
   def dec: Parser[Know[KnownInt]] = """\d+""".r ^^ { case v => Known("", v.toInt) }
 
+  def char: Parser[Know[KnownInt]] = "'" ~> ".".r <~ "'" ^^ { case v =>
+    val i = v.codePointAt(0)
+    if (i>255) throw new RuntimeException(s"asm error: character '${v}' codepoint ${i} is outside the 0-255 range")
+    Known("", i.toByte)
+  }
+
   def hex: Parser[Know[KnownInt]] = "$" ~ """[0-9a-hA-H]+""".r ^^ { case _ ~ v => Known("$" + v, Integer.valueOf(v, 16)) }
 
   def bin: Parser[Know[KnownInt]] = "%" ~ """[01]+""".r ^^ { case _ ~ v => Known("%" + v, Integer.valueOf(v, 2)) }
@@ -70,7 +76,7 @@ trait InstructionParser extends JavaTokenParsers {
 
   def loByte: Parser[Know[KnownInt]] = ">" ~> expr ^^ { case e: Know[KnownInt] => UniKnowable[KnownInt](() => e, i => KnownInt(i.v & 0xff), "LO>") }
 
-  def factor: Parser[Know[KnownInt]] = (labelLen | pcref | dec | hex | bin | oct | "(" ~> expr <~ ")" | hiByte | loByte | labelAddr)
+  def factor: Parser[Know[KnownInt]] = (labelLen | char | pcref | dec | hex | bin | oct | "(" ~> expr <~ ")" | hiByte | loByte | labelAddr)
 
   def expr: Parser[Know[KnownInt]] = factor ~ rep("*" ~ factor | "/" ~ factor | "&" ~ factor | "|" ~ factor | "+" ~ factor | "-" ~ factor) ^^ {
     case number ~ list => list.foldLeft(number) {
