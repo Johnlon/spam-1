@@ -1,3 +1,4 @@
+import AluOp.values
 
 trait E {
   def enumName = {
@@ -26,9 +27,7 @@ trait Devices {
   object BDevice {
 
     def valueOf(id: Int): BDevice = {
-      if (id > 7 || id < 0) throw new RuntimeException("unknown BDevice " + id);
-
-      values.filter(_.id == id).head
+      values.find(c => c.id == id).getOrElse(throw new RuntimeException("unknown BDevice " + id))
     }
 
     def values: Seq[BDevice] = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, IMMED, RAM)
@@ -57,9 +56,7 @@ trait Devices {
   object ADevice {
 
     def valueOf(id: Int): ADevice = {
-      if (id > 7 || id < 0) throw new RuntimeException("unknown ADevice " + id);
-
-      values.filter(_.id == id).head
+      values.find(c => c.id == id).getOrElse(throw new RuntimeException("unknown ADevice " + id))
     }
 
     def values: Seq[ADevice] = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, UART, NU)
@@ -89,9 +86,7 @@ trait Devices {
   object TDevice {
 
     def valueOf(id: Int): TDevice = {
-      val first = values.filter(_.id == id).headOption
-      if (first.isEmpty) throw new RuntimeException("unknown TDevice " + id)
-      first.get
+      values.find(c => c.id == id).getOrElse(throw new RuntimeException("unknown TDevice " + id))
     }
 
     def values = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, UART, RAM, PCHITMP, PCLO, PC)

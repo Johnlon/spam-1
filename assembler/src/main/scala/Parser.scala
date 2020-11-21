@@ -14,41 +14,18 @@ trait InstructionParser extends JavaTokenParsers {
 
 //  override val whiteSpace =  """[ \t\f\x0B]++""".r // whitespace not including line endings
 
-  def aluop: Parser[AluOp] = AluOp.values.toList map { m =>
-    literal(m.toString) ^^^ m
-  } reduceLeft {
-    _ | _
-  }
-
-  def adev: Parser[ADevice] = ADevice.values.toList map { m =>
+  def enumToParser[A<:E](e: Seq[A]): Parser[A] = e map { m =>
     literal(m.enumName) ^^^ m
   } reduceLeft {
     _ | _
   }
 
-  def bdev: Parser[BDevice] = BDevice.values.toList map { m =>
-    literal(m.enumName) ^^^ m
-  } reduceLeft {
-    _ | _
-  }
-
-  def bdevonly: Parser[BOnlyDevice] = BOnlyDevice.values.toList map { m =>
-    literal(m.enumName) ^^^ m
-  } reduceLeft {
-    _ | _
-  }
-
-  def tdev: Parser[TDevice] = TDevice.values.toList map { m =>
-    literal(m.enumName) ^^^ m
-  } reduceLeft {
-    _ | _
-  }
-
-  def controlCode: Parser[Control] = Control.values.toList map { m =>
-    literal(m.enumName) ^^^ m
-  } reduceLeft {
-    _ | _
-  }
+  def aluop= enumToParser(AluOp.values)
+  def adev: Parser[ADevice] = enumToParser(ADevice.values)
+  def bdev: Parser[BDevice] = enumToParser(BDevice.values)
+  def bdevonly: Parser[BOnlyDevice] = enumToParser(BOnlyDevice.values)
+  def tdev: Parser[TDevice] = enumToParser(TDevice.values)
+  def controlCode: Parser[Control] = enumToParser(Control.values)
 
   def name: Parser[String] = "[a-zA-Z][a-zA-Z0-9_]*".r ^^ { case a => a }
 
@@ -156,7 +133,7 @@ trait InstructionParser extends JavaTokenParsers {
   }
 
   // reverse sorted to put longer operators ahead of shorter ones otherwise shorter ones gobble
-  def shortOps: Parser[AluOp] = AluOp.values.filter(_.isAbbreviated).sorted.reverse.toList map { m =>
+  def shortOps: Parser[AluOp] = AluOp.values.filter(_.isAbbreviated).sortBy(x => x.enumName).reverse.toList map { m =>
     literal(m.abbrev) ^^^ m
   } reduceLeft {
     _ | _
