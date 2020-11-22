@@ -1,4 +1,5 @@
 import Mode.{DIRECT, REGISTER}
+import jdk.jfr.Unsigned
 
 import scala.language.postfixOps
 import scala.util.parsing.combinator._
@@ -36,11 +37,27 @@ trait InstructionParser extends JavaTokenParsers {
 
   def pcref: Parser[Know[KnownInt]] = """.""" ^^ { case v => Known("pc", pc) }
 
-  def dec: Parser[Know[KnownInt]] = """\d+""".r ^^ { case v => Known("", v.toInt) }
+  def dec: Parser[Know[KnownInt]] = """-?\d+""".r ^^ {
+    case v =>
+      val vi = v.toInt
+//      if (vi < Byte.MinValue || vi > Byte.MaxValue) {
+//        sys.error(s"asm error: ${vi} evaluates as out of range ${Byte.MinValue} to ${Byte.MaxValue}")
+//      }
+      Known("", vi)
+  }
+
+//  def udec: Parser[Know[KnownInt]] = """u\d+""".r ^^ {
+//    case v =>
+//      val vi = v.stripPrefix("u").toInt
+//      if (vi < 0 || vi > 255) {
+//        sys.error(s"asm error: ${vi} evaluates as out of range 0 to 255")
+//      }
+//      Known("", vi)
+//  }
 
   def char: Parser[Know[KnownInt]] = "'" ~> ".".r <~ "'" ^^ { case v =>
     val i = v.codePointAt(0)
-    if (i>255) throw new RuntimeException(s"asm error: character '${v}' codepoint ${i} is outside the 0-255 range")
+    if (i > 127) throw new RuntimeException(s"asm error: character '${v}' codepoint ${i} is outside the 0-127 range")
     Known("", i.toByte)
   }
 
@@ -55,7 +72,7 @@ trait InstructionParser extends JavaTokenParsers {
   def labelLen: Parser[Know[KnownInt]] = "len(" ~ ":" ~> name <~ ")" ^^ {
     case v =>
       val v1: Know[KnownValue] = forwardReference(v).eval
-      val k : Know[KnownInt] = v1 match {
+      val k: Know[KnownInt] = v1 match {
         case Known(name, knownVal) => knownVal match {
           case KnownInt(_) => Known(s"len(:${v})", KnownInt(1))
           case KnownByteArray(b) => Known(s"len(:${v})", KnownInt(b.length))
@@ -133,6 +150,28 @@ trait InstructionParser extends JavaTokenParsers {
     }
   }
 
+  def bytesInstruction: Parser[List[Line]] = (name <~ ":" ~ "BYTES" ~ "[") ~ expr ~ (( "," ~> expr)*) <~ "]" ^^ {
+    case a ~ b ~ c => {
+
+      val exprs : List[Know[KnownInt]]= b +: c
+
+      val ints: List[Int] = exprs.map(_.getVal.get.v)
+      ints.filter { x =>
+        x.toByte < Byte.MinValue || x.toByte > Byte.MaxValue
+      }.foreach(x => sys.error(s"asm error: ${x} evaluates as out of range ${Byte.MinValue} to ${Byte.MaxValue}"))
+      val bytes: List[Byte] = ints.map(_.toByte)
+
+      rememberValue(a, KnownByteArray(bytes))
+
+      Label(a) +: bytes.map { c => {
+        val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Control._A), Known("", c))
+        dataAddress += 1
+        ni
+      }
+      }.toList
+    }
+  }
+
   private def inst(t: TExpression, a: ADevice, op: AluOp, b: BExpression, f: Option[Control], immed: Know[KnownInt]): Instruction = {
     (t, b) match {
       case (t: TDevice, b: BDevice) =>
@@ -191,7 +230,7 @@ trait InstructionParser extends JavaTokenParsers {
     _ | _
   }
 
-  def line: Parser[List[Line]] = (strInstruction | eqInstruction | bInstruction | abInstructionImmed | abInstructionShortform | abInstructionShortformImmed | abInstruction | aInstruction | bInstructionImmed | comment | label) ^^ {
+  def line: Parser[List[Line]] = (strInstruction | bytesInstruction | eqInstruction | bInstruction | abInstructionImmed | abInstructionShortform | abInstructionShortformImmed | abInstruction | aInstruction | bInstructionImmed | comment | label) ^^ {
     case x: List[_] => x.asInstanceOf[List[Line]]
     case x: Line => List(x)
   }

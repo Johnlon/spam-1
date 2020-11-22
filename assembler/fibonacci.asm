@@ -4,10 +4,10 @@ ZERO: EQU 0
 
 ; LOAD TO RAM AT THE CURRENT MEMORY[0] ONWARDSa AND SET THE LABEL TO THE FIRST BYTE
 STRING:     STR     "ABC\n\0\u0000"
-;BYTE_ARR:   BYTES   ['¬' 170 $aa %10101010] // parse as hex bytes and then treat as per STR
+BYTE_ARR:   BYTES   [ 'A', 65 ,$41, %10101010 ] ; parse as hex bytes and then treat as per STR
 CHAR:       EQU     'A'
 STRING_L:   EQU     len(:STRING)
-.BYTE_ARR_L: EQU     len(:BYTE_ARR)
+BYTE_ARR_L: EQU     len(:BYTE_ARR)
 
 start:      REGA=1
             REGB=1

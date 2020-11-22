@@ -85,17 +85,19 @@ trait Lines {
       val sNU = bits("nu", "", 3)
       val sMode = if (amode == DIRECT) "1" else "0"
       val sAddress = bits("address", address.getVal.map(_.toBinaryString).getOrElse(""), 16)
-      val sImmed = bits("immed", immed.getVal.map(_.toBinaryString).getOrElse(""), 8)
+      val sImmed = bits("immed", immed.getVal.map { v =>
+        v.v & 0xff
+      }.map(_.toBinaryString).getOrElse(""), 8)
 
       val i = sAluop + sTDev + sADev + sBDev + sFlags + sNU + sMode + sAddress + sImmed
-      if (i.length!=48) throw new RuntimeException(s"sw error: expected 48 bits but got ${i.size} in '${i}''")
+      if (i.length != 48) throw new RuntimeException(s"sw error: expected 48 bits but got ${i.size} in '${i}''")
 
       val list = i.grouped(8).toList
       list
     }
 
     private def bits(name: String, value: String, len: Int): String = {
-      val pad = "0" * (len - value.length)
+      val pad = "0" * Math.max(0, (len - value.length))
       val string = pad + value
 
       if (string.length > len) {

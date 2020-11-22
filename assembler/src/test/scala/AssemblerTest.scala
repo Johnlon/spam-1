@@ -170,6 +170,34 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     )
   }
 
+  it should "compile bytes to RAM" in {
+    val code = Seq(
+      "MYBYTES:     BYTES     [ 'A', 65, $41, %01000001, 255 , -1, 127, 128 ]",
+      "MYBYTES_LEN: EQU       len(:MYBYTES)",
+      "END")
+
+    val asm = new Assembler()
+    import asm._
+
+    val compiled = instructions(code, asm)
+
+    val B_65 = 65.toByte
+
+    asm.labels("MYBYTES").getVal shouldBe Some(KnownByteArray(Seq(B_65, B_65, B_65, B_65, 255.toByte, -1, 127, 128.toByte)))
+    asm.labels("MYBYTES_LEN").getVal shouldBe Some(KnownInt(8))
+
+    compiled shouldBe Seq(
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 0, B_65),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 1, B_65),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 2, B_65),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 3, B_65),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 4, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 5, (-1).toByte), // 255 unsigned has same bit pattern as -1 signed
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 6, (127).toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 7, -128) // unsigned 128 has sae bit pattern as -128 twos compl
+    )
+  }
+
   "it" should "compile strings len" in {
     val code = Seq(
       "MYSTR: STR     \"AB\"",
