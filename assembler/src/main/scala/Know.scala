@@ -8,8 +8,11 @@ trait Knowing {
     def getVal: Option[T]
   }
 
-  sealed trait KnownValue
-  case class KnownInt(v: Int) extends KnownValue {
+  sealed trait KnownValue {
+    def v: Int
+  }
+
+  case class KnownInt(v: Int) extends KnownValue  {
     def toBinaryString: String = v.toBinaryString
 
     def +(knownInt: KnownInt) = KnownInt(v +  knownInt.v)
@@ -20,58 +23,85 @@ trait Knowing {
     def &(knownInt: KnownInt) = KnownInt(v &  knownInt.v)
     def |(knownInt: KnownInt) = KnownInt(v |  knownInt.v)
 
-    override def toString = v.toString
+    override def toString = s"${v.toString}"
   }
-  case class KnownByteArray(v: Seq[Byte]) extends KnownValue
+  case class KnownByteArray(v: Int, data: Seq[Byte]) extends KnownValue {
+    override def toString = s"bytes(pos:${v.toString} len:${data.length})"
+  }
 
-  val labels = mutable.Map.empty[String, Know[_]]
+  val labels = mutable.Map.empty[String, Know[_ <: KnownValue]]
 
-  def rememberValue[T<:KnownValue: ClassTag](name: String, v: T): Known[T] = {
+  def rememberValue(name: String, v: KnownValue): Know[_ <: KnownValue] = {
     labels.get(name).map(e => sys.error(s"symbol '${name}' has already defined as ${e} can't assign new value ${v}"))
     val k = Known(name, v)
     rememberKnown(name,k)
   }
 
-  def rememberKnown[K<:Know[_ <: KnownValue]](name: String, k: K): K = {
+  def rememberKnown(name: String, k: Know[_ <: KnownValue]): Know[_ <: KnownValue] = {
     labels.get(name).map(e => sys.error(s"symbol '${name}' has already defined as ${e} can't assign new value ${k}"))
     labels(name) = k
     k
   }
 
-  def forwardReference[T <: KnownValue : ClassTag](name: String): Know[T] = {
+  def forwardReference(name: String): Know[KnownInt] = {
     val maybeKnow = labels.get(name)
     maybeKnow match {
-      case Some(Known(n, b:T)) => Known(n, b)
-      case Some(Known(_, v)) => sys.error(s"asm error : value of ${name} is type ${v.getClass}(=${v.toString}) but require type ${classTag[T].runtimeClass.getClass}" )
-      case _ => Knowable[T](name, () => recall[T](name))
+      case Some(Known(n, KnownInt(v))) =>
+        Known(n, KnownInt(v))
+      case Some(Known(n, KnownByteArray(v, _))) =>
+        Known(n, KnownInt(v))
+        //sys.error(s"asm error : value of ${name} is type KnownByteArray (v:${v}, len:${b.length}) but require type ${classTag[T].runtimeClass}" )
+      case _ =>
+        Knowable(name, () => recall(name))
     }
 //    maybeKnow.getOrElse(Knowable[T](name, () => recall[T](name)))
   }
 
-  def recall[T<:KnownValue: ClassTag](name: String): Option[T] = {
-    val maybeKnow: Option[Know[_]] = labels.get(name)
+  def recall(name: String): Option[KnownInt] = {
+    val maybeKnow: Option[Know[_ <: KnownValue]] = labels.get(name)
     maybeKnow match {
-      case Some(Known(_, v:T)) => Some(v)
-      case Some(Known(_, v)) => sys.error(s"asm error : resolved value of ${name} is type ${v.getClass}(=${v.toString}) but require type ${classTag[T].runtimeClass.getClass}" )
-      case _ => None
+      case Some(Known(_, v:KnownValue)) =>
+        Some(KnownInt(v.v))
+
+      case Some(Knowable(n, v)) =>
+        val ov:Option[KnownValue] = v()
+        val oi = ov.map { v =>
+          KnownInt(v.v)
+        }
+        oi
+
+      case x =>
+        None
     }
   }
 
   case class Knowable[T<:KnownValue : ClassTag](name: String, a: () => Option[T]) extends Know[T] {
     def eval: Know[T] = {
-      a().map(v => Known(name, v)).getOrElse(Unknown(name))
+      a().map(v =>
+        Known(name, v)
+      ).getOrElse(
+        Unknown(name)
+      )
     }
 
     def getVal = a()
 
     override def toString(): String = {
-      s"""${a().map(v => v.toString).getOrElse(s"unknown{${name}")})"""
+      val maybeT = a()
+      val maybeString: Option[String] = maybeT.map(v =>
+        v.toString
+      )
+
+      val str = maybeString.getOrElse(
+        s"unknown(${name})"
+      )
+      str
     }
   }
 
   object Known {
     def apply(name: String, i: Int): Known[KnownInt] = Known(name, KnownInt(i))
-    def apply(name: String, b: Seq[Byte]): Known[KnownByteArray] = Known(name, KnownByteArray(b))
+    def apply(name: String, i: Int, b: Seq[Byte]): Known[KnownByteArray] = Known(name, KnownByteArray(i, b))
   }
   case class Known[T<:KnownValue : ClassTag](name: String, knownVal: T) extends Know[T] {
     type KV = T

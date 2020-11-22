@@ -152,7 +152,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
 
   "it" should "compile strings to RAM" in {
     val code = Seq(
-      "MYSTR: STR     \"AB\\u0000\\n\"",
+      "STRING1: STR     \"AB\\u0000\\n\"",
       "END")
 
     val asm = new Assembler()
@@ -160,7 +160,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
 
     val compiled = instructions(code, asm)
 
-    asm.labels("MYSTR").getVal shouldBe Some(KnownByteArray(Seq(65, 66, 0, 10)))
+    asm.labels("STRING1").getVal shouldBe Some(KnownByteArray(0, Seq(65, 66, 0, 10)))
 
     compiled shouldBe Seq(
       i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
@@ -172,8 +172,12 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
 
   it should "compile bytes to RAM" in {
     val code = Seq(
-      "MYBYTES:     BYTES     [ 'A', 65, $41, %01000001, 255 , -1, 127, 128 ]",
-      "MYBYTES_LEN: EQU       len(:MYBYTES)",
+      "FIRST:       BYTES     [ 1,2,3 ]",
+      "SECOND:      BYTES     [ 'A', 65, $41, %01000001, 255 , -1, 127, 128 ]",
+      "FIRST_LEN:   EQU       len(:FIRST)",
+      "SECOND_LEN:  EQU       len(:SECOND)",
+      "FIRST_POS:   EQU       :FIRST",
+      "SECOND_POS:  EQU       :SECOND",
       "END")
 
     val asm = new Assembler()
@@ -183,36 +187,48 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
 
     val B_65 = 65.toByte
 
-    asm.labels("MYBYTES").getVal shouldBe Some(KnownByteArray(Seq(B_65, B_65, B_65, B_65, 255.toByte, -1, 127, 128.toByte)))
-    asm.labels("MYBYTES_LEN").getVal shouldBe Some(KnownInt(8))
+    asm.labels("FIRST").getVal shouldBe Some(KnownByteArray(0, Seq(1,2,3)))
+    asm.labels("SECOND").getVal shouldBe Some(KnownByteArray(3, Seq(B_65, B_65, B_65, B_65, 255.toByte, -1, 127, 128.toByte)))
+    asm.labels("FIRST_LEN").getVal shouldBe Some(KnownInt(3))
+    asm.labels("SECOND_LEN").getVal shouldBe Some(KnownInt(8))
+    asm.labels("FIRST_POS").getVal shouldBe Some(KnownInt(0))
+    asm.labels("SECOND_POS").getVal shouldBe Some(KnownInt(3))
 
+    var pos = 0
+    def nextPos = {
+      pos += 1
+      pos-1
+    }
     compiled shouldBe Seq(
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 0, B_65),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 1, B_65),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 2, B_65),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 3, B_65),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 4, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 5, (-1).toByte), // 255 unsigned has same bit pattern as -1 signed
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 6, (127).toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 7, -128) // unsigned 128 has sae bit pattern as -128 twos compl
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, 1),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, 2),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, 3),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, (-1).toByte), // 255 unsigned has same bit pattern as -1 signed
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, (127).toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, -128) // unsigned 128 has sae bit pattern as -128 twos compl
     )
   }
 
   "it" should "compile strings len" in {
     val code = Seq(
-      "MYSTR: STR     \"AB\"",
-      "MYSTRLEN: EQU len(:MYSTR)",
+      "MYSTR:     STR     \"AB\"",
+      "MYSTRLEN:  EQU len(:MYSTR)",
+      "",
       "[$ff]= :MYSTRLEN",
-      "[$ff]= :MYSTRLEN+1",
+      "[$ff]= :MYSTRLEN+1 ; foo",
       "END")
 
     val asm = new Assembler()
     import asm._
 
     val compiled = instructions(code, asm)
-
     asm.labels("MYSTRLEN").getVal shouldBe Some(KnownInt(2))
-    asm.labels("MYSTR").getVal shouldBe Some(KnownByteArray(Seq(65, 66)))
+    asm.labels("MYSTR").getVal shouldBe Some(KnownByteArray(0, Seq(65, 66)))
 
     compiled shouldBe Seq(
       i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),

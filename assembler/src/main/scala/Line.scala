@@ -12,8 +12,6 @@ trait Lines {
     val instructionAddress = pc
     //println(s"""${Line.instNo.formatted("%03d")} pc:${instructionAddress.formatted("%04x")} : ${this.getClass.getName}  : ${this.str}""")
 
-    def str: String
-
     def unresolved: Boolean
 
     instNo += 1
@@ -48,10 +46,10 @@ trait Lines {
       case _ =>
     }
 
-    def str = {
-      val fstr = control.toString
-      s"""${instNo.formatted("%03d")} pc:${instructionAddress.formatted("%04x")} ${this.getClass.getName}(${tdev} = ${adev} ${aluop}$fstr ${bdev})  amode:${amode}   addr:${address.eval}  immed:${immed.eval}"""
-    }
+//    def str = {
+//      val fstr = control.toString
+//      s"""${instNo.formatted("%03d")} pc:${instructionAddress.formatted("%04x")} ${this.getClass.getName}(${tdev} = ${adev} ${aluop}$fstr ${bdev})  amode:${amode}   addr:${address.eval}  immed:${immed.eval}"""
+//    }
 
     def unresolved = {
       val Aok = address.getVal match {
@@ -64,10 +62,6 @@ trait Lines {
       }
 
       val isResolved = Aok & Iok
-      if (!isResolved) {
-        println("wait")
-      }
-
       !isResolved
     }
 
@@ -101,9 +95,8 @@ trait Lines {
       val string = pad + value
 
       if (string.length > len) {
-        System.err.println(this)
-        System.err.println(s"${name} field length ${len}(${Math.pow(2, len).toInt}) exceeded by value ${value}(${Integer.parseInt(value, 2)})")
-        sys.exit(1)
+        //System.err.println(this)
+        sys.error(s"${name} field length ${len}(${Math.pow(2, len).toInt}) exceeded by value ${value}(${Integer.parseInt(value, 2)})")
       }
 
       string
@@ -112,12 +105,9 @@ trait Lines {
 
   case class EquInstruction(variable: String, value: Know[KnownInt]) extends Line {
 
-    rememberKnown(variable, value)
-
     def str = {
       s"""${this.getClass.getName} ${variable} = ${value}"""
     }
-
 
     def unresolved = {
       value.getVal match {
@@ -127,39 +117,16 @@ trait Lines {
     }
   }
 
-  //  case class StrInstruction(variable: String, value: Seq[Byte]) extends Line {
-  //
-  //    def str = {
-  //      s"""${this.getClass.getName} ${variable} = ${value}"""
-  //    }
-  //
-  //    def unresolved = {
-  //      false
-  //    }
-  //  }
-  //
-
-  case class BlankLine() extends Line {
-    override def str: String =
-      s"""${this.getClass.getName}"""
-
-    override def unresolved: Boolean = false
-  }
-
   case class Comment(comment: String) extends Line {
-    def str = {
-      s"""${this.getClass.getName} ${comment}"""
-    }
-
     def unresolved = false
   }
 
   case class Label(name: String) extends Line {
-    def str = {
-      s"""${this.getClass.getName} ${name}"""
-    }
 
     def unresolved = false
-  }
 
+    override def toString = {
+      s"Label(${name} @ ${instructionAddress})"
+    }
+  }
 }

@@ -37,23 +37,24 @@ trait InstructionParser extends JavaTokenParsers {
 
   def pcref: Parser[Know[KnownInt]] = """.""" ^^ { case v => Known("pc", pc) }
 
-  def dec: Parser[Know[KnownInt]] = """-?\d+""".r ^^ {
-    case v =>
-      val vi = v.toInt
-//      if (vi < Byte.MinValue || vi > Byte.MaxValue) {
-//        sys.error(s"asm error: ${vi} evaluates as out of range ${Byte.MinValue} to ${Byte.MaxValue}")
-//      }
-      Known("", vi)
-  }
+  def dec: Parser[Know[KnownInt]] =
+    """-?\d+""".r ^^ {
+      case v =>
+        val vi = v.toInt
+        //      if (vi < Byte.MinValue || vi > Byte.MaxValue) {
+        //        sys.error(s"asm error: ${vi} evaluates as out of range ${Byte.MinValue} to ${Byte.MaxValue}")
+        //      }
+        Known("", vi)
+    }
 
-//  def udec: Parser[Know[KnownInt]] = """u\d+""".r ^^ {
-//    case v =>
-//      val vi = v.stripPrefix("u").toInt
-//      if (vi < 0 || vi > 255) {
-//        sys.error(s"asm error: ${vi} evaluates as out of range 0 to 255")
-//      }
-//      Known("", vi)
-//  }
+  //  def udec: Parser[Know[KnownInt]] = """u\d+""".r ^^ {
+  //    case v =>
+  //      val vi = v.stripPrefix("u").toInt
+  //      if (vi < 0 || vi > 255) {
+  //        sys.error(s"asm error: ${vi} evaluates as out of range 0 to 255")
+  //      }
+  //      Known("", vi)
+  //  }
 
   def char: Parser[Know[KnownInt]] = "'" ~> ".".r <~ "'" ^^ { case v =>
     val i = v.codePointAt(0)
@@ -71,15 +72,23 @@ trait InstructionParser extends JavaTokenParsers {
 
   def labelLen: Parser[Know[KnownInt]] = "len(" ~ ":" ~> name <~ ")" ^^ {
     case v =>
-      val v1: Know[KnownValue] = forwardReference(v).eval
-      val k: Know[KnownInt] = v1 match {
-        case Known(name, knownVal) => knownVal match {
-          case KnownInt(_) => Known(s"len(:${v})", KnownInt(1))
-          case KnownByteArray(b) => Known(s"len(:${v})", KnownInt(b.length))
+      def lookup(): Option[KnownInt] = {
+        val v1 = labels.get(v)
+        v1.map {
+          case Known(_, kv) =>
+            kv match {
+              case KnownByteArray(_, b) =>
+                KnownInt(b.length)
+              case KnownInt(_) =>
+                KnownInt(1)
+            }
+          case x =>
+            sys.error(s"sw error: can't get here because name is a string only; but got unexpected value : ${x}")
         }
-        case x => sys.error(s"asm error : ${v} unknown")
       }
-      k
+      Knowable(s"len(:${v})", () =>
+        lookup()
+      )
   }
 
   def label: Parser[Label] = name ~ ":" ^^ {
@@ -120,6 +129,7 @@ trait InstructionParser extends JavaTokenParsers {
 
   def eqInstruction: Parser[EquInstruction] = (name <~ ":" ~ "EQU") ~ expr ^^ {
     case a ~ b => {
+      rememberKnown(a, b)
       EquInstruction(a, b)
     }
   }
@@ -139,7 +149,7 @@ trait InstructionParser extends JavaTokenParsers {
     case a ~ b => {
       val bytes = b.getBytes("UTF-8").toSeq
 
-      rememberValue(a, KnownByteArray(bytes))
+      rememberValue(a, KnownByteArray(pc, bytes))
 
       Label(a) +: bytes.map { c => {
         val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Control._A), Known("", c))
@@ -150,10 +160,10 @@ trait InstructionParser extends JavaTokenParsers {
     }
   }
 
-  def bytesInstruction: Parser[List[Line]] = (name <~ ":" ~ "BYTES" ~ "[") ~ expr ~ (( "," ~> expr)*) <~ "]" ^^ {
+  def bytesInstruction: Parser[List[Line]] = (name <~ ":" ~ "BYTES" ~ "[") ~ expr ~ (("," ~> expr) *) <~ "]" ^^ {
     case a ~ b ~ c => {
 
-      val exprs : List[Know[KnownInt]]= b +: c
+      val exprs: List[Know[KnownInt]] = b +: c
 
       val ints: List[Int] = exprs.map(_.getVal.get.v)
       ints.filter { x =>
@@ -161,7 +171,7 @@ trait InstructionParser extends JavaTokenParsers {
       }.foreach(x => sys.error(s"asm error: ${x} evaluates as out of range ${Byte.MinValue} to ${Byte.MaxValue}"))
       val bytes: List[Byte] = ints.map(_.toByte)
 
-      rememberValue(a, KnownByteArray(bytes))
+      rememberValue(a, KnownByteArray(pc, bytes))
 
       Label(a) +: bytes.map { c => {
         val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Control._A), Known("", c))

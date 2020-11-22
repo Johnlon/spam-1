@@ -39,15 +39,17 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
         println("Statements:")
         matched.zipWithIndex.foreach(
           l => {
-            val address = l._1.instructionAddress
-            System.out.println(l._2.formatted("%03d") + " pc:" + address.formatted("%04x") + ":" + address.formatted("%05d") + ": " + l._1)
+            val line: Line = l._1
+            val address = line.instructionAddress
+            val index: Int = l._2
+            System.out.println(index.formatted("%03d") + " pc:" + address.formatted("%04x") + ":" + address.formatted("%05d") + ": " + line)
           }
         )
         val unresolvedStatements = matched.zipWithIndex.filter(_._1.unresolved)
-        if (unresolvedStatements.size > 0) {
-          System.err.println("Unresolved values:")
-          unresolvedStatements.foreach(l => System.err.println(l._2.formatted("%03d") + " : " + l._1))
-          sys.exit(1)
+        if (unresolvedStatements.nonEmpty) {
+//          System.err.println("Unresolved values:")
+//          unresolvedStatements.foreach(l => System.err.println(l._2.formatted("%03d") + " : " + l._1))
+          sys.error("Unresolved values: \n" + unresolvedStatements.map(l => l._2.formatted("%03d") + " : " + l._1).mkString("\n"))
         }
 
         val instructions = matched.collect { case x: Instruction => x.roms }
