@@ -45,7 +45,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     import asm._
 
     instructions(code, asm) shouldBe Seq(
-      i(AluOp.PASS_A, TDevice.REGA, ADevice.UART, BDevice.NU, Control._A, REGISTER, 0, 0)
+      i(AluOp.PASS_A, TDevice.REGA, ADevice.UART, BDevice.REGA, Control._A, REGISTER, 0, 0)
     )
   }
 
@@ -97,7 +97,18 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     val asm = new Assembler()
     import asm._
 
-    instructions(code, asm) shouldBe Seq(i(AluOp.PASS_A, TDevice.REGA, ADevice.REGB, BDevice.NU, Control._A, REGISTER, 0, 0))
+    instructions(code, asm) shouldBe Seq(i(AluOp.PASS_A, TDevice.REGA, ADevice.REGB, BDevice.REGA, Control._A, REGISTER, 0, 0))
+  }
+
+  it should "compile REGA=REGA PASS_A NU" in {
+    val code = List(
+      "REGA=REGA PASS_A NU",
+      "END")
+
+    val asm = new Assembler()
+    import asm._
+
+    instructions(code, asm) shouldBe Seq(i(AluOp.PASS_A, TDevice.REGA, ADevice.REGA, BDevice.REGA, Control._A, REGISTER, 0, 0))
   }
 
   "it" should "compile reg assign forward" in {
@@ -176,7 +187,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     import asm._
 
     instructions(code, asm) shouldBe Seq(
-      i(AluOp.PASS_A, TDevice.RAM, ADevice.REGA, BDevice.NU, Control._C_S, DIRECT, 1000, 0)
+      i(AluOp.PASS_A, TDevice.RAM, ADevice.REGA, BDevice.REGA, Control._C_S, DIRECT, 1000, 0)
     )
   }
 

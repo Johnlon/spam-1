@@ -30,7 +30,7 @@ trait Devices {
       values.find(c => c.id == id).getOrElse(throw new RuntimeException("unknown BDevice " + id))
     }
 
-    def values: Seq[BDevice] = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, IMMED, RAM)
+    def values: Seq[BDevice] = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, IMMED, RAM, NU)
 
     object REGA extends BDevice(0)
 
@@ -48,7 +48,8 @@ trait Devices {
 
     object RAM extends BDevice(7) with BOnlyDevice
 
-    val NU = REGA
+    object NU extends BDevice(REGA.id)
+
   }
 
   sealed class ADevice private(val id: Int) extends E
