@@ -75,11 +75,12 @@ module test();
     begin
 
          // implement 16 bit counter
-
          icount = 0;
 
          `DEV_EQ_IMMED8(icount, rega, '0); icount++;
          `DEV_EQ_IMMED8(icount, regb, '0); icount++;
+         `DEV_EQ_IMMED8(icount, regc, '0); icount++;
+         `DEV_EQ_IMMED8(icount, regd, '0); icount++;
          `DEV_EQ_IMMED8(icount, marlo, '0); icount++;
          `DEV_EQ_IMMED8(icount, marhi, '0); icount++;
 
@@ -154,7 +155,9 @@ module test();
     begin
         count = { CPU.regFile.get(1), CPU.regFile.get(0) };
 
+        $display("%9t", $time, " MARLO.Q= %4h ", CPU.MARLO.Q);
         $display("%9t", $time, " REGISTER COUNT = %4h ", 16'(count));
+        $display("%9t", $time, " LAST COUNT = %2h ", last_count);
         $display("%9t", $time, " LAST MARLO = %2h ", last_marlo);
         $display("%9t", $time, " THIS MARLO = %2h ", CPU.MARLO.Q);
         last_marlo = CPU.MARLO.Q;
@@ -162,23 +165,25 @@ module test();
 
         if (last_count !== not_initialised) begin
             if (last_count == 65535 && count != 0) begin 
-                $error("ERROR wrong count roll value : count=%1d  last_count=%1d but expected count=0", count , last_count);
+                $error("ERROR wrong count roll value : count=%1d (hex %02x) last_count=%1d but expected count=0", count , count, last_count);
                 `FINISH_AND_RETURN(2);
             end
             
             if (count != 0 && last_count != 65535 && count != last_count+1) begin 
-                $error("ERROR wrong count next +1 value : count=%1d  last_count=%1d but expected count=%1d", count , last_count, last_count+1);
+                $error("ERROR wrong count next +1 value : count=%1d (hex %02x) last_count=%1d but expected count=%1d", count , count, last_count, last_count+1);
                 `FINISH_AND_RETURN(2);
             end
         end
+/*
         else 
         begin
             if (count != 0) begin 
-                $error("ERROR wrong initial count : count=%1d", count);
+                $error("ERROR wrong initial count : count=%1d (hex %02x)", count, count);
                 `FINISH_AND_RETURN(2);
             end
     
         end
+*/
         
         $display("OK %4h", {CPU.regFile.get(1), CPU.regFile.get(0) });
         last_count=count;
