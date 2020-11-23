@@ -27,11 +27,11 @@
     end
 
 module test();
-    string rom_file;
+    string rom;
 
     initial begin
-        if (! $value$plusargs("rom_file=%s", rom_file)) begin
-            $display("ERROR: please specify +rom_file=<rom_file> to start.");
+        if (! $value$plusargs("rom=%s", rom)) begin
+            $display("ERROR: please specify +rom=<rom> to start.");
 `ifndef verilator
             $finish_and_return(1);
 `endif
@@ -46,8 +46,8 @@ module test();
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
 
     // CLOCK ===================================================================================
-    localparam HALF_CLK_HI=250;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
-    localparam HALF_CLK_LO=100;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    localparam HALF_CLK_HI=300;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    localparam HALF_CLK_LO=50;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
     //localparam HALF_CLK=1335;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
@@ -98,12 +98,12 @@ endfunction
     begin
 
 `ifndef verilator
-        $display("opening rom file : %s", rom_file);
-        fControl = $fopenr(rom_file); 
+        $display("opening rom file : %s", rom);
+        fControl = $fopenr(rom); 
 `endif
         if (fControl == `NULL) // If error opening file 
         begin
-                $error("%9t ERROR ", $time, "failed opening file %s", rom_file);
+                $error("%9t ERROR ", $time, "failed opening file %s", rom);
 `ifndef verilator
                 $finish_and_return(1);
 `endif
@@ -154,6 +154,9 @@ endfunction
     task CLK_UP; 
     begin
         if (_RESET_SWITCH) icount++; else icount=0;
+
+        $display("\n%9t", $time, " END OF EXECUTE VALUES"); 
+        DUMP; 
 
         $display("\n%9t", $time, " CLK GOING HIGH  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ INSTRUCTION %1d\n", icount); 
         clk = 1;
@@ -250,12 +253,11 @@ endfunction
             `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
             `DD " FE=%1b%1b(%1s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
-            `DD " DIRECT=%02x:%02x", CPU.direct_address_hi, CPU.direct_address_lo);
-            `DD " _amode=%2s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
-                " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
-                " address_bus=0x%4x", CPU.address_bus);
             `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
+            `DD " DIRECT=%02x:%02x", CPU.direct_address_hi, CPU.direct_address_lo);
+            `DD " _amode=%2s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct), " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct});
             `DD " immed8=%08b", CPU.immed8);
+            `DD " address_bus=0x%4x (%d) ", CPU.address_bus, CPU.address_bus);
             `DD " ram=%08b", CPU.ram64.D);
             `DD " tdev=%b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
                 " adev=%b(%s)", CPU.abus_dev, control::adevname(CPU.abus_dev),

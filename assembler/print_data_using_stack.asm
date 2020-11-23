@@ -67,7 +67,7 @@ send_uart:
             [:STACKPTR_ADDR_LO]=MARLO
 
             ; recover 1st arg
-            REGA=RAM ; READED UNINIT LOCATIONi fffd !
+            REGA=RAM
             ; ===================================END RECOVER ARGS
 
 wait_for_tx_ready:

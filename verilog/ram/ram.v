@@ -19,6 +19,7 @@ module ram(_OE, _WE, A, D);
     parameter [DWIDTH-1:0] HIZ = {DWIDTH{1'bz}};
 
     reg [DWIDTH-1:0] Mem [0:DEPTH-1];
+    wire [DWIDTH-1:0] delayedMemRead;
 
     localparam t_a_a = 70;
     localparam t_dis_w = 25;
@@ -30,17 +31,21 @@ module ram(_OE, _WE, A, D);
     wire [AWIDTH-1:0] delayedA;
     assign #(t_a_a) delayedA = A;
 
+    assign delayedMemRead = Mem[delayedA];
+
+    //assign D=!_delayedWE? HIZ: _delayedOE ? HIZ: Mem[delayedA];
+    assign D=!_delayedWE? HIZ: _delayedOE ? HIZ: delayedMemRead;
+
     //assign D=!_WE? HIZ: _OE? HIZ: Mem[A];
-    assign D=!_delayedWE? HIZ: _delayedOE ? HIZ: Mem[delayedA];
 
   if (LOG) begin
     always @(negedge _WE) begin
-        if (!_OE) $display("%9t ", $time, "RAM : END READ _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, Mem[0], Mem[1], Mem[2]);
+        //if (!_OE) $display("%9t ", $time, "RAM : END READ _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, Mem[0], Mem[1], Mem[2]);
         $display("%9t ", $time, "RAM : BEGIN WRITE _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, Mem[0], Mem[1], Mem[2]);
     end
     always @(posedge _WE) begin
         $display("%9t ", $time, "RAM : END WRITE   _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, Mem[0], Mem[1], Mem[2]);
-        if (!_OE) $display("%9t ", $time, "RAM : BEGIN READ _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, Mem[0], Mem[1], Mem[2]);
+        //if (!_OE) $display("%9t ", $time, "RAM : BEGIN READ _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, Mem[0], Mem[1], Mem[2]);
     end
 
     always @(negedge _OE) begin
@@ -77,11 +82,11 @@ end
         if (LOG) $display("%9t ", $time, "RAM : WRITE - RAM[0x%04x]=%08b     Mem[A]=%02h", A, D , Mem[A]);
      end
      else if (!_OE) begin
-        if (LOG) $display("%9t ", $time, "RAM : READ - D=%08b  A=%04h  delayed : %08d=RAM[0x%04x]", D, A, Mem[delayedA], delayedA);
+        if (LOG) $display("%9t ", $time, "RAM : READ - D=%08b  A=%04h  delayed : %08d=RAM[0x%04x]", D, A, delayedMemRead, delayedA);
 
         //if (LOG && (Mem[delayedA] === UNDEF)) begin
-        if (LOG && $isunknown(Mem[delayedA])) begin
-           $display("%9t", $time, " RAM ALERT - READING UNINITIALISED VALUE AT RAM[0x%04x]=%08b A=%04h", delayedA, Mem[delayedA], A );
+        if (LOG && $isunknown(delayedMemRead)) begin
+           $display("%9t", $time, " RAM ALERT - READING UNINITIALISED VALUE AT RAM[delayed 0x%04x]=%08b A=%04h", delayedA, delayedMemRead, A );
         end
      end
   end
