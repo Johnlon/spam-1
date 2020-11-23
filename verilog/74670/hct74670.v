@@ -19,6 +19,15 @@ module hct74670 (input _wr_en,
     // Register file storage
     reg [3:0] registers[3:0];
 // verilator lint_on UNOPTFLAT
+
+    // necessary to make it possible to set an initial value into REGA so that I can do   NAME=0   
+    // or any other operation without X into an ALU input causing an X on the output
+    initial begin
+        registers[0] = 0;
+        registers[1] = 1;
+        registers[2] = 2;
+        registers[3] = 3;
+    end
       
     reg [3:0] out_val;
     

@@ -76,8 +76,7 @@ trait Devices {
 
     object UART extends ADevice(6)
 
-    object NU extends ADevice(7)
-
+    object NU extends ADevice(REGA.id)
   }
 
   sealed trait TExpression

@@ -117,7 +117,7 @@ if (1) begin
 
     always @* begin
         if ($isunknown(A)) begin
-            $display("GLITCHING ADDRESS = %21b", A, " EFF  %5b", alu_op_effective);
+            $display("GLITCHING ADDRESS Z or X for OP A B = %5b %8b %8b", alu_op_effective, a, b);
         end
     end
 

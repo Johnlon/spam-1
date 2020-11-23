@@ -57,9 +57,21 @@ module cpu(
     wire _mr, _mrPC, clk;
 
     always @(pc_addr) begin
-        if (ctrl.rom_6.Mem[pc_addr][7] === 'x) begin // just check leftmost but as this is part of the op and is mandatory
+        if ($isunknown(pc_addr)) begin // just check leftmost but as this is part of the op and is mandatory
             $display ("%9t ", $time,  "CPU HALT");
-            $error("CPU : END OF PROGRAM - NO CODE FOUND AT PC %4h", pc_addr); 
+            $error("CPU : ERROR - UNKNOWN PC %4h", pc_addr); 
+            `FINISH_AND_RETURN(1);
+        end
+        if ($isunknown(ctrl.rom_6.Mem[pc_addr][7])) begin // just check leftmost but as this is part of the op and is mandatory
+            $display ("%9t ", $time,  "CPU HALT");
+            $error("CPU : END OF PROGRAM - NO CODE FOUND AT PC %4h = %8b", pc_addr, ctrl.rom_6.Mem[pc_addr][7]); 
+            `FINISH_AND_RETURN(1);
+        end
+    end
+    always @(negedge system_clk) begin
+        if (_mrPC && $isunknown(alu_result_bus)) begin // just check leftmost but as this is part of the op and is mandatory
+            $display ("%9t ", $time,  "CPU HALT");
+            $error("CPU : ERROR - ALU RESULT BUS UNDEFINED AT EXECUTE = %8b", alu_result_bus); 
             `FINISH_AND_RETURN(1);
         end
     end

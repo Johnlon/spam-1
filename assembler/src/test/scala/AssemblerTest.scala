@@ -35,7 +35,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     import asm._
 
     instructions(code, asm) shouldBe Seq(
-      i(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 17)
+      i(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, 0, 17)
     )
   }
 
@@ -55,7 +55,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     import asm._
 
     instructions(code, asm) shouldBe Seq(
-      i(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.RAM, Control._A, REGISTER, 0, 0)
+      i(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.RAM, Control._A, REGISTER, 0, 0)
     )
   }
 
@@ -65,7 +65,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     import asm._
 
     instructions(code, asm) shouldBe Seq(
-      i(AluOp.PASS_B, TDevice.NOOP, ADevice.NU, BDevice.RAM, Control._A, REGISTER, 0, 0)
+      i(AluOp.PASS_B, TDevice.NOOP, ADevice.REGA, BDevice.RAM, Control._A, REGISTER, 0, 0)
     )
   }
 
@@ -76,7 +76,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     import asm._
 
     instructions(code, asm) shouldBe Seq(
-      i(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 17)
+      i(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, 0, 17)
     )
   }
 
@@ -86,7 +86,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     val asm = new Assembler()
     import asm._
 
-    instructions(code, asm) shouldBe Seq(i(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 27))
+    instructions(code, asm) shouldBe Seq(i(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, 0, 27))
   }
 
   "it" should "compile reg assign reg" in {
@@ -121,8 +121,8 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     import asm._
 
     instructions(code, asm) shouldBe Seq(
-      i(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 1),
-      i(AluOp.PASS_B, TDevice.REGB, ADevice.NU, BDevice.IMMED, Control._A, REGISTER, 0, 255.toByte)
+      i(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, 0, 1),
+      i(AluOp.PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, 0, 255.toByte)
     )
   }
 
@@ -204,10 +204,10 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     asm.labels("STRING1").getVal shouldBe Some(KnownByteArray(0, Seq(65, 66, 0, 10)))
 
     compiled shouldBe Seq(
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 1, 'B'.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 2, 0),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 3, '\n')
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 1, 'B'.toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 2, 0),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 3, '\n')
     )
   }
 
@@ -241,17 +241,17 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
       pos-1
     }
     compiled shouldBe Seq(
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, 1),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, 2),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, 3),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, (-1).toByte), // 255 unsigned has same bit pattern as -1 signed
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, (127).toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, nextPos, -128) // unsigned 128 has sae bit pattern as -128 twos compl
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 1),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 2),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 3),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, (-1).toByte), // 255 unsigned has same bit pattern as -1 signed
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, (127).toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, -128) // unsigned 128 has sae bit pattern as -128 twos compl
     )
   }
 
@@ -272,10 +272,10 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     asm.labels("MYSTR").getVal shouldBe Some(KnownByteArray(0, Seq(65, 66)))
 
     compiled shouldBe Seq(
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 1, 'B'.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 255, 2),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.NU, BDevice.IMMED, Control._A, DIRECT, 255, 3),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 1, 'B'.toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 255, 2),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 255, 3),
     )
   }
 
