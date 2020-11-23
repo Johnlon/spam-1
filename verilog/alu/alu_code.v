@@ -66,22 +66,27 @@ module alu_code #(parameter LOG=0, PD=80) (
     logic _force_neg;
     logic force_pos;
 
+    wire a_eff = force_a_zero ? 0 : a;
+    wire b_eff = force_b_zero ? 0 : b;
+
     assign #(PD) o = c_buf_c[8:1];
     assign #(PD) _flag_c = !c_buf_c[9];
     assign #(PD) _flag_z = !(c_buf_c[8:1] == 8'b0);
     assign #(PD) _flag_n = force_pos | (_force_neg & (!c_buf_c[8])); // top bit set indicates negative in signed arith
     assign #(PD) _flag_o = _overflow;
-    assign #(PD) _flag_eq = !(a == b);    
-    assign #(PD) _flag_ne = !(a != b);  
+    assign #(PD) _flag_eq = !(a_eff == b_eff);    
+    assign #(PD) _flag_ne = !(a_eff != b_eff);  
 
     // unsigned magnitude comparison of the input values.
     // if the bytes are eg two complement signed then this will produce incorrect results.
     // if this is the case then use a subtract operation instead
     logic unsigned_magnitude=1;
+    logic force_a_zero=1;
+    logic force_b_zero=1;
 
     // cast to signed numbers
-    wire signed [7:0] signed_a = a;
-    wire signed [7:0] signed_b = b;
+    wire signed [7:0] signed_a = a_eff;
+    wire signed [7:0] signed_b = b_eff;
     wire signed [7:0] signed_o = o;
 
     // optionally perform signed/unsigned mag comparison

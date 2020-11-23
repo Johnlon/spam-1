@@ -89,7 +89,7 @@ trait Devices {
       values.find(c => c.id == id).getOrElse(throw new RuntimeException("unknown TDevice " + id))
     }
 
-    def values = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, UART, RAM, PCHITMP, PCLO, PC)
+    def values = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, UART, NOOP, RAM, PCHITMP, PCLO, PC)
 
     object REGA extends TDevice(0)
 
@@ -114,7 +114,6 @@ trait Devices {
     object PCLO extends TDevice(14)
 
     object PC extends TDevice(15)
-
   }
 
   case class RamDirect(addr: Know[KnownInt]) extends TExpression with BOnlyDevice {

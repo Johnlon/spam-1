@@ -16,8 +16,8 @@ package alu_ops;
     localparam [4:0] OP_NEGATE_B=4;  
     localparam [4:0] OP_BA_DIV_10=5; // Divide BINARY (NOT BCD)  value A by 10 using B as a carry in remainder (=A+(B*256)/10), if B>9 then remainder was illegal and result is 0 and overflow is set 
     localparam [4:0] OP_BA_MOD_10=6; // Mod BINARY (NOT BCD)  value A by 10 using B as a carry in remainder (=A+(B*256)%10), if B>9 then remainder was illegal and result is 0 and overflow is set
-
     localparam [4:0] OP_B_PLUS_1=7; // needed for X=RAM+1  & doesn't carry in ---- CONSIDER RAM ON BUS A!!!!
+
     localparam [4:0] OP_B_MINUS_1=8; // needed for X=RAM-1, no carry in ---- CONSIDER RAM ON BUS A!!!!
     localparam [4:0] OP_A_PLUS_B=9;
     localparam [4:0] OP_A_MINUS_B=10;

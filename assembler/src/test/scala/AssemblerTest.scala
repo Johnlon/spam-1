@@ -39,6 +39,36 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     )
   }
 
+  it should "compile REGA=UART" in {
+    val code = Seq("REGA=UART", "END")
+    val asm = new Assembler()
+    import asm._
+
+    instructions(code, asm) shouldBe Seq(
+      i(AluOp.PASS_A, TDevice.REGA, ADevice.UART, BDevice.NU, Control._A, REGISTER, 0, 0)
+    )
+  }
+
+  it should "compile REGA assign RAM" in {
+    val code = Seq("REGA=RAM", "END")
+    val asm = new Assembler()
+    import asm._
+
+    instructions(code, asm) shouldBe Seq(
+      i(AluOp.PASS_B, TDevice.REGA, ADevice.NU, BDevice.RAM, Control._A, REGISTER, 0, 0)
+    )
+  }
+
+  it should "compile NOOP assign RAM" in {
+    val code = Seq("NOOP = RAM", "END")
+    val asm = new Assembler()
+    import asm._
+
+    instructions(code, asm) shouldBe Seq(
+      i(AluOp.PASS_B, TDevice.NOOP, ADevice.NU, BDevice.RAM, Control._A, REGISTER, 0, 0)
+    )
+  }
+
   "it" should "compile reg assign immed hex" in {
     val code = Seq("REGA=$11", "END")
 

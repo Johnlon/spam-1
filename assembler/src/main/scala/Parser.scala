@@ -38,23 +38,10 @@ trait InstructionParser extends JavaTokenParsers {
   def pcref: Parser[Know[KnownInt]] = """.""" ^^ { case v => Known("pc", pc) }
 
   def dec: Parser[Know[KnownInt]] =
-    """-?\d+""".r ^^ {
-      case v =>
-        val vi = v.toInt
-        //      if (vi < Byte.MinValue || vi > Byte.MaxValue) {
-        //        sys.error(s"asm error: ${vi} evaluates as out of range ${Byte.MinValue} to ${Byte.MaxValue}")
-        //      }
-        Known("", vi)
+    """-?\d+""".r ^^ { case v =>
+      val vi = v.toInt
+      Known("", vi)
     }
-
-  //  def udec: Parser[Know[KnownInt]] = """u\d+""".r ^^ {
-  //    case v =>
-  //      val vi = v.stripPrefix("u").toInt
-  //      if (vi < 0 || vi > 255) {
-  //        sys.error(s"asm error: ${vi} evaluates as out of range 0 to 255")
-  //      }
-  //      Known("", vi)
-  //  }
 
   def char: Parser[Know[KnownInt]] = "'" ~> ".".r <~ "'" ^^ { case v =>
     val i = v.codePointAt(0)
@@ -86,6 +73,7 @@ trait InstructionParser extends JavaTokenParsers {
             sys.error(s"sw error: can't get here because name is a string only; but got unexpected value : ${x}")
         }
       }
+
       Knowable(s"len(:${v})", () =>
         lookup()
       )
@@ -112,6 +100,7 @@ trait InstructionParser extends JavaTokenParsers {
       case (x, "-" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ - _, "-")
       case (x, "&" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ & _, "&")
       case (x, "|" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ | _, "|")
+      case (x, op ~ y) => sys.error(s"sw error : missing handler for op '${op}' for operand ${x} and ${y}")
     }
   }
 
