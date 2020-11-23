@@ -153,14 +153,14 @@ module cpu(
     // ROM OUT to BBUS when immed rom addressing is being used
     hct74245ab rom_bbus_buf(.A(immed8), .B(bbus), .nOE(_bdev_immed)); 
 
-    hct74245ab #(.LOG(1)) rom_addbbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
-    hct74245ab #(.LOG(1)) rom_addbbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
+    hct74245ab #(.LOG(0)) rom_addbbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
+    hct74245ab #(.LOG(0)) rom_addbbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
 
     // RAM =============================================================================================
 
 // verilator lint_off PINMISSING
     wire #(8) _gated_ram_in = _phaseExec | _ram_in;
-    ram #(.AWIDTH(16), .LOG(0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
+    ram #(.AWIDTH(16), .LOG(1)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
 // verilator lint_on PINMISSING
     
 `ifndef verilator
