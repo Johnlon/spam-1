@@ -84,40 +84,12 @@ trait Knowing {
   def recall(name: String): Option[KnownInt] = {
     val maybeKnow: Option[IsKnowable[_ <: KnownValue]] = labels.get(name)
     maybeKnow match {
-      //      case Some(Known(_, v: KnownValue)) =>
-      //        Some(KnownInt(v.v))
-      //
-      //      case Some(Knowable(n, v)) =>
-      //        val ov: Option[KnownValue] = v()
-      //        val oi = ov.map { v =>
-      //          KnownInt(v.v)
-      //        }
-      //        oi
-      //
-      //      case Some(UniKnowable(v, _, _)) =>
-      //        val ov: Know[KnownValue] = v()
-      //        val oi = ov.getVal.map { v =>
-      //          KnownInt(v.v)
-      //        }
-      //        oi
-      //
-      //      case Some(b@BiKnowable(_,_,_,_)) =>
-      ////        val ov: Know[KnownValue] = v()
-      //        val oi = b.getVal.map { v =>
-      //          KnownInt(v.v)
-      //        }
-      //        oi
-      //        oi
-      //        val oi = ov.getVal.map { v =>
-      //          KnownInt(v.v)
-      //        }
-      //        oi
       case Some(b:IsKnowable[_]) =>
         val oi = b.getVal.map { v =>
           KnownInt(v.v)
         }
         oi
-      case x =>
+      case _ =>
         None
     }
   }
@@ -135,6 +107,7 @@ trait Knowing {
 
   sealed trait IsKnowable[T <: KnownValue] extends Know[T]
 
+  /* somethng whose value is resolved as known */
   case class Known[T <: KnownValue : ClassTag](name: String, knownVal: T) extends IsKnowable[T] {
     type KV = T
 
@@ -147,6 +120,14 @@ trait Knowing {
     override def toString(): String = s"""${knownVal}${if (name.length > 0) "{" + name + "}" else ""}"""
   }
 
+  /* something who's value is definitely unknown */
+  case class Unknown[T <: KnownValue](name: String) extends Know[T] {
+    def eval = this
+
+    override def getVal = None
+  }
+
+  /* something who's value is not yet resolved and might be know or unknown */
   case class Knowable[T <: KnownValue : ClassTag](name: String, a: () => Option[T]) extends IsKnowable[T] {
     def eval: Know[T] = {
       val applied = a()
@@ -180,12 +161,6 @@ trait Knowing {
     def getVal = Some(KnownInt(0))
 
     override def toString(): String = "Irrelevant"
-  }
-
-  case class Unknown[T <: KnownValue](name: String) extends Know[T] {
-    def eval = this
-
-    override def getVal = None
   }
 
   case class UniKnowable[T <: KnownValue : ClassTag](a: () => Know[T], op: T => T, name: String) extends IsKnowable[T] {

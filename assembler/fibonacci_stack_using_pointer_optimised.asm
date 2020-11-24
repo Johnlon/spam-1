@@ -1,6 +1,6 @@
-; Fib using stack for arg passing - but assumes exclusive use of MAR as stac pointer
 
-ZERO: EQU 0
+
+; Fib using stack for arg passing - but assumes exclusive use of MAR as stac pointer
 STACKTOP: EQU $ffff     ; location of top of stack
 STACKPTR: EQU $feff     ; location of low byte of stack ptr addressa, top byte is a const, therefore 255 byte stack
 STACKPTR_ADDR_HI: EQU <:STACKTOP   ;fixed
@@ -9,7 +9,7 @@ STACKPTR_ADDR_HI: EQU <:STACKTOP   ;fixed
 
 start:      REGA=1
             REGB=1
-            PCHITMP = >:ZERO
+            PCHITMP = 0
 
             ; push lop addr to stack
             MARHI=:STACKPTR_ADDR_HI

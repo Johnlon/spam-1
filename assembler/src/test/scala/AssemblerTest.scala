@@ -10,8 +10,10 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
 
   it should "allow positioning of data" in {
     val code = Seq(
-      "POSN: EQU 10",
-      "POSN: STR \"AB\"",
+      "A:     STR \"A\"",
+      "POSN:  EQU 10",
+      "POSN:  STR \"PP\"",
+      "B:     STR \"B\"",
       "END"
     )
 
@@ -19,9 +21,55 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     import asm._
 
     instructions(code, asm) shouldBe Seq(
-        i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 10, 'A'.toByte),
-        i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 11, 'B'.toByte)
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 10, 'P'.toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 11, 'P'.toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 12, 'B'.toByte)
     )
+  }
+
+  it should "do LEN and EQU arith" in {
+    val codeTuples = Seq[(String, java.lang.Integer)](
+      ("A0: EQU 0             ", 0),
+      ("A1: EQU 1             ", 1),
+      ("A2: EQU 255           ", 255),
+      ("A3: EQU 256           ", 256),
+      ("A4: EQU 65535         ", 65535),
+      ("A5: EQU 65536         ", 65536),
+      ("A6: EQU (65535+1)     ", 65536),
+      ("A7: EQU 65535+1       ", 65536),
+      ("A8: EQU $ffff-%1010+10", 65535),
+      ("A9: EQU -1            ", -1),
+      ("AA: EQU 'A' + 'B'     ", (65+66)),
+
+      ("B0: EQU :A1+1+2     ", 4),
+      ("B1: EQU :A3+1+2     ", 259),
+      ("B2: EQU :A4+1+2     ", 65538),
+      ("B3: EQU len(:B0)+3+4", 8),
+
+      ("L0: EQU len(:A0)    ", 1),
+      ("L1: EQU len(:A1)    ", 1),
+      ("L2: EQU len(:A2)    ", 1),
+      ("L3: EQU len(:A3)    ", 2),
+      ("L4: EQU len(:A4)    ", 2),
+      ("L5: EQU len(:A5)    ", 3),
+      ("END", null)
+    )
+
+    val asm = new Assembler()
+
+    instructions(codeTuples.map(_._1), asm) shouldBe Seq()
+
+    val results = codeTuples.filter(_._2 != null).map { x =>
+      val v = asm.labels(x._1.split(":")(0))
+      val actual = v.getVal.get.v
+      if (actual == x._2) (true, s"${x._1} = ${x._2}")
+      else (false, s"${x._1} = ${x._2} expected but got ${actual}")
+    }
+    val errCount = results.count(!_._1)
+    if (errCount>0){
+      fail("found errors: in results\n" + results.mkString("\n"))
+    }
   }
 
   it should "compile EQU const" in {
@@ -244,7 +292,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
 
     val B_65 = 65.toByte
 
-    asm.labels("FIRST").getVal shouldBe Some(KnownByteArray(0, Seq(1,2,3)))
+    asm.labels("FIRST").getVal shouldBe Some(KnownByteArray(0, Seq(1, 2, 3)))
     asm.labels("SECOND").getVal shouldBe Some(KnownByteArray(3, Seq(B_65, B_65, B_65, B_65, 255.toByte, -1, 127, 128.toByte)))
     asm.labels("FIRST_LEN").getVal shouldBe Some(KnownInt(3))
     asm.labels("SECOND_LEN").getVal shouldBe Some(KnownInt(8))
@@ -252,10 +300,12 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     asm.labels("SECOND_POS").getVal shouldBe Some(KnownInt(3))
 
     var pos = 0
+
     def nextPos = {
       pos += 1
-      pos-1
+      pos - 1
     }
+
     compiled shouldBe Seq(
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 1),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 2),
