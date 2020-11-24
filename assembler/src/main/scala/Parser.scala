@@ -22,7 +22,14 @@ trait InstructionParser extends JavaTokenParsers {
     _ | _
   }
 
-  def aluop: Parser[AluOp] = enumToParser(AluOp.values)
+  def aluop: Parser[AluOp] = enumToParser(AluOp.values) | shortOps
+
+  // reverse sorted to put longer operators ahead of shorter ones otherwise shorter ones gobble
+  def shortOps: Parser[AluOp] = AluOp.values.filter(_.isAbbreviated).sortBy(x => x.enumName).reverse.toList map { m =>
+    literal(m.abbrev) ^^^ m
+  } reduceLeft {
+    _ | _
+  }
 
   def adev: Parser[ADevice] = enumToParser(ADevice.values)
 
@@ -80,21 +87,26 @@ trait InstructionParser extends JavaTokenParsers {
       )
   }
 
-  def hiByte: Parser[IsKnowable[KnownInt]] = "<" ~> expr ^^ { case e: Know[KnownInt] => UniKnowable[KnownInt](() => e, i => KnownInt((i.v >> 8) & 0xff), "HI<") }
+  def hiByte: Parser[IsKnowable[KnownInt]] = "<" ~> expr ^^ { case e: Know[KnownInt] =>
+    UniKnowable[KnownInt](() => e, i => KnownInt((i.v >> 8) & 0xff), "HI<") }
 
-  def loByte: Parser[IsKnowable[KnownInt]] = ">" ~> expr ^^ { case e: Know[KnownInt] => UniKnowable[KnownInt](() => e, i => KnownInt(i.v & 0xff), "LO>") }
+  def loByte: Parser[IsKnowable[KnownInt]] = ">" ~> expr ^^ { case e: Know[KnownInt] =>
+    UniKnowable[KnownInt](() => e, i => KnownInt(i.v & 0xff), "LO>") }
 
   def factor: Parser[IsKnowable[KnownInt]] = (labelLen | char | pcref | dec | hex | bin | oct | "(" ~> expr <~ ")" | hiByte | loByte | labelAddr)
 
+  // picks up literal numeric expressions where both sides are expr
   def expr: Parser[IsKnowable[KnownInt]] = factor ~ rep("*" ~ factor | "/" ~ factor | "&" ~ factor | "|" ~ factor | "+" ~ factor | "-" ~ factor) ^^ {
-    case number ~ list => list.foldLeft(number) {
-      case (x, "*" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ * _, "*")
-      case (x, "+" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ + _, "+")
-      case (x, "/" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ / _, "/")
-      case (x, "-" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ - _, "-")
-      case (x, "&" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ & _, "&")
-      case (x, "|" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ | _, "|")
-      case (x, op ~ y) => sys.error(s"sw error : missing handler for op '${op}' for operand ${x} and ${y}")
+    case number ~ list => {
+      list.foldLeft(number) {
+        case (x, "*" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ * _, "*")
+        case (x, "+" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ + _, "+")
+        case (x, "/" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ / _, "/")
+        case (x, "-" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ - _, "-")
+        case (x, "&" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ & _, "&")
+        case (x, "|" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ | _, "|")
+        case (x, op ~ y) => sys.error(s"sw error : missing handler for op '${op}' for operand ${x} and ${y}")
+      }
     }
   }
 
@@ -111,13 +123,13 @@ trait InstructionParser extends JavaTokenParsers {
   def bdeviceOrRamDirect = (bdevonly | ramDirect)
 
 
-
   def label: Parser[Label] = name ~ ":" ^^ {
     case n ~ _ => {
-      rememberKnown(n, Known(n,KnownInt(pc)))
+      rememberKnown(n, Known(n, KnownInt(pc)))
       Label(n)
     }
   }
+
   def eqInstruction: Parser[EquInstruction] = (name <~ ":" ~ "EQU") ~ expr ^^ {
     case n ~ k => {
       rememberKnown(n, k)
@@ -189,20 +201,20 @@ trait InstructionParser extends JavaTokenParsers {
       inst(t, a, op, b, f, Irrelevant())
   }
 
-  def abInstructionShortform: Parser[Line] = (targets <~ "=") ~ adev ~ shortOps ~ bdevices ~ (controlCode ?) ^^ {
-    case t ~ a ~ op ~ b ~ f =>
-      inst(t, a, op, b, f, Irrelevant())
-  }
+//  def abInstructionShortform: Parser[Line] = (targets <~ "=") ~ adev ~ shortOps ~ bdevices ~ (controlCode ?) ^^ {
+//    case t ~ a ~ op ~ b ~ f =>
+//      inst(t, a, op, b, f, Irrelevant())
+//  }
 
   def abInstructionImmed: Parser[Line] = (targets <~ "=") ~ adev ~ aluop ~ expr ~ (controlCode ?) ^^ {
     case t ~ a ~ op ~ immed ~ f =>
       inst(t, a, op, BDevice.IMMED, f, immed)
   }
 
-  def abInstructionShortformImmed: Parser[Line] = (targets <~ "=") ~ adev ~ shortOps ~ expr ~ (controlCode ?) ^^ {
-    case t ~ a ~ op ~ immed ~ f =>
-      inst(t, a, op, BDevice.IMMED, f, immed)
-  }
+//  def abInstructionShortformImmed: Parser[Line] = (targets <~ "=") ~ adev ~ shortOps ~ expr ~ (controlCode ?) ^^ {
+//    case t ~ a ~ op ~ immed ~ f =>
+//      inst(t, a, op, BDevice.IMMED, f, immed)
+//  }
 
   def bInstruction: Parser[Line] = (targets <~ "=") ~ bdeviceOrRamDirect ~ (controlCode ?) ^^ {
     case t ~ b ~ f => {
@@ -222,14 +234,7 @@ trait InstructionParser extends JavaTokenParsers {
     }
   }
 
-  // reverse sorted to put longer operators ahead of shorter ones otherwise shorter ones gobble
-  def shortOps: Parser[AluOp] = AluOp.values.filter(_.isAbbreviated).sortBy(x => x.enumName).reverse.toList map { m =>
-    literal(m.abbrev) ^^^ m
-  } reduceLeft {
-    _ | _
-  }
-
-  def line: Parser[List[Line]] = (strInstruction | bytesInstruction | eqInstruction | bInstruction | abInstructionImmed | abInstructionShortform | abInstructionShortformImmed | abInstruction | aInstruction | bInstructionImmed | comment | label) ^^ {
+  def line: Parser[List[Line]] = (strInstruction | bytesInstruction | eqInstruction | bInstruction | abInstructionImmed  | abInstruction | aInstruction | bInstructionImmed | comment | label) ^^ {
     case x: List[_] => x.asInstanceOf[List[Line]]
     case x: Line => List(x)
   }

@@ -111,8 +111,10 @@ trait Lines {
 
     def unresolved = {
       value.getVal match {
-        case None => true
-        case _ => false
+        case None =>
+          true
+        case _ =>
+          false
       }
     }
   }

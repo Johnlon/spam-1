@@ -22,8 +22,6 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
         i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 10, 'A'.toByte),
         i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 11, 'B'.toByte)
     )
-//    assertLabel(asm, "CONST", Some(17))
-
   }
 
   it should "compile EQU const" in {

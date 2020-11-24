@@ -84,16 +84,39 @@ trait Knowing {
   def recall(name: String): Option[KnownInt] = {
     val maybeKnow: Option[IsKnowable[_ <: KnownValue]] = labels.get(name)
     maybeKnow match {
-      case Some(Known(_, v: KnownValue)) =>
-        Some(KnownInt(v.v))
-
-      case Some(Knowable(n, v)) =>
-        val ov: Option[KnownValue] = v()
-        val oi = ov.map { v =>
+      //      case Some(Known(_, v: KnownValue)) =>
+      //        Some(KnownInt(v.v))
+      //
+      //      case Some(Knowable(n, v)) =>
+      //        val ov: Option[KnownValue] = v()
+      //        val oi = ov.map { v =>
+      //          KnownInt(v.v)
+      //        }
+      //        oi
+      //
+      //      case Some(UniKnowable(v, _, _)) =>
+      //        val ov: Know[KnownValue] = v()
+      //        val oi = ov.getVal.map { v =>
+      //          KnownInt(v.v)
+      //        }
+      //        oi
+      //
+      //      case Some(b@BiKnowable(_,_,_,_)) =>
+      ////        val ov: Know[KnownValue] = v()
+      //        val oi = b.getVal.map { v =>
+      //          KnownInt(v.v)
+      //        }
+      //        oi
+      //        oi
+      //        val oi = ov.getVal.map { v =>
+      //          KnownInt(v.v)
+      //        }
+      //        oi
+      case Some(b:IsKnowable[_]) =>
+        val oi = b.getVal.map { v =>
           KnownInt(v.v)
         }
         oi
-
       case x =>
         None
     }
@@ -126,7 +149,8 @@ trait Knowing {
 
   case class Knowable[T <: KnownValue : ClassTag](name: String, a: () => Option[T]) extends IsKnowable[T] {
     def eval: Know[T] = {
-      a().map(v =>
+      val applied = a()
+      applied.map(v =>
         Known(name, v)
       ).getOrElse(
         Unknown(name)
@@ -136,8 +160,8 @@ trait Knowing {
     def getVal = a()
 
     override def toString(): String = {
-      val maybeT = a()
-      val maybeString: Option[String] = maybeT.map(v =>
+      val applied = a()
+      val maybeString: Option[String] = applied.map(v =>
         v.toString
       )
 

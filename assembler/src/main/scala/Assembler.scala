@@ -70,7 +70,9 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
             System.out.println(index.formatted("%03d") + " pc:" + address.formatted("%04x") + ":" + address.formatted("%05d") + ": " + line)
           }
         )
-        val unresolvedStatements = matched.zipWithIndex.filter(_._1.unresolved)
+        val unresolvedStatements = matched.zipWithIndex.filter( s =>
+          s._1.unresolved
+        )
         if (unresolvedStatements.nonEmpty) {
           //          System.err.println("Unresolved values:")
           //          unresolvedStatements.foreach(l => System.err.println(l._2.formatted("%03d") + " : " + l._1))
