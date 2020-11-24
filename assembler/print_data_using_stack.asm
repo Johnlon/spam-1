@@ -9,6 +9,20 @@ STRING_DATA:     STR     "Hello World\0"
             MARLO= > :STRING_DATA
 
 loop:
+          ; push lop addr to stack
+           MARHI=:STACKPTR_ADDR_HI
+           MARLO=[:STACKPTR]
+
+           RAM=>:loop  ; put return address on stack
+           MARLO=MARLO - 1
+           [:STACKPTR] = MARLO
+
+           RAM=REGA    ; put ARG on stack
+           MARLO=MARLO - 1
+           [:STACKPTR] = MARLO
+
+
+
             REGC=RAM _S
             PC = >:end _Z
 

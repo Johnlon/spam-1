@@ -46,7 +46,8 @@ module test();
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
 
     // CLOCK ===================================================================================
-    localparam HALF_CLK=365;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    localparam HALF_CLK_HI=250;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    localparam HALF_CLK_LO=100;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
     //localparam HALF_CLK=1335;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
@@ -184,8 +185,8 @@ endfunction
         $dumpfile("dumpfile.vcd");
         $dumpvars(0, test);
 
-        `define CYCLE begin CLK_UP; #HALF_CLK CLK_DN; #HALF_CLK; noop(); end
-        `define FULL_CYCLE(N) for (count =0; count < N; count++) begin CLK_UP; #HALF_CLK; CLK_DN; #HALF_CLK; noop(); end
+        `define CYCLE begin CLK_UP; #HALF_CLK_HI CLK_DN; #HALF_CLK_LO; noop(); end
+        `define FULL_CYCLE(N) for (count =0; count < N; count++) begin CLK_UP; #HALF_CLK_HI; CLK_DN; #HALF_CLK_LO; noop(); end
 
         INIT_ROM();
 
@@ -199,42 +200,16 @@ endfunction
         _RESET_SWITCH = 1;
 
         while (1) begin
-            #1000
+            #HALF_CLK_HI
             CLK_DN;
-            #1000
+            #HALF_CLK_LO
             $display("%9t", $time, " DUMPREG:", "  PC=%d ", pcval, " REGA:%08d", CPU.regFile.get(0), "  REGB:%08d", CPU.regFile.get(1), "  REGC:%08d", CPU.regFile.get(2), "  REGD:%08d", CPU.regFile.get(3));
             CLK_UP;
         end
 
         $display("END OF TEST CASES ==============================================");
-/*
-*/
-
-//`include "./generated_tests.v"
-/*
-        #HALF_CLK
-        count=100;
-        while (count -- > 0) begin
-            #HALF_CLK
-            CLK_UP;
-            #HALF_CLK
-            CLK_DN;
-            $display("PC %2x:%2x !!!!!!!!!!!!!!!!!!!!!!!! CLK COUNT REMAINING=%-d", PCHI, PCLO, count);
-        end
-*/
-
-        // consume any remaining code
-        // verilator lint_off INFINITELOOP
-        $display("FREE RUN CPU ==================================");
-         while (1==1) begin
-             #HALF_CLK
-             CLK_UP;
-             #HALF_CLK
-             CLK_DN;
-         end
         // verilator lint_on INFINITELOOP
 
-        $display("END OF TEST");
         $finish();
 
     end

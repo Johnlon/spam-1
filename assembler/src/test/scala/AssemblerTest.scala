@@ -8,7 +8,25 @@ import org.scalatestplus.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class AssemblerTest extends AnyFlatSpec with Matchers {
 
-  "Assembler" should "compile EQU const" in {
+  it should "allow positioning of data" in {
+    val code = Seq(
+      "POSN: EQU 10",
+      "POSN: STR \"AB\"",
+      "END"
+    )
+
+    val asm = new Assembler()
+    import asm._
+
+    instructions(code, asm) shouldBe Seq(
+        i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 10, 'A'.toByte),
+        i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 11, 'B'.toByte)
+    )
+//    assertLabel(asm, "CONST", Some(17))
+
+  }
+
+  it should "compile EQU const" in {
     val code = Seq("CONST:    EQU ($10 + 1) ; some arbitrarily complicated constant expression", "END")
 
     val asm = new Assembler()
@@ -275,7 +293,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 1, 'B'.toByte),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 255, 2),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 255, 3),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 255, 3)
     )
   }
 

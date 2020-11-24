@@ -103,7 +103,7 @@ trait Lines {
     }
   }
 
-  case class EquInstruction(variable: String, value: Know[KnownInt]) extends Line {
+  case class EquInstruction(variable: String, value: IsKnowable[KnownInt]) extends Line {
 
     def str = {
       s"""${this.getClass.getName} ${variable} = ${value}"""

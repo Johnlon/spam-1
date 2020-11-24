@@ -18,8 +18,8 @@ module rom (A, D, _CS, _OE);
   parameter DWIDTH=8,AWIDTH=16, DEPTH= 1 << AWIDTH;
   localparam DEFAULT_FILENAME = "";
   parameter FILENAME = DEFAULT_FILENAME;
-  parameter tACC = 150;
-  parameter tCE = 150;
+  parameter tACC = 80;
+  parameter tCE = 80;
   parameter tOE = 70;
   parameter LOG = 0;
 
