@@ -47,27 +47,30 @@ loop:
             ; ===================================END CALL
 
 next_char:
-            MARHI=[:CURCHAR_HI]
-            MARLO=NU B_PLUS_1 [:CURCHAR_LO] _S
-            MARHI=MARHI+1 _C
+            REGA=NU B_PLUS_1 [:CURCHAR_LO] _S
+            [:CURCHAR_LO]=REGA
 
-            [:CURCHAR_HI]=MARHI
-            [:CURCHAR_LO]=MARLO
+            REGA=[:CURCHAR_HI]
+            REGA=REGA+1 _C
+
+            [:CURCHAR_HI]=REGA
 
             PC      = >:loop
 
 send_uart:
             ; ==================================RECOVER ARGS
-            ; recover stack ptr
+            ; recover stack ptr and inc
             MARHI=:STACKPTR_ADDR_HI
-            MARLO=[:STACKPTR_ADDR_LO]
-
-            ; move and save sp
-            MARLO=MARLO+1
-            [:STACKPTR_ADDR_LO]=MARLO
+            MARLO=NU B_PLUS_1 [:STACKPTR_ADDR_LO]
 
             ; recover 1st arg
             REGA=RAM
+
+            MARLO=MARLO+1
+
+            REGB=RAM
+
+            [:STACKPTR_ADDR_LO]=MARLO
             ; ===================================END RECOVER ARGS
 
 wait_for_tx_ready:
@@ -84,11 +87,7 @@ transmit:
 return:
             ; ===================================START DO RETURN
             ; recover return address and save sp
-            MARHI=:STACKPTR_ADDR_HI
-            MARLO=NU B_PLUS_1 [:STACKPTR_ADDR_LO]
-            [:STACKPTR_ADDR_LO]=MARLO
-
-            PC = RAM
+            PC = REGB
             ; ===================================END DO RETURN
 end:
 
