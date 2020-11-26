@@ -177,6 +177,6 @@ class SpamCC extends JavaTokenParsers {
       )
 
       val varlist = vars.map(x => s"${x._1}: EQU ${x._2._2}").toList
-      varlist ++ asm :+ ":root_end" :+ "END"
+      varlist ++ asm :+ "root_end:" :+ "END"
   }
 }

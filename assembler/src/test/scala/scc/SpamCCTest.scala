@@ -1,5 +1,6 @@
 package scc
 
+import asm.Assembler
 import org.junit.Assert.assertEquals
 import org.junit.runner.RunWith
 import org.scalatest.flatspec.AnyFlatSpec
@@ -36,9 +37,7 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
         |}
         |""".stripMargin
 
-    val scc = new SpamCC
-
-    val actual = scc.compile(lines)
+    val actual: List[String] = compile(lines)
 
     val expected = split(
       """
@@ -48,11 +47,23 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
         |[:root_main_b] = 2
         |PCHITMP = <:root_end
         |PC = >:root_end
-        |:root_end
+        |root_end:
         |END
         |""")
 
     assertSame(expected, actual)
+  }
+
+  private def compile(lines: String) = {
+    val scc = new SpamCC
+    val actual: List[String] = scc.compile(lines)
+
+    val asm = new Assembler
+    val str = actual.mkString("\n")
+    println("ASSEMBLING:\n" + str)
+    asm.assemble(str)
+
+    actual
   }
 
   it should "two functions with variables" in {
@@ -69,9 +80,7 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
         |}
         |""".stripMargin
 
-    val scc = new SpamCC
-
-    val actual = scc.compile(lines)
+    val actual : List[String] = compile(lines)
 
     val expected = split(
       """
@@ -85,7 +94,7 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
         |PC = >:root_end
         |[:root_other_a] = 1
         |[:root_other_b] = 2
-        |:root_end
+        |root_end:
         |END
         |""")
 
@@ -101,16 +110,14 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
         |}
         |""".stripMargin
 
-    val scc = new SpamCC
-
-    val actual = scc.compile(lines)
+    val actual: List[String] = compile(lines)
 
     val expected = split(
       """
         |REGD = 2
         |PCHITMP = <:root_end
         |PC = >:root_end
-        |:root_end
+        |root_end:
         |END
         |""")
 
@@ -127,9 +134,7 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
         |}
         |""".stripMargin
 
-    val scc = new SpamCC
-
-    val actual = scc.compile(lines)
+    val actual: scala.List[_root_.scala.Predef.String] = compile(lines)
 
     val expected = split(
       """
@@ -138,7 +143,7 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
         |REGD = [:root_main_a]
         |PCHITMP = <:root_end
         |PC = >:root_end
-        |:root_end
+        |root_end:
         |END
         |""")
 
