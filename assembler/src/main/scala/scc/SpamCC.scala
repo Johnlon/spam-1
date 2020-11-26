@@ -67,14 +67,6 @@ class SpamCC extends JavaTokenParsers {
     }
   }
 
-  case class Statement() {
-
-  }
-
-  case class Context(parent: Option[Context]) {
-
-  }
-
   def dec: Parser[Int] =
     """-?\d+""".r ^^ { v =>
       v.toInt
@@ -94,22 +86,30 @@ class SpamCC extends JavaTokenParsers {
 
   def name: Parser[String] = "[a-zA-Z][a-zA-Z0-9_]*".r ^^ (a => a)
 
-  def assignVar(name: String): String = {
+  def assignVar(label: String): String = {
 
     def upd = {
       varLocn += 1
-      (name, varLocn)
+      (label, varLocn)
     }
 
-    vars.getOrElseUpdate(name, upd)._1
+    vars.getOrElseUpdate(label, upd)._1
+  }
+  def assignVar(block: Block, name: String): String = {
+    val fqn = block.fqn(name)
+    val label = assignVar(fqn)
+    assignVar(label)
+  }
+
+  def loopupVar(label: String): Option[String] = {
+    vars.get(label).map(_._1)
   }
 
   def statementVar: Parser[Block] = "var" ~> name ~ "=" ~ dec ^^ {
     case n ~ _ ~ v =>
       Block("",
         parent => {
-          val fqn = parent.fqn(n)
-          val label = assignVar(fqn)
+          val label = assignVar(parent, n)
           List(s"[:$label] = $v")
         }
       )
@@ -124,7 +124,17 @@ class SpamCC extends JavaTokenParsers {
       )
   }
 
-  def statement: Parser[Block] = statementReturn | statementVar
+  def statementReturnName: Parser[Block] = "return" ~> name ^^ {
+    n =>
+      Block("",
+        parent => {
+          val label = assignVar(parent, n)
+          List(s"REGD = [:$label]")
+        }
+      )
+  }
+
+  def statement: Parser[Block] = statementReturn | statementReturnName | statementVar
 
   def statements: Parser[List[Block]] = statement ~ (statement *) ^^ {
     case a ~ b =>

@@ -26,7 +26,7 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
     }
   }
 
-  it should "compile function variables" in {
+  it should "function variables" in {
 
     val lines =
       """
@@ -55,7 +55,7 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
     assertSame(expected, actual)
   }
 
-  it should "compile two functions variables" in {
+  it should "two functions with variables" in {
 
     val lines =
       """
@@ -92,7 +92,7 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
     assertSame(expected, actual)
   }
 
-  it should "compile return 2" in {
+  it should "return 2" in {
 
     val lines =
       """
@@ -108,6 +108,34 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
     val expected = split(
       """
         |REGD = 2
+        |PCHITMP = <:root_end
+        |PC = >:root_end
+        |:root_end
+        |END
+        |""")
+
+    assertSame(expected, actual)
+  }
+
+  it should "return var" in {
+
+    val lines =
+      """
+        |def main(): void = {
+        |  var a = 1
+        |  return a
+        |}
+        |""".stripMargin
+
+    val scc = new SpamCC
+
+    val actual = scc.compile(lines)
+
+    val expected = split(
+      """
+        |root_main_a: EQU 0
+        |[:root_main_a] = 1
+        |REGD = [:root_main_a]
         |PCHITMP = <:root_end
         |PC = >:root_end
         |:root_end
