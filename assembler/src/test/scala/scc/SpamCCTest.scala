@@ -52,8 +52,6 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
         |END
         |""")
 
-
-//    merge(actual) shouldBe merge(expected)
     assertSame(expected, actual)
   }
 
@@ -73,8 +71,7 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
 
     val scc = new SpamCC
 
-    val asm = scc.compile(lines)
-    println(asm)
+    val actual = scc.compile(lines)
 
     val expected = split(
       """
@@ -92,11 +89,7 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
         |END
         |""")
 
-    val actual = asm
-
-//    merge(actual) shouldBe merge(expected)
     assertSame(expected, actual)
-
   }
 
   it should "compile return 2" in {
@@ -110,8 +103,7 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
 
     val scc = new SpamCC
 
-    val asm = scc.compile(lines)
-    println(asm)
+    val actual = scc.compile(lines)
 
     val expected = split(
       """
@@ -122,9 +114,6 @@ class SpamCCTest extends AnyFlatSpec with Matchers {
         |END
         |""")
 
-    val actual = asm
-//    merge(actual) shouldBe merge(expected)
     assertSame(expected, actual)
-
   }
 }

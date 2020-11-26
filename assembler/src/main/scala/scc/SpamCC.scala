@@ -1,10 +1,8 @@
 package scc
 
-import scala.language.postfixOps
-import java.io.{File, PrintWriter}
-
 import scala.collection.mutable
 import scala.io.Source
+import scala.language.postfixOps
 import scala.util.parsing.combinator.JavaTokenParsers
 
 object SpamCC {
@@ -159,10 +157,6 @@ class SpamCC extends JavaTokenParsers {
       blockName + NAME_SEPARATOR + child
     }
 
-    //
-    //    def fqn(child: Block): String = {
-    //      blockName + "/" + child
-    //    }
   }
 
   def program: Parser[List[String]] = (function +) ^^ {
