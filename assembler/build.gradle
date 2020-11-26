@@ -34,7 +34,7 @@ dependencies {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'Assembler'
+        attributes 'Main-Class': 'asm.Assembler'
     }
 
     from {

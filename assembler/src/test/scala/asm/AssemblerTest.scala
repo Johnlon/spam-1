@@ -1,4 +1,6 @@
-import Mode.{DIRECT, _}
+package asm
+
+import asm.Mode._
 import org.junit.runner.RunWith
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.must.Matchers
@@ -40,7 +42,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
       ("A7: EQU 65535+1       ", 65536),
       ("A8: EQU $ffff-%1010+10", 65535),
       ("A9: EQU -1            ", -1),
-      ("AA: EQU 'A' + 'B'     ", (65+66)),
+      ("AA: EQU 'A' + 'B'     ", 65+66),
 
       ("B0: EQU :A1+1+2     ", 4),
       ("B1: EQU :A3+1+2     ", 259),
@@ -64,7 +66,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
       val v = asm.labels(x._1.split(":")(0))
       val actual = v.getVal.get.v
       if (actual == x._2) (true, s"${x._1} = ${x._2}")
-      else (false, s"${x._1} = ${x._2} expected but got ${actual}")
+      else (false, s"${x._1} = ${x._2} expected but got $actual")
     }
     val errCount = results.count(!_._1)
     if (errCount>0){
@@ -76,6 +78,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
     val code = Seq("CONST:    EQU ($10 + 1) ; some arbitrarily complicated constant expression", "END")
 
     val asm = new Assembler()
+
     asm.assemble(code.mkString("\n")) // comments run to end of line
 
     assertLabel(asm, "CONST", Some(17))
@@ -261,8 +264,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
       "END")
 
     val asm = new Assembler()
-    import asm._
-
+  import asm._
     val compiled = instructions(code, asm)
 
     asm.labels("STRING1").getVal shouldBe Some(KnownByteArray(0, Seq(65, 66, 0, 10)))
@@ -316,7 +318,7 @@ class AssemblerTest extends AnyFlatSpec with Matchers {
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, (-1).toByte), // 255 unsigned has same bit pattern as -1 signed
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, (127).toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 127.toByte),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, -128) // unsigned 128 has sae bit pattern as -128 twos compl
     )
   }
