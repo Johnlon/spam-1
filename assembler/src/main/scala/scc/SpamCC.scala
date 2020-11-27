@@ -84,6 +84,22 @@ class SpamCC extends JavaTokenParsers {
 
   def oct: Parser[Int] = "@" ~ "[0-7]+".r ^^ { case _ ~ v => Integer.valueOf(v, 8) }
 
+  def op: Parser[String] = "+" | "-" | "*" | "/" ^^ {
+    o => o
+  }
+
+  def factor: Parser[Int] = char  | dec | hex | bin | oct | "(" ~> expr <~ ")"
+
+  def expr: Parser[Int] = factor ~  (( op ~ factor)*) ^^ {
+    case x ~ list =>
+      list.foldLeft(x)( {
+        case (acc, "+" ~ i) => acc + i
+        case (acc, "*" ~ i) => acc * i
+        case (acc, "/" ~ i) => acc / i
+        case (acc, "-" ~ i) => acc - i
+      })
+  }
+
   def name: Parser[String] = "[a-zA-Z][a-zA-Z0-9_]*".r ^^ (a => a)
 
   def assignVar(label: String): String = {
@@ -105,17 +121,44 @@ class SpamCC extends JavaTokenParsers {
     vars.get(label).map(_._1)
   }
 
-  def statementVar: Parser[Block] = "var" ~> name ~ "=" ~ dec ^^ {
-    case n ~ _ ~ v =>
+  def statementVar: Parser[Block] = "var" ~> name ~ "=" ~ expr ^^ {
+    case target ~ _ ~ v =>
       Block("",
         parent => {
-          val label = assignVar(parent, n)
+          val label = assignVar(parent, target)
           List(s"[:$label] = $v")
         }
       )
   }
 
-  def statementReturn: Parser[Block] = "return" ~> dec ^^ {
+  def varExprNE = name ~ op ~ expr ^^ {
+    case name ~  op ~ expr => (name ,  op , expr)
+  }
+
+  def varExprEN = expr ~ op ~ name  ^^ {
+    case expr ~ op ~ name => (name ,  op , expr)
+  }
+
+  def varExpr = varExprEN | varExprNE
+
+  def statementVarOp: Parser[Block] = "var" ~> name ~ "=" ~ varExpr ^^ {
+    case target ~ _ ~ v =>
+      Block("",
+        parent => {
+          val labelTarget = assignVar(parent, target)
+          val srcVarName = v._1
+          val op = v._2
+          val expr = v._3
+          val labelSrcVar = assignVar(parent, srcVarName)
+          List(
+            s"REGA = [:$labelSrcVar]",
+            s"[:$labelTarget] = REGA $op $expr"
+          )
+        }
+      )
+  }
+
+  def statementReturn: Parser[Block] = "return" ~> expr ^^ {
     a =>
       Block("",
         _ => {
@@ -134,7 +177,7 @@ class SpamCC extends JavaTokenParsers {
       )
   }
 
-  def statement: Parser[Block] = statementReturn | statementReturnName | statementVar
+  def statement: Parser[Block] = statementReturn | statementReturnName | statementVarOp | statementVar
 
   def statements: Parser[List[Block]] = statement ~ (statement *) ^^ {
     case a ~ b =>
