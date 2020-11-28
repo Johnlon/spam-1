@@ -1,4 +1,5 @@
 package asm
+
 import java.io.{File, PrintWriter}
 
 import Mode.Mode
@@ -58,12 +59,22 @@ object Assembler {
 class Assembler extends InstructionParser with Knowing with Lines with Devices {
 
 
-  def assemble(code: String): List[List[String]] = {
+  def assemble(code: String, quiet: Boolean = false): List[List[String]] = {
 
     parse(lines, code) match {
-      case Success(matched, _) => {
+      case Success(theCode, _) => {
         println("Statements:")
-        matched.zipWithIndex.foreach(
+
+        val filtered = theCode.filter { l =>
+          l match {
+            case Comment(_) if quiet =>
+              false
+            case _ =>
+              true
+          }
+        }
+
+        filtered.zipWithIndex.foreach(
           l => {
             val line: Line = l._1
             val address = line.instructionAddress
@@ -71,19 +82,14 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
             System.out.println(index.formatted("%03d") + " pc:" + address.formatted("%04x") + ":" + address.formatted("%05d") + ": " + line)
           }
         )
-        val unresolvedStatements = matched.zipWithIndex.filter( s =>
-          s._1.unresolved
-        )
-        if (unresolvedStatements.nonEmpty) {
-          //          System.err.println("Unresolved values:")
-          //          unresolvedStatements.foreach(l => System.err.println(l._2.formatted("%03d") + " : " + l._1))
-          sys.error("Unresolved values: \n" + unresolvedStatements.map(l => l._2.formatted("%03d") + " : " + l._1).mkString("\n"))
-        }
 
-        val instructions = matched.collect { case x: Instruction => x.roms }
+        assertAllResolved(theCode)
+
+        val instructions = filtered.collect { case x: Instruction => x.roms }
         instructions.zipWithIndex.foreach(l => println("CODE : " + l))
         instructions
       }
+
       case msg: Failure => {
         sys.error(s"FAILURE: $msg ")
 
@@ -94,6 +100,17 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     }
   }
 
+
+  private def assertAllResolved(theCode: List[Line]) = {
+    val unresolvedStatements = theCode.zipWithIndex.filter(s =>
+      s._1.unresolved
+    )
+    if (unresolvedStatements.nonEmpty) {
+      //          System.err.println("Unresolved values:")
+      //          unresolvedStatements.foreach(l => System.err.println(l._2.formatted("%03d") + " : " + l._1))
+      sys.error("Unresolved values: \n" + unresolvedStatements.map(l => l._2.formatted("%03d") + " : " + l._1).mkString("\n"))
+    }
+  }
 
   def decode[A <: Assembler](rom: List[String]): (AluOp, TDevice, ADevice, BDevice, Control, Mode, Int, Byte) = {
     val str = rom.mkString("");
