@@ -2,13 +2,18 @@ package scc
 
 import asm.Assembler
 import org.junit.Assert.assertEquals
-import org.junit.Test
+import org.junit.{FixMethodOrder, Test}
+import org.junit.runners.MethodSorters
 import org.scalatest.matchers.must.Matchers
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class SpamCCTest extends Matchers {
 
   def split(s: String): List[String] = {
-    s.split("\\|").map(_.stripTrailing().stripLeading()).filterNot(_.isEmpty).toList
+    s.split("\\|")
+      .map(_.stripTrailing()
+        .stripLeading())
+      .filterNot(_.isBlank).toList
   }
   def assertSameEx(expected: List[String], actual: List[String]) = {
       var end = split("""PCHITMP = <:root_end
@@ -54,7 +59,7 @@ class SpamCCTest extends Matchers {
   }
 
   @Test
-  def varAEq1AndVarBEq1Plus1: Unit = {
+  def varEq1AndVarEq1Plus1: Unit = {
 
     val lines =
       """
@@ -158,7 +163,7 @@ class SpamCCTest extends Matchers {
   }
 
   @Test
-  def varEqSimpleExpressions: Unit = {
+  def varEqSimpleTwoArgExpr: Unit = {
 
     val lines =
       """
@@ -167,6 +172,8 @@ class SpamCCTest extends Matchers {
         |  var b = a + 3;
         |  var c = 4 + b;
         |  var d = c;
+        |  var c = a + b;
+        |
         |}
         |""".stripMargin
 
@@ -182,40 +189,12 @@ class SpamCCTest extends Matchers {
         |REGA = REGA + 3
         |[:root_main_b] = REGA
         |REGA = 4
-        |REGB = [:root_main_b]
-        |REGA = REGA + REGB
+        |REGA = REGA + [:root_main_b]
         |[:root_main_c] = REGA
         |REGA = [:root_main_c]
         |[:root_main_d] = REGA
-        """.stripMargin)
-
-    assertSameEx(expected, actual)
-  }
-
-
-  @Test
-  def varEqExpressionWithDependentVars: Unit = {
-
-    val lines =
-      """def main(): void = {
-        |  var a = 1 + 2;
-        |  var b = a + 3;
-        |  var c = a + b;
-        |}
-        |""".stripMargin
-
-    val actual: List[String] = compile(lines)
-
-    val expected = split(
-      """root_main_a: EQU 0
-        |root_main_b: EQU 1
-        |root_main_c: EQU 2
-        |[:root_main_a] = 3
         |REGA = [:root_main_a]
-        |REGA = REGA + 3
-        |[:root_main_b] = REGA
-        |REGA = [:root_main_a]
-        |REGB = [:root_main_b]
+        |REGA = [:root_main_b]
         |[:root_main_c] = REGA + REGB
         """.stripMargin)
 
@@ -238,15 +217,29 @@ class SpamCCTest extends Matchers {
     val expected = split(
       """root_main_a: EQU 0
         |root_main_b: EQU 1
-        |root_main_c: EQU 2
-        |[:root_main_a] = 3
+        |root_main_varExprs_d2: EQU 2
+        |root_main_varExprs_d3: EQU 3
+        |[:root_main_a] = 1
+        |REGA = 2
+        |[:root_main_varExprs_d2] = REGA
         |REGA = [:root_main_a]
-        |REGA = REGA + 3
+        |[:root_main_varExprs_d3] = REGA
+        |REGA = 3
+        |REGB = [:root_main_varExprs_d3]
+        |[:root_main_varExprs_d3] = REGB + REGA
+        |REGA = [:root_main_varExprs_d3]
+        |REGB = [:root_main_varExprs_d2]
+        |[:root_main_varExprs_d2] = REGB + REGA
+        |REGA = [:root_main_varExprs_d2]
         |[:root_main_b] = REGA
-        |REGA = [:root_main_a]
-        |REGB = [:root_main_b]
-        |[:root_main_c] = REGA + REGB
-        """.stripMargin)
+        |root_main_putchar_wait_1:
+        |PCHITMP = <:root_main_putchar_transmit_2
+        |PC = >:root_main_putchar_transmit_2 _DO
+        |PCHITMP = <:root_main_putchar_wait_1
+        |PC = <:root_main_putchar_wait_1
+        |root_main_putchar_transmit_2:
+        |UART = [:root_main_b]
+        |""".stripMargin)
 
     assertSameEx(expected, actual)
   }

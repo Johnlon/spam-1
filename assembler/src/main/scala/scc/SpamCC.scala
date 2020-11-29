@@ -112,10 +112,101 @@ class SpamCC extends JavaTokenParsers {
       Block(s"statementVar $target=$v",
         (depth, parent) => {
           val label = assignVar(parent, target)
-          List(s"[:$label] = $v")
+          List(
+            s"; ($depth) ENTER statementEqConst $target = $v",
+            s"[:$label] = $v",
+            s"; ($depth) EXIT statementEqConst $target = $v",
+
+          )
         }
       )
   }
+
+  // optimisation of "var X=1 op Y"
+  def statementEqConstOpVar: Parser[Block] = "var" ~> name ~ "=" ~ nExpr ~ op ~ name <~ EOL ^^ {
+    case target ~ _ ~ e ~ op ~ v =>
+      Block(s"statementEqConstOpVar $target=$e $op $v",
+        (depth, parent) => {
+          val tLabel = assignVar(parent, target)
+          val sLabel = assignVar(parent, v)
+          List(
+            s"; ($depth) ENTER statementEqConstOpVar $target = $e $op $v",
+            s"REGA = $e",
+            s"REGA = REGA $op [:$sLabel]",
+            s"[:$tLabel] = REGA",
+            s"; ($depth) EXIT  statementEqConstOpVar $target = $e $op $v",
+          )
+        }
+      )
+  }
+
+  // optimisation of "var X=Y op 1"
+  def statementEqVarOpConst: Parser[Block] = "var" ~> name ~ "=" ~ name ~ op ~ nExpr <~ EOL ^^ {
+    case target ~ _ ~ v ~ op ~ e =>
+      Block(s"statementEqVarOpConst $target=$v $op $e",
+        (depth, parent) => {
+          val tLabel = assignVar(parent, target)
+          val sLabel = assignVar(parent, v)
+          List(
+            s"; ($depth) ENTER statementEqVarOpConst $target = $v $op $e",
+            s"REGA = [:$sLabel]",
+            s"REGA = REGA $op $e",
+            s"[:$tLabel] = REGA",
+            s"; ($depth) EXIT  statementEqVarOpConst $target = $v $op $e",
+          )
+        }
+      )
+  }
+
+  // optimisation of "var X=Y"
+  def statementEqVar: Parser[Block] = "var" ~> name ~ "=" ~ name <~ EOL ^^ {
+    case target ~ _ ~ v  =>
+      Block(s"statementEqVar $target=$v",
+        (depth, parent) => {
+          val tLabel = assignVar(parent, target)
+          val sLabel = assignVar(parent, v)
+          List(
+            s"; ($depth) ENTER statementEqVar $target = $v",
+            s"REGA = [:$sLabel]",
+            s"[:$tLabel] = REGA",
+            s"; ($depth) EXIT  statementEqVar $target = $v",
+          )
+        }
+      )
+  }
+
+  // optimisation of "var X=Y op Z"
+  def statementEqVarOpVar: Parser[Block] = "var" ~> name ~ "=" ~ name ~ op ~ name <~ EOL ^^ {
+    case target ~ _ ~ s1 ~ op ~ s2 =>
+      Block(s"statementEqVarOpConst $target=$s1 $op $s2",
+        (depth, parent) => {
+          val tLabel = assignVar(parent, target)
+          val s1Label = assignVar(parent, s1)
+          val s2Label = assignVar(parent, s2)
+          List(
+            s"; ($depth) ENTER statementEqVarOpConst $target = $s1 $op $s2",
+            s"REGA = [:$s1Label]",
+            s"REGA = [:$s2Label]",
+            s"[:$tLabel] = REGA $op REGB",
+            s"; ($depth) EXIT  statementEqVarOpConst $target = $s1 $op $s2",
+          )
+        }
+      )
+  }
+
+  //  def varExprNE: Parser[Block] = name ~ op ~ expr ^^ {
+  //    case name ~ op ~ expr =>
+  //      Block(s"varExprNE $name $op $expr",
+  //        parent => {
+  //          val labelSrcVar = assignVar(parent, name)
+  //          List(
+  //            s"REGA = [:$labelSrcVar]",
+  //            s"REGA = REGA $op $expr"
+  //          )
+  //        }
+  //      )
+  //  }
+
 
   //  def varExprNE: Parser[Block] = name ~ op ~ expr ^^ {
   //    case name ~ op ~ expr =>
@@ -319,7 +410,8 @@ class SpamCC extends JavaTokenParsers {
 
 
   //  def statement: Parser[Block] = statementReturn | statementReturnName | statementVarEqOp2Var | statementVarOp | statementVar | statementPutchar | whileBlock
-  def statement: Parser[Block] = (statementEqConst | statementReturn | statementReturnName | statementVarOp | statementPutchar | statementPutcharName | whileBlock)
+  def statement: Parser[Block] = (statementEqVarOpVar | statementEqVar | statementEqVarOpConst | statementEqConstOpVar | statementEqConst |
+    statementReturn | statementReturnName | statementVarOp | statementPutchar | statementPutcharName | whileBlock)
 
   def statements: Parser[List[Block]] = statement ~ (statement *) ^^ {
     case a ~ b =>
