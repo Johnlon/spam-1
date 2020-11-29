@@ -10,6 +10,15 @@ class SpamCCTest extends Matchers {
   def split(s: String): List[String] = {
     s.split("\\|").map(_.stripTrailing().stripLeading()).filterNot(_.isEmpty).toList
   }
+  def assertSameEx(expected: List[String], actual: List[String]) = {
+      var end = split("""PCHITMP = <:root_end
+                  |PC = >:root_end
+                  |root_end:
+                  |END
+                  """.stripMargin)
+
+      assertSame(expected ++ end, actual)
+  }
 
   def assertSame(expected: List[String], actual: List[String]) = {
 
@@ -25,13 +34,33 @@ class SpamCCTest extends Matchers {
   }
 
   @Test
-  def functionVariables: Unit = {
+  def varEq1: Unit = {
+
+    val lines =
+      """def main(): void = {
+        | var a=1;
+        |}
+        |""".stripMargin
+
+    val actual: List[String] = compile(lines)
+
+    val expected = split(
+      """
+        |root_main_a: EQU 0
+        |[:root_main_a] = 1
+        |""")
+
+    assertSameEx(expected, actual)
+  }
+
+  @Test
+  def varAEq1AndVarBEq1Plus1: Unit = {
 
     val lines =
       """
         |def main(): void = {
-        | var a=1
-        | var b=1+1
+        | var a=1;
+        | var b=1+1;
         |}
         |""".stripMargin
 
@@ -43,13 +72,9 @@ class SpamCCTest extends Matchers {
         |root_main_b: EQU 1
         |[:root_main_a] = 1
         |[:root_main_b] = 2
-        |PCHITMP = <:root_end
-        |PC = >:root_end
-        |root_end:
-        |END
         |""")
 
-    assertSame(expected, actual)
+    assertSameEx(expected, actual)
   }
 
 
@@ -59,12 +84,12 @@ class SpamCCTest extends Matchers {
     val lines =
       """
         |def main(): void = {
-        | var a=1
-        | var b=2
+        | var a=1;
+        | var b=2;
         |}
         |def other(): void = {
-        | var a=1
-        | var b=2
+        | var a=1;
+        | var b=2;
         |}
         |""".stripMargin
 
@@ -90,7 +115,7 @@ class SpamCCTest extends Matchers {
   }
 
   @Test
-  def return2: Unit = {
+  def returnLiteralConst: Unit = {
 
     val lines =
       """
@@ -104,13 +129,9 @@ class SpamCCTest extends Matchers {
     val expected = split(
       """
         |REGD = 2
-        |PCHITMP = <:root_end
-        |PC = >:root_end
-        |root_end:
-        |END
         |""")
 
-    assertSame(expected, actual)
+    assertSameEx(expected, actual)
   }
 
   @Test
@@ -119,7 +140,7 @@ class SpamCCTest extends Matchers {
     val lines =
       """
         |def main(): void = {
-        |  var a = 1
+        |  var a = 1;
         |  return a
         |}
         |""".stripMargin
@@ -131,25 +152,21 @@ class SpamCCTest extends Matchers {
         |root_main_a: EQU 0
         |[:root_main_a] = 1
         |REGD = [:root_main_a]
-        |PCHITMP = <:root_end
-        |PC = >:root_end
-        |root_end:
-        |END
         |""")
 
-    assertSame(expected, actual)
+    assertSameEx(expected, actual)
   }
 
   @Test
-  def varEqExpression: Unit = {
+  def varEqSimpleExpressions: Unit = {
 
     val lines =
       """
         |def main(): void = {
-        |  var a = 1 + 2
-        |  var b = a + 3
-        |  var c = 4 + b
-        |  var d = c
+        |  var a = 1 + 2;
+        |  var b = a + 3;
+        |  var c = 4 + b;
+        |  var d = c;
         |}
         |""".stripMargin
 
@@ -170,23 +187,20 @@ class SpamCCTest extends Matchers {
         |[:root_main_c] = REGA
         |REGA = [:root_main_c]
         |[:root_main_d] = REGA
-        |PCHITMP = <:root_end
-        |PC = >:root_end
-        |root_end:
-        |END""".stripMargin)
+        """.stripMargin)
 
-    assertSame(expected, actual)
+    assertSameEx(expected, actual)
   }
 
 
   @Test
-  def varEqExpressionTwoVars: Unit = {
+  def varEqExpressionWithDependentVars: Unit = {
 
     val lines =
       """def main(): void = {
-        |  var a = 1 + 2
-        |  var b = a + 3
-        |  var c = a + b
+        |  var a = 1 + 2;
+        |  var b = a + 3;
+        |  var c = a + b;
         |}
         |""".stripMargin
 
@@ -203,21 +217,18 @@ class SpamCCTest extends Matchers {
         |REGA = [:root_main_a]
         |REGB = [:root_main_b]
         |[:root_main_c] = REGA + REGB
-        |PCHITMP = <:root_end
-        |PC = >:root_end
-        |root_end:
-        |END""".stripMargin)
+        """.stripMargin)
 
-    assertSame(expected, actual)
+    assertSameEx(expected, actual)
   }
+
   @Test
-  def varEqExpressionThreeExpr: Unit = {
+  def varEqNestedExpr: Unit = {
 
     val lines =
       """def main(): void = {
-        |  var a = 0
-        |  var a = a +  1
-        |  var b = 4 + (a + 5)
+        |  var a = 1;
+        |  var b = 2 + (a + 3);
         |  putchar(b)
         |}
         |""".stripMargin
@@ -235,12 +246,9 @@ class SpamCCTest extends Matchers {
         |REGA = [:root_main_a]
         |REGB = [:root_main_b]
         |[:root_main_c] = REGA + REGB
-        |PCHITMP = <:root_end
-        |PC = >:root_end
-        |root_end:
-        |END""".stripMargin)
+        """.stripMargin)
 
-    assertSame(expected, actual)
+    assertSameEx(expected, actual)
   }
 
   @Test
@@ -272,13 +280,9 @@ class SpamCCTest extends Matchers {
         |PC = <:root_main_putchar_wait_3
         |root_main_putchar_transmit_4:
         |UART = 66
-        |PCHITMP = <:root_end
-        |PC = >:root_end
-        |root_end:
-        |END
-        |""")
+        """)
 
-    assertSame(expected, actual)
+    assertSameEx(expected, actual)
   }
 
   @Test
@@ -288,7 +292,7 @@ class SpamCCTest extends Matchers {
       """
         |def main(): void = {
         | while(true) {
-        |   var a = 1
+        |   var a = 1;
         | }
         |}
         |""".stripMargin
@@ -303,46 +307,42 @@ class SpamCCTest extends Matchers {
         |PCHITMP = <:root_main_while_1_top
         |PC = >:root_main_while_1_top
         |root_main_while_1_bot:
-        |PCHITMP = <:root_end
-        |PC = >:root_end
-        |root_end:
-        |END
-        |""")
+        """)
 
-    assertSame(expected, actual)
+    assertSameEx(expected, actual)
   }
 
-//  @Test
-//  def whileLoopCond: Unit = {
-//
-//    val lines =
-//      """
-//        |def main(): void = {
-//        | var a=2
-//        | while(a>0) {
-//        |   a=a-1
-//        | }
-//        |}
-//        |""".stripMargin
-//
-//    val actual: List[String] = compile(lines)
-//
-//    val expected = split(
-//      """
-//        |root_main_while_1_a: EQU 0
-//        |[:root_main_a] = 1
-//        |root_main_while_1_top:
-//        |PCHITMP = <:root_main_while_1_top
-//        |PC = >:root_main_while_1_top
-//        |root_main_while_1_bot:
-//        |PCHITMP = <:root_end
-//        |PC = >:root_end
-//        |root_end:
-//        |END
-//        |""")
-//
-//    assertSame(expected, actual)
-//  }
+  //  @Test
+  //  def whileLoopCond: Unit = {
+  //
+  //    val lines =
+  //      """
+  //        |def main(): void = {
+  //        | var a=2
+  //        | while(a>0) {
+  //        |   a=a-1
+  //        | }
+  //        |}
+  //        |""".stripMargin
+  //
+  //    val actual: List[String] = compile(lines)
+  //
+  //    val expected = split(
+  //      """
+  //        |root_main_while_1_a: EQU 0
+  //        |[:root_main_a] = 1
+  //        |root_main_while_1_top:
+  //        |PCHITMP = <:root_main_while_1_top
+  //        |PC = >:root_main_while_1_top
+  //        |root_main_while_1_bot:
+  //        |PCHITMP = <:root_end
+  //        |PC = >:root_end
+  //        |root_end:
+  //        |END
+  //        |""")
+  //
+  //    assertSame(expected, actual)
+  //  }
 
 
   private def compile(lines: String, quiet: Boolean = true) = {
@@ -356,7 +356,7 @@ class SpamCCTest extends Matchers {
     asm.assemble(str, quiet = quiet)
 
     // ditch comments
-    val filtered = actual.filter{ l =>
+    val filtered = actual.filter { l =>
       ((!quiet) || !l.matches("^\\s*;.*"))
     }
 

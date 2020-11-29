@@ -41,6 +41,9 @@ object SpamCC {
 }
 
 class SpamCC extends JavaTokenParsers {
+
+  def EOL: Parser[Any] = ";"
+
   var varLocn = -1
   val labels = mutable.TreeMap.empty[String, Int]
   val vars = mutable.TreeMap.empty[String, (String, Int)]
@@ -103,17 +106,17 @@ class SpamCC extends JavaTokenParsers {
 
   def name: Parser[String] = "[a-zA-Z][a-zA-Z0-9_]*".r ^^ (a => a)
 
-  //
-  //  def statementVar: Parser[Block] = "var" ~> name ~ "=" ~ expr ^^ {
-  //    case target ~ _ ~ v =>
-  //      Block(s"statementVar $target=$v",
-  //        parent => {
-  //          val label = assignVar(parent, target)
-  //          List(s"[:$label] = $v")
-  //        }
-  //      )
-  //  }
-  //
+  // optimisation of "var X=1"
+  def statementEqConst: Parser[Block] = "var" ~> name ~ "=" ~ nExpr <~ EOL ^^ {
+    case target ~ _ ~ v =>
+      Block(s"statementVar $target=$v",
+        (depth, parent) => {
+          val label = assignVar(parent, target)
+          List(s"[:$label] = $v")
+        }
+      )
+  }
+
   //  def varExprNE: Parser[Block] = name ~ op ~ expr ^^ {
   //    case name ~ op ~ expr =>
   //      Block(s"varExprNE $name $op $expr",
@@ -142,6 +145,7 @@ class SpamCC extends JavaTokenParsers {
   //      )
   //  }
 
+  // TODO - this looks suspiciously without context - should I load anything - or does it make sense as it's only used inside expressions?????
   def varExprName: Parser[Block] = name ^^ {
     case n =>
       Block(s"varExprName $n",
@@ -196,7 +200,7 @@ class SpamCC extends JavaTokenParsers {
   }
 
 
-  def statementVarOp: Parser[Block] = "var" ~> name ~ "=" ~ varExprs ^^ {
+  def statementVarOp: Parser[Block] = "var" ~> name ~ "=" ~ varExprs <~ EOL ^^ {
     case target ~ _ ~ v =>
       Block(s"statementVarOp = $target = $v",
         (depth, parent) => {
@@ -305,8 +309,17 @@ class SpamCC extends JavaTokenParsers {
       )
   }
 
+
+  //  def blankLine: Parser[Block] = """\s*""".r <~ EOL ^^ {
+  //    blank: String =>
+  //      Block(s"blank",
+  //        (depth, parent) => Nil
+  //      )
+  //  }
+
+
   //  def statement: Parser[Block] = statementReturn | statementReturnName | statementVarEqOp2Var | statementVarOp | statementVar | statementPutchar | whileBlock
-  def statement: Parser[Block] = statementReturn | statementReturnName | statementVarOp | statementPutchar | statementPutcharName | whileBlock
+  def statement: Parser[Block] = (statementEqConst | statementReturn | statementReturnName | statementVarOp | statementPutchar | statementPutcharName | whileBlock)
 
   def statements: Parser[List[Block]] = statement ~ (statement *) ^^ {
     case a ~ b =>
@@ -333,7 +346,7 @@ class SpamCC extends JavaTokenParsers {
           } else Nil
 
           val enter = List(s"; ($depth) ENTER function $fnName")
-          val exit  = List(s"; ($depth) EXIT  function $fnName")
+          val exit = List(s"; ($depth) EXIT  function $fnName")
           enter ++ stmts ++ suffix ++ exit
         }
       )
@@ -368,7 +381,7 @@ class SpamCC extends JavaTokenParsers {
 
 
           val enter = List(s"; ($depth) ENTER while")
-          val exit  = List(s"; ($depth) EXIT  while")
+          val exit = List(s"; ($depth) EXIT  while")
           enter ++ prefix ++ stmts ++ suffix ++ exit
         }
       )
@@ -380,6 +393,7 @@ class SpamCC extends JavaTokenParsers {
 
   trait Generator {
     def apply(depth: Int, blk: Block): List[String]
+
     override def toString() = "Code()"
   }
 
@@ -413,9 +427,9 @@ class SpamCC extends JavaTokenParsers {
     assignVar(label)
   }
 
-//  def loopupVar(label: String): Option[String] = {
-//    vars.get(label).map(_._1)
-//  }
+  //  def loopupVar(label: String): Option[String] = {
+  //    vars.get(label).map(_._1)
+  //  }
 
   def getVarLocn(block: Block, name: String): String = {
     val fqn = block.fqn(name)
