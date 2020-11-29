@@ -305,37 +305,39 @@ class SpamCCTest extends Matchers {
     assertSameEx(expected, actual)
   }
 
-  //  @Test
-  //  def whileLoopCond: Unit = {
-  //
-  //    val lines =
-  //      """
-  //        |def main(): void = {
-  //        | var a=2
-  //        | while(a>0) {
-  //        |   a=a-1
-  //        | }
-  //        |}
-  //        |""".stripMargin
-  //
-  //    val actual: List[String] = compile(lines)
-  //
-  //    val expected = split(
-  //      """
-  //        |root_main_while_1_a: EQU 0
-  //        |[:root_main_a] = 1
-  //        |root_main_while_1_top:
-  //        |PCHITMP = <:root_main_while_1_top
-  //        |PC = >:root_main_while_1_top
-  //        |root_main_while_1_bot:
-  //        |PCHITMP = <:root_end
-  //        |PC = >:root_end
-  //        |root_end:
-  //        |END
-  //        |""")
-  //
-  //    assertSame(expected, actual)
-  //  }
+    @Test
+    def whileLoopCond: Unit = {
+
+      val lines =
+        """
+          |def main(): void = {
+          | var a='Z';
+          | while(a>0) {
+          |   var a=a-1;
+          |   putchar(a)
+          | }
+          |}
+          |""".stripMargin
+
+      val actual: List[String] = compile(lines)
+
+      val expected = split(
+        """
+          |root_main_while_1_a: EQU 0
+          |[:root_main_a] = 2
+          |root_main_while_1_top:
+          |REGA = [:root_main_a] _F
+          |REGA = REGA + 0 _F
+          |PCHITMP = <:root_main_while_1_bot
+          |PC = >:root_main_while_1_bot _GT
+          |REGA = [:root_main_a]
+          |REGA = REGA - 1
+          |[:root_main_a] = REGA
+          |root_main_while_1_bot:
+          """)
+
+      assertSame(expected, actual)
+    }
 
 
   private def compile(lines: String, quiet: Boolean = true) = {
