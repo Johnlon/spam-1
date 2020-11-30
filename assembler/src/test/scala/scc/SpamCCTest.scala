@@ -52,8 +52,8 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_main_a: EQU 0
-        |[:root_main_a] = 1
+        |root_function_main_a: EQU 0
+        |[:root_function_main_a] = 1
         |""")
 
     assertSameEx(expected, actual)
@@ -74,10 +74,10 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_main_a: EQU 0
-        |root_main_b: EQU 1
-        |[:root_main_a] = 1
-        |[:root_main_b] = 2
+        |root_function_main_a: EQU 0
+        |root_function_main_b: EQU 1
+        |[:root_function_main_a] = 1
+        |[:root_function_main_b] = 2
         |""")
 
     assertSameEx(expected, actual)
@@ -103,16 +103,16 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_main_a: EQU 0
-        |root_main_b: EQU 1
-        |root_other_a: EQU 2
-        |root_other_b: EQU 3
-        |[:root_main_a] = 1
-        |[:root_main_b] = 2
+        |root_function_main_a: EQU 0
+        |root_function_main_b: EQU 1
+        |root_function_other_a: EQU 2
+        |root_function_other_b: EQU 3
+        |[:root_function_main_a] = 1
+        |[:root_function_main_b] = 2
         |PCHITMP = <:root_end
         |PC = >:root_end
-        |[:root_other_a] = 1
-        |[:root_other_b] = 2
+        |[:root_function_other_a] = 1
+        |[:root_function_other_b] = 2
         |root_end:
         |END
         |""")
@@ -155,9 +155,9 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_main_a: EQU 0
-        |[:root_main_a] = 1
-        |REGD = [:root_main_a]
+        |root_function_main_a: EQU 0
+        |[:root_function_main_a] = 1
+        |REGD = [:root_function_main_a]
         |""")
 
     assertSameEx(expected, actual)
@@ -181,23 +181,23 @@ class SpamCCTest extends Matchers {
     val actual: List[String] = compile(lines)
 
     val expected = split(
-      """root_main_a: EQU 0
-        |root_main_b: EQU 1
-        |root_main_c: EQU 2
-        |root_main_d: EQU 3
-        |root_main_e: EQU 4
-        |[:root_main_a] = 3
-        |REGA = [:root_main_a]
+      """root_function_main_a: EQU 0
+        |root_function_main_b: EQU 1
+        |root_function_main_c: EQU 2
+        |root_function_main_d: EQU 3
+        |root_function_main_e: EQU 4
+        |[:root_function_main_a] = 3
+        |REGA = [:root_function_main_a]
         |REGA = REGA + 3
-        |[:root_main_b] = REGA
+        |[:root_function_main_b] = REGA
         |REGA = 4
-        |REGA = REGA + [:root_main_b]
-        |[:root_main_c] = REGA
-        |REGA = [:root_main_c]
-        |[:root_main_d] = REGA
-        |REGA = [:root_main_a]
-        |REGA = [:root_main_b]
-        |[:root_main_e] = REGA + REGB
+        |REGA = REGA + [:root_function_main_b]
+        |[:root_function_main_c] = REGA
+        |REGA = [:root_function_main_c]
+        |[:root_function_main_d] = REGA
+        |REGA = [:root_function_main_a]
+        |REGA = [:root_function_main_b]
+        |[:root_function_main_e] = REGA + REGB
         |
         """.stripMargin)
 
@@ -218,30 +218,30 @@ class SpamCCTest extends Matchers {
     val actual: List[String] = compile(lines)
 
     val expected = split(
-      """root_main_a: EQU 0
-        |root_main_varExprs_d2: EQU 1
-        |root_main_varExprs_d3: EQU 2
-        |root_main_b: EQU 3
-        |[:root_main_a] = 1
+      """root_function_main_a: EQU 0
+        |root_function_main_varExprs_d2: EQU 1
+        |root_function_main_varExprs_d3: EQU 2
+        |root_function_main_b: EQU 3
+        |[:root_function_main_a] = 1
         |REGA = 2
-        |[:root_main_varExprs_d2] = REGA
-        |REGA = [:root_main_a]
-        |[:root_main_varExprs_d3] = REGA
+        |[:root_function_main_varExprs_d2] = REGA
+        |REGA = [:root_function_main_a]
+        |[:root_function_main_varExprs_d3] = REGA
         |REGA = 3
-        |REGB = [:root_main_varExprs_d3]
-        |[:root_main_varExprs_d3] = REGB + REGA
-        |REGA = [:root_main_varExprs_d3]
-        |REGB = [:root_main_varExprs_d2]
-        |[:root_main_varExprs_d2] = REGB + REGA
-        |REGA = [:root_main_varExprs_d2]
-        |[:root_main_b] = REGA
-        |root_main_putchar_wait_1:
-        |PCHITMP = <:root_main_putchar_transmit_2
-        |PC = >:root_main_putchar_transmit_2 _DO
-        |PCHITMP = <:root_main_putchar_wait_1
-        |PC = <:root_main_putchar_wait_1
-        |root_main_putchar_transmit_2:
-        |UART = [:root_main_b]
+        |REGB = [:root_function_main_varExprs_d3]
+        |[:root_function_main_varExprs_d3] = REGB + REGA
+        |REGA = [:root_function_main_varExprs_d3]
+        |REGB = [:root_function_main_varExprs_d2]
+        |[:root_function_main_varExprs_d2] = REGB + REGA
+        |REGA = [:root_function_main_varExprs_d2]
+        |[:root_function_main_b] = REGA
+        |root_function_main_putcharN__wait_1:
+        |PCHITMP = <:root_function_main_putcharN__transmit_2
+        |PC = >:root_function_main_putcharN__transmit_2 _DO
+        |PCHITMP = <:root_function_main_putcharN__wait_1
+        |PC = <:root_function_main_putcharN__wait_1
+        |root_function_main_putcharN__transmit_2:
+        |UART = [:root_function_main_b]
         |""".stripMargin)
 
     assertSameEx(expected, actual)
@@ -262,21 +262,21 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_main_putchar_wait_1:
-        |PCHITMP = <:root_main_putchar_transmit_2
-        |PC = >:root_main_putchar_transmit_2 _DO
-        |PCHITMP = <:root_main_putchar_wait_1
-        |PC = <:root_main_putchar_wait_1
-        |root_main_putchar_transmit_2:
+        |root_function_main_putcharI__wait_1:
+        |PCHITMP = <:root_function_main_putcharI__transmit_2
+        |PC = >:root_function_main_putcharI__transmit_2 _DO
+        |PCHITMP = <:root_function_main_putcharI__wait_1
+        |PC = <:root_function_main_putcharI__wait_1
+        |root_function_main_putcharI__transmit_2:
         |UART = 65
-        |root_main_putchar_wait_3:
-        |PCHITMP = <:root_main_putchar_transmit_4
-        |PC = >:root_main_putchar_transmit_4 _DO
-        |PCHITMP = <:root_main_putchar_wait_3
-        |PC = <:root_main_putchar_wait_3
-        |root_main_putchar_transmit_4:
+        |root_function_main_putcharI__wait_3:
+        |PCHITMP = <:root_function_main_putcharI__transmit_4
+        |PC = >:root_function_main_putcharI__transmit_4 _DO
+        |PCHITMP = <:root_function_main_putcharI__wait_3
+        |PC = <:root_function_main_putcharI__wait_3
+        |root_function_main_putcharI__transmit_4:
         |UART = 66
-        """)
+        |""".stripMargin)
 
     assertSameEx(expected, actual)
   }
@@ -297,13 +297,13 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_main_while_1_a: EQU 0
-        |root_main_while_1_top:
-        |[:root_main_while_1_a] = 1
-        |PCHITMP = <:root_main_while_1_top
-        |PC = >:root_main_while_1_top
-        |root_main_while_1_bot:
-        """)
+        |root_function_main_whileTrue1_a: EQU 0
+        |root_function_main_whileTrue1_block_2__top:
+        |[:root_function_main_whileTrue1_a] = 1
+        |PCHITMP = <:root_function_main_whileTrue1_block_2__top
+        |PC = >:root_function_main_whileTrue1_block_2__top
+        |root_function_main_whileTrue1_block_2__bot:
+        |""".stripMargin)
 
     assertSameEx(expected, actual)
   }
@@ -326,17 +326,17 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_main_while_1_a: EQU 0
-        |[:root_main_a] = 2
-        |root_main_while_1_top:
-        |REGA = [:root_main_a] _F
+        |root_function_main_while_1_a: EQU 0
+        |[:root_function_main_a] = 2
+        |root_function_main_while_1_top:
+        |REGA = [:root_function_main_a] _F
         |REGA = REGA + 0 _F
-        |PCHITMP = <:root_main_while_1_bot
-        |PC = >:root_main_while_1_bot _GT
-        |REGA = [:root_main_a]
+        |PCHITMP = <:root_function_main_while_1_bot
+        |PC = >:root_function_main_while_1_bot _GT
+        |REGA = [:root_function_main_a]
         |REGA = REGA - 1
-        |[:root_main_a] = REGA
-        |root_main_while_1_bot:
+        |[:root_function_main_a] = REGA
+        |root_function_main_while_1_bot:
           """)
 
     assertSame(expected, actual)
