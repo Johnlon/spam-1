@@ -314,9 +314,9 @@ class SpamCCTest extends Matchers {
     val lines =
       """
         |def main(): void = {
-        | var a=100;
+        | var a=10;
         | while(a>0) {
-        |   var a=a-150;
+        |   var a=a-1;
         |   putchar(a)
         | }
         |}
@@ -325,21 +325,32 @@ class SpamCCTest extends Matchers {
     val actual: List[String] = compile(lines)
 
     val expected = split(
-      """
-        |root_function_main_while_1_a: EQU 0
-        |[:root_function_main_a] = 2
-        |root_function_main_while_1_top:
-        |REGA = [:root_function_main_a] _F
-        |REGA = REGA + 0 _F
-        |PCHITMP = <:root_function_main_while_1_bot
-        |PC = >:root_function_main_while_1_bot _GT
+      """root_function_main_a: EQU 0
+        |[:root_function_main_a] = 10
+        |root_function_main_whileCond1__2__check:
+        |REGA = [:root_function_main_a]
+        |REGA = REGA PASS_A 0 _S
+        |PCHITMP = <:root_function_main_whileCond1__2__top
+        |PC = >:root_function_main_whileCond1__2__top _GT
+        |PCHITMP = <:root_function_main_whileCond1__2__bot
+        |PC = >:root_function_main_whileCond1__2__bot
+        |root_function_main_whileCond1__2__top:
         |REGA = [:root_function_main_a]
         |REGA = REGA - 1
         |[:root_function_main_a] = REGA
-        |root_function_main_while_1_bot:
-          """)
+        |root_function_main_whileCond1_putcharN__wait_3:
+        |PCHITMP = <:root_function_main_whileCond1_putcharN__transmit_4
+        |PC = >:root_function_main_whileCond1_putcharN__transmit_4 _DO
+        |PCHITMP = <:root_function_main_whileCond1_putcharN__wait_3
+        |PC = <:root_function_main_whileCond1_putcharN__wait_3
+        |root_function_main_whileCond1_putcharN__transmit_4:
+        |UART = [:root_function_main_a]
+        |PCHITMP = <:root_function_main_whileCond1__2__check
+        |PC = >:root_function_main_whileCond1__2__check
+        |root_function_main_whileCond1__2__bot:
+        |""".stripMargin)
 
-    assertSame(expected, actual)
+    assertSameEx(expected, actual)
   }
 
 
