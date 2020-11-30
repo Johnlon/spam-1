@@ -15,14 +15,16 @@ class SpamCCTest extends Matchers {
         .stripLeading())
       .filterNot(_.isBlank).toList
   }
+
   def assertSameEx(expected: List[String], actual: List[String]) = {
-      var end = split("""PCHITMP = <:root_end
-                  |PC = >:root_end
-                  |root_end:
-                  |END
+    var end = split(
+      """PCHITMP = <:root_end
+        |PC = >:root_end
+        |root_end:
+        |END
                   """.stripMargin)
 
-      assertSame(expected ++ end, actual)
+    assertSame(expected ++ end, actual)
   }
 
   def assertSame(expected: List[String], actual: List[String]) = {
@@ -31,10 +33,9 @@ class SpamCCTest extends Matchers {
       println("Expected: " + expected)
       println("Actual  : " + actual)
 
-      assertEquals(
-        expected.mkString("\n").stripTrailing().stripLeading(),
-        actual.mkString("\n").stripTrailing().stripLeading()
-      )
+      val e = expected.map( _.stripTrailing().stripLeading()).mkString("\n")
+      val a = actual.map( _.stripTrailing().stripLeading()).mkString("\n")
+      assertEquals(e, a)
     }
   }
 
@@ -172,7 +173,7 @@ class SpamCCTest extends Matchers {
         |  var b = a + 3;
         |  var c = 4 + b;
         |  var d = c;
-        |  var c = a + b;
+        |  var e = a + b;
         |
         |}
         |""".stripMargin
@@ -184,6 +185,7 @@ class SpamCCTest extends Matchers {
         |root_main_b: EQU 1
         |root_main_c: EQU 2
         |root_main_d: EQU 3
+        |root_main_e: EQU 4
         |[:root_main_a] = 3
         |REGA = [:root_main_a]
         |REGA = REGA + 3
@@ -195,7 +197,8 @@ class SpamCCTest extends Matchers {
         |[:root_main_d] = REGA
         |REGA = [:root_main_a]
         |REGA = [:root_main_b]
-        |[:root_main_c] = REGA + REGB
+        |[:root_main_e] = REGA + REGB
+        |
         """.stripMargin)
 
     assertSameEx(expected, actual)
@@ -216,9 +219,9 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """root_main_a: EQU 0
-        |root_main_b: EQU 1
-        |root_main_varExprs_d2: EQU 2
-        |root_main_varExprs_d3: EQU 3
+        |root_main_varExprs_d2: EQU 1
+        |root_main_varExprs_d3: EQU 2
+        |root_main_b: EQU 3
         |[:root_main_a] = 1
         |REGA = 2
         |[:root_main_varExprs_d2] = REGA
@@ -305,39 +308,39 @@ class SpamCCTest extends Matchers {
     assertSameEx(expected, actual)
   }
 
-    @Test
-    def whileLoopCond: Unit = {
+  @Test
+  def whileLoopCond: Unit = {
 
-      val lines =
-        """
-          |def main(): void = {
-          | var a='Z';
-          | while(a>0) {
-          |   var a=a-1;
-          |   putchar(a)
-          | }
-          |}
-          |""".stripMargin
+    val lines =
+      """
+        |def main(): void = {
+        | var a=100;
+        | while(a>0) {
+        |   var a=a-150;
+        |   putchar(a)
+        | }
+        |}
+        |""".stripMargin
 
-      val actual: List[String] = compile(lines)
+    val actual: List[String] = compile(lines)
 
-      val expected = split(
-        """
-          |root_main_while_1_a: EQU 0
-          |[:root_main_a] = 2
-          |root_main_while_1_top:
-          |REGA = [:root_main_a] _F
-          |REGA = REGA + 0 _F
-          |PCHITMP = <:root_main_while_1_bot
-          |PC = >:root_main_while_1_bot _GT
-          |REGA = [:root_main_a]
-          |REGA = REGA - 1
-          |[:root_main_a] = REGA
-          |root_main_while_1_bot:
+    val expected = split(
+      """
+        |root_main_while_1_a: EQU 0
+        |[:root_main_a] = 2
+        |root_main_while_1_top:
+        |REGA = [:root_main_a] _F
+        |REGA = REGA + 0 _F
+        |PCHITMP = <:root_main_while_1_bot
+        |PC = >:root_main_while_1_bot _GT
+        |REGA = [:root_main_a]
+        |REGA = REGA - 1
+        |[:root_main_a] = REGA
+        |root_main_while_1_bot:
           """)
 
-      assertSame(expected, actual)
-    }
+    assertSame(expected, actual)
+  }
 
 
   private def compile(lines: String, quiet: Boolean = true) = {
