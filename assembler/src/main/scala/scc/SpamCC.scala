@@ -311,7 +311,7 @@ class SpamCC extends JavaTokenParsers {
         override def gen(depth: Int, parent: Name): List[String] = {
           val labelW = parent.fqnUnique("_wait")
           val labelT = parent.fqnUnique("_transmit")
-          val varLocn = parent.parent.getVarLabel(n)
+          val varLocn = parent.getVarLabel(n)
           split(
             s"""
                |$labelW:
