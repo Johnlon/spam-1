@@ -1,3 +1,5 @@
+#!/bin/bash
+echo ARGS "$@"
 
 TESTS=$1
 if [ "$TESTS" == "" ]

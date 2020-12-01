@@ -1,4 +1,6 @@
+#!/bin/bash
 
+echo ARGS "$@"
 
 TEST=$1
 if [ "$TEST" == "" ]
@@ -12,7 +14,20 @@ fi
 
 shift
 
-
+parentProcess=$PPID
+{
+    myParentProcess=$PPID
+    while [ 1 ]; do
+        if [ ! -d /proc/$parentProcess ]; then
+            echo PARENT DIED SO EXITING
+            kill -TERM $myParentProcess
+            kill -INT $myParentProcess
+            kill -9 $myParentProcess
+            exit 1
+        fi
+        sleep 1
+    done
+} &
 
 echo ================ $TEST ===============
 root=/home/john/wslapps/iverilog/iverilog/

@@ -1,29 +1,33 @@
 package scc
 
+import java.io.{File, PrintWriter}
+import java.util.concurrent.atomic.AtomicBoolean
+
 import asm.Assembler
 import org.junit.Assert.assertEquals
-import org.junit.{FixMethodOrder, Test}
 import org.junit.runners.MethodSorters
+import org.junit.{FixMethodOrder, Test}
 import org.scalatest.matchers.must.Matchers
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class SpamCCTest extends Matchers {
 
   def split(s: String): List[String] = {
-    s.split("\\|")
-      .map(_.stripTrailing()
-        .stripLeading())
+    val strings = s.split("\n")
+    strings
+      .map(_.stripTrailing().stripLeading())
       .filterNot(_.isBlank).toList
   }
 
   def assertSameEx(expected: List[String], actual: List[String]) = {
-    var end = split(
+    val end = split(
       """PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
         |END
                   """.stripMargin)
 
+    println("\nCOMPARING ASM:")
     assertSame(expected ++ end, actual)
   }
 
@@ -33,8 +37,8 @@ class SpamCCTest extends Matchers {
       println("Expected: " + expected)
       println("Actual  : " + actual)
 
-      val e = expected.map( _.stripTrailing().stripLeading()).mkString("\n")
-      val a = actual.map( _.stripTrailing().stripLeading()).mkString("\n")
+      val e = expected.map(_.stripTrailing().stripLeading()).mkString("\n")
+      val a = actual.map(_.stripTrailing().stripLeading()).mkString("\n")
       assertEquals(e, a)
     }
   }
@@ -52,9 +56,9 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_function_main_a: EQU 0
-        |[:root_function_main_a] = 1
-        |""")
+        |root_function_main___VAR_a: EQU 0
+        |[:root_function_main___VAR_a] = 1
+        """.stripMargin)
 
     assertSameEx(expected, actual)
   }
@@ -74,11 +78,11 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_function_main_a: EQU 0
-        |root_function_main_b: EQU 1
-        |[:root_function_main_a] = 1
-        |[:root_function_main_b] = 2
-        |""")
+        |root_function_main___VAR_a: EQU 0
+        |root_function_main___VAR_b: EQU 1
+        |[:root_function_main___VAR_a] = 1
+        |[:root_function_main___VAR_b] = 2
+        |""".stripMargin)
 
     assertSameEx(expected, actual)
   }
@@ -103,20 +107,20 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_function_main_a: EQU 0
-        |root_function_main_b: EQU 1
-        |root_function_other_a: EQU 2
-        |root_function_other_b: EQU 3
-        |[:root_function_main_a] = 1
-        |[:root_function_main_b] = 2
+        |root_function_main___VAR_a: EQU 0
+        |root_function_main___VAR_b: EQU 1
+        |root_function_other___VAR_a: EQU 2
+        |root_function_other___VAR_b: EQU 3
+        |[:root_function_main___VAR_a] = 1
+        |[:root_function_main___VAR_b] = 2
         |PCHITMP = <:root_end
         |PC = >:root_end
-        |[:root_function_other_a] = 1
-        |[:root_function_other_b] = 2
+        |[:root_function_other___VAR_a] = 1
+        |[:root_function_other___VAR_b] = 2
         |root_end:
         |END
-        |""")
-
+        |""".stripMargin)
+        
     assertSame(expected, actual)
   }
 
@@ -135,7 +139,7 @@ class SpamCCTest extends Matchers {
     val expected = split(
       """
         |REGD = 2
-        |""")
+        |""".stripMargin)
 
     assertSameEx(expected, actual)
   }
@@ -155,10 +159,10 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_function_main_a: EQU 0
-        |[:root_function_main_a] = 1
-        |REGD = [:root_function_main_a]
-        |""")
+        |root_function_main___VAR_a: EQU 0
+        |[:root_function_main___VAR_a] = 1
+        |REGD = [:root_function_main___VAR_a]
+        |""".stripMargin)
 
     assertSameEx(expected, actual)
   }
@@ -181,24 +185,23 @@ class SpamCCTest extends Matchers {
     val actual: List[String] = compile(lines)
 
     val expected = split(
-      """root_function_main_a: EQU 0
-        |root_function_main_b: EQU 1
-        |root_function_main_c: EQU 2
-        |root_function_main_d: EQU 3
-        |root_function_main_e: EQU 4
-        |[:root_function_main_a] = 3
-        |REGA = [:root_function_main_a]
+      """root_function_main___VAR_a: EQU 0
+        |root_function_main___VAR_b: EQU 1
+        |root_function_main___VAR_c: EQU 2
+        |root_function_main___VAR_d: EQU 3
+        |root_function_main___VAR_e: EQU 4
+        |[:root_function_main___VAR_a] = 3
+        |REGA = [:root_function_main___VAR_a]
         |REGA = REGA + 3
-        |[:root_function_main_b] = REGA
+        |[:root_function_main___VAR_b] = REGA
         |REGA = 4
-        |REGA = REGA + [:root_function_main_b]
-        |[:root_function_main_c] = REGA
-        |REGA = [:root_function_main_c]
-        |[:root_function_main_d] = REGA
-        |REGA = [:root_function_main_a]
-        |REGA = [:root_function_main_b]
-        |[:root_function_main_e] = REGA + REGB
-        |
+        |REGA = REGA + [:root_function_main___VAR_b]
+        |[:root_function_main___VAR_c] = REGA
+        |REGA = [:root_function_main___VAR_c]
+        |[:root_function_main___VAR_d] = REGA
+        |REGA = [:root_function_main___VAR_a]
+        |REGA = [:root_function_main___VAR_b]
+        |[:root_function_main___VAR_e] = REGA + REGB
         """.stripMargin)
 
     assertSameEx(expected, actual)
@@ -218,30 +221,30 @@ class SpamCCTest extends Matchers {
     val actual: List[String] = compile(lines)
 
     val expected = split(
-      """root_function_main_a: EQU 0
-        |root_function_main_varExprs_d2: EQU 1
-        |root_function_main_varExprs_d3: EQU 2
-        |root_function_main_b: EQU 3
-        |[:root_function_main_a] = 1
+      """root_function_main___VAR_a: EQU 0
+        |root_function_main___VAR_varExprs_d2: EQU 1
+        |root_function_main___VAR_varExprs_d3: EQU 2
+        |root_function_main___VAR_b: EQU 3
+        |[:root_function_main___VAR_a] = 1
         |REGA = 2
-        |[:root_function_main_varExprs_d2] = REGA
-        |REGA = [:root_function_main_a]
-        |[:root_function_main_varExprs_d3] = REGA
+        |[:root_function_main___VAR_varExprs_d2] = REGA
+        |REGA = [:root_function_main___VAR_a]
+        |[:root_function_main___VAR_varExprs_d3] = REGA
         |REGA = 3
-        |REGB = [:root_function_main_varExprs_d3]
-        |[:root_function_main_varExprs_d3] = REGB + REGA
-        |REGA = [:root_function_main_varExprs_d3]
-        |REGB = [:root_function_main_varExprs_d2]
-        |[:root_function_main_varExprs_d2] = REGB + REGA
-        |REGA = [:root_function_main_varExprs_d2]
-        |[:root_function_main_b] = REGA
-        |root_function_main_putcharN__wait_1:
-        |PCHITMP = <:root_function_main_putcharN__transmit_2
-        |PC = >:root_function_main_putcharN__transmit_2 _DO
-        |PCHITMP = <:root_function_main_putcharN__wait_1
-        |PC = <:root_function_main_putcharN__wait_1
-        |root_function_main_putcharN__transmit_2:
-        |UART = [:root_function_main_b]
+        |REGB = [:root_function_main___VAR_varExprs_d3]
+        |[:root_function_main___VAR_varExprs_d3] = REGB + REGA
+        |REGA = [:root_function_main___VAR_varExprs_d3]
+        |REGB = [:root_function_main___VAR_varExprs_d2]
+        |[:root_function_main___VAR_varExprs_d2] = REGB + REGA
+        |REGA = [:root_function_main___VAR_varExprs_d2]
+        |[:root_function_main___VAR_b] = REGA
+        |root_function_main_putcharN___LABEL_wait_1:
+        |PCHITMP = <:root_function_main_putcharN___LABEL_transmit_2
+        |PC = >:root_function_main_putcharN___LABEL_transmit_2 _DO
+        |PCHITMP = <:root_function_main_putcharN___LABEL_wait_1
+        |PC = <:root_function_main_putcharN___LABEL_wait_1
+        |root_function_main_putcharN___LABEL_transmit_2:
+        |UART = [:root_function_main___VAR_b]
         |""".stripMargin)
 
     assertSameEx(expected, actual)
@@ -262,19 +265,19 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_function_main_putcharI__wait_1:
-        |PCHITMP = <:root_function_main_putcharI__transmit_2
-        |PC = >:root_function_main_putcharI__transmit_2 _DO
-        |PCHITMP = <:root_function_main_putcharI__wait_1
-        |PC = <:root_function_main_putcharI__wait_1
-        |root_function_main_putcharI__transmit_2:
+        |root_function_main_putcharI___LABEL_wait_1:
+        |PCHITMP = <:root_function_main_putcharI___LABEL_transmit_2
+        |PC = >:root_function_main_putcharI___LABEL_transmit_2 _DO
+        |PCHITMP = <:root_function_main_putcharI___LABEL_wait_1
+        |PC = <:root_function_main_putcharI___LABEL_wait_1
+        |root_function_main_putcharI___LABEL_transmit_2:
         |UART = 65
-        |root_function_main_putcharI__wait_3:
-        |PCHITMP = <:root_function_main_putcharI__transmit_4
-        |PC = >:root_function_main_putcharI__transmit_4 _DO
-        |PCHITMP = <:root_function_main_putcharI__wait_3
-        |PC = <:root_function_main_putcharI__wait_3
-        |root_function_main_putcharI__transmit_4:
+        |root_function_main_putcharI___LABEL_wait_3:
+        |PCHITMP = <:root_function_main_putcharI___LABEL_transmit_4
+        |PC = >:root_function_main_putcharI___LABEL_transmit_4 _DO
+        |PCHITMP = <:root_function_main_putcharI___LABEL_wait_3
+        |PC = <:root_function_main_putcharI___LABEL_wait_3
+        |root_function_main_putcharI___LABEL_transmit_4:
         |UART = 66
         |""".stripMargin)
 
@@ -288,8 +291,18 @@ class SpamCCTest extends Matchers {
       """
         |def main(): void = {
         | while(true) {
-        |   var a = 1;
+        |   var a = 1
+        |   var a = a + 1
+        |   TODO  HOW TO DETECT SUCCESS?
+        |   TODO USE AN IF STATEMENT TO EXIT?
+        |    TODO OR DO A PUTCHAR AND ASSERT THAT IT COUNTS UP
+        |   if (a>10) {
+        |     break // have to find end tag of enclosing block somehow  - perhaps make the end tag a property of all blocks?
+        |     // goto end_label // thi requires forward references perhaps??
+        |   }
+        |
         | }
+        | label: end_label
         |}
         |""".stripMargin
 
@@ -325,29 +338,30 @@ class SpamCCTest extends Matchers {
     val actual: List[String] = compile(lines)
 
     val expected = split(
-      """root_function_main_a: EQU 0
-        |[:root_function_main_a] = 10
-        |root_function_main_whileCond1__2__check:
-        |REGA = [:root_function_main_a]
+      """
+        |root_function_main___VAR_a: EQU 0
+        |[:root_function_main___VAR_a] = 10
+        |root_function_main_whileCond1___LABEL_check:
+        |REGA = [:root_function_main___VAR_a]
         |REGA = REGA PASS_A 0 _S
-        |PCHITMP = <:root_function_main_whileCond1__2__top
-        |PC = >:root_function_main_whileCond1__2__top _GT
-        |PCHITMP = <:root_function_main_whileCond1__2__bot
-        |PC = >:root_function_main_whileCond1__2__bot
-        |root_function_main_whileCond1__2__top:
-        |REGA = [:root_function_main_a]
+        |PCHITMP = <:root_function_main_whileCond1___LABEL_top
+        |PC = >:root_function_main_whileCond1___LABEL_top _GT
+        |PCHITMP = <:root_function_main_whileCond1___LABEL_bot
+        |PC = >:root_function_main_whileCond1___LABEL_bot
+        |root_function_main_whileCond1___LABEL_top:
+        |REGA = [:root_function_main___VAR_a]
         |REGA = REGA - 1
-        |[:root_function_main_a] = REGA
-        |root_function_main_whileCond1_putcharN__wait_3:
-        |PCHITMP = <:root_function_main_whileCond1_putcharN__transmit_4
-        |PC = >:root_function_main_whileCond1_putcharN__transmit_4 _DO
-        |PCHITMP = <:root_function_main_whileCond1_putcharN__wait_3
-        |PC = <:root_function_main_whileCond1_putcharN__wait_3
-        |root_function_main_whileCond1_putcharN__transmit_4:
-        |UART = [:root_function_main_a]
-        |PCHITMP = <:root_function_main_whileCond1__2__check
-        |PC = >:root_function_main_whileCond1__2__check
-        |root_function_main_whileCond1__2__bot:
+        |[:root_function_main___VAR_a] = REGA
+        |root_function_main_whileCond1_putcharN___LABEL_wait_2:
+        |PCHITMP = <:root_function_main_whileCond1_putcharN___LABEL_transmit_3
+        |PC = >:root_function_main_whileCond1_putcharN___LABEL_transmit_3 _DO
+        |PCHITMP = <:root_function_main_whileCond1_putcharN___LABEL_wait_2
+        |PC = <:root_function_main_whileCond1_putcharN___LABEL_wait_2
+        |root_function_main_whileCond1_putcharN___LABEL_transmit_3:
+        |UART = [:root_function_main___VAR_a]
+        |PCHITMP = <:root_function_main_whileCond1___LABEL_check
+        |PC = >:root_function_main_whileCond1___LABEL_check
+        |root_function_main_whileCond1___LABEL_bot:
         |""".stripMargin)
 
     assertSameEx(expected, actual)
@@ -356,19 +370,75 @@ class SpamCCTest extends Matchers {
 
   private def compile(lines: String, quiet: Boolean = true) = {
     val scc = new SpamCC
+
     val actual: List[String] = scc.compile(lines)
 
-    val asm = new Assembler
-    val str = actual.mkString("\n")
+    val endRemoved: List[String] = actual.filter(!_.equals("END"))
+    val successfulTerminationLocation = List("PCHITMP = <$BEAF","PC = >$BEAF","END")
+
+    // jump to signaling location - verilog program monitors this locn
+    val str = (endRemoved++successfulTerminationLocation).mkString("\n")
     println("ASSEMBLING:\n" + str)
 
-    asm.assemble(str, quiet = quiet)
+    val asm = new Assembler
+
+    val roms = asm.assemble(str, quiet = quiet)
 
     // ditch comments
     val filtered = actual.filter { l =>
       ((!quiet) || !l.matches("^\\s*;.*"))
     }
 
+    val tmpFileRom = new File("build", "spammcc-test.rom")
+
+    println("WRITING ROM TO :\n" + tmpFileRom)
+    val pw = new PrintWriter(tmpFileRom)
+
+    roms.foreach { line =>
+      line.foreach { rom =>
+        pw.write(rom)
+      }
+      pw.write("\n")
+    }
+
+    pw.close()
+
+    exec(tmpFileRom)
+
     filtered
+  }
+
+  def exec(romsPath: File): Unit = {
+    import scala.language.postfixOps
+
+    import scala.sys.process._
+    val abs = romsPath.getPath.replaceAll("\\\\", "/")
+
+    println("RUNNING :\n" + abs)
+
+//    val pb: ProcessBuilder = Process(Seq("cmd", "/c", "bash", "-c", s"""../verilog/simulate_one.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$abs"""))
+    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$abs"""))
+
+    val success = new AtomicBoolean()
+
+    val logger = ProcessLogger.apply(
+      fout = output => {
+        if (output.contains("SUCCESS - AT EXPECTED END OF PROGRAM")) success.set(true)
+        println("\t   \t: " + output)
+      },
+      ferr = output =>
+        println("\tERR\t: " + output)
+    )
+
+    // process has builtin timeout
+    val process = pb.run(logger)
+
+    process.exitValue()
+
+    if (success.get())
+      println("SUCCESSFUL SIMULATION")
+    else
+      fail("SIMULATION - DID NOT REACH END")
+
   }
 }

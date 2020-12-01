@@ -36,5 +36,8 @@ root_function_main_a: EQU 0
       PC = >:root_end
 ; (0) EXIT  root_function_main @ function
 root_end:
+      PCHITMP = <$BEAF
+      PC = >$BEAF
+
 END
 
