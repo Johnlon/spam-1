@@ -55,11 +55,6 @@ class SpamCC extends JavaTokenParsers {
 
     parse(program, code) match {
       case Success(matched, _) => {
-        //        matched.zipWithIndex.foreach(
-        //          l => {
-        //            println(">>" + l)
-        //          }
-        //        )
         matched
       }
       case msg: Failure => {
@@ -343,8 +338,6 @@ class SpamCC extends JavaTokenParsers {
         override def gen(depth: Int, parent: Name): List[String] = {
           val stmts = c.flatMap {
             b => {
-              //JL!              val newName = parent.blockName + NAME_SEPARATOR + fnName
-              //   val newName = parent.fqn(fnName)
               b.expr(depth + 1, parent) //.pushName(newName = newName))
             }
           }
@@ -396,9 +389,8 @@ class SpamCC extends JavaTokenParsers {
 
       new Block(s"whileCond", s"$SPACE($cond) with ${content.size} inner blocks", nestedName = s"whileCond${Name.nextInt}") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          //                    val labelBase = parent.fqnLocalUnique()
 
-          val labelCheck = parent.toLabelPath("check") // s"${labelBase}_check"
+          val labelCheck = parent.toLabelPath("check")
           val labelBody = parent.toLabelPath("body")
           val labelBot = parent.toLabelPath("bot")
 
@@ -445,7 +437,7 @@ class SpamCC extends JavaTokenParsers {
       new Block(s"ifCond", s"$SPACE($cond) with ${content.size} inner blocks", nestedName = s"ifCond${Name.nextInt}") {
         override def gen(depth: Int, parent: Name): List[String] = {
 
-          val labelCheck = parent.toLabelPath("check") // s"${labelBase}_check"
+          val labelCheck = parent.toLabelPath("check")
           val labelBody = parent.toLabelPath("body")
           val labelBot = parent.toLabelPath("bot")
 
@@ -594,20 +586,6 @@ class SpamCC extends JavaTokenParsers {
 
     override def toString() = s"Block($typ $context)"
 
-    //    def fqn(child: String): String = {
-    //      blockName + LABEL_NAME_SEPARATOR + child
-    //    }
-    //
-    //    /* returns a globally unique name that is contextual by ibcluding the block name*/
-    //    def fqnUnique(child: String): String = {
-    //      Block.idx += 1
-    //      blockName + LABEL_NAME_SEPARATOR + child + "_" + Block.idx
-    //    }
-    //
-    //    def pushName(newName: String): Block = new Block(newName, this.context) {
-    //      override def gen(depth: Int, parent: Block): List[String] = Block.this.expr(depth, parent)
-    //    }
-
     private def prefixComment(depth: Int) = s"; ($depth) ${" " * depth}";
 
     private def prefixOp(depth: Int) = prefixComment(depth).replaceAll(".", " ");
@@ -657,17 +635,7 @@ class SpamCC extends JavaTokenParsers {
     /* returns a globally unique name that is contextual by ibcluding the block name*/
     def fqnVarPathUnique(child: String): String = {
       toVarPath(child) + LABEL_NAME_SEPARATOR + Name.nextInt
-      //      val labelBase = fqnLocalUnique()
-      //      labelBase + LABEL_NAME_SEPARATOR + child
     }
-
-    //
-    //    def fqnLocalUnique(): String = {
-    //      toLabelPath("") + LABEL_NAME_SEPARATOR + Name.nextInt
-    //
-    ////      val idx = Name.nextInt
-    ////      blockName + LABEL_NAME_SEPARATOR + "_" + idx + "_"
-    //    }
 
     def pushScope(newScopeName: String): Name = {
       if (newScopeName.size > 0) this.copy(parent = this, name = newScopeName)
