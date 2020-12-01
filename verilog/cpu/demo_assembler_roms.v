@@ -234,9 +234,20 @@ endfunction
             $display("%9t ", $time, "INCREMENTED PC=%1d    BEYOND PROGRAM LENGTH %d", {CPU.PCHI, CPU.PCLO}, counter);
 `ifndef verilator
             $finish_and_return(1);
-    `endif
+`endif
         end
     end
+
+    always @(CPU.PCHI or CPU.PCLO) begin
+        if (pcval == 16'hBEAF) begin
+            $display("%9t ", $time, "SUCCESS - AT EXPECTED END OF PROGRAM" );
+            
+`ifndef verilator
+            $finish();
+`endif
+        end
+    end
+    
 
     `define DD  $display ("%9t ", $time,  "DUMP  ",
     task DUMP_OP;

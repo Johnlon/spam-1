@@ -120,7 +120,7 @@ class SpamCCTest extends Matchers {
         |root_end:
         |END
         |""".stripMargin)
-        
+
     assertSame(expected, actual)
   }
 
@@ -251,7 +251,7 @@ class SpamCCTest extends Matchers {
   }
 
   @Test
-  def output: Unit = {
+  def putchar: Unit = {
 
     val lines =
       """
@@ -284,42 +284,6 @@ class SpamCCTest extends Matchers {
     assertSameEx(expected, actual)
   }
 
-  @Test
-  def whileLoopTrue: Unit = {
-
-    val lines =
-      """
-        |def main(): void = {
-        | while(true) {
-        |   var a = 1
-        |   var a = a + 1
-        |   TODO  HOW TO DETECT SUCCESS?
-        |   TODO USE AN IF STATEMENT TO EXIT?
-        |    TODO OR DO A PUTCHAR AND ASSERT THAT IT COUNTS UP
-        |   if (a>10) {
-        |     break // have to find end tag of enclosing block somehow  - perhaps make the end tag a property of all blocks?
-        |     // goto end_label // thi requires forward references perhaps??
-        |   }
-        |
-        | }
-        | label: end_label
-        |}
-        |""".stripMargin
-
-    val actual: List[String] = compile(lines)
-
-    val expected = split(
-      """
-        |root_function_main_whileTrue1_a: EQU 0
-        |root_function_main_whileTrue1_block_2__top:
-        |[:root_function_main_whileTrue1_a] = 1
-        |PCHITMP = <:root_function_main_whileTrue1_block_2__top
-        |PC = >:root_function_main_whileTrue1_block_2__top
-        |root_function_main_whileTrue1_block_2__bot:
-        |""".stripMargin)
-
-    assertSameEx(expected, actual)
-  }
 
   @Test
   def whileLoopCond: Unit = {
@@ -338,17 +302,16 @@ class SpamCCTest extends Matchers {
     val actual: List[String] = compile(lines)
 
     val expected = split(
-      """
-        |root_function_main___VAR_a: EQU 0
+      """root_function_main___VAR_a: EQU 0
         |[:root_function_main___VAR_a] = 10
         |root_function_main_whileCond1___LABEL_check:
         |REGA = [:root_function_main___VAR_a]
         |REGA = REGA PASS_A 0 _S
-        |PCHITMP = <:root_function_main_whileCond1___LABEL_top
-        |PC = >:root_function_main_whileCond1___LABEL_top _GT
+        |PCHITMP = <:root_function_main_whileCond1___LABEL_body
+        |PC = >:root_function_main_whileCond1___LABEL_body _GT
         |PCHITMP = <:root_function_main_whileCond1___LABEL_bot
         |PC = >:root_function_main_whileCond1___LABEL_bot
-        |root_function_main_whileCond1___LABEL_top:
+        |root_function_main_whileCond1___LABEL_body:
         |REGA = [:root_function_main___VAR_a]
         |REGA = REGA - 1
         |[:root_function_main___VAR_a] = REGA
@@ -361,27 +324,90 @@ class SpamCCTest extends Matchers {
         |UART = [:root_function_main___VAR_a]
         |PCHITMP = <:root_function_main_whileCond1___LABEL_check
         |PC = >:root_function_main_whileCond1___LABEL_check
-        |root_function_main_whileCond1___LABEL_bot:
-        |""".stripMargin)
+        |root_function_main_whileCond1___LABEL_bot:""".stripMargin)
 
     assertSameEx(expected, actual)
   }
 
 
-  private def compile(lines: String, quiet: Boolean = true) = {
+  @Test
+  def whileLoopTrueIfBreak: Unit = {
+
+    val lines =
+      """
+        |def main(): void = {
+        | var a = 1;
+        | while(true) {
+        |   var a = a + 1;
+        |
+        |   if (a>10) {
+        |     break
+        |   }
+        | }
+        |}
+        |""".stripMargin
+
+    val actual: List[String] = compile(lines)
+
+    val expected = split(
+      """root_function_main___VAR_a: EQU 0
+        |[:root_function_main___VAR_a] = 1
+        |root_function_main_whileTrue2___LABEL_body:
+        |REGA = [:root_function_main___VAR_a]
+        |REGA = REGA + 1
+        |[:root_function_main___VAR_a] = REGA
+        |root_function_main_whileTrue2_ifCond1___LABEL_check:
+        |REGA = [:root_function_main___VAR_a]
+        |REGA = REGA PASS_A 10 _S
+        |PCHITMP = <:root_function_main_whileTrue2_ifCond1___LABEL_body
+        |PC = >:root_function_main_whileTrue2_ifCond1___LABEL_body _GT
+        |PCHITMP = <:root_function_main_whileTrue2_ifCond1___LABEL_bot
+        |PC = >:root_function_main_whileTrue2_ifCond1___LABEL_bot
+        |root_function_main_whileTrue2_ifCond1___LABEL_body:
+        |PCHITMP = <:root_function_main_whileTrue2___LABEL_after
+        |PC = >:root_function_main_whileTrue2___LABEL_after
+        |root_function_main_whileTrue2_ifCond1___LABEL_bot:
+        |PCHITMP = <:root_function_main_whileTrue2___LABEL_body
+        |PC = >:root_function_main_whileTrue2___LABEL_body
+        |root_function_main_whileTrue2___LABEL_after:""".stripMargin)
+
+    assertSameEx(expected, actual)
+  }
+
+  private def compile(lines: String, quiet: Boolean = true): List[String] = {
     val scc = new SpamCC
 
     val actual: List[String] = scc.compile(lines)
 
     val endRemoved: List[String] = actual.filter(!_.equals("END"))
-    val successfulTerminationLocation = List("PCHITMP = <$BEAF","PC = >$BEAF","END")
+    val successfulTerminationLocation = List("PCHITMP = <$BEAF", "PC = >$BEAF", "END")
+    val patched = endRemoved ++ successfulTerminationLocation
 
     // jump to signaling location - verilog program monitors this locn
-    val str = (endRemoved++successfulTerminationLocation).mkString("\n")
-    println("ASSEMBLING:\n" + str)
+    val str = patched.mkString("\n")
+    println("ASSEMBLING:\n")
+    var pc = 0
+
+    val IsEqu = "^\\s*[a-zA-Z_]+:\\s*EQU.*$".r
+    val IsLabel = "^\\s*[a-zA-Z0-9_]+:\\s*$".r
+    val IsComment = "^\\s*;.*$".r
+
+    actual.foreach { l =>
+      if (IsComment.matches(l)) {
+        println(s"${"".formatted("%5s")}  $l")
+      }
+      else if (IsEqu.matches(l)) {
+        println(s"${"".formatted("%5s")}  $l")
+      }
+      else if (IsLabel.matches(l)) {
+        println(s"${"".formatted("%5s")}  $l")
+      } else {
+        println(s"${pc.formatted("%5d")}  $l")
+        pc += 1
+      }
+    }
 
     val asm = new Assembler
-
     val roms = asm.assemble(str, quiet = quiet)
 
     // ditch comments
@@ -392,6 +418,15 @@ class SpamCCTest extends Matchers {
     val tmpFileRom = new File("build", "spammcc-test.rom")
 
     println("WRITING ROM TO :\n" + tmpFileRom)
+    writeFile(roms, tmpFileRom)
+
+    exec(tmpFileRom)
+
+    print("ASM RAN OK\n" + filtered.map(_.stripLeading()).mkString("\n"))
+    filtered
+  }
+
+  private def writeFile(roms: List[List[String]], tmpFileRom: File) = {
     val pw = new PrintWriter(tmpFileRom)
 
     roms.foreach { line =>
@@ -402,10 +437,6 @@ class SpamCCTest extends Matchers {
     }
 
     pw.close()
-
-    exec(tmpFileRom)
-
-    filtered
   }
 
   def exec(romsPath: File): Unit = {
@@ -416,7 +447,7 @@ class SpamCCTest extends Matchers {
 
     println("RUNNING :\n" + abs)
 
-//    val pb: ProcessBuilder = Process(Seq("cmd", "/c", "bash", "-c", s"""../verilog/simulate_one.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$abs"""))
+    //    val pb: ProcessBuilder = Process(Seq("cmd", "/c", "bash", "-c", s"""../verilog/simulate_one.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$abs"""))
     val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$abs"""))
 
     val success = new AtomicBoolean()

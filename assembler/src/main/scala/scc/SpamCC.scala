@@ -42,7 +42,7 @@ object SpamCC {
 
 class SpamCC extends JavaTokenParsers {
 
-  def SEMICOLON  = ";"
+  def SEMICOLON = ";"
 
   val SPACE = " ";
 
@@ -329,7 +329,7 @@ class SpamCC extends JavaTokenParsers {
 
   def statement: Parser[Block] = (statementEqVarOpVar | statementEqVar | statementEqVarOpConst | statementEqConstOpVar | statementEqConst |
     statementReturn | statementReturnName | statementVarOp | stmtPutchar | statementPutcharName |
-    whileTrue | whileCond)
+    whileTrue | whileCond | ifCond | breakOut)
 
   def statements: Parser[List[Block]] = statement ~ (statement *) ^^ {
     case a ~ b =>
@@ -366,20 +366,23 @@ class SpamCC extends JavaTokenParsers {
 
       new Block("whileTrue", s"${SPACE}true", nestedName = s"whileTrue${Name.nextInt}") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val labelTop = parent.toLabelPath("top")
+          val labelBody = parent.toLabelPath("body")
+          val labelAfter = parent.toLabelPath("after")
 
-          val prefix = split(s"""$labelTop:""")
+          val prefix = split(s"""$labelBody:""")
 
           val stmts = content.flatMap {
             b => {
-              b.expr(depth + 1, parent) //JL1.pushName(newName = label))
+              val nameName = parent.copy(endLabel = Some(labelAfter))
+              b.expr(depth + 1, nameName) //JL1.pushName(newName = label))
             }
           }
 
           val suffix = split(
             s"""
-               |PCHITMP = <:$labelTop
-               |PC = >:$labelTop
+               |PCHITMP = <:$labelBody
+               |PC = >:$labelBody
+               |$labelAfter:
                |""")
 
 
@@ -396,13 +399,8 @@ class SpamCC extends JavaTokenParsers {
           //                    val labelBase = parent.fqnLocalUnique()
 
           val labelCheck = parent.toLabelPath("check") // s"${labelBase}_check"
-          val labelTop = parent.toLabelPath("top")
+          val labelBody = parent.toLabelPath("body")
           val labelBot = parent.toLabelPath("bot")
-          //          val labelBase = parent.localName()
-          //
-          //          val labelCheck = labelBase.fqn("check")
-          //          val labelTop = labelBase.fqn("top")
-          //          val labelBot = labelBase.fqn("bot")
 
           val flagToCheck = cond._1
           val conditionBlock = cond._2
@@ -414,11 +412,11 @@ class SpamCC extends JavaTokenParsers {
               condStatements ++
               split(
                 s"""
-                   |PCHITMP = <:$labelTop
-                   |PC = >:$labelTop $flagToCheck
+                   |PCHITMP = <:$labelBody
+                   |PC = >:$labelBody $flagToCheck
                    |PCHITMP = <:$labelBot
                    |PC = >:$labelBot
-                   |$labelTop:
+                   |$labelBody:
                """)
           }
 
@@ -438,6 +436,68 @@ class SpamCC extends JavaTokenParsers {
           conditionalJump ++ stmts ++ suffix
         }
 
+      }
+  }
+
+  def ifCond: Parser[Block] = "if" ~ "(" ~> condition ~ ")" ~ "{" ~ statements <~ "}" ^^ {
+    case cond ~ _ ~ _ ~ content =>
+
+      new Block(s"ifCond", s"$SPACE($cond) with ${content.size} inner blocks", nestedName = s"ifCond${Name.nextInt}") {
+        override def gen(depth: Int, parent: Name): List[String] = {
+
+          val labelCheck = parent.toLabelPath("check") // s"${labelBase}_check"
+          val labelBody = parent.toLabelPath("body")
+          val labelBot = parent.toLabelPath("bot")
+
+          val flagToCheck = cond._1
+          val conditionBlock = cond._2
+
+          val condStatements = conditionBlock.expr(depth + 1, parent) // IMPORTANT TO USE THE PARENT DIRECTLY HERE AS THE CONDITION VAR IS DEFINED IN THE SURROUNDING CONTEXT
+
+          val conditionalJump = {
+            List(s"$labelCheck:") ++
+              condStatements ++
+              split(
+                s"""
+                   |PCHITMP = <:$labelBody
+                   |PC = >:$labelBody $flagToCheck
+                   |PCHITMP = <:$labelBot
+                   |PC = >:$labelBot
+                   |$labelBody:
+               """)
+          }
+
+          val stmts = content.flatMap {
+            b => {
+              b.expr(depth + 1, parent) //.pushName(newName = labelBase))
+            }
+          }
+
+          val suffix = split(
+            s"""
+               |$labelBot:
+               |""")
+
+          conditionalJump ++ stmts ++ suffix
+        }
+      }
+  }
+
+  def breakOut: Parser[Block] = "break" ^^ {
+    case _ =>
+      new Block(s"break", "") {
+        override def gen(depth: Int, parent: Name): List[String] = {
+
+          val breakToLabel = parent.getEndLabel().getOrElse {
+            throw new RuntimeException("spamcc error: cannot use 'break' without surrounding 'while' block")
+          }
+
+          split(
+            s"""
+               |PCHITMP = <:$breakToLabel
+               |PC = >:$breakToLabel
+               """)
+        }
       }
   }
 
@@ -565,8 +625,7 @@ class SpamCC extends JavaTokenParsers {
     }
   }
 
-  case class Name private(parent: Name, name: String) {
-
+  case class Name private(parent: Name, name: String, endLabel: Option[String] = None) {
     final val LABEL_NAME_SEPARATOR = "_"
 
     def blockName: String = {
@@ -576,7 +635,9 @@ class SpamCC extends JavaTokenParsers {
         name
     }
 
-    override def toString() = s"Name($blockName)"
+    def getEndLabel(): Option[String] = endLabel.orElse(parent.getEndLabel())
+
+    override def toString() = s"Name(path=$blockName, endLabel=$endLabel)"
 
     def toLabelPath(child: String): String = {
       blockName + (LABEL_NAME_SEPARATOR * 3) + "LABEL_" + child
@@ -609,7 +670,7 @@ class SpamCC extends JavaTokenParsers {
     //    }
 
     def pushScope(newScopeName: String): Name = {
-      if (newScopeName.size > 0) Name(this, newScopeName)
+      if (newScopeName.size > 0) this.copy(parent = this, name = newScopeName)
       else this
     }
 
