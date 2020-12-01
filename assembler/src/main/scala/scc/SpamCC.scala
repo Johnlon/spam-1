@@ -302,7 +302,7 @@ class SpamCC extends JavaTokenParsers {
 
   def statementPutcharName: Parser[Block] = "putchar" ~ "(" ~> name <~ ")" ^^ {
     n: String =>
-      new Block("statementPutcharName", s"$n", nestedName = "putcharN") {
+      new Block("statementPutcharName", s"$n", nestedName = s"putcharN_${n}_") {
         override def gen(depth: Int, parent: Name): List[String] = {
           val labelWait = parent.fqnLabelPathUnique("wait")
           val labelTransmit = parent.fqnLabelPathUnique("transmit")
@@ -558,7 +558,6 @@ class SpamCC extends JavaTokenParsers {
 
 
   abstract class Block(val typ: String, val context: String, nestedName: String = "") {
-    //    private val compName = s"${typ}_$context"
 
     protected[this] def gen(depth: Int, parent: Name): List[String]
 
@@ -617,19 +616,17 @@ class SpamCC extends JavaTokenParsers {
 
     override def toString() = s"Name(path=$blockName, endLabel=$endLabel)"
 
-    def toLabelPath(child: String): String = {
-      blockName + (LABEL_NAME_SEPARATOR * 3) + "LABEL_" + child
-    }
-
     def toVarPath(child: String): String = {
       blockName + (LABEL_NAME_SEPARATOR * 3) + "VAR_" + child
+    }
+
+    def toLabelPath(child: String): String = {
+      blockName + (LABEL_NAME_SEPARATOR * 3) + "LABEL_" + child
     }
 
     /* returns a globally unique name that is contextual by ibcluding the block name*/
     def fqnLabelPathUnique(child: String): String = {
       toLabelPath(child) + LABEL_NAME_SEPARATOR + Name.nextInt
-      //      val labelBase = fqnLocalUnique()
-      //      labelBase + LABEL_NAME_SEPARATOR + child
     }
 
     /* returns a globally unique name that is contextual by ibcluding the block name*/
