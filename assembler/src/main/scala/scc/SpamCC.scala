@@ -179,10 +179,9 @@ class SpamCC extends JavaTokenParsers {
       }
   }
 
-  // TODO - this looks suspiciously without context - should I load anything - or does it make sense as it's only used inside expressions?????
-  def blkName: Parser[Block] = name ^^ {
+  def blkVar: Parser[Block] = name ^^ {
     case n =>
-      new Block("blkName", s"$n") {
+      new Block("blkVar", s"$n") {
         override def gen(depth: Int, parent: Name): List[String] = {
           val labelSrcVar = parent.getVarLabel(n)
           List(
@@ -203,7 +202,7 @@ class SpamCC extends JavaTokenParsers {
       }
   }
 
-  def allBlkExprs: Parser[Block] = blkNExpr | blkName | "(" ~> blkExprs <~ ")"
+  def allBlkExprs: Parser[Block] = blkNExpr | blkVar | "(" ~> blkExprs <~ ")"
 
   def blkExprs: Parser[Block] = allBlkExprs ~ ((op ~ allBlkExprs) *) ^^ {
     case x ~ list =>
