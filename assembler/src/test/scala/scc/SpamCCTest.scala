@@ -9,6 +9,8 @@ import org.junit.runners.MethodSorters
 import org.junit.{FixMethodOrder, Test}
 import org.scalatest.matchers.must.Matchers
 
+import scala.collection.mutable.ListBuffer
+
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class SpamCCTest extends Matchers {
 
@@ -47,7 +49,7 @@ class SpamCCTest extends Matchers {
   def varEq1(): Unit = {
 
     val lines =
-      """def main(): void = {
+      """def main() {
         | var a=1;
         |}
         |""".stripMargin
@@ -68,7 +70,7 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main(): void = {
+        |def main() {
         | var a=1;
         | var b=1+1;
         |}
@@ -93,11 +95,11 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main(): void = {
+        |def main() {
         | var a=1;
         | var b=2;
         |}
-        |def other(): void = {
+        |def other() {
         | var a=1;
         | var b=2;
         |}
@@ -129,7 +131,7 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main(): void = {
+        |def main() {
         |  return 2
         |}
         |""".stripMargin
@@ -149,7 +151,7 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main(): void = {
+        |def main() {
         |  var a = 1;
         |  return a
         |}
@@ -172,7 +174,7 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main(): void = {
+        |def main() {
         |  var a = 1 + 2;
         |  var b = a + 3;
         |  var c = 4 + b;
@@ -211,7 +213,7 @@ class SpamCCTest extends Matchers {
   def varEqNestedExpr(): Unit = {
 
     val lines =
-      """def main(): void = {
+      """def main() {
         |  var a = 1;
         |  var b = 2 + (a + 3);
         |  putchar(b)
@@ -250,7 +252,7 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main(): void = {
+        |def main() {
         |  putchar('A')
         |  putchar('B')
         |}
@@ -285,7 +287,7 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main(): void = {
+        |def main() {
         | var a=10;
         | while(a>0) {
         |   var a=a-1;
@@ -330,7 +332,7 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main(): void = {
+        |def main() {
         | var a = 1;
         | while(true) {
         |   var a = a + 1;
@@ -369,9 +371,58 @@ class SpamCCTest extends Matchers {
     assertSameEx(expected, actual)
   }
 
-  private def compile(lines: String, quiet: Boolean = true): List[String] = {
+  @Test
+  def functionCalls(): Unit = {
+
+    val lines =
+      """
+        |def print(a1, a2) {
+        | var d = a1;
+        | putchar(d)
+        | putchar(a2)
+        |}
+        |
+        |def main() {
+        | var arg1 = '!';
+        | var arg2 = '?';
+        | print(arg1, arg2)
+        |}
+        |""".stripMargin
+
+    val actual: List[String] = compile(lines, quiet = true, outputCheck = str => {
+      if (!str.find(_.contains("TRANSMITTING h21")).isDefined) {
+        fail("did not transmit '!' char")
+      }
+      if (!str.find(_.contains("TRANSMITTING h3f")).isDefined) {
+        fail("did not transmit '?' char")
+      }
+    })
+
+    val expected = split(
+      """
+        |root_function_main_putcharI___LABEL_wait_1:
+        |PCHITMP = <:root_function_main_putcharI___LABEL_transmit_2
+        |PC = >:root_function_main_putcharI___LABEL_transmit_2 _DO
+        |PCHITMP = <:root_function_main_putcharI___LABEL_wait_1
+        |PC = <:root_function_main_putcharI___LABEL_wait_1
+        |root_function_main_putcharI___LABEL_transmit_2:
+        |UART = 65
+        |root_function_main_putcharI___LABEL_wait_3:
+        |PCHITMP = <:root_function_main_putcharI___LABEL_transmit_4
+        |PC = >:root_function_main_putcharI___LABEL_transmit_4 _DO
+        |PCHITMP = <:root_function_main_putcharI___LABEL_wait_3
+        |PC = <:root_function_main_putcharI___LABEL_wait_3
+        |root_function_main_putcharI___LABEL_transmit_4:
+        |UART = 66
+        |""".stripMargin)
+
+    assertSameEx(expected, actual)
+  }
+
+  private def compile(linesRaw: String, quiet: Boolean = true, outputCheck: List[String] => Unit = _ => {}): List[String] = {
     val scc = new SpamCC
 
+    val lines = "program {\n" + linesRaw + "\n}"
     val actual: List[String] = scc.compile(lines)
 
     val endRemoved: List[String] = actual.filter(!_.equals("END"))
@@ -383,7 +434,7 @@ class SpamCCTest extends Matchers {
     println("ASSEMBLING:\n")
     var pc = 0
 
-    val IsEqu = "^\\s*[a-zA-Z_]+:\\s*EQU.*$".r
+    val IsEqu = "^\\s*[a-zA-Z0-9_]+:\\s*EQU.*$".r
     val IsLabel = "^\\s*[a-zA-Z0-9_]+:\\s*$".r
     val IsComment = "^\\s*;.*$".r
 
@@ -415,7 +466,7 @@ class SpamCCTest extends Matchers {
     println("WRITING ROM TO :\n" + tmpFileRom)
     writeFile(roms, tmpFileRom)
 
-    exec(tmpFileRom)
+    exec(tmpFileRom, outputCheck)
 
     print("ASM RAN OK\n" + filtered.map(_.stripLeading()).mkString("\n"))
     filtered
@@ -434,7 +485,7 @@ class SpamCCTest extends Matchers {
     pw.close()
   }
 
-  def exec(romsPath: File): Unit = {
+  def exec(romsPath: File, outputCheck: List[String] => Unit): Unit = {
     import scala.language.postfixOps
 
     import scala.sys.process._
@@ -446,20 +497,27 @@ class SpamCCTest extends Matchers {
     val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$abs"""))
 
     val success = new AtomicBoolean()
+    val lines = ListBuffer.empty[String]
 
     val logger = ProcessLogger.apply(
       fout = output => {
+        lines.append(output)
         if (output.contains("SUCCESS - AT EXPECTED END OF PROGRAM")) success.set(true)
         println("\t   \t: " + output)
       },
-      ferr = output =>
+      ferr = output => {
+        lines.append(output)
         println("\tERR\t: " + output)
+      }
     )
 
     // process has builtin timeout
     val process = pb.run(logger)
+    val ex = process.exitValue()
 
-    process.exitValue()
+    println("EXIT CODE " + ex)
+
+    outputCheck(lines.toList)
 
     if (success.get())
       println("SUCCESSFUL SIMULATION")

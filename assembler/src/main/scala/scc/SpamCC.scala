@@ -3,6 +3,7 @@ package scc
 import java.io.{File, PrintWriter}
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.language.postfixOps
 import scala.util.parsing.combinator.JavaTokenParsers
@@ -53,6 +54,7 @@ object SpamCC {
 }
 
 class SpamCC extends JavaTokenParsers {
+  private val MAIN_LABEL = "ROOT________main_start"
 
   private def SEMICOLON = ";"
 
@@ -224,7 +226,7 @@ class SpamCC extends JavaTokenParsers {
           //          val temporaryVarLabel = parent.assignVarLabel("varExprs_d" + depth)
 
           //          val left: List[String] = x.expr(depth + 1, parent) :+ s"[:$temporaryVarLabel] = REGA"
-          val left: List[String] = x.expr(depth + 1, parent) :+ s"REGC = REGA"
+          val left: List[String] = x.expr(depth + 1, parent) ++ List(s"; assign clause result to REGC = ${x.context} ", s"REGC = REGA")
 
           // In an expression the result of the previous step is accumulated in the assigned temporaryVarLabel.
           // It is somewhat inefficient that I has to shove the value into RAM and back out on each step.
@@ -234,6 +236,7 @@ class SpamCC extends JavaTokenParsers {
 
             expressionClause ++
               List(
+                s"; concatenate clause to REGS = $op ${b.context}",
                 s"REGC = REGC $op REGA"
               )
             //              List(
@@ -345,7 +348,10 @@ class SpamCC extends JavaTokenParsers {
   def statement: Parser[Block] =
     statementEqVarOpVar | statementEqVar | statementEqVarOpConst | statementEqConstOpVar | statementEqConst |
       statementReturn | statementReturnName | statementVarOp | stmtPutchar | statementPutcharName |
-      whileTrue | whileCond | ifCond | breakOut
+      whileTrue | whileCond | ifCond | breakOut | functionCall ^^ {
+      s =>
+        s
+    }
 
   def statements: Parser[List[Block]] = statement ~ (statement *) ^^ {
     case a ~ b =>
@@ -357,6 +363,13 @@ class SpamCC extends JavaTokenParsers {
       // !!!NO SPACE IN THE NAME AS USED FOR LABELS
       new Block(s"function", s"_$fnName", nestedName = s"function_$fnName") {
         override def gen(depth: Int, parent: Name): List[String] = {
+
+          val fnStart = parent.fqnLabelPathUnique("START")
+
+          val prefix = List(
+            s"$fnStart:"
+          )
+
           val stmts = c.flatMap {
             b => {
               b.expr(depth + 1, parent) //.pushName(newName = newName))
@@ -370,9 +383,89 @@ class SpamCC extends JavaTokenParsers {
             )
           } else Nil
 
-          stmts ++ suffix
+          prefix ++ stmts ++ suffix
         }
       }
+  }
+
+  trait IsFunction {
+    self: Block =>
+
+    def functionName: String
+
+    def argNames: List[String]
+
+    def scopedArgLabels(scope: Name): (String, (String, String), List[String]) = {
+      val returnHiLabel = scope.assignVarLabel("RETURN_HI")
+      val returnLoLabel = scope.assignVarLabel("RETURN_LO")
+      val argLabels = argNames.map {
+        argName =>
+          scope.assignVarLabel(argName)
+      }
+      val fnStart = scope.toLabelPath("START")
+
+      (fnStart, (returnHiLabel, returnLoLabel), argLabels)
+    }
+  }
+
+  def functionWithArgs: Parser[Block] = "def " ~> name ~ "(" ~ repsep(name, ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
+    case fnName ~ _ ~ args ~ _ ~ content =>
+
+      // !!!NO SPACE IN THE NAME AS USED FOR LABELS
+      val fn = new Block(s"function", s"_$fnName(${args.mkString(",")})", nestedName = s"function_$fnName") with IsFunction {
+
+        override def functionName: String = fnName
+
+        override def argNames: List[String] = args
+
+        override def gen(depth: Int, scope: Name): List[String] = {
+
+          val (startLabel, (returnHi, returnLo), argsLabels) = scopedArgLabels(scope)
+
+          val prefix = if (fnName == "main") {
+            List(
+              s"$MAIN_LABEL:",
+              s"$startLabel:"
+            )
+          } else
+            List(s"$startLabel:")
+
+          //
+
+          //
+          //          val params = argsLabels.zip(argNames)
+          //          params.map {
+          //            case nameLabel =>
+          //              val argLabel = parent.assignVarLabel(nameLabel._1)
+          //
+          //          }
+
+
+          // eval the code that uses these vars
+          val stmts = content.flatMap {
+            b => {
+              b.expr(depth + 1, scope) //.pushName(newName = newName))
+            }
+          }
+
+          val suffix = if (fnName == "main") {
+            List(
+              "PCHITMP = <:root_end",
+              "PC = >:root_end"
+            )
+          } else {
+            List(
+              s"PCHITMP = [:$returnHi]",
+              s"PC = [:$returnLo]"
+            )
+          }
+
+          prefix ++ stmts ++ suffix
+        }
+      }
+
+
+      fn
   }
 
   def whileTrue: Parser[Block] = "while" ~ "(" ~ "true" ~ ")" ~ "{" ~> statements <~ "}" ^^ {
@@ -380,8 +473,8 @@ class SpamCC extends JavaTokenParsers {
 
       new Block("whileTrue", s"${SPACE}true", nestedName = s"whileTrue${Name.nextInt}") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val labelBody = parent.toLabelPath("body")
-          val labelAfter = parent.toLabelPath("after")
+          val labelBody = parent.toLabelPath("BODY")
+          val labelAfter = parent.toLabelPath("AFTER")
 
           val prefix = split(s"""$labelBody:""")
 
@@ -411,9 +504,9 @@ class SpamCC extends JavaTokenParsers {
       new Block(s"whileCond", s"$SPACE($cond) with ${content.size} inner blocks", nestedName = s"whileCond${Name.nextInt}") {
         override def gen(depth: Int, parent: Name): List[String] = {
 
-          val labelCheck = parent.toLabelPath("check")
-          val labelBody = parent.toLabelPath("body")
-          val labelBot = parent.toLabelPath("bot")
+          val labelCheck = parent.toLabelPath("CHECK")
+          val labelBody = parent.toLabelPath("BODY")
+          val labelBot = parent.toLabelPath("AFTER")
 
           val flagToCheck = cond._1
           val conditionBlock = cond._2
@@ -458,9 +551,9 @@ class SpamCC extends JavaTokenParsers {
       new Block(s"ifCond", s"$SPACE($cond) with ${content.size} inner blocks", nestedName = s"ifCond${Name.nextInt}") {
         override def gen(depth: Int, parent: Name): List[String] = {
 
-          val labelCheck = parent.toLabelPath("check")
-          val labelBody = parent.toLabelPath("body")
-          val labelBot = parent.toLabelPath("bot")
+          val labelCheck = parent.toLabelPath("CHECK")
+          val labelBody = parent.toLabelPath("BODY")
+          val labelBot = parent.toLabelPath("AFTER")
 
           val flagToCheck = cond._1
           val conditionBlock = cond._2
@@ -510,6 +603,57 @@ class SpamCC extends JavaTokenParsers {
                |PCHITMP = <:$breakToLabel
                |PC = >:$breakToLabel
                """)
+        }
+      }
+  }
+
+
+  trait isFunctionCall
+
+  def functionCall: Parser[Block] = name ~ "(" ~ repsep(blkExprs, ",") ~ ")" ^^ {
+    case fnName ~ _ ~ argExpr ~ _ =>
+      new Block(s"functionCall", s"""$fnName(${argExpr.mkString(", ")})""") with isFunctionCall {
+
+        override def gen(depth: Int, parent: Name): List[String] = {
+          val fns: Option[Block with IsFunction] = parent.lookupFunction(fnName)
+          val fn: Block with IsFunction = fns.getOrElse(sys.error(s"no such function '$fnName''"))
+
+          val functionScope = fn.localize(parent.parent)
+          val (startLabel, (returnHiLabel, returnLoLabel), argsLabels) = fn.scopedArgLabels(functionScope)
+
+          val argNames: List[String] = fn.argNames
+          if (argExpr.length != argNames.length) {
+            sys.error(s"""wrong number of arguments for function "$fnName"; expected $fnName(${argNames.mkString(",")}) but got $fnName(${argExpr.mkString(",")})""")
+          }
+
+          val argZip = argsLabels.zip(argExpr)
+          println(s"CALL $fnName (${argZip.mkString(",")})")
+
+          val setupCallParams: List[String] = argZip.flatMap {
+            case (argLabel, argBlk) =>
+              val stmts: List[String] = argBlk.expr(depth + 1, parent)
+
+              stmts :+ s"[:$argLabel] = REGA"
+          }
+
+          val labelReturn = parent.fqnLabelPathUnique("RETURN")
+
+          val setupReturnParams: List[String] = List(
+            s"; set return address variables",
+            s"[:$returnHiLabel] = < :$labelReturn",
+            s"[:$returnLoLabel] = > :$labelReturn"
+          )
+
+          val doJump = List(
+            s"; do jump to function '$fnName''",
+            s"PCHITMP = < :$startLabel",
+            s"PC = > :$startLabel",
+            s"; return location",
+            s"$labelReturn:"
+          )
+
+
+          setupCallParams ++ setupReturnParams ++ doJump
         }
       }
   }
@@ -581,26 +725,40 @@ class SpamCC extends JavaTokenParsers {
 
     protected[this] def gen(depth: Int, parent: Name): List[String]
 
-    final def expr(depth: Int, parent: Name): List[String] = {
+    final def expr(depth: Int, parentScope: Name): List[String] = {
 
-      val newName = parent.pushScope(nestedName)
+      val thisScope = localize(parentScope)
 
-      val enter = s"${prefixComment(depth)}ENTER ${newName.blockName} @ $typ"
-      val exit = s"${prefixComment(depth)}EXIT  ${newName.blockName} @ $typ"
+      val enter = s"${prefixComment(depth)}ENTER ${thisScope.blockName} @ $typ"
+      val exit = s"${prefixComment(depth)}EXIT  ${thisScope.blockName} @ $typ"
 
       try {
-        val value: List[String] = gen(depth, newName).map(l => {
-          prefixOp(depth) + l
-        })
+        val value: List[String] = this match {
+          case bf: Block with IsFunction =>
+            parentScope.addFunction(bf)
+
+            gen(depth, thisScope).map(l => {
+              prefixOp(depth) + l
+            })
+          case _ =>
+            gen(depth, thisScope).map(l => {
+              prefixOp(depth) + l
+            })
+        }
+
         enter +: value :+ exit
       } catch {
         case ex: Exception =>
           // throw with updated message but existing stack trace
           val message = ex.getMessage
-          val exception = new RuntimeException(s"$message @ \n '${parent.blockName}'", ex)
+          val exception = new RuntimeException(s"$message @ \n '${parentScope.blockName}'", ex)
           exception.setStackTrace(ex.getStackTrace)
           throw exception
       }
+    }
+
+    def localize(parent: Name): Name = {
+      parent.pushScope(nestedName)
     }
 
     override def toString = s"Block($typ $context)"
@@ -622,7 +780,15 @@ class SpamCC extends JavaTokenParsers {
     }
   }
 
-  case class Name private(parent: Name, name: String, endLabel: Option[String] = None) {
+  case class Name private(parent: Name, name: String, endLabel: Option[String] = None, functions: ListBuffer[Block with IsFunction] = ListBuffer.empty) {
+
+    def lookupFunction(name: String): Option[Block with IsFunction] = {
+      val maybeBlock = functions.find(f => f.functionName == name)
+      maybeBlock.orElse {
+        Option(parent).flatMap(_.lookupFunction(name))
+      }
+    }
+
     final val LABEL_NAME_SEPARATOR = "_"
 
     def blockName: String = {
@@ -657,6 +823,10 @@ class SpamCC extends JavaTokenParsers {
     def pushScope(newScopeName: String): Name = {
       if (newScopeName.length > 0) this.copy(parent = this, name = newScopeName)
       else this
+    }
+
+    def addFunction(newFunction: Block with IsFunction): Unit = {
+      functions.append(newFunction)
     }
 
     def assignVarLabel(name: String): String = {
@@ -695,12 +865,14 @@ class SpamCC extends JavaTokenParsers {
     def getVarLabel(name: String): String = {
       val label = lookupVarLabel(name)
       label.getOrElse {
-        sys.error(s"scc error: $name has not been defined yet @ $this")
+        val str = s"scc error: $name has not been defined yet @ $this"
+        sys.error(str)
       }
     }
   }
 
-  def program: Parser[List[String]] = (function +) ^^ {
+  def program: Parser[List[String]] = "program" ~ "{" ~> (functionWithArgs +) <~ "}" ^^ {
+    //  def program: Parser[List[String]] =  (functionWithArgs +) <~ "}" ^^ {
     fns =>
       val Depth0 = 0
 
@@ -710,8 +882,22 @@ class SpamCC extends JavaTokenParsers {
         }
       }
 
-      val varlist = vars.toList.sortBy(_._2._2).map { x => s"${x._1}: EQU ${x._2._2}" }
-      varlist ++ asm :+ "root_end:" :+ "END"
+      val varlist = vars.toList.sortBy(_._2._2).map {
+        x =>
+          s"${
+            x._1
+          }: EQU ${
+            x._2._2
+          }"
+      }
+
+      val jumpToMain = split(
+        s"""
+           |PCHITMP = < :$MAIN_LABEL
+           |PC = > :$MAIN_LABEL
+           |""")
+
+      varlist ++ jumpToMain ++ asm :+ "root_end:" :+ "END"
   }
 }
 
