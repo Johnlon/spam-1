@@ -19,7 +19,7 @@ class SpamCCTest extends Matchers {
       .filterNot(_.isBlank).toList
   }
 
-  def assertSameEx(expected: List[String], actual: List[String]) = {
+  def assertSameEx(expected: List[String], actual: List[String]): Unit = {
     val end = split(
       """PCHITMP = <:root_end
         |PC = >:root_end
@@ -31,7 +31,7 @@ class SpamCCTest extends Matchers {
     assertSame(expected ++ end, actual)
   }
 
-  def assertSame(expected: List[String], actual: List[String]) = {
+  def assertSame(expected: List[String], actual: List[String]): Unit = {
 
     if (expected != actual) {
       println("Expected: " + expected)
@@ -44,7 +44,7 @@ class SpamCCTest extends Matchers {
   }
 
   @Test
-  def varEq1: Unit = {
+  def varEq1(): Unit = {
 
     val lines =
       """def main(): void = {
@@ -64,7 +64,7 @@ class SpamCCTest extends Matchers {
   }
 
   @Test
-  def varEq1AndVarEq1Plus1: Unit = {
+  def varEq1AndVarEq1Plus1(): Unit = {
 
     val lines =
       """
@@ -89,7 +89,7 @@ class SpamCCTest extends Matchers {
 
 
   @Test
-  def twoFunctions: Unit = {
+  def twoFunctions(): Unit = {
 
     val lines =
       """
@@ -125,7 +125,7 @@ class SpamCCTest extends Matchers {
   }
 
   @Test
-  def returnLiteralConst: Unit = {
+  def returnLiteralConst(): Unit = {
 
     val lines =
       """
@@ -145,7 +145,7 @@ class SpamCCTest extends Matchers {
   }
 
   @Test
-  def returnVar: Unit = {
+  def returnVar(): Unit = {
 
     val lines =
       """
@@ -168,7 +168,7 @@ class SpamCCTest extends Matchers {
   }
 
   @Test
-  def varEqSimpleTwoArgExpr: Unit = {
+  def varEqSimpleTwoArgExpr(): Unit = {
 
     val lines =
       """
@@ -208,7 +208,7 @@ class SpamCCTest extends Matchers {
   }
 
   @Test
-  def varEqNestedExpr: Unit = {
+  def varEqNestedExpr(): Unit = {
 
     val lines =
       """def main(): void = {
@@ -222,36 +222,31 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """root_function_main___VAR_a: EQU 0
-        |root_function_main___VAR_varExprs_d2: EQU 1
-        |root_function_main___VAR_varExprs_d3: EQU 2
-        |root_function_main___VAR_b: EQU 3
+        |root_function_main___VAR_b: EQU 1
         |[:root_function_main___VAR_a] = 1
         |REGA = 2
-        |[:root_function_main___VAR_varExprs_d2] = REGA
+        |REGC = REGA
         |REGA = [:root_function_main___VAR_a]
-        |[:root_function_main___VAR_varExprs_d3] = REGA
+        |REGC = REGA
         |REGA = 3
-        |REGB = [:root_function_main___VAR_varExprs_d3]
-        |[:root_function_main___VAR_varExprs_d3] = REGB + REGA
-        |REGA = [:root_function_main___VAR_varExprs_d3]
-        |REGB = [:root_function_main___VAR_varExprs_d2]
-        |[:root_function_main___VAR_varExprs_d2] = REGB + REGA
-        |REGA = [:root_function_main___VAR_varExprs_d2]
+        |REGC = REGC + REGA
+        |REGA = REGC
+        |REGC = REGC + REGA
+        |REGA = REGC
         |[:root_function_main___VAR_b] = REGA
-        |root_function_main_putcharN___LABEL_wait_1:
-        |PCHITMP = <:root_function_main_putcharN___LABEL_transmit_2
-        |PC = >:root_function_main_putcharN___LABEL_transmit_2 _DO
-        |PCHITMP = <:root_function_main_putcharN___LABEL_wait_1
-        |PC = <:root_function_main_putcharN___LABEL_wait_1
-        |root_function_main_putcharN___LABEL_transmit_2:
-        |UART = [:root_function_main___VAR_b]
-        |""".stripMargin)
+        |root_function_main_putcharN_b____LABEL_wait_1:
+        |PCHITMP = <:root_function_main_putcharN_b____LABEL_transmit_2
+        |PC = >:root_function_main_putcharN_b____LABEL_transmit_2 _DO
+        |PCHITMP = <:root_function_main_putcharN_b____LABEL_wait_1
+        |PC = <:root_function_main_putcharN_b____LABEL_wait_1
+        |root_function_main_putcharN_b____LABEL_transmit_2:
+        |UART = [:root_function_main___VAR_b]""".stripMargin)
 
     assertSameEx(expected, actual)
   }
 
   @Test
-  def putchar: Unit = {
+  def putchar(): Unit = {
 
     val lines =
       """
@@ -286,7 +281,7 @@ class SpamCCTest extends Matchers {
 
 
   @Test
-  def whileLoopCond: Unit = {
+  def whileLoopCond(): Unit = {
 
     val lines =
       """
@@ -315,12 +310,12 @@ class SpamCCTest extends Matchers {
         |REGA = [:root_function_main___VAR_a]
         |REGA = REGA - 1
         |[:root_function_main___VAR_a] = REGA
-        |root_function_main_whileCond1_putcharN___LABEL_wait_2:
-        |PCHITMP = <:root_function_main_whileCond1_putcharN___LABEL_transmit_3
-        |PC = >:root_function_main_whileCond1_putcharN___LABEL_transmit_3 _DO
-        |PCHITMP = <:root_function_main_whileCond1_putcharN___LABEL_wait_2
-        |PC = <:root_function_main_whileCond1_putcharN___LABEL_wait_2
-        |root_function_main_whileCond1_putcharN___LABEL_transmit_3:
+        |root_function_main_whileCond1_putcharN_a____LABEL_wait_2:
+        |PCHITMP = <:root_function_main_whileCond1_putcharN_a____LABEL_transmit_3
+        |PC = >:root_function_main_whileCond1_putcharN_a____LABEL_transmit_3 _DO
+        |PCHITMP = <:root_function_main_whileCond1_putcharN_a____LABEL_wait_2
+        |PC = <:root_function_main_whileCond1_putcharN_a____LABEL_wait_2
+        |root_function_main_whileCond1_putcharN_a____LABEL_transmit_3:
         |UART = [:root_function_main___VAR_a]
         |PCHITMP = <:root_function_main_whileCond1___LABEL_check
         |PC = >:root_function_main_whileCond1___LABEL_check
@@ -331,7 +326,7 @@ class SpamCCTest extends Matchers {
 
 
   @Test
-  def whileLoopTrueIfBreak: Unit = {
+  def whileLoopTrueIfBreak(): Unit = {
 
     val lines =
       """
@@ -412,7 +407,7 @@ class SpamCCTest extends Matchers {
 
     // ditch comments
     val filtered = actual.filter { l =>
-      ((!quiet) || !l.matches("^\\s*;.*"))
+      (!quiet) || !l.matches("^\\s*;.*")
     }
 
     val tmpFileRom = new File("build", "spammcc-test.rom")
@@ -426,7 +421,7 @@ class SpamCCTest extends Matchers {
     filtered
   }
 
-  private def writeFile(roms: List[List[String]], tmpFileRom: File) = {
+  private def writeFile(roms: List[List[String]], tmpFileRom: File): Unit = {
     val pw = new PrintWriter(tmpFileRom)
 
     roms.foreach { line =>
