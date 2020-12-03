@@ -258,7 +258,10 @@ class SpamCCTest extends Matchers {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines)
+    val actual: List[String] = compile(lines, outputCheck = str => {
+      checkTransmitted(str, 'A')
+      checkTransmitted(str, 'B')
+    })
 
     val expected = split(
       """
@@ -378,28 +381,28 @@ class SpamCCTest extends Matchers {
       """
         |// START FN COMMAND
         |
-        |def print(a1, a2, a3 out) {
+        |def print(a1 out, a2, a3, a4) {
         | // FN COMMENT
         | var d = a1;
         | putchar(d)
         | putchar(a2)
+        | putchar(a3)
+        | putchar(a4)
         |
-        | var a2 = 'Z';
+        | // ascii 33 dec
+        | var a1 = '!';
         | // END FN COMMENT
         |}
         |
         |def main() {
-        | var arg1 = '!';
-        | var arg2 = '?';
-        | var arg3 = '~';
+        | var arg1 = 'A';
+        | var arg2 = 1;
         |
-        | // CALLING PRINT
-        | print(arg1, arg2, arg3)
+        | // CALLING PRINT - 63 is '?'
+        | print(arg1, arg2+arg1, 63, arg1+4)
         |
-        | // CALLING PUT CHAR
-        | putchar(65)
-        | putchar(arg3)
-        | putchar(66)
+        | // CALLING PUT CHAR OF OUT VALUE
+        | putchar(arg1)
         |
         |}
         |
@@ -407,33 +410,109 @@ class SpamCCTest extends Matchers {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, quiet = true, outputCheck = str => {
-      if (!str.find(_.contains("TRANSMITTING h21")).isDefined) {
-        fail("did not transmit '!' char")
-      }
-      if (!str.find(_.contains("TRANSMITTING h3f")).isDefined) {
-        fail("did not transmit '?' char")
-      }
+      checkTransmitted(str, 'A')
+      checkTransmitted(str, 'B')
+      checkTransmitted(str, '?')
+      checkTransmitted(str, 'E')
+      checkTransmitted(str, '!')
     })
 
     val expected = split(
       """
-        |root_function_main_putcharI___LABEL_wait_1:
-        |PCHITMP = <:root_function_main_putcharI___LABEL_transmit_2
-        |PC = >:root_function_main_putcharI___LABEL_transmit_2 _DO
-        |PCHITMP = <:root_function_main_putcharI___LABEL_wait_1
-        |PC = <:root_function_main_putcharI___LABEL_wait_1
-        |root_function_main_putcharI___LABEL_transmit_2:
-        |UART = 65
-        |root_function_main_putcharI___LABEL_wait_3:
-        |PCHITMP = <:root_function_main_putcharI___LABEL_transmit_4
-        |PC = >:root_function_main_putcharI___LABEL_transmit_4 _DO
-        |PCHITMP = <:root_function_main_putcharI___LABEL_wait_3
-        |PC = <:root_function_main_putcharI___LABEL_wait_3
-        |root_function_main_putcharI___LABEL_transmit_4:
-        |UART = 66
-        |""".stripMargin)
+        |root_function_print___VAR_RETURN_HI: EQU 0
+        |root_function_print___VAR_RETURN_LO: EQU 1
+        |root_function_print___VAR_a1: EQU 2
+        |root_function_print___VAR_a2: EQU 3
+        |root_function_print___VAR_a3: EQU 4
+        |root_function_print___VAR_a4: EQU 5
+        |root_function_print___VAR_d: EQU 6
+        |root_function_main___VAR_RETURN_HI: EQU 7
+        |root_function_main___VAR_RETURN_LO: EQU 8
+        |root_function_main___VAR_arg1: EQU 9
+        |root_function_main___VAR_arg2: EQU 10
+        |PCHITMP = < :ROOT________main_start
+        |PC = > :ROOT________main_start
+        |root_function_print___LABEL_START:
+        |REGA = [:root_function_print___VAR_a1]
+        |[:root_function_print___VAR_d] = REGA
+        |root_function_print_putcharN_d____LABEL_wait_1:
+        |PCHITMP = <:root_function_print_putcharN_d____LABEL_transmit_2
+        |PC = >:root_function_print_putcharN_d____LABEL_transmit_2 _DO
+        |PCHITMP = <:root_function_print_putcharN_d____LABEL_wait_1
+        |PC = <:root_function_print_putcharN_d____LABEL_wait_1
+        |root_function_print_putcharN_d____LABEL_transmit_2:
+        |UART = [:root_function_print___VAR_d]
+        |root_function_print_putcharN_a2____LABEL_wait_3:
+        |PCHITMP = <:root_function_print_putcharN_a2____LABEL_transmit_4
+        |PC = >:root_function_print_putcharN_a2____LABEL_transmit_4 _DO
+        |PCHITMP = <:root_function_print_putcharN_a2____LABEL_wait_3
+        |PC = <:root_function_print_putcharN_a2____LABEL_wait_3
+        |root_function_print_putcharN_a2____LABEL_transmit_4:
+        |UART = [:root_function_print___VAR_a2]
+        |root_function_print_putcharN_a3____LABEL_wait_5:
+        |PCHITMP = <:root_function_print_putcharN_a3____LABEL_transmit_6
+        |PC = >:root_function_print_putcharN_a3____LABEL_transmit_6 _DO
+        |PCHITMP = <:root_function_print_putcharN_a3____LABEL_wait_5
+        |PC = <:root_function_print_putcharN_a3____LABEL_wait_5
+        |root_function_print_putcharN_a3____LABEL_transmit_6:
+        |UART = [:root_function_print___VAR_a3]
+        |root_function_print_putcharN_a4____LABEL_wait_7:
+        |PCHITMP = <:root_function_print_putcharN_a4____LABEL_transmit_8
+        |PC = >:root_function_print_putcharN_a4____LABEL_transmit_8 _DO
+        |PCHITMP = <:root_function_print_putcharN_a4____LABEL_wait_7
+        |PC = <:root_function_print_putcharN_a4____LABEL_wait_7
+        |root_function_print_putcharN_a4____LABEL_transmit_8:
+        |UART = [:root_function_print___VAR_a4]
+        |[:root_function_print___VAR_a1] = 33
+        |PCHITMP = [:root_function_print___VAR_RETURN_HI]
+        |PC = [:root_function_print___VAR_RETURN_LO]
+        |ROOT________main_start:
+        |root_function_main___LABEL_START:
+        |[:root_function_main___VAR_arg1] = 65
+        |[:root_function_main___VAR_arg2] = 1
+        |REGA = [:root_function_main___VAR_arg1]
+        |REGC = REGA
+        |REGA = REGC
+        |[:root_function_print___VAR_a1] = REGA
+        |REGA = [:root_function_main___VAR_arg2]
+        |REGC = REGA
+        |REGA = [:root_function_main___VAR_arg1]
+        |REGC = REGC + REGA
+        |REGA = REGC
+        |[:root_function_print___VAR_a2] = REGA
+        |REGA = 63
+        |REGC = REGA
+        |REGA = REGC
+        |[:root_function_print___VAR_a3] = REGA
+        |REGA = [:root_function_main___VAR_arg1]
+        |REGC = REGA
+        |REGA = 4
+        |REGC = REGC + REGA
+        |REGA = REGC
+        |[:root_function_print___VAR_a4] = REGA
+        |[:root_function_print___VAR_RETURN_HI] = < :root_function_main___LABEL_RETURN_9
+        |[:root_function_print___VAR_RETURN_LO] = > :root_function_main___LABEL_RETURN_9
+        |PCHITMP = < :root_function_print___LABEL_START
+        |PC = > :root_function_print___LABEL_START
+        |root_function_main___LABEL_RETURN_9:
+        |REGA = [:root_function_print___VAR_a1]
+        |[:root_function_main___VAR_arg1] = REGA
+        |root_function_main_putcharN_arg1____LABEL_wait_10:
+        |PCHITMP = <:root_function_main_putcharN_arg1____LABEL_transmit_11
+        |PC = >:root_function_main_putcharN_arg1____LABEL_transmit_11 _DO
+        |PCHITMP = <:root_function_main_putcharN_arg1____LABEL_wait_10
+        |PC = <:root_function_main_putcharN_arg1____LABEL_wait_10
+        |root_function_main_putcharN_arg1____LABEL_transmit_11:
+        |UART = [:root_function_main___VAR_arg1]""".stripMargin)
 
     assertSameEx(expected, actual)
+  }
+
+  private def checkTransmitted(str: List[String], c: Char) = {
+    val hex = c.charValue().toHexString
+    if (!str.find(_.contains(s"TRANSMITTING h$hex")).isDefined) {
+      fail(s"did not transmit '$c' char")
+    }
   }
 
   private def compile(linesRaw: String, quiet: Boolean = true, outputCheck: List[String] => Unit = _ => {}): List[String] = {

@@ -157,6 +157,10 @@ class SpamCC extends JavaTokenParsers {
       }
   }
 
+  trait IsVariable
+
+  trait IsConst
+
   // optimisation of "var X=Y"
   def statementEqVar: Parser[Block] = "var" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
     case target ~ _ ~ v =>
@@ -189,48 +193,74 @@ class SpamCC extends JavaTokenParsers {
       }
   }
 
+  sealed trait IsExpr
+
+  trait IsVarExpr extends IsExpr {
+    def variableName: String
+  }
+
+  trait IsNumExpr extends IsExpr {
+    def exressionValue: Int
+  }
+
   def blkVar: Parser[Block] = name ^^ {
     n =>
-      new Block("blkVar", s"$n") {
+      new Block("blkVar", s"$n") with IsVarExpr {
+        override def toString = s"$n"
+
         override def gen(depth: Int, parent: Name): List[String] = {
           val labelSrcVar = parent.getVarLabel(n)
           List(
             s"REGA = [:$labelSrcVar]",
           )
         }
+
+        override def variableName: String = n
       }
   }
 
   def blkNExpr: Parser[Block] = constExpr ^^ {
     i =>
-      new Block("blkNExpr", s"$i") {
+      new Block("blkNExpr", s"$i") with IsNumExpr {
+        override def toString = s"$i"
+
         override def gen(depth: Int, parent: Name): List[String] = {
           List(
             s"REGA = $i",
           )
         }
+
+        override def exressionValue: Int = i
       }
   }
 
   def allBlkExprs: Parser[Block] = blkNExpr | blkVar | "(" ~> blkExprs <~ ")"
 
+  sealed trait IsExprs {
+    def variableName: Option[String]
+  }
+
   def blkExprs: Parser[Block] = allBlkExprs ~ ((op ~ allBlkExprs) *) ^^ {
-    case x ~ list =>
-      val inner = list.foldLeft(x.toString()) {
-        case (acc, b) => s"$acc ${b._1} ( ${b._2} )"
+    case leftExpr ~ otherExpr =>
+      val inner = otherExpr.foldLeft(leftExpr.toString()) {
+        case (acc, b) =>
+          s"$acc ${b._1} (${b._2})"
       }
 
       val str = s" $inner  "
-      new Block("blkExprs", s"$str") {
+      new Block("blkExprs", s"$str") with IsExprs {
+
+        override def toString = s"$inner"
+
         override def gen(depth: Int, parent: Name): List[String] = {
           //          val temporaryVarLabel = parent.assignVarLabel("varExprs_d" + depth)
 
           //          val left: List[String] = x.expr(depth + 1, parent) :+ s"[:$temporaryVarLabel] = REGA"
-          val left: List[String] = x.expr(depth + 1, parent) ++ List(s"; assign clause result to REGC = ${x.context} ", s"REGC = REGA")
+          val leftStatement: List[String] = leftExpr.expr(depth + 1, parent) ++ List(s"; assign clause result to REGC = ${leftExpr.context} ", s"REGC = REGA")
 
           // In an expression the result of the previous step is accumulated in the assigned temporaryVarLabel.
           // It is somewhat inefficient that I has to shove the value into RAM and back out on each step.
-          val rightStatments: List[String] = list.reverse.flatMap { case op ~ b =>
+          val otherStatements: List[String] = otherExpr.reverse.flatMap { case op ~ b =>
             // clause must drop it's result into REGC
             val expressionClause = b.expr(depth + 1, parent)
 
@@ -248,7 +278,18 @@ class SpamCC extends JavaTokenParsers {
           //          val suffix = split(s"""REGA = [:$temporaryVarLabel]""")
           val suffix = split(s"""REGA = REGC""")
 
-          left ++ rightStatments ++ suffix
+          leftStatement ++ otherStatements ++ suffix
+        }
+
+        override def variableName: Option[String] = {
+          if (otherExpr.isEmpty) {
+            leftExpr match {
+              case v: IsVarExpr =>
+                Some(v.variableName)
+              case _ =>
+                None
+            }
+          } else None
         }
       }
   }
@@ -358,9 +399,9 @@ class SpamCC extends JavaTokenParsers {
       a +: b
   }
 
-  case class FunctionArgLabel(labelName: String, output: Boolean)
   case class FunctionArgName(name: String, output: Boolean)
-  case class FunctionDef(startLabel: String, returnHiLabel: String, returnLoLabel: String, args: List[FunctionArgLabel])
+  case class FunctionArgNameAndLabel(labelName: String, argName: FunctionArgName)
+  case class FunctionDef(startLabel: String, returnHiLabel: String, returnLoLabel: String, args: List[FunctionArgNameAndLabel])
 
   trait IsFunction {
     self: Block =>
@@ -374,19 +415,18 @@ class SpamCC extends JavaTokenParsers {
       val returnLoLabel = scope.assignVarLabel("RETURN_LO")
       // These locations where we write the input parameters into the function.
       // Read from these locations to fetch out values.
-      val argLabels : List[(String, Boolean)] = functionArgs.map {
+      val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.map {
         argName =>
-          (scope.assignVarLabel(argName.name), argName.output)
+          FunctionArgNameAndLabel(scope.assignVarLabel(argName.name), FunctionArgName(argName.name, argName.output))
       }
       val fnStart = scope.toLabelPath("START")
 
-      FunctionDef(fnStart, returnHiLabel, returnLoLabel, argLabels.map(x => FunctionArgLabel(x._1, x._2)))
+      FunctionDef(fnStart, returnHiLabel, returnLoLabel, argNamesLabelsDirection)
     }
   }
 
 
-
-  def functionDef: Parser[Block] = "def " ~> name ~ "(" ~ repsep( (name ~ ("out"?)), ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
+  def functionDef: Parser[Block] = "def " ~> name ~ "(" ~ repsep((name ~ ("out" ?)), ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
     case fnName ~ _ ~ args ~ _ ~ content =>
 
       // !!!NO SPACE IN THE NAME AS USED FOR LABELS
@@ -394,7 +434,7 @@ class SpamCC extends JavaTokenParsers {
 
         override def functionName: String = fnName
 
-        override def functionArgs: List[FunctionArgName] = args.map{
+        override def functionArgs: List[FunctionArgName] = args.map {
           case n ~ io =>
             FunctionArgName(n, io.isDefined)
         }
@@ -597,27 +637,56 @@ class SpamCC extends JavaTokenParsers {
 
           if (argExpr.length != argNamesAndDir.size) {
             val argsNames = argNamesAndDir.map(_.name)
-            sys.error(s"""wrong number of arguments for function "$fnName"; expected $fnName(${argsNames.mkString(",")}) but got $fnName(${argExpr.mkString(",")})""")
+            sys.error(s"""call to function "$fnName" has wrong number of arguments for ; expected $fnName(${argsNames.mkString(",")}) but got $fnName(${argExpr.mkString(",")})""")
           }
 
           val argZip = argsLabelsAndDir.zip(argExpr)
 
           val setupCallParams: List[String] = argZip.flatMap {
-            case (FunctionArgLabel(argLabel, _), argBlk) =>
+            case (FunctionArgNameAndLabel(argLabel, _), argBlk) =>
               val stmts: List[String] = argBlk.expr(depth + 1, parent)
-
               stmts :+ s"[:$argLabel] = REGA"
+          }
+
+          val setupOutParams: List[String] = argZip.flatMap {
+            case (FunctionArgNameAndLabel(argLabel, nameAndOutput), argBlk) =>
+              if (nameAndOutput.output) {
+                argBlk match {
+                  case v: IsExprs =>
+                    val vn = v.variableName
+
+                    vn match {
+                      case Some(name) =>
+                        val localVarLabel  = parent.lookupVarLabel(name).getOrElse{
+                          sys.error(s"""output argument '$name' in call to function "$fnName" is not defined""")
+                        }
+
+                        List(
+                          s"REGA = [:$argLabel]",
+                          s"[:$localVarLabel] = REGA"
+                        )
+                      case _ =>
+                        sys.error(s"""output parameter '${nameAndOutput.name}' in call to function "$fnName" is not a pure variable reference, but is '$v'""")
+                    }
+                  case somethingElse if nameAndOutput.output =>
+                    sys.error(s"""output parameter '${nameAndOutput.name}' in call to function "$fnName" is not a pure variable reference, but is '$somethingElse'""")
+                  case _ =>
+                    Nil
+                }
+              }
+              else
+                Nil
           }
 
           val labelReturn = parent.fqnLabelPathUnique("RETURN")
 
-          val setupReturnParams: List[String] = List(
+          val setupReturnJumpParams: List[String] = List(
             s"; set return address variables",
             s"[:$returnHiLabel] = < :$labelReturn",
             s"[:$returnLoLabel] = > :$labelReturn"
           )
 
-          val doJump = List(
+          val setupJumpToFn = List(
             s"; do jump to function '$fnName''",
             s"PCHITMP = < :$startLabel",
             s"PC = > :$startLabel",
@@ -625,17 +694,17 @@ class SpamCC extends JavaTokenParsers {
             s"$labelReturn:"
           )
 
-//          val setupReadOutParams: List[String] = argZip.filter(_._1._2).map(_._1._1)
-//
-//            flatMap {
-//            case ((argLabel:String, _), argBlk) =>
-//              val stmts: List[String] = argBlk.expr(depth + 1, parent)
-//
-//              stmts :+ s"[:$argLabel] = REGA"
-//          }
+          //          val setupReadOutParams: List[String] = argZip.filter(_._1._2).map(_._1._1)
+          //
+          //            flatMap {
+          //            case ((argLabel:String, _), argBlk) =>
+          //              val stmts: List[String] = argBlk.expr(depth + 1, parent)
+          //
+          //              stmts :+ s"[:$argLabel] = REGA"
+          //          }
 
 
-          setupCallParams ++ setupReturnParams ++ doJump
+          setupCallParams ++ setupReturnJumpParams ++ setupJumpToFn ++ setupOutParams
         }
       }
   }
@@ -711,6 +780,7 @@ class SpamCC extends JavaTokenParsers {
         }
       }
   }
+
   abstract class Block(val typ: String, val context: String, nestedName: String = "") {
 
     protected[this] def gen(depth: Int, parent: Name): List[String]
@@ -741,7 +811,8 @@ class SpamCC extends JavaTokenParsers {
         case ex: Exception =>
           // throw with updated message but existing stack trace
           val message = ex.getMessage
-          val exception = new RuntimeException(s"$message @ \n '${parentScope.blockName}'", ex)
+          val cause = if (ex.getCause == null) ex else ex.getCause
+          val exception = new RuntimeException(s"$message @ \n '${parentScope.blockName}'", cause)
           exception.setStackTrace(ex.getStackTrace)
           throw exception
       }
@@ -772,7 +843,7 @@ class SpamCC extends JavaTokenParsers {
 
   case class Name private(parent: Name, name: String, endLabel: Option[String] = None, functions: ListBuffer[(Name, Block with IsFunction)] = ListBuffer.empty) {
 
-    def lookupFunction(name: String):  Option[(Name, Block with IsFunction)] = {
+    def lookupFunction(name: String): Option[(Name, Block with IsFunction)] = {
       val maybeBlock = functions.find(f => f._2.functionName == name)
       maybeBlock.orElse {
         Option(parent).flatMap(_.lookupFunction(name))
