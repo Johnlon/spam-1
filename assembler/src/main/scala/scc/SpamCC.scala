@@ -348,7 +348,7 @@ class SpamCC extends JavaTokenParsers {
   def statement: Parser[Block] =
     statementEqVarOpVar | statementEqVar | statementEqVarOpConst | statementEqConstOpVar | statementEqConst |
       statementReturn | statementReturnName | statementVarOp | stmtPutchar | statementPutcharName |
-      whileTrue | whileCond | ifCond | breakOut | functionCall ^^ {
+      whileTrue | whileCond | ifCond | breakOut | functionCall | comment ^^ {
       s =>
         s
     }
@@ -720,6 +720,14 @@ class SpamCC extends JavaTokenParsers {
   }
 
 
+  def comment: Parser[Block] = "//.*".r ^^ {
+    c =>
+      new Block("comment", s"${SPACE}$c") {
+        override def gen(depth: Int, parent: Name): List[String] = {
+          List(s"; $c")
+        }
+      }
+  }
   abstract class Block(val typ: String, val context: String, nestedName: String = "") {
 
     protected[this] def gen(depth: Int, parent: Name): List[String]
@@ -797,7 +805,7 @@ class SpamCC extends JavaTokenParsers {
         name
     }
 
-    def getEndLabel: Option[String] = endLabel.orElse(parent.getEndLabel)
+    def getEndLabel: Option[String] = endLabel.orElse(Option(parent).flatMap(_.getEndLabel))
 
     override def toString = s"Name(path=$blockName, endLabel=$endLabel)"
 
@@ -871,7 +879,7 @@ class SpamCC extends JavaTokenParsers {
     }
   }
 
-  def program: Parser[List[String]] = "program" ~ "{" ~> (functionWithArgs +) <~ "}" ^^ {
+  def program: Parser[List[String]] = "program" ~ "{" ~> ((comment | functionWithArgs) +) <~ "}" ^^ {
     //  def program: Parser[List[String]] =  (functionWithArgs +) <~ "}" ^^ {
     fns =>
       val Depth0 = 0

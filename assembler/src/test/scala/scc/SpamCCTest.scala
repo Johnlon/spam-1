@@ -376,17 +376,34 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
+        |// START COMMAND
+        |
         |def print(a1, a2) {
+        | // FN COMMENT
         | var d = a1;
         | putchar(d)
         | putchar(a2)
+        | var a2 = 'Z';
+        | // UPDATED A2
+        |
+        | break
         |}
         |
         |def main() {
         | var arg1 = '!';
         | var arg2 = '?';
+        |
+        | // CALLING PRINT
         | print(arg1, arg2)
+        |
+        | // CALLING PUT CHAR
+        | putchar(65)
+        | putchar(arg2)
+        | putchar(66)
+        |
         |}
+        |
+        |// END  COMMAND
         |""".stripMargin
 
     val actual: List[String] = compile(lines, quiet = true, outputCheck = str => {
