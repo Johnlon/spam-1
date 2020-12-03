@@ -615,10 +615,9 @@ class SpamCC extends JavaTokenParsers {
       new Block(s"functionCall", s"""$fnName(${argExpr.mkString(", ")})""") with isFunctionCall {
 
         override def gen(depth: Int, parent: Name): List[String] = {
-          val fns: Option[Block with IsFunction] = parent.lookupFunction(fnName)
-          val fn: Block with IsFunction = fns.getOrElse(sys.error(s"no such function '$fnName''"))
+          val fns = parent.lookupFunction(fnName)
+          val (functionScope: Name, fn: Block with IsFunction) = fns.getOrElse(sys.error(s"no such function '$fnName''"))
 
-          val functionScope = fn.localize(parent.parent)
           val (startLabel, (returnHiLabel, returnLoLabel), argsLabels) = fn.scopedArgLabels(functionScope)
 
           val argNames: List[String] = fn.argNames
@@ -735,7 +734,7 @@ class SpamCC extends JavaTokenParsers {
       try {
         val value: List[String] = this match {
           case bf: Block with IsFunction =>
-            parentScope.addFunction(bf)
+            parentScope.addFunction(thisScope, bf)
 
             gen(depth, thisScope).map(l => {
               prefixOp(depth) + l
@@ -780,10 +779,10 @@ class SpamCC extends JavaTokenParsers {
     }
   }
 
-  case class Name private(parent: Name, name: String, endLabel: Option[String] = None, functions: ListBuffer[Block with IsFunction] = ListBuffer.empty) {
+  case class Name private(parent: Name, name: String, endLabel: Option[String] = None, functions: ListBuffer[(Name, Block with IsFunction)] = ListBuffer.empty) {
 
-    def lookupFunction(name: String): Option[Block with IsFunction] = {
-      val maybeBlock = functions.find(f => f.functionName == name)
+    def lookupFunction(name: String):  Option[(Name, Block with IsFunction)] = {
+      val maybeBlock = functions.find(f => f._2.functionName == name)
       maybeBlock.orElse {
         Option(parent).flatMap(_.lookupFunction(name))
       }
@@ -825,8 +824,9 @@ class SpamCC extends JavaTokenParsers {
       else this
     }
 
-    def addFunction(newFunction: Block with IsFunction): Unit = {
-      functions.append(newFunction)
+    def addFunction(functionScope: Name, newFunction: Block with IsFunction): Unit = {
+      val newReg = (functionScope, newFunction)
+      functions.append(newReg)
     }
 
     def assignVarLabel(name: String): String = {
