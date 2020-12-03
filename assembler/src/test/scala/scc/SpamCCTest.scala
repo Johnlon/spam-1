@@ -376,29 +376,29 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |// START COMMAND
+        |// START FN COMMAND
         |
-        |def print(a1, a2) {
+        |def print(a1, a2, a3 out) {
         | // FN COMMENT
         | var d = a1;
         | putchar(d)
         | putchar(a2)
-        | var a2 = 'Z';
-        | // UPDATED A2
         |
-        | break
+        | var a2 = 'Z';
+        | // END FN COMMENT
         |}
         |
         |def main() {
         | var arg1 = '!';
         | var arg2 = '?';
+        | var arg3 = '~';
         |
         | // CALLING PRINT
-        | print(arg1, arg2)
+        | print(arg1, arg2, arg3)
         |
         | // CALLING PUT CHAR
         | putchar(65)
-        | putchar(arg2)
+        | putchar(arg3)
         | putchar(66)
         |
         |}

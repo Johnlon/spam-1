@@ -133,7 +133,7 @@ always @(negedge WR) begin
     end
 
     #T12 // min inactity period
-    if (LOG>1) $error("%9t ", $time, "UART: inactive period ends");
+    if (LOG>1) $display("%9t ", $time, "UART: inactive period ends");
     _TXE_SUPPRESS=1;
 
     end

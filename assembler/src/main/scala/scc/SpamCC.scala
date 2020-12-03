@@ -358,57 +358,35 @@ class SpamCC extends JavaTokenParsers {
       a +: b
   }
 
-  def function: Parser[Block] = "def " ~> name ~ ("(" ~ ")" ~ ":" ~ "void" ~ "=" ~ "{") ~ statements <~ "}" ^^ {
-    case fnName ~ _ ~ c =>
-      // !!!NO SPACE IN THE NAME AS USED FOR LABELS
-      new Block(s"function", s"_$fnName", nestedName = s"function_$fnName") {
-        override def gen(depth: Int, parent: Name): List[String] = {
-
-          val fnStart = parent.fqnLabelPathUnique("START")
-
-          val prefix = List(
-            s"$fnStart:"
-          )
-
-          val stmts = c.flatMap {
-            b => {
-              b.expr(depth + 1, parent) //.pushName(newName = newName))
-            }
-          }
-
-          val suffix = if (fnName == "main") {
-            List(
-              "PCHITMP = <:root_end",
-              "PC = >:root_end"
-            )
-          } else Nil
-
-          prefix ++ stmts ++ suffix
-        }
-      }
-  }
+  case class FunctionArgLabel(labelName: String, output: Boolean)
+  case class FunctionArgName(name: String, output: Boolean)
+  case class FunctionDef(startLabel: String, returnHiLabel: String, returnLoLabel: String, args: List[FunctionArgLabel])
 
   trait IsFunction {
     self: Block =>
 
     def functionName: String
 
-    def argNames: List[String]
+    def functionArgs: List[FunctionArgName]
 
-    def scopedArgLabels(scope: Name): (String, (String, String), List[String]) = {
+    def scopedArgLabels(scope: Name): FunctionDef = {
       val returnHiLabel = scope.assignVarLabel("RETURN_HI")
       val returnLoLabel = scope.assignVarLabel("RETURN_LO")
-      val argLabels = argNames.map {
+      // These locations where we write the input parameters into the function.
+      // Read from these locations to fetch out values.
+      val argLabels : List[(String, Boolean)] = functionArgs.map {
         argName =>
-          scope.assignVarLabel(argName)
+          (scope.assignVarLabel(argName.name), argName.output)
       }
       val fnStart = scope.toLabelPath("START")
 
-      (fnStart, (returnHiLabel, returnLoLabel), argLabels)
+      FunctionDef(fnStart, returnHiLabel, returnLoLabel, argLabels.map(x => FunctionArgLabel(x._1, x._2)))
     }
   }
 
-  def functionWithArgs: Parser[Block] = "def " ~> name ~ "(" ~ repsep(name, ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
+
+
+  def functionDef: Parser[Block] = "def " ~> name ~ "(" ~ repsep( (name ~ ("out"?)), ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
     case fnName ~ _ ~ args ~ _ ~ content =>
 
       // !!!NO SPACE IN THE NAME AS USED FOR LABELS
@@ -416,11 +394,14 @@ class SpamCC extends JavaTokenParsers {
 
         override def functionName: String = fnName
 
-        override def argNames: List[String] = args
+        override def functionArgs: List[FunctionArgName] = args.map{
+          case n ~ io =>
+            FunctionArgName(n, io.isDefined)
+        }
 
         override def gen(depth: Int, scope: Name): List[String] = {
 
-          val (startLabel, (returnHi, returnLo), argsLabels) = scopedArgLabels(scope)
+          val FunctionDef(startLabel, returnHi, returnLo, argsLabels) = scopedArgLabels(scope)
 
           val prefix = if (fnName == "main") {
             List(
@@ -430,21 +411,11 @@ class SpamCC extends JavaTokenParsers {
           } else
             List(s"$startLabel:")
 
-          //
-
-          //
-          //          val params = argsLabels.zip(argNames)
-          //          params.map {
-          //            case nameLabel =>
-          //              val argLabel = parent.assignVarLabel(nameLabel._1)
-          //
-          //          }
-
 
           // eval the code that uses these vars
           val stmts = content.flatMap {
             b => {
-              b.expr(depth + 1, scope) //.pushName(newName = newName))
+              b.expr(depth + 1, scope)
             }
           }
 
@@ -610,6 +581,8 @@ class SpamCC extends JavaTokenParsers {
 
   trait isFunctionCall
 
+  // DODO - NEED T HANDLE OUT PARAMS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   def functionCall: Parser[Block] = name ~ "(" ~ repsep(blkExprs, ",") ~ ")" ^^ {
     case fnName ~ _ ~ argExpr ~ _ =>
       new Block(s"functionCall", s"""$fnName(${argExpr.mkString(", ")})""") with isFunctionCall {
@@ -618,18 +591,19 @@ class SpamCC extends JavaTokenParsers {
           val fns = parent.lookupFunction(fnName)
           val (functionScope: Name, fn: Block with IsFunction) = fns.getOrElse(sys.error(s"no such function '$fnName''"))
 
-          val (startLabel, (returnHiLabel, returnLoLabel), argsLabels) = fn.scopedArgLabels(functionScope)
+          val FunctionDef(startLabel, returnHiLabel, returnLoLabel, argsLabelsAndDir) = fn.scopedArgLabels(functionScope)
 
-          val argNames: List[String] = fn.argNames
-          if (argExpr.length != argNames.length) {
-            sys.error(s"""wrong number of arguments for function "$fnName"; expected $fnName(${argNames.mkString(",")}) but got $fnName(${argExpr.mkString(",")})""")
+          val argNamesAndDir: List[FunctionArgName] = fn.functionArgs
+
+          if (argExpr.length != argNamesAndDir.size) {
+            val argsNames = argNamesAndDir.map(_.name)
+            sys.error(s"""wrong number of arguments for function "$fnName"; expected $fnName(${argsNames.mkString(",")}) but got $fnName(${argExpr.mkString(",")})""")
           }
 
-          val argZip = argsLabels.zip(argExpr)
-          println(s"CALL $fnName (${argZip.mkString(",")})")
+          val argZip = argsLabelsAndDir.zip(argExpr)
 
           val setupCallParams: List[String] = argZip.flatMap {
-            case (argLabel, argBlk) =>
+            case (FunctionArgLabel(argLabel, _), argBlk) =>
               val stmts: List[String] = argBlk.expr(depth + 1, parent)
 
               stmts :+ s"[:$argLabel] = REGA"
@@ -650,6 +624,15 @@ class SpamCC extends JavaTokenParsers {
             s"; return location",
             s"$labelReturn:"
           )
+
+//          val setupReadOutParams: List[String] = argZip.filter(_._1._2).map(_._1._1)
+//
+//            flatMap {
+//            case ((argLabel:String, _), argBlk) =>
+//              val stmts: List[String] = argBlk.expr(depth + 1, parent)
+//
+//              stmts :+ s"[:$argLabel] = REGA"
+//          }
 
 
           setupCallParams ++ setupReturnParams ++ doJump
@@ -879,7 +862,7 @@ class SpamCC extends JavaTokenParsers {
     }
   }
 
-  def program: Parser[List[String]] = "program" ~ "{" ~> ((comment | functionWithArgs) +) <~ "}" ^^ {
+  def program: Parser[List[String]] = "program" ~ "{" ~> ((comment | functionDef) +) <~ "}" ^^ {
     //  def program: Parser[List[String]] =  (functionWithArgs +) <~ "}" ^^ {
     fns =>
       val Depth0 = 0
