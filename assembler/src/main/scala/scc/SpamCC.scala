@@ -316,29 +316,6 @@ class SpamCC extends JavaTokenParsers {
       }
   }
 
-  def statementReturn: Parser[Block] = "return" ~> constExpr ^^ {
-    i: Int =>
-      new Block("statementReturn", s"$i") {
-        override def gen(depth: Int, parent: Name): List[String] = {
-          List(
-            "REGD = " + i,
-          )
-        }
-      }
-  }
-
-  def statementReturnName: Parser[Block] = "return" ~> name ^^ {
-    n: String =>
-      new Block("statementReturnName", s"$n") {
-        override def gen(depth: Int, parent: Name): List[String] = {
-          val label = parent.getVarLabel(n)
-          List(
-            s"REGD = [:$label]",
-          )
-        }
-      }
-  }
-
   def split(s: String): List[String] = {
     s.split("\\|").map(_.stripTrailing().stripLeading()).filterNot(_.isEmpty).toList
   }
@@ -388,7 +365,7 @@ class SpamCC extends JavaTokenParsers {
 
   def statement: Parser[Block] =
     statementEqVarOpVar | statementEqVar | statementEqVarOpConst | statementEqConstOpVar | statementEqConst |
-      statementReturn | statementReturnName | statementVarOp | stmtPutchar | statementPutcharName |
+      statementVarOp | stmtPutchar | statementPutcharName |
       whileTrue | whileCond | ifCond | breakOut | functionCall | comment ^^ {
       s =>
         s
