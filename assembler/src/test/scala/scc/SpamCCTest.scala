@@ -216,21 +216,25 @@ class SpamCCTest extends Matchers {
       """root_function_main___VAR_RETURN_HI: EQU 0
         |root_function_main___VAR_RETURN_LO: EQU 1
         |root_function_main___VAR_a: EQU 2
-        |root_function_main___VAR_b: EQU 3
+        |root_function_main___VAR_blkExprs2: EQU 3
+        |root_function_main___VAR_blkExprs3: EQU 4
+        |root_function_main___VAR_b: EQU 5
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
         |root_function_main___LABEL_START:
         |[:root_function_main___VAR_a] = 64
         |REGA = 1
-        |REGC = REGA
+        |[:root_function_main___VAR_blkExprs2] = REGA
         |REGA = [:root_function_main___VAR_a]
-        |REGC = REGA
+        |[:root_function_main___VAR_blkExprs3] = REGA
         |REGA = 3
-        |REGC = REGC + REGA
-        |REGA = REGC
-        |REGC = REGC + REGA
-        |REGA = REGC
+        |REGC = [:root_function_main___VAR_blkExprs3]
+        |[:root_function_main___VAR_blkExprs3] = REGC + REGA
+        |REGA = [:root_function_main___VAR_blkExprs3]
+        |REGC = [:root_function_main___VAR_blkExprs2]
+        |[:root_function_main___VAR_blkExprs2] = REGC + REGA
+        |REGA = [:root_function_main___VAR_blkExprs2]
         |[:root_function_main___VAR_b] = REGA
         |root_function_main_putcharN_b____LABEL_wait_1:
         |PCHITMP = <:root_function_main_putcharN_b____LABEL_transmit_2
@@ -447,8 +451,7 @@ class SpamCCTest extends Matchers {
     })
 
     val expected = split(
-      """
-        |root_function_print___VAR_RETURN_HI: EQU 0
+      """root_function_print___VAR_RETURN_HI: EQU 0
         |root_function_print___VAR_RETURN_LO: EQU 1
         |root_function_print___VAR_a1: EQU 2
         |root_function_print___VAR_a2: EQU 3
@@ -459,6 +462,7 @@ class SpamCCTest extends Matchers {
         |root_function_main___VAR_RETURN_LO: EQU 8
         |root_function_main___VAR_arg1: EQU 9
         |root_function_main___VAR_arg2: EQU 10
+        |root_function_main___VAR_blkExprs2: EQU 11
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |root_function_print___LABEL_START:
@@ -500,24 +504,26 @@ class SpamCCTest extends Matchers {
         |[:root_function_main___VAR_arg1] = 65
         |[:root_function_main___VAR_arg2] = 1
         |REGA = [:root_function_main___VAR_arg1]
-        |REGC = REGA
-        |REGA = REGC
+        |[:root_function_main___VAR_blkExprs2] = REGA
+        |REGA = [:root_function_main___VAR_blkExprs2]
         |[:root_function_print___VAR_a1] = REGA
         |REGA = [:root_function_main___VAR_arg2]
-        |REGC = REGA
+        |[:root_function_main___VAR_blkExprs2] = REGA
         |REGA = [:root_function_main___VAR_arg1]
-        |REGC = REGC + REGA
-        |REGA = REGC
+        |REGC = [:root_function_main___VAR_blkExprs2]
+        |[:root_function_main___VAR_blkExprs2] = REGC + REGA
+        |REGA = [:root_function_main___VAR_blkExprs2]
         |[:root_function_print___VAR_a2] = REGA
         |REGA = 63
-        |REGC = REGA
-        |REGA = REGC
+        |[:root_function_main___VAR_blkExprs2] = REGA
+        |REGA = [:root_function_main___VAR_blkExprs2]
         |[:root_function_print___VAR_a3] = REGA
         |REGA = [:root_function_main___VAR_arg1]
-        |REGC = REGA
+        |[:root_function_main___VAR_blkExprs2] = REGA
         |REGA = 4
-        |REGC = REGC + REGA
-        |REGA = REGC
+        |REGC = [:root_function_main___VAR_blkExprs2]
+        |[:root_function_main___VAR_blkExprs2] = REGC + REGA
+        |REGA = [:root_function_main___VAR_blkExprs2]
         |[:root_function_print___VAR_a4] = REGA
         |[:root_function_print___VAR_RETURN_HI] = < :root_function_main___LABEL_RETURN_9
         |[:root_function_print___VAR_RETURN_LO] = > :root_function_main___LABEL_RETURN_9

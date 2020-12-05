@@ -253,21 +253,32 @@ class SpamCC extends JavaTokenParsers {
         override def toString = s"$inner"
 
         override def gen(depth: Int, parent: Name): List[String] = {
-          //          val temporaryVarLabel = parent.assignVarLabel("varExprs_d" + depth)
+          val temporaryVarLabel = parent.assignVarLabel("blkExprs" + depth)
 
-          //          val left: List[String] = x.expr(depth + 1, parent) :+ s"[:$temporaryVarLabel] = REGA"
-          val leftStatement: List[String] = leftExpr.expr(depth + 1, parent) ++ List(s"; assign clause result to REGC = ${leftExpr.context} ", s"REGC = REGA")
+          val leftStatement: List[String] = leftExpr.expr(depth + 1, parent) ++
+            List(
+              s"; assign clause 1 result to [:$temporaryVarLabel] = ${leftExpr.context} ",
+              s"[:$temporaryVarLabel] = REGA"
+            )
+          //          val leftStatement: List[String] = leftExpr.expr(depth + 1, parent) ++
+          //            List(s"; assign clause 1 result to REGC = ${leftExpr.context} ",
+          //              s"REGC = REGA"
+          //            )
 
           // In an expression the result of the previous step is accumulated in the assigned temporaryVarLabel.
           // It is somewhat inefficient that I has to shove the value into RAM and back out on each step.
+          var x = 1
+
           val otherStatements: List[String] = otherExpr.reverse.flatMap { case op ~ b =>
             // clause must drop it's result into REGC
             val expressionClause = b.expr(depth + 1, parent)
 
+            x += 1
             expressionClause ++
               List(
-                s"; concatenate clause to REGS = $op ${b.context}",
-                s"REGC = REGC $op REGA"
+                s"; concatenate clause $x to [:$temporaryVarLabel] <= $op ${b.context}",
+                s"REGC = [:$temporaryVarLabel]",
+                s"[:$temporaryVarLabel] = REGC $op REGA"
               )
             //              List(
             //                s"REGB = [:$temporaryVarLabel]",
@@ -276,7 +287,11 @@ class SpamCC extends JavaTokenParsers {
           }
 
           //          val suffix = split(s"""REGA = [:$temporaryVarLabel]""")
-          val suffix = split(s"""REGA = REGC""")
+          val suffix = split(
+            s"""
+               |; assigning result back to REGA
+               |REGA = [:$temporaryVarLabel]
+               |""")
 
           leftStatement ++ otherStatements ++ suffix
         }
@@ -377,7 +392,9 @@ class SpamCC extends JavaTokenParsers {
   }
 
   case class FunctionArgName(name: String, output: Boolean)
+
   case class FunctionArgNameAndLabel(labelName: String, argName: FunctionArgName)
+
   case class FunctionDef(startLabel: String, returnHiLabel: String, returnLoLabel: String, args: List[FunctionArgNameAndLabel])
 
   trait IsFunction {
@@ -634,7 +651,7 @@ class SpamCC extends JavaTokenParsers {
 
                     vn match {
                       case Some(name) =>
-                        val localVarLabel  = parent.lookupVarLabel(name).getOrElse{
+                        val localVarLabel = parent.lookupVarLabel(name).getOrElse {
                           sys.error(s"""output argument '$name' in call to function "$fnName" is not defined""")
                         }
 
