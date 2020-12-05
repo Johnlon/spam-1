@@ -37,7 +37,7 @@ class SpamCCTest extends Matchers {
   def varEq1(): Unit = {
 
     val lines =
-      """def main() {
+      """fun main() {
         | var a=1;
         |}
         |""".stripMargin
@@ -68,7 +68,7 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main() {
+        |fun main() {
         | var a=1;
         | var b=64+1;
         |}
@@ -103,11 +103,11 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main() {
+        |fun main() {
         | var a=1;
         | var b=2;
         |}
-        |def other() {
+        |fun other() {
         | var a=1;
         | var b=2;
         |}
@@ -151,7 +151,7 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main() {
+        |fun main() {
         |  var a = 1 + 2;
         |  var b = a + 3;
         |  var c = 4 + b;
@@ -201,7 +201,7 @@ class SpamCCTest extends Matchers {
   def varEqNestedExpr(): Unit = {
 
     val lines =
-      """def main() {
+      """fun main() {
         |  var a = 64;
         |  var b = 1 + (a + 3);
         |  putchar(b)
@@ -256,7 +256,7 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main() {
+        |fun main() {
         |  putchar('A')
         |  putchar('B')
         |}
@@ -303,7 +303,7 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main() {
+        |fun main() {
         | var a=10;
         | while(a>0) {
         |   var a=a-1;
@@ -358,7 +358,7 @@ class SpamCCTest extends Matchers {
 
     val lines =
       """
-        |def main() {
+        |fun main() {
         | var a = 1;
         | while(true) {
         |   var a = a + 1;
@@ -414,7 +414,7 @@ class SpamCCTest extends Matchers {
       """
         |// START FN COMMAND
         |
-        |def print(a1 out, a2, a3, a4) {
+        |fun print(a1 out, a2, a3, a4) {
         | // FN COMMENT
         | var d = a1;
         | putchar(d)
@@ -427,7 +427,7 @@ class SpamCCTest extends Matchers {
         | // END FN COMMENT
         |}
         |
-        |def main() {
+        |fun main() {
         | var arg1 = 'A';
         | var arg2 = 1;
         |
@@ -538,6 +538,95 @@ class SpamCCTest extends Matchers {
         |PCHITMP = <:root_function_main_putcharN_arg1____LABEL_wait_10
         |PC = <:root_function_main_putcharN_arg1____LABEL_wait_10
         |root_function_main_putcharN_arg1____LABEL_transmit_11:
+        |UART = [:root_function_main___VAR_arg1]
+        |PCHITMP = <:root_end
+        |PC = >:root_end
+        |root_end:
+        |END""".stripMargin)
+
+    assertSame(expected, actual)
+  }
+
+  @Test
+  def functionCalls2Deep(): Unit = {
+
+    val lines =
+      """
+        |fun depth2(b1 out) {
+        | var b1 = b1 + 1;
+        |}
+        |
+        |fun depth1(a1 out) {
+        | depth2(a1)
+        |}
+        |
+        |fun main() {
+        | var arg1 = 'A';
+        | depth1(arg1)
+        | putchar(arg1)
+        |}
+        |
+        |// END  COMMAND
+        |""".stripMargin
+
+    val actual: List[String] = compile(lines, quiet = true, outputCheck = str => {
+      checkTransmitted(str, 'B')
+    })
+
+    val expected = split(
+      """root_function_depth2___VAR_RETURN_HI: EQU 0
+        |root_function_depth2___VAR_RETURN_LO: EQU 1
+        |root_function_depth2___VAR_b1: EQU 2
+        |root_function_depth1___VAR_RETURN_HI: EQU 3
+        |root_function_depth1___VAR_RETURN_LO: EQU 4
+        |root_function_depth1___VAR_a1: EQU 5
+        |root_function_depth1___VAR_blkExprs2: EQU 6
+        |root_function_main___VAR_RETURN_HI: EQU 7
+        |root_function_main___VAR_RETURN_LO: EQU 8
+        |root_function_main___VAR_arg1: EQU 9
+        |root_function_main___VAR_blkExprs2: EQU 10
+        |PCHITMP = < :ROOT________main_start
+        |PC = > :ROOT________main_start
+        |root_function_depth2___LABEL_START:
+        |REGA = [:root_function_depth2___VAR_b1]
+        |REGA = REGA + 1
+        |[:root_function_depth2___VAR_b1] = REGA
+        |PCHITMP = [:root_function_depth2___VAR_RETURN_HI]
+        |PC = [:root_function_depth2___VAR_RETURN_LO]
+        |root_function_depth1___LABEL_START:
+        |REGA = [:root_function_depth1___VAR_a1]
+        |[:root_function_depth1___VAR_blkExprs2] = REGA
+        |REGA = [:root_function_depth1___VAR_blkExprs2]
+        |[:root_function_depth2___VAR_b1] = REGA
+        |[:root_function_depth2___VAR_RETURN_HI] = < :root_function_depth1___LABEL_RETURN_1
+        |[:root_function_depth2___VAR_RETURN_LO] = > :root_function_depth1___LABEL_RETURN_1
+        |PCHITMP = < :root_function_depth2___LABEL_START
+        |PC = > :root_function_depth2___LABEL_START
+        |root_function_depth1___LABEL_RETURN_1:
+        |REGA = [:root_function_depth2___VAR_b1]
+        |[:root_function_depth1___VAR_a1] = REGA
+        |PCHITMP = [:root_function_depth1___VAR_RETURN_HI]
+        |PC = [:root_function_depth1___VAR_RETURN_LO]
+        |ROOT________main_start:
+        |root_function_main___LABEL_START:
+        |[:root_function_main___VAR_arg1] = 65
+        |REGA = [:root_function_main___VAR_arg1]
+        |[:root_function_main___VAR_blkExprs2] = REGA
+        |REGA = [:root_function_main___VAR_blkExprs2]
+        |[:root_function_depth1___VAR_a1] = REGA
+        |[:root_function_depth1___VAR_RETURN_HI] = < :root_function_main___LABEL_RETURN_2
+        |[:root_function_depth1___VAR_RETURN_LO] = > :root_function_main___LABEL_RETURN_2
+        |PCHITMP = < :root_function_depth1___LABEL_START
+        |PC = > :root_function_depth1___LABEL_START
+        |root_function_main___LABEL_RETURN_2:
+        |REGA = [:root_function_depth1___VAR_a1]
+        |[:root_function_main___VAR_arg1] = REGA
+        |root_function_main_putcharN_arg1____LABEL_wait_3:
+        |PCHITMP = <:root_function_main_putcharN_arg1____LABEL_transmit_4
+        |PC = >:root_function_main_putcharN_arg1____LABEL_transmit_4 _DO
+        |PCHITMP = <:root_function_main_putcharN_arg1____LABEL_wait_3
+        |PC = <:root_function_main_putcharN_arg1____LABEL_wait_3
+        |root_function_main_putcharN_arg1____LABEL_transmit_4:
         |UART = [:root_function_main___VAR_arg1]
         |PCHITMP = <:root_end
         |PC = >:root_end

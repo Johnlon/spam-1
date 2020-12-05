@@ -420,7 +420,7 @@ class SpamCC extends JavaTokenParsers {
   }
 
 
-  def functionDef: Parser[Block] = "def " ~> name ~ "(" ~ repsep((name ~ ("out" ?)), ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
+  def functionDef: Parser[Block] = "fun " ~> name ~ "(" ~ repsep((name ~ ("out" ?)), ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
     case fnName ~ _ ~ args ~ _ ~ content =>
 
       // !!!NO SPACE IN THE NAME AS USED FOR LABELS
