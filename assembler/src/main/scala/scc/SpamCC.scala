@@ -283,10 +283,6 @@ class SpamCC extends JavaTokenParsers {
               s"; assign clause 1 result to [:$temporaryVarLabel] = ${leftExpr.context} ",
               s"[:$temporaryVarLabel] = REGA"
             )
-          //          val leftStatement: List[String] = leftExpr.expr(depth + 1, parent) ++
-          //            List(s"; assign clause 1 result to REGC = ${leftExpr.context} ",
-          //              s"REGC = REGA"
-          //            )
 
           // In an expression the result of the previous step is accumulated in the assigned temporaryVarLabel.
           // It is somewhat inefficient that I has to shove the value into RAM and back out on each step.
@@ -303,13 +299,8 @@ class SpamCC extends JavaTokenParsers {
                 s"REGC = [:$temporaryVarLabel]",
                 s"[:$temporaryVarLabel] = REGC $op REGA"
               )
-            //              List(
-            //                s"REGB = [:$temporaryVarLabel]",
-            //                s"[:$temporaryVarLabel] = REGB $op REGA"
-            //              )
           }
 
-          //          val suffix = split(s"""REGA = [:$temporaryVarLabel]""")
           val suffix = split(
             s"""
                |; assigning result back to REGA
@@ -338,10 +329,6 @@ class SpamCC extends JavaTokenParsers {
       new Block("statementVarOp", s"$target = $v") {
         override def gen(depth: Int, parent: Name): List[String] = {
 
-          // must do sources before calling assignVarLabel for target otherwise
-          // we fail to spot undefined vars because assignVarLabel(target) causes the
-          // defines vars before the source reference is considered so the source see it
-          // as preexisting and the code fails to spot the error
           val stmts: List[String] = v.expr(depth + 1, parent)
 
           val labelTarget = parent.assignVarLabel(target)
@@ -763,16 +750,6 @@ class SpamCC extends JavaTokenParsers {
             s"$labelReturn:"
           )
 
-          //          val setupReadOutParams: List[String] = argZip.filter(_._1._2).map(_._1._1)
-          //
-          //            flatMap {
-          //            case ((argLabel:String, _), argBlk) =>
-          //              val stmts: List[String] = argBlk.expr(depth + 1, parent)
-          //
-          //              stmts :+ s"[:$argLabel] = REGA"
-          //          }
-
-
           setupCallParams ++ setupReturnJumpParams ++ setupJumpToFn ++ setupOutParams
         }
       }
@@ -959,24 +936,6 @@ class SpamCC extends JavaTokenParsers {
       val newReg = (functionScope, newFunction)
       functions.append(newReg)
     }
-//
-//    def assignVarLabel(name: String): String = {
-//      val label = lookupVarLabel(name)
-//      label.getOrElse {
-//
-//        val localName = toVarPath(name)
-//
-//        // need a separate "var a" vs "let a" if want to distinguish definition from update!!
-//        //        vars.get(locaName).map { existing =>
-//        //          sys.error(s"scc error: $name is already defined as $existing")
-//        //        }
-//
-//        varLocn += 1
-//
-//        varLocations.getOrElseUpdate(localName, varLocn)
-//        localName
-//      }
-//    }
 
     def assignVarLabel(name: String, data: List[Byte]=List(0)): String = {
       val label = lookupVarLabel(name)
