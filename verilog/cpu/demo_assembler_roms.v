@@ -167,7 +167,52 @@ endfunction
     begin
         $display("\n%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
         $display("\n%9t", $time, " EXECUTING ..."); 
-        DUMP; 
+        //$display("\n%9t", $time, " DECOMPILE %s", CPU.ctrl.decode(1).display()); 
+        //DUMP; 
+        
+        $display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
+/*
+        $display("%9t", $time, " DECOMPILE ",
+            " PC=%-5d  ", pc,
+            " op=%-10s",  aluopName(CPU.ctrl.instruction[47:43]),
+            " tdev=%-8s", control::tdevname(CPU.ctrl.instruction[42:39]),
+            " adev=%-8s", control::adevname(CPU.ctrl.instruction[38:36]),
+            " bdev=%-8s", control::bdevname(CPU.ctrl.instruction[35:33]),
+            " cond=%-2s ", control::condname(CPU.ctrl.instruction[32:29]),
+            " set=%s ", CPU.ctrl.instruction[28] ? "N" : "Y",
+            " mode=%3s ", control::amode(CPU.ctrl.instruction[24]),
+            " addr=%02x:%02x ", CPU.ctrl.instruction[23:17], CPU.ctrl.instruction[16:8],
+            " immed=%02x (dec %d) ", CPU.ctrl.instruction[7:0], CPU.ctrl.instruction[7:0]
+        );
+*/
+/*
+        $display("%9t", $time, " DECOMPILE ",
+            " %-5d : ", pc,
+            " %-8s = ", control::tdevname(CPU.ctrl.instruction[42:39]),
+            " %-8s", control::adevname(CPU.ctrl.instruction[38:36]),
+            " %-10s",  aluopName(CPU.ctrl.instruction[47:43]),
+            " %-8s", control::bdevname(CPU.ctrl.instruction[35:33]),
+            " %-2s ", control::condname(CPU.ctrl.instruction[32:29]),
+            " %s ", CPU.ctrl.instruction[28] ? " " : "S",
+            " %3s ", control::amode(CPU.ctrl.instruction[24]),
+            " a:%02x:%02x ", CPU.ctrl.instruction[23:17], CPU.ctrl.instruction[16:8],
+            " i:%02x (dec %d) ", CPU.ctrl.instruction[7:0], CPU.ctrl.instruction[7:0]
+        );
+*/
+        $display("%9t", $time, " DECOMPILE ",
+            " %-5d : ", pc,
+            " %1s  =  ", control::tdevname(CPU.ctrl.instruction[42:39]),
+            " %1s", control::adevname(CPU.ctrl.instruction[38:36]),
+            "  %1s ",  aluopName(CPU.ctrl.instruction[47:43]),
+            " %1s", control::bdevname(CPU.ctrl.instruction[35:33]),
+            "  %1s ", control::condname(CPU.ctrl.instruction[32:29]),
+            "%1s ", CPU.ctrl.instruction[28] ? " " : "S",
+            "  %1s ", control::amode(CPU.ctrl.instruction[24]),
+            " a:%02x:%02x ", CPU.ctrl.instruction[23:17], CPU.ctrl.instruction[16:8],
+            " i:%02x (dec %d) ", CPU.ctrl.instruction[7:0], CPU.ctrl.instruction[7:0]
+        );
+
+        $display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
         clk = 0;
     end
     endtask
@@ -262,21 +307,21 @@ endfunction
             DUMP_OP;
             `DD " phase=%1s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
             `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
-            `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
-            `DD " FE=%1b%1b(%1s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
-            `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
-            `DD " DIRECT=%02x:%02x", CPU.direct_address_hi, CPU.direct_address_lo);
-            `DD " _amode=%2s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct), " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct});
-            `DD " immed8=%08b", CPU.immed8);
-            `DD " address_bus=0x%4x (%d) ", CPU.address_bus, CPU.address_bus);
-            `DD " ram=%08b", CPU.ram64.D);
-            `DD " tdev=%b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
-                " adev=%b(%s)", CPU.abus_dev, control::adevname(CPU.abus_dev),
-                " bdev=%b(%s)", CPU.bbus_dev,control::bdevname(CPU.bbus_dev),
-                " alu_op=%b(%1s)", CPU.alu_op, aluopName(CPU.alu_op)
-            );            
+    //        `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
+   //         `DD " FE=%1b%1b(%1s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
+   //         `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
+   //         `DD " DIRECT=%02x:%02x", CPU.direct_address_hi, CPU.direct_address_lo);
+   //         `DD " _amode=%2s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct), " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct});
+   //         `DD " immed8=%08b", CPU.immed8);
+   //         `DD " address_bus=0x%4x (%d) ", CPU.address_bus, CPU.address_bus);
+   //         `DD " ram=%08b", CPU.ram64.D);
+   //         `DD " tdev=%b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
+   //             " adev=%b(%s)", CPU.abus_dev, control::adevname(CPU.abus_dev),
+   //             " bdev=%b(%s)", CPU.bbus_dev,control::bdevname(CPU.bbus_dev),
+   //             " alu_op=%b(%1s)", CPU.alu_op, aluopName(CPU.alu_op)
+   //         );            
+   //         `DD " condition=%02d(%1s) _do_exec=%b", CPU.ctrl.condition, control::condname(CPU.ctrl.condition), CPU.ctrl._do_exec);
             `DD " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
-            `DD " condition=%02d(%1s) _do_exec=%b", CPU.ctrl.condition, control::condname(CPU.ctrl.condition), CPU.ctrl._do_exec);
             `DD " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU.flags_czonGLEN.Q, CPU.gated_flags_clk);
             `DD " FLAGS I/O  _flagdo=%1b _flags_di=%1b", CPU._flag_do, CPU._flag_di);
             `DD " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);
@@ -285,10 +330,10 @@ endfunction
                 "  REGC:%08b", CPU.regFile.get(2),
                 "  REGD:%08b", CPU.regFile.get(3)
                 );
-            `define LOG_ADEV_SEL(DNAME) " _adev_``DNAME``=%1b", CPU._adev_``DNAME``
-            `define LOG_BDEV_SEL(DNAME) " _bdev_``DNAME``=%1b", CPU._bdev_``DNAME``
-            `define LOG_TDEV_SEL(DNAME) " _``DNAME``_in=%1b",  CPU._``DNAME``_in
-            `DD " WIRES ", `CONTROL_WIRES(LOG, `COMMA));
+ //           `define LOG_ADEV_SEL(DNAME) " _adev_``DNAME``=%1b", CPU._adev_``DNAME``
+  //          `define LOG_BDEV_SEL(DNAME) " _bdev_``DNAME``=%1b", CPU._bdev_``DNAME``
+   //         `define LOG_TDEV_SEL(DNAME) " _``DNAME``_in=%1b",  CPU._``DNAME``_in
+//            `DD " WIRES ", `CONTROL_WIRES(LOG, `COMMA));
     endtask 
 
 

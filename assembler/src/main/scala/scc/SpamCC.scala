@@ -111,7 +111,7 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
 
   def contOperations: Parser[String] = "+" | "-" | "*" | "/"
 
-//  def constExpr: Parser[Int] = nFactor ~ ((aluOp ~ nFactor) *) ^^ {
+  //  def constExpr: Parser[Int] = nFactor ~ ((aluOp ~ nFactor) *) ^^ {
   def constExpr: Parser[Int] = nFactor ~ ((contOperations ~ nFactor) *) ^^ {
     case x ~ list =>
       list.foldLeft(x)({
@@ -263,7 +263,41 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       }
   }
 
-  def blkExpr: Parser[Block] = blkArrayElementExpr | blkNExpr | blkVarExpr | "(" ~> compoundBlkExpr <~ ")"
+  def blkSingleExpr: Parser[Block] = blkArrayElementExpr | blkNExpr | blkVarExpr
+//
+//  def blkBiExpr: Parser[Block] = blkSingleExpr ~ aluOp ~ blkSingleExpr ^^ {
+//    case leftExpr ~ oper ~ rightExpr =>
+//      val description = s"$leftExpr $oper $rightExpr"
+//
+//      new Block("blkBiExpr", s" $description") with IsCompoundExpressionBlock {
+//
+//        override def toString = s"$description"
+//
+//        override def gen(depth: Int, parent: Name): List[String] = {
+//          val temporaryVarLabel = parent.assignVarLabel("blkBiExpr" + depth)
+//
+//          val leftStatement: List[String] = leftExpr.expr(depth + 1, parent)
+//          val rightStatement: List[String] = rightExpr.expr(depth + 1, parent)
+//
+//
+//          List(s"; load right expression") ++
+//            rightStatement ++
+//            List(s"[:$temporaryVarLabel] = REGA") ++
+//            List(s"; load left expression") ++
+//            leftStatement ++
+//            List(s"; perform op") ++
+//            List(s"REGA = REGA $oper [:$temporaryVarLabel]")
+//        }
+//
+//        /* populated only if this block evaluates to a standalone variable reference*/
+//        override def variableName: Option[String] = {
+//          None
+//        }
+//      }
+//  }
+
+  def blkExpr: Parser[Block] = blkSingleExpr | "(" ~> compoundBlkExpr <~ ")"
+//  def blkExpr: Parser[Block] = blkBiExpr | blkSingleExpr | "(" ~> compoundBlkExpr <~ ")"
 
   sealed trait IsCompoundExpressionBlock {
     def variableName: Option[String]
@@ -281,38 +315,46 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
         override def toString = s"$description"
 
         override def gen(depth: Int, parent: Name): List[String] = {
-          val temporaryVarLabel = parent.assignVarLabel("compoundBlkExpr" + depth)
 
-          val leftStatement: List[String] = leftExpr.expr(depth + 1, parent) ++
-            List(
-              s"; assign clause 1 result to [:$temporaryVarLabel] = ${leftExpr.context} ",
-              s"[:$temporaryVarLabel] = REGA"
-            )
+          val leftStatement: List[String] = leftExpr.expr(depth + 1, parent)
 
-          // In an expression the result of the previous step is accumulated in the assigned temporaryVarLabel.
-          // It is somewhat inefficient that I has to shove the value into RAM and back out on each step.
-          var x = 1
+          // if there is no right side then no need for temporary variables or merge logic
+          val optionalExtraForRight = if (otherExpr.size > 0) {
+            val temporaryVarLabel = parent.assignVarLabel("compoundBlkExpr" + depth)
 
-          val otherStatements: List[String] = otherExpr.reverse.flatMap { case op ~ b =>
-            // clause must drop it's result into REGC
-            val expressionClause = b.expr(depth + 1, parent)
-
-            x += 1
-            expressionClause ++
+            val assignLeftToTemp =
               List(
-                s"; concatenate clause $x to [:$temporaryVarLabel] <= $op ${b.context}",
-                s"REGC = [:$temporaryVarLabel]",
-                s"[:$temporaryVarLabel] = REGC $op REGA"
+                s"; assign clause 1 result to [:$temporaryVarLabel] = ${leftExpr.context} ",
+                s"[:$temporaryVarLabel] = REGA"
               )
-          }
 
-          val suffix = split(
-            s"""
-               |; assigning result back to REGA
-               |REGA = [:$temporaryVarLabel]
-               |""")
+            // In an expression the result of the previous step is accumulated in the assigned temporaryVarLabel.
+            // It is somewhat inefficient that I has to shove the value into RAM and back out on each step.
+            var x = 1
 
-          leftStatement ++ otherStatements ++ suffix
+            val otherStatements: List[String] = otherExpr.reverse.flatMap { case op ~ b =>
+              // clause must drop it's result into REGC
+              val expressionClause = b.expr(depth + 1, parent)
+
+              x += 1
+              expressionClause ++
+                List(
+                  s"; concatenate clause $x to [:$temporaryVarLabel] <= $op ${b.context}",
+                  s"REGC = [:$temporaryVarLabel]",
+                  s"[:$temporaryVarLabel] = REGC $op REGA"
+                )
+            }
+
+            val suffix = split(
+              s"""
+                 |; assigning result back to REGA
+                 |REGA = [:$temporaryVarLabel]
+                 |""")
+
+            assignLeftToTemp ++ otherStatements ++ suffix
+          } else Nil
+
+          leftStatement ++ optionalExtraForRight
         }
 
         /* populated only if this block evaluates to a standalone variable reference*/
@@ -363,12 +405,14 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
   BYTE_ARR:   BYTES   [ 'A', 65 ,$41, %10101010 ] ; parse as hex bytes and then treat as per STR
   */
   def statementVarString: Parser[Block] = "var" ~> name ~ "=" ~ quotedString <~ SEMICOLON ^^ {
-    case target ~ _ ~ v =>
-      new Block("statementVarEqString", s"$target = $v") {
+    case target ~ _ ~ str =>
+      new Block("statementVarEqString", s"$target = $str") {
         override def gen(depth: Int, parent: Name): List[String] = {
           // nothing to but record the data with current scope - data will be laid out later
-          parent.assignVarLabel(target, v.getBytes("UTF-8").toList)
-          Nil
+          parent.assignVarLabel(target, str.getBytes("UTF-8").toList)
+          List(
+            s"""; $target = "$str""""
+          )
         }
       }
   }
@@ -377,7 +421,47 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
     s.split("\\|").map(_.stripTrailing().stripLeading()).filterNot(_.isEmpty).toList
   }
 
-  def stmtPutcharGeneral: Parser[Block] = "putchar" ~ "(" ~> blkExpr <~ ")" ^^ {
+  def stmtPutsName: Parser[Block] = "puts" ~ "(" ~> name <~ ")" ^^ {
+    varName =>
+      new Block("stmtPuts", s"$varName", nestedName = "puts") {
+        override def gen(depth: Int, parent: Name): List[String] = {
+          val labelStartLoop = parent.fqnLabelPathUnique("startloop")
+          val labelWait = parent.fqnLabelPathUnique("wait")
+          val labelTransmit = parent.fqnLabelPathUnique("transmit")
+          val labelEndLoop = parent.fqnLabelPathUnique("endloop")
+
+          val varLocn = parent.getVarLabel(varName)
+
+          split(
+            s"""
+               |MARLO = >:$varLocn
+               |MARHI = <:$varLocn
+               |$labelStartLoop:
+               |; break if NULL
+               |NOOP = RAM _S
+               |PCHITMP = <:$labelEndLoop
+               |PC = >:$labelEndLoop _Z
+               |; wait for tx ready
+               |$labelWait:
+               |PCHITMP = <:$labelTransmit
+               |PC = >:$labelTransmit _DO
+               |PCHITMP = <:$labelWait
+               |PC = <:$labelWait
+               |; do transmit
+               |$labelTransmit:
+               |UART = RAM
+               |; goto next char
+               |MARLO = MARLO + 1 _S
+               |MARHI = MARHI + 1 _C
+               |PCHITMP = <:$labelStartLoop
+               |PC = >:$labelStartLoop
+               |$labelEndLoop:
+               """)
+        }
+      }
+  }
+
+  def stmtPutcharGeneral: Parser[Block] = "putchar" ~ "(" ~> compoundBlkExpr <~ ")" ^^ {
     bex =>
       new Block("stmtPutcharGeneral", s"$bex", nestedName = "putcharGeneral") {
         override def gen(depth: Int, parent: Name): List[String] = {
@@ -442,36 +526,37 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       }
   }
 
-//
-//  def stmtPutsGeneral: Parser[Block] = "puts" ~ "(" ~> blkExpr <~ ")" ^^ {
-//    bex =>
-//      new Block("stmtPutsGeneral", s"$bex", nestedName = "putsGeneral") {
-//        override def gen(depth: Int, parent: Name): List[String] = {
-//          val labelWait = parent.fqnLabelPathUnique("wait")
-//          val labelTransmit = parent.fqnLabelPathUnique("transmit")
-//
-//          // leaves result in REGA
-//          val stmts: List[String] = bex.expr(depth + 1, parent)
-//
-//          stmts ++ split(
-//            s"""
-//               |$labelWait:
-//               |PCHITMP = <:$labelTransmit
-//               |PC = >:$labelTransmit _DO
-//               |PCHITMP = <:$labelWait
-//               |PC = <:$labelWait
-//               |$labelTransmit:
-//               |UART = REGA
-//               |""")
-//        }
-//      }
-//  }
+  //
+  //  def stmtPutsGeneral: Parser[Block] = "puts" ~ "(" ~> blkExpr <~ ")" ^^ {
+  //    bex =>
+  //      new Block("stmtPutsGeneral", s"$bex", nestedName = "putsGeneral") {
+  //        override def gen(depth: Int, parent: Name): List[String] = {
+  //          val labelWait = parent.fqnLabelPathUnique("wait")
+  //          val labelTransmit = parent.fqnLabelPathUnique("transmit")
+  //
+  //          // leaves result in REGA
+  //          val stmts: List[String] = bex.expr(depth + 1, parent)
+  //
+  //          stmts ++ split(
+  //            s"""
+  //               |$labelWait:
+  //               |PCHITMP = <:$labelTransmit
+  //               |PC = >:$labelTransmit _DO
+  //               |PCHITMP = <:$labelWait
+  //               |PC = <:$labelWait
+  //               |$labelTransmit:
+  //               |UART = REGA
+  //               |""")
+  //        }
+  //      }
+  //  }
 
 
   def statement: Parser[Block] =
     statementEqVarOpVar | statementEqVar | statementEqVarOpConst | statementEqConstOpVar | statementEqConst |
       statementVarOp |
-       statementPutcharVarOptimisation | statementPutcharConstOptimisation | stmtPutcharGeneral |
+      statementPutcharVarOptimisation | statementPutcharConstOptimisation | stmtPutcharGeneral |
+      stmtPutsName |
       whileTrue | whileCond | ifCond | breakOut | functionCall | comment |
       statementVarString ^^ {
         s =>
@@ -848,7 +933,7 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       }
   }
 
-  abstract class Block(val typ: String, val context: String, nestedName: String = "") {
+  abstract class Block(val typ: String, val context: String, nestedName: String = "", logEntryExit: Boolean = true) {
 
     protected[this] def gen(depth: Int, parent: Name): List[String]
 
@@ -873,7 +958,9 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
             })
         }
 
-        enter +: value :+ exit
+        if (logEntryExit)enter +: value :+ exit
+        else value
+
       } catch {
         case ex: Exception =>
           // throw with updated message but existing stack trace
@@ -958,7 +1045,7 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       functions.append(newReg)
     }
 
-    def assignVarLabel(name: String, data: List[Byte]=List(0)): String = {
+    def assignVarLabel(name: String, data: List[Byte] = List(0)): String = {
       val label = lookupVarLabel(name)
       label.getOrElse {
 
@@ -1007,7 +1094,7 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
 
       val varlist = variables.toList.sortBy(_._1).map {
         x =>
-          s"${x._1}: BYTES [${x._2.map( _.toInt ).mkString(", ") }]"
+          s"${x._1}: BYTES [${x._2.map(_.toInt).mkString(", ")}]"
       }
 
       val jumpToMain = split(

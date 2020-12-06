@@ -352,19 +352,26 @@ class SpamCCTest extends Matchers {
     val lines =
       """
         |fun main() {
-        |  putchar('A')
+        |  putchar(65)
         |  putchar('B')
+        |  var c=67;
+        |  putchar(c)
+        |  putchar(c+1)
         |}
         |""".stripMargin
 
     val actual: List[String] = compile(lines, outputCheck = str => {
       checkTransmitted(str, 'A')
       checkTransmitted(str, 'B')
+      checkTransmitted(str, 'C')
+      checkTransmitted(str, 'D')
     })
 
     val expected = split(
       """root_function_main___VAR_RETURN_HI: BYTES [0]
         |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_c: BYTES [0]
+        |root_function_main_putcharGeneral___VAR_compoundBlkExpr2: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -383,6 +390,27 @@ class SpamCCTest extends Matchers {
         |PC = <:root_function_main_putcharI_66____LABEL_wait_3
         |root_function_main_putcharI_66____LABEL_transmit_4:
         |UART = 66
+        |[:root_function_main___VAR_c] = 67
+        |root_function_main_putcharVar_c____LABEL_wait_5:
+        |PCHITMP = <:root_function_main_putcharVar_c____LABEL_transmit_6
+        |PC = >:root_function_main_putcharVar_c____LABEL_transmit_6 _DO
+        |PCHITMP = <:root_function_main_putcharVar_c____LABEL_wait_5
+        |PC = <:root_function_main_putcharVar_c____LABEL_wait_5
+        |root_function_main_putcharVar_c____LABEL_transmit_6:
+        |UART = [:root_function_main___VAR_c]
+        |REGA = [:root_function_main___VAR_c]
+        |[:root_function_main_putcharGeneral___VAR_compoundBlkExpr2] = REGA
+        |REGA = 1
+        |REGC = [:root_function_main_putcharGeneral___VAR_compoundBlkExpr2]
+        |[:root_function_main_putcharGeneral___VAR_compoundBlkExpr2] = REGC + REGA
+        |REGA = [:root_function_main_putcharGeneral___VAR_compoundBlkExpr2]
+        |root_function_main_putcharGeneral___LABEL_wait_7:
+        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_transmit_8
+        |PC = >:root_function_main_putcharGeneral___LABEL_transmit_8 _DO
+        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_wait_7
+        |PC = <:root_function_main_putcharGeneral___LABEL_wait_7
+        |root_function_main_putcharGeneral___LABEL_transmit_8:
+        |UART = REGA
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
@@ -390,7 +418,6 @@ class SpamCCTest extends Matchers {
 
     assertSame(expected, actual)
   }
-
 
   @Test
   def whileLoopCond(): Unit = {
@@ -598,8 +625,6 @@ class SpamCCTest extends Matchers {
         |[:root_function_main___VAR_arg1] = 65
         |[:root_function_main___VAR_arg2] = 1
         |REGA = [:root_function_main___VAR_arg1]
-        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
-        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_print___VAR_a1] = REGA
         |REGA = [:root_function_main___VAR_arg2]
         |[:root_function_main___VAR_compoundBlkExpr2] = REGA
@@ -609,8 +634,6 @@ class SpamCCTest extends Matchers {
         |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_print___VAR_a2] = REGA
         |REGA = 63
-        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
-        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_print___VAR_a3] = REGA
         |REGA = [:root_function_main___VAR_arg1]
         |[:root_function_main___VAR_compoundBlkExpr2] = REGA
@@ -671,14 +694,12 @@ class SpamCCTest extends Matchers {
       """root_function_depth1___VAR_RETURN_HI: BYTES [0]
         |root_function_depth1___VAR_RETURN_LO: BYTES [0]
         |root_function_depth1___VAR_a1: BYTES [0]
-        |root_function_depth1___VAR_compoundBlkExpr2: BYTES [0]
         |root_function_depth2___VAR_RETURN_HI: BYTES [0]
         |root_function_depth2___VAR_RETURN_LO: BYTES [0]
         |root_function_depth2___VAR_b1: BYTES [0]
         |root_function_main___VAR_RETURN_HI: BYTES [0]
         |root_function_main___VAR_RETURN_LO: BYTES [0]
         |root_function_main___VAR_arg1: BYTES [0]
-        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |root_function_depth2___LABEL_START:
@@ -689,8 +710,6 @@ class SpamCCTest extends Matchers {
         |PC = [:root_function_depth2___VAR_RETURN_LO]
         |root_function_depth1___LABEL_START:
         |REGA = [:root_function_depth1___VAR_a1]
-        |[:root_function_depth1___VAR_compoundBlkExpr2] = REGA
-        |REGA = [:root_function_depth1___VAR_compoundBlkExpr2]
         |[:root_function_depth2___VAR_b1] = REGA
         |[:root_function_depth2___VAR_RETURN_HI] = < :root_function_depth1___LABEL_RETURN_LOCATION_1
         |[:root_function_depth2___VAR_RETURN_LO] = > :root_function_depth1___LABEL_RETURN_LOCATION_1
@@ -705,8 +724,6 @@ class SpamCCTest extends Matchers {
         |root_function_main___LABEL_START:
         |[:root_function_main___VAR_arg1] = 65
         |REGA = [:root_function_main___VAR_arg1]
-        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
-        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_depth1___VAR_a1] = REGA
         |[:root_function_depth1___VAR_RETURN_HI] = < :root_function_main___LABEL_RETURN_LOCATION_2
         |[:root_function_depth1___VAR_RETURN_LO] = > :root_function_main___LABEL_RETURN_LOCATION_2
@@ -889,35 +906,24 @@ class SpamCCTest extends Matchers {
         |root_function_main___VAR_ac: BYTES [0]
         |root_function_main___VAR_b: BYTES [0]
         |root_function_main___VAR_bc: BYTES [0]
-        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
-        |root_function_main___VAR_compoundBlkExpr4: BYTES [0]
         |root_function_main___VAR_d: BYTES [0]
         |root_function_main___VAR_string: BYTES [65, 66, 67, 68, 0]
-        |root_function_main_putcharGeneral___VAR_compoundBlkExpr3: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
         |root_function_main___LABEL_START:
         |REGA = 0
-        |[:root_function_main___VAR_compoundBlkExpr4] = REGA
-        |REGA = [:root_function_main___VAR_compoundBlkExpr4]
         |MARLO = REGA + (>:root_function_main___VAR_string) _S
         |MARHI = <:root_function_main___VAR_string
         |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
         |REGA = RAM
-        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
-        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_main___VAR_ac] = REGA
         |[:root_function_main___VAR_b] = 1
         |REGA = [:root_function_main___VAR_b]
-        |[:root_function_main___VAR_compoundBlkExpr4] = REGA
-        |REGA = [:root_function_main___VAR_compoundBlkExpr4]
         |MARLO = REGA + (>:root_function_main___VAR_string) _S
         |MARHI = <:root_function_main___VAR_string
         |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
         |REGA = RAM
-        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
-        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_main___VAR_bc] = REGA
         |[:root_function_main___VAR_d] = 3
         |root_function_main_putcharVar_ac____LABEL_wait_1:
@@ -935,8 +941,6 @@ class SpamCCTest extends Matchers {
         |root_function_main_putcharVar_bc____LABEL_transmit_4:
         |UART = [:root_function_main___VAR_bc]
         |REGA = 2
-        |[:root_function_main_putcharGeneral___VAR_compoundBlkExpr3] = REGA
-        |REGA = [:root_function_main_putcharGeneral___VAR_compoundBlkExpr3]
         |MARLO = REGA + (>:root_function_main___VAR_string) _S
         |MARHI = <:root_function_main___VAR_string
         |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
@@ -949,8 +953,6 @@ class SpamCCTest extends Matchers {
         |root_function_main_putcharGeneral___LABEL_transmit_6:
         |UART = REGA
         |REGA = [:root_function_main___VAR_d]
-        |[:root_function_main_putcharGeneral___VAR_compoundBlkExpr3] = REGA
-        |REGA = [:root_function_main_putcharGeneral___VAR_compoundBlkExpr3]
         |MARLO = REGA + (>:root_function_main___VAR_string) _S
         |MARHI = <:root_function_main___VAR_string
         |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
@@ -1000,26 +1002,18 @@ class SpamCCTest extends Matchers {
       """root_function_main___VAR_RETURN_HI: BYTES [0]
         |root_function_main___VAR_RETURN_LO: BYTES [0]
         |root_function_main___VAR_c: BYTES [0]
-        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
-        |root_function_main___VAR_compoundBlkExpr4: BYTES [0]
         |root_function_main___VAR_idx: BYTES [0]
         |root_function_main___VAR_string: BYTES [65, 66, 67, 68, 0]
-        |root_function_main_whileCond1___VAR_compoundBlkExpr3: BYTES [0]
-        |root_function_main_whileCond1___VAR_compoundBlkExpr5: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
         |root_function_main___LABEL_START:
         |[:root_function_main___VAR_idx] = 0
         |REGA = [:root_function_main___VAR_idx]
-        |[:root_function_main___VAR_compoundBlkExpr4] = REGA
-        |REGA = [:root_function_main___VAR_compoundBlkExpr4]
         |MARLO = REGA + (>:root_function_main___VAR_string) _S
         |MARHI = <:root_function_main___VAR_string
         |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
         |REGA = RAM
-        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
-        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_main___VAR_c] = REGA
         |root_function_main_whileCond1___LABEL_CHECK:
         |REGA = [:root_function_main___VAR_c]
@@ -1040,14 +1034,10 @@ class SpamCCTest extends Matchers {
         |REGA = REGA + 1
         |[:root_function_main___VAR_idx] = REGA
         |REGA = [:root_function_main___VAR_idx]
-        |[:root_function_main_whileCond1___VAR_compoundBlkExpr5] = REGA
-        |REGA = [:root_function_main_whileCond1___VAR_compoundBlkExpr5]
         |MARLO = REGA + (>:root_function_main___VAR_string) _S
         |MARHI = <:root_function_main___VAR_string
         |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
         |REGA = RAM
-        |[:root_function_main_whileCond1___VAR_compoundBlkExpr3] = REGA
-        |REGA = [:root_function_main_whileCond1___VAR_compoundBlkExpr3]
         |[:root_function_main___VAR_c] = REGA
         |PCHITMP = <:root_function_main_whileCond1___LABEL_CHECK
         |PC = >:root_function_main_whileCond1___LABEL_CHECK
@@ -1072,14 +1062,45 @@ class SpamCCTest extends Matchers {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    val actual: List[String] = compile(lines, verbose=true, quiet = true, outputCheck = str => {
       checkTransmitted(str, 'A')
       checkTransmitted(str, 'B')
       checkTransmitted(str, 'C')
       checkTransmitted(str, 'D')
     })
 
-    val expected = split("""""".stripMargin)
+    val expected = split(
+      """
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_string: BYTES [65, 66, 67, 68, 0]
+        |PCHITMP = < :ROOT________main_start
+        |PC = > :ROOT________main_start
+        |ROOT________main_start:
+        |root_function_main___LABEL_START:
+        |MARLO = >:root_function_main___VAR_string
+        |MARHI = <:root_function_main___VAR_string
+        |root_function_main_puts___LABEL_startloop_1:
+        |NOOP = RAM _S
+        |PCHITMP = <:root_function_main_puts___LABEL_endloop_4
+        |PC = >:root_function_main_puts___LABEL_endloop_4 _Z
+        |root_function_main_puts___LABEL_wait_2:
+        |PCHITMP = <:root_function_main_puts___LABEL_transmit_3
+        |PC = >:root_function_main_puts___LABEL_transmit_3 _DO
+        |PCHITMP = <:root_function_main_puts___LABEL_wait_2
+        |PC = <:root_function_main_puts___LABEL_wait_2
+        |root_function_main_puts___LABEL_transmit_3:
+        |UART = RAM
+        |MARLO = MARLO + 1 _S
+        |MARHI = MARHI + 1 _C
+        |PCHITMP = <:root_function_main_puts___LABEL_startloop_1
+        |PC = >:root_function_main_puts___LABEL_startloop_1
+        |root_function_main_puts___LABEL_endloop_4:
+        |PCHITMP = <:root_end
+        |PC = >:root_end
+        |root_end:
+        |END
+        |""".stripMargin)
 
     assertSame(expected, actual)
   }
@@ -1109,7 +1130,8 @@ class SpamCCTest extends Matchers {
     val IsEqu = "^\\s*[a-zA-Z0-9_]+:\\s*EQU.*$".r
     val IsLabel = "^\\s*[a-zA-Z0-9_]+:\\s*$".r
     val IsComment = "^\\s*;.*$".r
-    val IsString = """^\s*[a-zA-Z0-9_]+:\s*STR\s*"[^"]*"\s*$""".r
+    val IsBytes = """^\s*[a-zA-Z0-9_]+:\s*BYTES\s.*$""".r
+    val IsString = """^\s*[a-zA-Z0-9_]+:\s*STR\s.*$""".r
 
     actual.foreach { l =>
       if (IsComment.matches(l)) {
@@ -1120,6 +1142,14 @@ class SpamCCTest extends Matchers {
       }
       else if (IsLabel.matches(l)) {
         println(s"${"".formatted("%5s")}  $l")
+      } else if (IsBytes.matches(l)) {
+        val withoutBrackets = l.replaceAll(""".*\[""","").replaceAll("""\].*$""","")
+
+        val bytes = withoutBrackets.split(",").length
+
+        println(s"${pc.formatted("%5d")}  $l")
+        pc += bytes
+
       } else if (IsString.matches(l)) {
         val withoutQuotes = l.replaceAll("""^[^"]+"""","").replaceAll(""""[^"]*$""","")
         val lstr = org.apache.commons.text.StringEscapeUtils.unescapeJava(withoutQuotes)
