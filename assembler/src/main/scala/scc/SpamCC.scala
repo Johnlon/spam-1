@@ -109,28 +109,28 @@ class SpamCC extends JavaTokenParsers {
 
   def name: Parser[String] = "[a-zA-Z][a-zA-Z0-9_]*".r ^^ (a => a)
 
-  // optimisation of "var X=1"
+  // optimisation of "var VARIABLE=CONST"
   def statementEqConst: Parser[Block] = "var" ~> name ~ "=" ~ constExpr <~ SEMICOLON ^^ {
-    case target ~ _ ~ v =>
-      new Block("statementVar", s"$target=$v") {
+    case targetVar ~ _ ~ konst =>
+      new Block("statementEqConst", s"$targetVar=$konst") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val label = parent.assignVarLabel(target)
+          val label = parent.assignVarLabel(targetVar)
           List(
-            s"[:$label] = $v",
+            s"[:$label] = $konst",
           )
         }
       }
   }
 
-  // optimisation of "var X=1 op Y"
+  // optimisation of "var VARIABLE=CONST op VARIABLE"
   def statementEqConstOpVar: Parser[Block] = "var" ~> name ~ "=" ~ constExpr ~ op ~ name <~ SEMICOLON ^^ {
-    case target ~ _ ~ e ~ op ~ v =>
-      new Block("statementEqConstOpVar", s"$target=$e $op $v") {
+    case targetVar ~ _ ~ konst ~ op ~ srcVar =>
+      new Block("statementEqConstOpVar", s"$targetVar=$konst $op $srcVar") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val sLabel = parent.getVarLabel(v)
-          val tLabel = parent.assignVarLabel(target)
+          val sLabel = parent.getVarLabel(srcVar)
+          val tLabel = parent.assignVarLabel(targetVar)
           List(
-            s"REGA = $e",
+            s"REGA = $konst",
             s"REGA = REGA $op [:$sLabel]",
             s"[:$tLabel] = REGA",
           )
@@ -138,16 +138,16 @@ class SpamCC extends JavaTokenParsers {
       }
   }
 
-  // optimisation of "var X=Y op 1"
+  // optimisation of "var VARIABLE=VARIABLE op CONST"
   def statementEqVarOpConst: Parser[Block] = "var" ~> name ~ "=" ~ name ~ op ~ constExpr <~ SEMICOLON ^^ {
-    case target ~ _ ~ v ~ op ~ e =>
-      new Block("statementEqVarOpConst", s"$target=$v $op $e") {
+    case targetVar ~ _ ~ srcVar ~ op ~ konst =>
+      new Block("statementEqVarOpConst", s"$targetVar=$srcVar $op $konst") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val sLabel = parent.getVarLabel(v)
-          val tLabel = parent.assignVarLabel(target)
+          val sLabel = parent.getVarLabel(srcVar)
+          val tLabel = parent.assignVarLabel(targetVar)
           List(
             s"REGA = [:$sLabel]",
-            s"REGA = REGA $op $e",
+            s"REGA = REGA $op $konst",
             s"[:$tLabel] = REGA",
           )
         }
@@ -158,13 +158,13 @@ class SpamCC extends JavaTokenParsers {
 
   trait IsConst
 
-  // optimisation of "var X=Y"
+  // optimisation of "var VARIABLE=VARIABLE"
   def statementEqVar: Parser[Block] = "var" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
-    case target ~ _ ~ v =>
-      new Block("statementEqVar", s"$target=$v") {
+    case targetVar ~ _ ~ srvVar =>
+      new Block("statementEqVar", s"$targetVar=$srvVar") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val sLabel = parent.getVarLabel(v)
-          val tLabel = parent.assignVarLabel(target)
+          val sLabel = parent.getVarLabel(srvVar)
+          val tLabel = parent.assignVarLabel(targetVar)
           List(
             s"REGA = [:$sLabel]",
             s"[:$tLabel] = REGA",
@@ -173,14 +173,14 @@ class SpamCC extends JavaTokenParsers {
       }
   }
 
-  // optimisation of "var X=Y op Z"
+  // optimisation of "var VARIABLE=VARIABLE op VARIABLE"
   def statementEqVarOpVar: Parser[Block] = "var" ~> name ~ "=" ~ name ~ op ~ name <~ SEMICOLON ^^ {
-    case target ~ _ ~ s1 ~ op ~ s2 =>
-      new Block("statementEqVarOpConst", s"$target=$s1 $op $s2") {
+    case targetVar ~ _ ~ srcVar1 ~ op ~ srcVar2 =>
+      new Block("statementEqVarOpVar", s"$targetVar=$srcVar1 $op $srcVar2") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val s1Label = parent.getVarLabel(s1)
-          val s2Label = parent.getVarLabel(s2)
-          val tLabel = parent.assignVarLabel(target)
+          val s1Label = parent.getVarLabel(srcVar1)
+          val s2Label = parent.getVarLabel(srcVar2)
+          val tLabel = parent.assignVarLabel(targetVar)
           List(
             s"REGA = [:$s1Label]",
             s"REGA = [:$s2Label]",
@@ -217,15 +217,16 @@ class SpamCC extends JavaTokenParsers {
   }
 
   def blkArrayElementExpr: Parser[Block] = name ~ "[" ~ compoundBlkExpr ~ "]" ^^ {
-    case n ~ _ ~ k ~ _ =>
-      new Block("blkArrayElement", s"$n[$k]") with IsVarExpr {
-        override def toString = s"$n"
+    case arrayName ~ _ ~ blkExpr ~ _ =>
+      new Block("blkArrayElement", s"$arrayName[$blkExpr]") with IsVarExpr {
+        override def toString = s"$arrayName"
 
         override def gen(depth: Int, parent: Name): List[String] = {
 
-          val stmts: List[String] = k.expr(depth + 1, parent)
+          // drops result into A
+          val stmts: List[String] = blkExpr.expr(depth + 1, parent)
 
-          val labelSrcVar = parent.getVarLabel(n)
+          val labelSrcVar = parent.getVarLabel(arrayName)
 
           stmts ++ List(
             s"MARLO = REGA + (>:$labelSrcVar) _S",
@@ -235,7 +236,7 @@ class SpamCC extends JavaTokenParsers {
           )
         }
 
-        override def variableName: String = n
+        override def variableName: String = arrayName
       }
   }
 
