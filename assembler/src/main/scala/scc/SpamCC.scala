@@ -60,9 +60,6 @@ class SpamCC extends JavaTokenParsers {
 
   private val SPACE = " "
 
-  private var varLocn = -1
-
-  //  val labels = mutable.TreeMap.empty[String, Int]
   private val variables = mutable.TreeMap.empty[String, List[Byte]]
 
   def compile(code: String): List[String] = {
@@ -947,8 +944,6 @@ class SpamCC extends JavaTokenParsers {
         //        vars.get(locaName).map { existing =>
         //          sys.error(s"scc error: $name is already defined as $existing")
         //        }
-
-        varLocn += 1
 
         variables.getOrElseUpdate(localName, data)
         localName
