@@ -1,7 +1,5 @@
 package asm
 
-import AluOp.values
-
 trait E {
   def enumName = {
     this.getClass.getSimpleName.replaceAll("\\$", "")

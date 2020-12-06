@@ -1,7 +1,12 @@
 package asm
 
 sealed class AluOp private(val id: Int, val abbrev: String = null) extends E {
-    def isAbbreviated: Boolean = abbrev != null
+  def isAbbreviated: Boolean = abbrev != null
+
+  def preferredName: String =  {
+    if (isAbbreviated) abbrev
+    else enumName
+  }
 }
 
 object AluOp  {

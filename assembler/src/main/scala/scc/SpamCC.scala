@@ -2,6 +2,8 @@ package scc
 
 import java.io.{File, PrintWriter}
 
+import asm.{AluOp, EnumParserOps}
+
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
@@ -53,7 +55,7 @@ object SpamCC {
   }
 }
 
-class SpamCC extends JavaTokenParsers {
+class SpamCC extends EnumParserOps with JavaTokenParsers {
   private val MAIN_LABEL = "ROOT________main_start"
 
   private def SEMICOLON = ";"
@@ -91,14 +93,26 @@ class SpamCC extends JavaTokenParsers {
 
   def octToken: Parser[Int] = "@" ~ "[0-7]+".r ^^ { case _ ~ v => Integer.valueOf(v, 8) }
 
-  def aluOp: Parser[String] = "+" | "-" | "*" | "/" ^^ {
-    o => o
+  def aluOp: Parser[String] = {
+    val shortAluOps = {
+      // reverse sorted to put longer operators ahead of shorter ones otherwise shorter ones gobble
+      val reverseSorted = AluOp.values.filter(_.isAbbreviated).sortBy(x => x.abbrev).reverse.toList
+      reverseSorted map { m =>
+        literal(m.abbrev) ^^^ m
+      } reduceLeft {
+        _ | _
+      }
+    }
+    val longAluOps = enumToParser(AluOp.values)
+    (longAluOps | shortAluOps).map(_.preferredName)
   }
 
   def nFactor: Parser[Int] = charToken | decToken | hexToken | binToken | octToken | "(" ~> constExpr <~ ")"
 
+  def contOperations: Parser[String] = "+" | "-" | "*" | "/"
+
 //  def constExpr: Parser[Int] = nFactor ~ ((aluOp ~ nFactor) *) ^^ {
-  def constExpr: Parser[Int] = nFactor ~ ((aluOp ~ nFactor) *) ^^ {
+  def constExpr: Parser[Int] = nFactor ~ ((contOperations ~ nFactor) *) ^^ {
     case x ~ list =>
       list.foldLeft(x)({
         case (acc, "+" ~ i) => acc + i
@@ -125,14 +139,14 @@ class SpamCC extends JavaTokenParsers {
 
   // optimisation of "var VARIABLE=CONST op VARIABLE"
   def statementEqConstOpVar: Parser[Block] = "var" ~> name ~ "=" ~ constExpr ~ aluOp ~ name <~ SEMICOLON ^^ {
-    case targetVar ~ _ ~ konst ~ op ~ srcVar =>
-      new Block("statementEqConstOpVar", s"$targetVar=$konst $op $srcVar") {
+    case targetVar ~ _ ~ konst ~ oper ~ srcVar =>
+      new Block("statementEqConstOpVar", s"$targetVar=$konst $oper $srcVar") {
         override def gen(depth: Int, parent: Name): List[String] = {
           val sLabel = parent.getVarLabel(srcVar)
           val tLabel = parent.assignVarLabel(targetVar)
           List(
             s"REGA = $konst",
-            s"REGA = REGA $op [:$sLabel]",
+            s"REGA = REGA $oper [:$sLabel]",
             s"[:$tLabel] = REGA",
           )
         }
@@ -184,7 +198,7 @@ class SpamCC extends JavaTokenParsers {
           val tLabel = parent.assignVarLabel(targetVar)
           List(
             s"REGA = [:$s1Label]",
-            s"REGA = [:$s2Label]",
+            s"REGB = [:$s2Label]",
             s"[:$tLabel] = REGA $op REGB",
           )
         }
@@ -427,6 +441,31 @@ class SpamCC extends JavaTokenParsers {
         }
       }
   }
+
+//
+//  def stmtPutsGeneral: Parser[Block] = "puts" ~ "(" ~> blkExpr <~ ")" ^^ {
+//    bex =>
+//      new Block("stmtPutsGeneral", s"$bex", nestedName = "putsGeneral") {
+//        override def gen(depth: Int, parent: Name): List[String] = {
+//          val labelWait = parent.fqnLabelPathUnique("wait")
+//          val labelTransmit = parent.fqnLabelPathUnique("transmit")
+//
+//          // leaves result in REGA
+//          val stmts: List[String] = bex.expr(depth + 1, parent)
+//
+//          stmts ++ split(
+//            s"""
+//               |$labelWait:
+//               |PCHITMP = <:$labelTransmit
+//               |PC = >:$labelTransmit _DO
+//               |PCHITMP = <:$labelWait
+//               |PC = <:$labelWait
+//               |$labelTransmit:
+//               |UART = REGA
+//               |""")
+//        }
+//      }
+//  }
 
 
   def statement: Parser[Block] =

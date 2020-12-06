@@ -11,13 +11,8 @@ object Mode extends Enumeration {
 }
 
 // expr "calculator" code taken from https://www.scala-lang.org/api/2.12.8/scala-parser-combinators/scala/util/parsing/combinator/RegexParsers.html
-trait InstructionParser extends JavaTokenParsers {
-  self: Lines with Knowing with Devices =>
-
-  var dataAddress = 0
-
-  //  override val whiteSpace =  """[ \t\f\x0B]++""".r // whitespace not including line endings
-
+trait EnumParserOps  {
+  self: JavaTokenParsers=>
   def enumToParser[A <: E](e: Seq[A]): Parser[A] = {
     // reverse sorted to put longer operators ahead of shorter ones otherwise shorter ones gobble
     val longestFirst: Seq[A] = e.sortBy(_.enumName).reverse
@@ -28,10 +23,19 @@ trait InstructionParser extends JavaTokenParsers {
     }
   }
 
+}
+
+trait InstructionParser extends EnumParserOps with JavaTokenParsers {
+  self: Lines with Knowing with Devices =>
+
+  var dataAddress = 0
+
+  //  override val whiteSpace =  """[ \t\f\x0B]++""".r // whitespace not including line endings
+
   def aluop: Parser[AluOp] = {
     val shortAluOps = {
       // reverse sorted to put longer operators ahead of shorter ones otherwise shorter ones gobble
-      val reverseSorted = AluOp.values.filter(_.isAbbreviated).sortBy(x => x.enumName).reverse.toList
+      val reverseSorted = AluOp.values.filter(_.isAbbreviated).sortBy(x => x.abbrev).reverse.toList
       reverseSorted map { m =>
         literal(m.abbrev) ^^^ m
       } reduceLeft {
