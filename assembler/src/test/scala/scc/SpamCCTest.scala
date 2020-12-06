@@ -636,7 +636,7 @@ class SpamCCTest extends Matchers {
   }
 
   @Test
-  def aStringIteration(): Unit = {
+  def aStringIndexing(): Unit = {
 
     val lines =
       """
@@ -661,6 +661,119 @@ class SpamCCTest extends Matchers {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = false, quiet = true, outputCheck = str => {
+      checkTransmitted(str, 'A')
+      checkTransmitted(str, 'B')
+      checkTransmitted(str, 'C')
+      checkTransmitted(str, 'D')
+    })
+
+    val expected = split(
+      """root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_ac: BYTES [0]
+        |root_function_main___VAR_b: BYTES [0]
+        |root_function_main___VAR_bc: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr4: BYTES [0]
+        |root_function_main___VAR_d: BYTES [0]
+        |root_function_main___VAR_string: BYTES [65, 66, 67, 68, 0]
+        |root_function_main_putcharGeneral___VAR_compoundBlkExpr3: BYTES [0]
+        |PCHITMP = < :ROOT________main_start
+        |PC = > :ROOT________main_start
+        |ROOT________main_start:
+        |root_function_main___LABEL_START:
+        |REGA = 0
+        |[:root_function_main___VAR_compoundBlkExpr4] = REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr4]
+        |MARLO = REGA + (>:root_function_main___VAR_string) _S
+        |MARHI = <:root_function_main___VAR_string
+        |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
+        |REGA = RAM
+        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
+        |[:root_function_main___VAR_ac] = REGA
+        |[:root_function_main___VAR_b] = 1
+        |REGA = [:root_function_main___VAR_b]
+        |[:root_function_main___VAR_compoundBlkExpr4] = REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr4]
+        |MARLO = REGA + (>:root_function_main___VAR_string) _S
+        |MARHI = <:root_function_main___VAR_string
+        |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
+        |REGA = RAM
+        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
+        |[:root_function_main___VAR_bc] = REGA
+        |[:root_function_main___VAR_d] = 3
+        |root_function_main_putcharVar_ac____LABEL_wait_1:
+        |PCHITMP = <:root_function_main_putcharVar_ac____LABEL_transmit_2
+        |PC = >:root_function_main_putcharVar_ac____LABEL_transmit_2 _DO
+        |PCHITMP = <:root_function_main_putcharVar_ac____LABEL_wait_1
+        |PC = <:root_function_main_putcharVar_ac____LABEL_wait_1
+        |root_function_main_putcharVar_ac____LABEL_transmit_2:
+        |UART = [:root_function_main___VAR_ac]
+        |root_function_main_putcharVar_bc____LABEL_wait_3:
+        |PCHITMP = <:root_function_main_putcharVar_bc____LABEL_transmit_4
+        |PC = >:root_function_main_putcharVar_bc____LABEL_transmit_4 _DO
+        |PCHITMP = <:root_function_main_putcharVar_bc____LABEL_wait_3
+        |PC = <:root_function_main_putcharVar_bc____LABEL_wait_3
+        |root_function_main_putcharVar_bc____LABEL_transmit_4:
+        |UART = [:root_function_main___VAR_bc]
+        |REGA = 2
+        |[:root_function_main_putcharGeneral___VAR_compoundBlkExpr3] = REGA
+        |REGA = [:root_function_main_putcharGeneral___VAR_compoundBlkExpr3]
+        |MARLO = REGA + (>:root_function_main___VAR_string) _S
+        |MARHI = <:root_function_main___VAR_string
+        |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
+        |REGA = RAM
+        |root_function_main_putcharGeneral___LABEL_wait_5:
+        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_transmit_6
+        |PC = >:root_function_main_putcharGeneral___LABEL_transmit_6 _DO
+        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_wait_5
+        |PC = <:root_function_main_putcharGeneral___LABEL_wait_5
+        |root_function_main_putcharGeneral___LABEL_transmit_6:
+        |UART = REGA
+        |REGA = [:root_function_main___VAR_d]
+        |[:root_function_main_putcharGeneral___VAR_compoundBlkExpr3] = REGA
+        |REGA = [:root_function_main_putcharGeneral___VAR_compoundBlkExpr3]
+        |MARLO = REGA + (>:root_function_main___VAR_string) _S
+        |MARHI = <:root_function_main___VAR_string
+        |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
+        |REGA = RAM
+        |root_function_main_putcharGeneral___LABEL_wait_7:
+        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_transmit_8
+        |PC = >:root_function_main_putcharGeneral___LABEL_transmit_8 _DO
+        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_wait_7
+        |PC = <:root_function_main_putcharGeneral___LABEL_wait_7
+        |root_function_main_putcharGeneral___LABEL_transmit_8:
+        |UART = REGA
+        |PCHITMP = <:root_end
+        |PC = >:root_end
+        |root_end:
+        |END""".stripMargin)
+
+    assertSame(expected, actual)
+  }
+
+  @Test
+  def aStringIteration(): Unit = {
+
+    val lines =
+      """
+        |fun main() {
+        | // define string
+        | var string = "ABCD\0";
+        |
+        | var idx = 0;
+        | var c = string[idx];
+        | while (c != 0) {
+        |   putchar(c)
+        |   var idx = idx + 1;
+        |   var c = string[idx];
+        | }
+        |}
+        |""".stripMargin
+
+    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
       checkTransmitted(str, 'A')
       checkTransmitted(str, 'B')
       checkTransmitted(str, 'C')
