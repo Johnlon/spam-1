@@ -385,13 +385,17 @@ class SpamCC extends JavaTokenParsers {
     s.split("\\|").map(_.stripTrailing().stripLeading()).filterNot(_.isEmpty).toList
   }
 
-  def stmtPutchar: Parser[Block] = "putchar" ~ "(" ~> constExpr <~ ")" ^^ {
-    i: Int =>
-      new Block("statementPutchar", s"$i", nestedName = "putcharI") {
+  def stmtPutcharGeneral: Parser[Block] = "putchar" ~ "(" ~> blkExpr <~ ")" ^^ {
+    bex =>
+      new Block("stmtPutcharGeneral", s"$bex", nestedName = "putcharGeneral") {
         override def gen(depth: Int, parent: Name): List[String] = {
           val labelWait = parent.fqnLabelPathUnique("wait")
           val labelTransmit = parent.fqnLabelPathUnique("transmit")
-          split(
+
+          // leaves result in REGA
+          val stmts: List[String] = bex.expr(depth + 1, parent)
+
+          stmts ++ split(
             s"""
                |$labelWait:
                |PCHITMP = <:$labelTransmit
@@ -399,16 +403,15 @@ class SpamCC extends JavaTokenParsers {
                |PCHITMP = <:$labelWait
                |PC = <:$labelWait
                |$labelTransmit:
-               |UART = $i
+               |UART = REGA
                |""")
         }
       }
   }
 
-
-  def statementPutcharName: Parser[Block] = "putchar" ~ "(" ~> name <~ ")" ^^ {
+  def statementPutcharVarOptimisation: Parser[Block] = "putchar" ~ "(" ~> name <~ ")" ^^ {
     n: String =>
-      new Block("statementPutcharName", s"$n", nestedName = s"putcharN_${n}_") {
+      new Block("statementPutcharVarOptimisation", s"$n", nestedName = s"putcharVar_${n}_") {
         override def gen(depth: Int, parent: Name): List[String] = {
           val labelWait = parent.fqnLabelPathUnique("wait")
           val labelTransmit = parent.fqnLabelPathUnique("transmit")
@@ -427,10 +430,31 @@ class SpamCC extends JavaTokenParsers {
       }
   }
 
+  def statementPutcharConstOptimisation: Parser[Block] = "putchar" ~ "(" ~> constExpr <~ ")" ^^ {
+    n =>
+      new Block("statementPutcharConstOptimisation", s"$n", nestedName = s"putcharI_${n}_") {
+        override def gen(depth: Int, parent: Name): List[String] = {
+          val labelWait = parent.fqnLabelPathUnique("wait")
+          val labelTransmit = parent.fqnLabelPathUnique("transmit")
+          split(
+            s"""
+               |$labelWait:
+               |PCHITMP = <:$labelTransmit
+               |PC = >:$labelTransmit _DO
+               |PCHITMP = <:$labelWait
+               |PC = <:$labelWait
+               |$labelTransmit:
+               |UART = $n
+               |""")
+        }
+      }
+  }
+
 
   def statement: Parser[Block] =
     statementEqVarOpVar | statementEqVar | statementEqVarOpConst | statementEqConstOpVar | statementEqConst |
-      statementVarOp | stmtPutchar | statementPutcharName |
+      statementVarOp |
+       statementPutcharVarOptimisation | statementPutcharConstOptimisation | stmtPutcharGeneral |
       whileTrue | whileCond | ifCond | breakOut | functionCall | comment |
       statementVarString ^^ {
         s =>

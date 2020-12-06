@@ -646,22 +646,25 @@ class SpamCCTest extends Matchers {
         |fun main() {
         | // define string
         | var string = "ABC\0";
+        |
         | // index by literal
         | var ac = string[0];
+        |
         | // index by variable
         | var b = 1;
         | var bc = string[b];
+        |
         | // print values so we can test correct values selected
         | putchar(ac)
         | putchar(bc)
+        | putchar(string[2])
         |}
         |""".stripMargin
-//    | putchar(string[2])
 
     val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
       checkTransmitted(str, 'A')
       checkTransmitted(str, 'B')
-//      checkTransmitted(str, 'C')
+      checkTransmitted(str, 'C')
     })
 
     val expected = split(
