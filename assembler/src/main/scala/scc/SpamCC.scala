@@ -63,7 +63,7 @@ class SpamCC extends JavaTokenParsers {
   private var varLocn = -1
 
   //  val labels = mutable.TreeMap.empty[String, Int]
-  private val vars = mutable.TreeMap.empty[String, (String, Int)]
+  private val varLocations = mutable.TreeMap.empty[String, (String, Int)]
 
   def compile(code: String): List[String] = {
 
@@ -203,7 +203,7 @@ class SpamCC extends JavaTokenParsers {
     def exressionValue: Int
   }
 
-  def blkVar: Parser[Block] = name ^^ {
+  def blkVarExpr: Parser[Block] = name ^^ {
     n =>
       new Block("blkVar", s"$n") with IsVarExpr {
         override def toString = s"$n"
@@ -212,6 +212,29 @@ class SpamCC extends JavaTokenParsers {
           val labelSrcVar = parent.getVarLabel(n)
           List(
             s"REGA = [:$labelSrcVar]",
+          )
+        }
+
+        override def variableName: String = n
+      }
+  }
+
+  def blkArrayElementExpr: Parser[Block] = name ~ "[" ~ compoundBlkExpr ~ "]" ^^ {
+    case n ~ _ ~ k ~ _ =>
+      new Block("blkArrayElement", s"$n[$k]") with IsVarExpr {
+        override def toString = s"$n"
+
+        override def gen(depth: Int, parent: Name): List[String] = {
+
+          val stmts: List[String] = k.expr(depth + 1, parent)
+
+          val labelSrcVar = parent.getVarLabel(n)
+
+          stmts ++ List(
+            s"MARLO = REGA + (>:$labelSrcVar) _S",
+            s"MARHI = <:$labelSrcVar",
+            s"MARHI = NU B_PLUS_1 <:$labelSrcVar _C",
+            s"REGA = RAM",
           )
         }
 
@@ -234,13 +257,13 @@ class SpamCC extends JavaTokenParsers {
       }
   }
 
-  def allBlkExprs: Parser[Block] = blkNExpr | blkVar | "(" ~> blkExprs <~ ")"
+  def blkExpr: Parser[Block] = blkArrayElementExpr | blkNExpr | blkVarExpr | "(" ~> compoundBlkExpr <~ ")"
 
-  sealed trait IsExprs {
+  sealed trait IsExprBlock {
     def variableName: Option[String]
   }
 
-  def blkExprs: Parser[Block] = allBlkExprs ~ ((op ~ allBlkExprs) *) ^^ {
+  def compoundBlkExpr: Parser[Block] = blkExpr ~ ((op ~ blkExpr) *) ^^ {
     case leftExpr ~ otherExpr =>
       val inner = otherExpr.foldLeft(leftExpr.toString()) {
         case (acc, b) =>
@@ -248,12 +271,12 @@ class SpamCC extends JavaTokenParsers {
       }
 
       val str = s" $inner  "
-      new Block("blkExprs", s"$str") with IsExprs {
+      new Block("compoundBlkExpr", s"$str") with IsExprBlock {
 
         override def toString = s"$inner"
 
         override def gen(depth: Int, parent: Name): List[String] = {
-          val temporaryVarLabel = parent.assignVarLabel("blkExprs" + depth)
+          val temporaryVarLabel = parent.assignVarLabel("compoundBlkExpr" + depth)
 
           val leftStatement: List[String] = leftExpr.expr(depth + 1, parent) ++
             List(
@@ -310,7 +333,7 @@ class SpamCC extends JavaTokenParsers {
   }
 
 
-  def statementVarOp: Parser[Block] = "var" ~> name ~ "=" ~ blkExprs <~ SEMICOLON ^^ {
+  def statementVarOp: Parser[Block] = "var" ~> name ~ "=" ~ compoundBlkExpr <~ SEMICOLON ^^ {
     case target ~ _ ~ v =>
       new Block("statementVarOp", s"$target = $v") {
         override def gen(depth: Int, parent: Name): List[String] = {
@@ -327,6 +350,33 @@ class SpamCC extends JavaTokenParsers {
             s"[:$labelTarget] = REGA",
           )
           stmts ++ assign
+        }
+      }
+  }
+
+  // permits \\0
+  def quotedString: Parser[String] = ("\"" + """([^"\x01-\x1F\x7F\\]|\\[\\'"0bfnrt]|\\u[a-fA-F0-9]{4})*""" + "\"").r ^^ {
+    s =>
+      val withoutQuotes = s.stripPrefix("\"").stripSuffix("\"")
+      val str = org.apache.commons.text.StringEscapeUtils.unescapeJava(withoutQuotes)
+      str
+  }
+
+  /*
+  STRING:     STR     "ABC\n\0\u0000"
+  BYTE_ARR:   BYTES   [ 'A', 65 ,$41, %10101010 ] ; parse as hex bytes and then treat as per STR
+  */
+  def statementVarString: Parser[Block] = "var" ~> name ~ "=" ~ quotedString <~ SEMICOLON ^^ {
+    case target ~ _ ~ v =>
+      new Block("statementVarEqString", s"$target = $v") {
+        override def gen(depth: Int, parent: Name): List[String] = {
+          val labelTarget = parent.assignVarLabel(target, v)
+          //
+          //          val stmts: List[String] = List(
+          //            s"""[:$labelTarget] = $v"""
+          //          )
+
+          Nil
         }
       }
   }
@@ -381,10 +431,11 @@ class SpamCC extends JavaTokenParsers {
   def statement: Parser[Block] =
     statementEqVarOpVar | statementEqVar | statementEqVarOpConst | statementEqConstOpVar | statementEqConst |
       statementVarOp | stmtPutchar | statementPutcharName |
-      whileTrue | whileCond | ifCond | breakOut | functionCall | comment ^^ {
-      s =>
-        s
-    }
+      whileTrue | whileCond | ifCond | breakOut | functionCall | comment |
+      statementVarString ^^ {
+        s =>
+          s
+      }
 
   def statements: Parser[List[Block]] = statement ~ (statement *) ^^ {
     case a ~ b =>
@@ -617,7 +668,7 @@ class SpamCC extends JavaTokenParsers {
 
   // DODO - NEED T HANDLE OUT PARAMS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  def functionCall: Parser[Block] = name ~ "(" ~ repsep(blkExprs, ",") ~ ")" ^^ {
+  def functionCall: Parser[Block] = name ~ "(" ~ repsep(compoundBlkExpr, ",") ~ ")" ^^ {
     case fnName ~ _ ~ argExpr ~ _ =>
       new Block(s"functionCall", s"""$fnName(${argExpr.mkString(", ")})""") with isFunctionCall {
 
@@ -646,7 +697,7 @@ class SpamCC extends JavaTokenParsers {
             case (FunctionArgNameAndLabel(argLabel, nameAndOutput), argBlk) =>
               if (nameAndOutput.output) {
                 argBlk match {
-                  case v: IsExprs =>
+                  case v: IsExprBlock =>
                     val vn = v.variableName
 
                     vn match {
@@ -901,13 +952,33 @@ class SpamCC extends JavaTokenParsers {
           (localName, varLocn)
         }
 
-        vars.getOrElseUpdate(localName, upd)._1
+        varLocations.getOrElseUpdate(localName, upd)._1
+      }
+    }
+
+    def assignVarLabel(name: String, str: String): String = {
+      val label = lookupVarLabel(name)
+      label.getOrElse {
+
+        val localName = toVarPath(name)
+
+        // need a separate "var a" vs "let a" if want to distinguish definition from update!!
+        //        vars.get(locaName).map { existing =>
+        //          sys.error(s"scc error: $name is already defined as $existing")
+        //        }
+
+        def upd = {
+          varLocn += 1
+          (localName, varLocn)
+        }
+
+        varLocations.getOrElseUpdate(localName, upd)._1
       }
     }
 
     def lookupVarLabel(name: String): Option[String] = {
       val fqn1 = toVarPath(name)
-      val maybeTuple: Option[(String, Int)] = vars.get(fqn1)
+      val maybeTuple: Option[(String, Int)] = varLocations.get(fqn1)
       val labelAndPos = maybeTuple.map(si => si._1).orElse {
         if (parent != null)
           parent.lookupVarLabel(name)
@@ -938,14 +1009,22 @@ class SpamCC extends JavaTokenParsers {
         }
       }
 
-      val varlist = vars.toList.sortBy(_._2._2).map {
+      val varlist = varLocations.toList.sortBy(_._2._2).map {
         x =>
           s"${
             x._1
-          }: EQU ${
-            x._2._2
-          }"
+          }: BYTES [0]"
       }
+
+      //
+      //      val varlist = vars.toList.sortBy(_._2._2).map {
+      //        x =>
+      //          s"${
+      //            x._1
+      //          }: EQU ${
+      //            x._2._2
+      //          }"
+      //      }
 
       val jumpToMain = split(
         s"""

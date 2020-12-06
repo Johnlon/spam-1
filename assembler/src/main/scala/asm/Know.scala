@@ -8,31 +8,31 @@ trait Knowing {
   val labels = mutable.Map.empty[String, IsKnowable[_ <: KnownValue]]
 
   sealed trait KnownValue {
-    def v: Int
+    def value: Int
   }
 
-  case class KnownInt(v: Int) extends KnownValue {
-    def toBinaryString: String = v.toBinaryString
+  case class KnownInt(value: Int) extends KnownValue {
+    def toBinaryString: String = value.toBinaryString
 
-    def +(knownInt: KnownInt) = KnownInt(v + knownInt.v)
+    def +(knownInt: KnownInt) = KnownInt(value + knownInt.value)
 
-    def -(knownInt: KnownInt) = KnownInt(v - knownInt.v)
+    def -(knownInt: KnownInt) = KnownInt(value - knownInt.value)
 
-    def /(knownInt: KnownInt) = KnownInt(v / knownInt.v)
+    def /(knownInt: KnownInt) = KnownInt(value / knownInt.value)
 
-    def *(knownInt: KnownInt) = KnownInt(v * knownInt.v)
+    def *(knownInt: KnownInt) = KnownInt(value * knownInt.value)
 
-    def %(knownInt: KnownInt) = KnownInt(v % knownInt.v)
+    def %(knownInt: KnownInt) = KnownInt(value % knownInt.value)
 
-    def &(knownInt: KnownInt) = KnownInt(v & knownInt.v)
+    def &(knownInt: KnownInt) = KnownInt(value & knownInt.value)
 
-    def |(knownInt: KnownInt) = KnownInt(v | knownInt.v)
+    def |(knownInt: KnownInt) = KnownInt(value | knownInt.value)
 
-    override def toString = s"${v.toString}"
+    override def toString = s"${value.toString}"
   }
 
-  case class KnownByteArray(v: Int, data: Seq[Byte]) extends KnownValue {
-    override def toString = s"bytes(pos:${v.toString} len:${data.length})"
+  case class KnownByteArray(value: Int, data: List[Byte]) extends KnownValue {
+    override def toString = s"bytes(pos:$value len:${data.length}, data:${data})"
   }
 
   def rememberKnown[K <: IsKnowable[_ <: KnownValue]](name: String, ik: K): K = {
@@ -52,7 +52,7 @@ trait Knowing {
                     sys.error(s"symbol '${name}' has already defined as ${existingInt} can't assign new value ${newInt}")
                   case newArr: KnownByteArray =>
                     // save data at predefined location
-                    Known(name, KnownByteArray(existingInt.v, newArr.data)).asInstanceOf[K]
+                    Known(name, KnownByteArray(existingInt.value, newArr.data)).asInstanceOf[K]
                 }
               case None =>
                 sys.error(s"symbol '${name}' has already defined as ${existingInt} can't assign new value ${newValue}")
@@ -88,7 +88,7 @@ trait Knowing {
     maybeKnow match {
       case Some(b:IsKnowable[_]) =>
         val oi = b.getVal.map { v =>
-          KnownInt(v.v)
+          KnownInt(v.value)
         }
         oi
       case _ =>
@@ -99,7 +99,7 @@ trait Knowing {
   object Known {
     def apply(name: String, i: Int): Known[KnownInt] = Known(name, KnownInt(i))
 
-    def apply(name: String, i: Int, b: Seq[Byte]): Known[KnownByteArray] = Known(name, KnownByteArray(i, b))
+    def apply(name: String, i: Int, b: Seq[Byte]): Known[KnownByteArray] = Known(name, KnownByteArray(i, b.toList))
   }
 
   sealed trait Know[T <: KnownValue] {

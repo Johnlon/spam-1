@@ -102,11 +102,11 @@ trait InstructionParser extends JavaTokenParsers {
   }
 
   def hiByte: Parser[IsKnowable[KnownInt]] = "<" ~> expr ^^ { e: Know[KnownInt] =>
-    UniKnowable[KnownInt](() => e, i => KnownInt((i.v >> 8) & 0xff), "HI<")
+    UniKnowable[KnownInt](() => e, i => KnownInt((i.value >> 8) & 0xff), "HI<")
   }
 
   def loByte: Parser[IsKnowable[KnownInt]] = ">" ~> expr ^^ { e: Know[KnownInt] =>
-    UniKnowable[KnownInt](() => e, i => KnownInt(i.v & 0xff), "LO>")
+    UniKnowable[KnownInt](() => e, i => KnownInt(i.value & 0xff), "LO>")
   }
 
   def factor: Parser[IsKnowable[KnownInt]] = labelLen | char | pcref | dec | hex | bin | oct | "(" ~> expr <~ ")" | hiByte | loByte | labelAddr
@@ -158,10 +158,10 @@ trait InstructionParser extends JavaTokenParsers {
 
   def strInstruction: Parser[List[Line]] = (name <~ ":" ~ "STR") ~ quotedString ^^ {
     case a ~ b =>
-      val bytes = b.getBytes("UTF-8").toSeq
+      val bytes = b.getBytes("UTF-8")
 
-      val stored = rememberKnown(a, Known(a, KnownByteArray(dataAddress, bytes)))
-      dataAddress = stored.knownVal.v
+      val stored = rememberKnown(a, Known(a, KnownByteArray(dataAddress, bytes.toList)))
+      dataAddress = stored.knownVal.value
 
       Label(a) +: bytes.map { c => {
         val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Control._A), Known("", c))
@@ -176,7 +176,7 @@ trait InstructionParser extends JavaTokenParsers {
 
       val exprs: List[Know[KnownInt]] = b +: c
 
-      val ints: List[Int] = exprs.map(_.getVal.get.v)
+      val ints: List[Int] = exprs.map(_.getVal.get.value)
       ints.filter { x =>
         x.toByte < Byte.MinValue || x.toByte > Byte.MaxValue
       }.foreach(x => sys.error(s"asm error: $x evaluates as out of range ${Byte.MinValue} to ${Byte.MaxValue}"))

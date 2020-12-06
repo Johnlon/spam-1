@@ -81,7 +81,7 @@ trait Lines {
       val sMode = if (amode == DIRECT) "1" else "0"
       val sAddress = bits("address", address.getVal.map(_.toBinaryString).getOrElse(""), 16)
       val sImmed = bits("immed", immed.getVal.map { v =>
-        v.v & 0xff
+        v.value & 0xff
       }.map(_.toBinaryString).getOrElse(""), 8)
 
       val i = sAluop + sTDev + sADev + sBDev + sFlags + sNU + sMode + sAddress + sImmed

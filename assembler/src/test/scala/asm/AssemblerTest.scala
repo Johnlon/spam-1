@@ -7,7 +7,7 @@ import org.junit.Test
 class AssemblerTest {
 
   @Test
-  def `allow positioning of data`() {
+  def `allow_positioning_of_data`() {
     val code = Seq(
       "A:     STR \"A\"",
       "POSN:  EQU 10",
@@ -28,7 +28,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `LEN and EQU arith`() {
+  def `LEN_and_EQU_arith`() {
     val codeTuples = Seq[(String, java.lang.Integer)](
       ("A0: EQU 0             ", 0),
       ("A1: EQU 1             ", 1),
@@ -62,7 +62,7 @@ class AssemblerTest {
 
     val results = codeTuples.filter(_._2 != null).map { x =>
       val v = asm.labels(x._1.split(":")(0))
-      val actual = v.getVal.get.v
+      val actual = v.getVal.get.value
       if (actual == x._2) (true, s"${x._1} = ${x._2}")
       else (false, s"${x._1} = ${x._2} expected but got $actual")
     }
@@ -73,7 +73,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `EQU const`() {
+  def `EQU_const`() {
     val code = Seq("CONST:    EQU ($10 + 1) ; some arbitrarily complicated constant expression", "END")
 
     val asm = new Assembler()
@@ -84,7 +84,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `EQU 'A'`() {
+  def `EQU_CHAR`() {
     val code = Seq("CONSTA:    EQU 'A'",
       "CONSTB: EQU :CONSTA+1",
       "END")
@@ -97,7 +97,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `reg assign immed dec`() {
+  def `REGA_eq_immed_dec`() {
     val code = Seq("REGA=17", "END")
     val asm = new Assembler()
     import asm._
@@ -108,7 +108,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGA=UART`() {
+  def `REGA_eq_UART`() {
     val code = Seq("REGA=UART", "END")
     val asm = new Assembler()
     import asm._
@@ -119,7 +119,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGA assign RAM`() {
+  def `REGA_eq_RAM`() {
     val code = Seq("REGA=RAM", "END")
     val asm = new Assembler()
     import asm._
@@ -130,7 +130,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `NOOP assign RAM`() {
+  def `NOOP_eq_RAM`() {
     val code = Seq("NOOP = RAM", "END")
     val asm = new Assembler()
     import asm._
@@ -141,7 +141,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `reg assign immed hex`() {
+  def `REGA_eq_immed_hex`() {
     val code = Seq("REGA=$11", "END")
 
     val asm = new Assembler()
@@ -153,7 +153,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `reg assign immed expr`() {
+  def `REGA_eq_immed_expr`() {
     val code = Seq("REGA=($11+%1+2+@7)", "END")
     val asm = new Assembler()
     import asm._
@@ -163,7 +163,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `reg assign reg`() {
+  def `REGA_eq_REGB`() {
     val code = List(
       "REGA=REGB",
       "END")
@@ -176,7 +176,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGA=REGA PASS_A NU`() {
+  def `REGA_eq_REGA__PASS_A__NU`() {
     val code = List(
       "REGA=REGA PASS_A NU",
       "END")
@@ -189,7 +189,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `reg assign forward`() {
+  def `REGA_eq_forward_label`() {
     val code = Seq(
       "REGA=:LABEL",
       "LABEL: REGB=$ff",
@@ -205,7 +205,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `A+KONST setflags`() {
+  def `REGB_eq_REGC_plus_KONST_setflags`() {
     val code = Seq(
       "REGB=REGC A_PLUS_B $ff _S",
       "END")
@@ -219,7 +219,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `A+B`() {
+  def `REGB_eq_REGC_plus_REGA`() {
     val code = Seq(
       "REGB=REGC A_PLUS_B REGA",
       "END")
@@ -233,7 +233,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `A+B setflags C_S`() {
+  def `REGB_eq_REGC_plus_REGA__setflags_C_S`() {
     val code = Seq(
       "REGB=REGC A_PLUS_B REGA _C_S",
       "END")
@@ -247,7 +247,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `A+[] setflags C_S`() {
+  def `REGB_eq_REGC_plus_RAM_direct__setflags_C_S`() {
     val code = Seq(
       "REGB=REGC A_PLUS_B [1000] _C_S",
       "END")
@@ -261,7 +261,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `[]=A setflags _C_S`() {
+  def `RAM_direct__eq__REGA__setflags__C_S`() {
     val code = Seq(
       "[1000]=REGA _C_S",
       "END")
@@ -275,7 +275,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `strings to RAM`() {
+  def `const_strings_to_RAM`() {
     val code = Seq(
       "STRING1: STR     \"AB\\u0000\\n\"",
       "END")
@@ -284,18 +284,18 @@ class AssemblerTest {
     import asm._
     val compiled = instructions(code, asm)
 
-    assertEqualsList(Some(KnownByteArray(0, Seq(65, 66, 0, 10))), asm.labels("STRING1").getVal)
+    assertEquals(Some(KnownByteArray(0, List(65, 66, 0, 10))), asm.labels("STRING1").getVal)
 
     assertEqualsList(Seq(
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 1, 'B'.toByte),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 2, 0),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 3, '\n')
-    ), instructions(code, asm))
+    ), compiled)
   }
 
   @Test
-  def `compile bytes to RAM`() {
+  def `compile_bytes_to_RAM`() {
     val code = Seq(
       "FIRST:       BYTES     [ 1,2,3 ]",
       "SECOND:      BYTES     [ 'A', 65, $41, %01000001, 255 , -1, 127, 128 ]",
@@ -312,12 +312,12 @@ class AssemblerTest {
 
     val B_65 = 65.toByte
 
-    assertEqualsList(Some(KnownByteArray(0, Seq(1, 2, 3))), asm.labels("FIRST").getVal)
-    assertEqualsList(Some(KnownByteArray(3, Seq(B_65, B_65, B_65, B_65, 255.toByte, -1, 127, 128.toByte))), asm.labels("SECOND").getVal)
-    assertEqualsList(Some(KnownInt(3)), asm.labels("FIRST_LEN").getVal)
-    assertEqualsList(Some(KnownInt(8)), asm.labels("SECOND_LEN").getVal)
-    assertEqualsList(Some(KnownInt(0)), asm.labels("FIRST_POS").getVal)
-    assertEqualsList(Some(KnownInt(3)), asm.labels("SECOND_POS").getVal)
+    assertEquals(Some(KnownByteArray(0, List(1, 2, 3))), asm.labels("FIRST").getVal)
+    assertEquals(Some(KnownByteArray(3, List(B_65, B_65, B_65, B_65, 255.toByte, -1, 127, 128.toByte))), asm.labels("SECOND").getVal)
+    assertEquals(Some(KnownInt(3)), asm.labels("FIRST_LEN").getVal)
+    assertEquals(Some(KnownInt(8)), asm.labels("SECOND_LEN").getVal)
+    assertEquals(Some(KnownInt(0)), asm.labels("FIRST_POS").getVal)
+    assertEquals(Some(KnownInt(3)), asm.labels("SECOND_POS").getVal)
 
     var pos = 0
 
@@ -338,13 +338,13 @@ class AssemblerTest {
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, (-1).toByte), // 255 unsigned has same bit pattern as -1 signed
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 127.toByte),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, -128) // unsigned 128 has sae bit pattern as -128 twos compl
-    ), instructions(code, asm))
+    ), compiled)
   }
 
   @Test
-  def `strings len`() {
+  def `strings_len`() {
     val code = Seq(
-      "REGA = 1", // put this ahead of the data
+      "REGA = 1", // put this ahead of the data so make sure it's not simply counting the PC then allocating addresses for data
       "MYSTR:     STR     \"AB\"", // should be at address 0
       "MYSTRLEN:  EQU len(:MYSTR)",
       "YOURSTR:   STR     \"CD\"", // should be at address 2
@@ -357,19 +357,23 @@ class AssemblerTest {
     import asm._
 
     val compiled = instructions(code, asm)
-    assertEqualsList(Some(KnownInt(2)), asm.labels("MYSTRLEN").getVal)
-    assertEqualsList(Some(KnownByteArray(0, Seq(65, 66))), asm.labels("MYSTR").getVal)
+    assertEquals(Some(KnownInt(2)), asm.labels("MYSTRLEN").getVal)
+    assertEquals(Some(KnownByteArray(0, List(65, 66))), asm.labels("MYSTR").getVal)
+    assertEquals(Some(KnownByteArray(2, List(67, 68))), asm.labels("YOURSTR").getVal)
 
     assertEqualsList(Seq(
+      i(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, 0, 1),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 1, 'B'.toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 2, 'C'.toByte),
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 3, 'D'.toByte),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 255, 2),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 255, 3)
     ), compiled)
   }
 
   @Test
-  def `[]=[] `() {
+  def `ram_direct_eq_ram_direct_illegal`() {
     val code = List(
       "[1000]=[1]",
       "END")
@@ -391,7 +395,7 @@ class AssemblerTest {
   }
 
   def assertLabel(asm: Assembler, s: String, i: Some[Int]): Unit = {
-    assertEqualsList(i.map(asm.KnownInt), asm.labels(s).getVal)
+    assertEquals(i.map(asm.KnownInt), asm.labels(s).getVal)
   }
 
   def assertEqualsList[T](expected: IterableOnce[T], actual: IterableOnce[T]): Unit = {

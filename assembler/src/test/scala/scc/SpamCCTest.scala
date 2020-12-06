@@ -46,9 +46,9 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_function_main___VAR_RETURN_HI: EQU 0
-        |root_function_main___VAR_RETURN_LO: EQU 1
-        |root_function_main___VAR_a: EQU 2
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -78,10 +78,10 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_function_main___VAR_RETURN_HI: EQU 0
-        |root_function_main___VAR_RETURN_LO: EQU 1
-        |root_function_main___VAR_a: EQU 2
-        |root_function_main___VAR_b: EQU 3
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: BYTES [0]
+        |root_function_main___VAR_b: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -117,14 +117,14 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_function_main___VAR_RETURN_HI: EQU 0
-        |root_function_main___VAR_RETURN_LO: EQU 1
-        |root_function_main___VAR_a: EQU 2
-        |root_function_main___VAR_b: EQU 3
-        |root_function_other___VAR_RETURN_HI: EQU 4
-        |root_function_other___VAR_RETURN_LO: EQU 5
-        |root_function_other___VAR_a: EQU 6
-        |root_function_other___VAR_b: EQU 7
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: BYTES [0]
+        |root_function_main___VAR_b: BYTES [0]
+        |root_function_other___VAR_RETURN_HI: BYTES [0]
+        |root_function_other___VAR_RETURN_LO: BYTES [0]
+        |root_function_other___VAR_a: BYTES [0]
+        |root_function_other___VAR_b: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -165,13 +165,13 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_function_main___VAR_RETURN_HI: EQU 0
-        |root_function_main___VAR_RETURN_LO: EQU 1
-        |root_function_main___VAR_a: EQU 2
-        |root_function_main___VAR_b: EQU 3
-        |root_function_main___VAR_c: EQU 4
-        |root_function_main___VAR_d: EQU 5
-        |root_function_main___VAR_e: EQU 6
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: BYTES [0]
+        |root_function_main___VAR_b: BYTES [0]
+        |root_function_main___VAR_c: BYTES [0]
+        |root_function_main___VAR_d: BYTES [0]
+        |root_function_main___VAR_e: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -213,28 +213,28 @@ class SpamCCTest extends Matchers {
     })
 
     val expected = split(
-      """root_function_main___VAR_RETURN_HI: EQU 0
-        |root_function_main___VAR_RETURN_LO: EQU 1
-        |root_function_main___VAR_a: EQU 2
-        |root_function_main___VAR_blkExprs2: EQU 3
-        |root_function_main___VAR_blkExprs3: EQU 4
-        |root_function_main___VAR_b: EQU 5
+      """root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr3: BYTES [0]
+        |root_function_main___VAR_b: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
         |root_function_main___LABEL_START:
         |[:root_function_main___VAR_a] = 64
         |REGA = 1
-        |[:root_function_main___VAR_blkExprs2] = REGA
+        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
         |REGA = [:root_function_main___VAR_a]
-        |[:root_function_main___VAR_blkExprs3] = REGA
+        |[:root_function_main___VAR_compoundBlkExpr3] = REGA
         |REGA = 3
-        |REGC = [:root_function_main___VAR_blkExprs3]
-        |[:root_function_main___VAR_blkExprs3] = REGC + REGA
-        |REGA = [:root_function_main___VAR_blkExprs3]
-        |REGC = [:root_function_main___VAR_blkExprs2]
-        |[:root_function_main___VAR_blkExprs2] = REGC + REGA
-        |REGA = [:root_function_main___VAR_blkExprs2]
+        |REGC = [:root_function_main___VAR_compoundBlkExpr3]
+        |[:root_function_main___VAR_compoundBlkExpr3] = REGC + REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr3]
+        |REGC = [:root_function_main___VAR_compoundBlkExpr2]
+        |[:root_function_main___VAR_compoundBlkExpr2] = REGC + REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_main___VAR_b] = REGA
         |root_function_main_putcharN_b____LABEL_wait_1:
         |PCHITMP = <:root_function_main_putcharN_b____LABEL_transmit_2
@@ -269,8 +269,8 @@ class SpamCCTest extends Matchers {
 
     val expected = split(
       """
-        |root_function_main___VAR_RETURN_HI: EQU 0
-        |root_function_main___VAR_RETURN_LO: EQU 1
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -315,9 +315,9 @@ class SpamCCTest extends Matchers {
     val actual: List[String] = compile(lines)
 
     val expected = split(
-      """root_function_main___VAR_RETURN_HI: EQU 0
-        |root_function_main___VAR_RETURN_LO: EQU 1
-        |root_function_main___VAR_a: EQU 2
+      """root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -373,9 +373,9 @@ class SpamCCTest extends Matchers {
     val actual: List[String] = compile(lines)
 
     val expected = split(
-      """root_function_main___VAR_RETURN_HI: EQU 0
-        |root_function_main___VAR_RETURN_LO: EQU 1
-        |root_function_main___VAR_a: EQU 2
+      """root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -451,18 +451,18 @@ class SpamCCTest extends Matchers {
     })
 
     val expected = split(
-      """root_function_print___VAR_RETURN_HI: EQU 0
-        |root_function_print___VAR_RETURN_LO: EQU 1
-        |root_function_print___VAR_a1: EQU 2
-        |root_function_print___VAR_a2: EQU 3
-        |root_function_print___VAR_a3: EQU 4
-        |root_function_print___VAR_a4: EQU 5
-        |root_function_print___VAR_d: EQU 6
-        |root_function_main___VAR_RETURN_HI: EQU 7
-        |root_function_main___VAR_RETURN_LO: EQU 8
-        |root_function_main___VAR_arg1: EQU 9
-        |root_function_main___VAR_arg2: EQU 10
-        |root_function_main___VAR_blkExprs2: EQU 11
+      """root_function_print___VAR_RETURN_HI: BYTES [0]
+        |root_function_print___VAR_RETURN_LO: BYTES [0]
+        |root_function_print___VAR_a1: BYTES [0]
+        |root_function_print___VAR_a2: BYTES [0]
+        |root_function_print___VAR_a3: BYTES [0]
+        |root_function_print___VAR_a4: BYTES [0]
+        |root_function_print___VAR_d: BYTES [0]
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_arg1: BYTES [0]
+        |root_function_main___VAR_arg2: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |root_function_print___LABEL_START:
@@ -504,26 +504,26 @@ class SpamCCTest extends Matchers {
         |[:root_function_main___VAR_arg1] = 65
         |[:root_function_main___VAR_arg2] = 1
         |REGA = [:root_function_main___VAR_arg1]
-        |[:root_function_main___VAR_blkExprs2] = REGA
-        |REGA = [:root_function_main___VAR_blkExprs2]
+        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_print___VAR_a1] = REGA
         |REGA = [:root_function_main___VAR_arg2]
-        |[:root_function_main___VAR_blkExprs2] = REGA
+        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
         |REGA = [:root_function_main___VAR_arg1]
-        |REGC = [:root_function_main___VAR_blkExprs2]
-        |[:root_function_main___VAR_blkExprs2] = REGC + REGA
-        |REGA = [:root_function_main___VAR_blkExprs2]
+        |REGC = [:root_function_main___VAR_compoundBlkExpr2]
+        |[:root_function_main___VAR_compoundBlkExpr2] = REGC + REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_print___VAR_a2] = REGA
         |REGA = 63
-        |[:root_function_main___VAR_blkExprs2] = REGA
-        |REGA = [:root_function_main___VAR_blkExprs2]
+        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_print___VAR_a3] = REGA
         |REGA = [:root_function_main___VAR_arg1]
-        |[:root_function_main___VAR_blkExprs2] = REGA
+        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
         |REGA = 4
-        |REGC = [:root_function_main___VAR_blkExprs2]
-        |[:root_function_main___VAR_blkExprs2] = REGC + REGA
-        |REGA = [:root_function_main___VAR_blkExprs2]
+        |REGC = [:root_function_main___VAR_compoundBlkExpr2]
+        |[:root_function_main___VAR_compoundBlkExpr2] = REGC + REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_print___VAR_a4] = REGA
         |[:root_function_print___VAR_RETURN_HI] = < :root_function_main___LABEL_RETURN_9
         |[:root_function_print___VAR_RETURN_LO] = > :root_function_main___LABEL_RETURN_9
@@ -574,17 +574,17 @@ class SpamCCTest extends Matchers {
     })
 
     val expected = split(
-      """root_function_depth2___VAR_RETURN_HI: EQU 0
-        |root_function_depth2___VAR_RETURN_LO: EQU 1
-        |root_function_depth2___VAR_b1: EQU 2
-        |root_function_depth1___VAR_RETURN_HI: EQU 3
-        |root_function_depth1___VAR_RETURN_LO: EQU 4
-        |root_function_depth1___VAR_a1: EQU 5
-        |root_function_depth1___VAR_blkExprs2: EQU 6
-        |root_function_main___VAR_RETURN_HI: EQU 7
-        |root_function_main___VAR_RETURN_LO: EQU 8
-        |root_function_main___VAR_arg1: EQU 9
-        |root_function_main___VAR_blkExprs2: EQU 10
+      """root_function_depth2___VAR_RETURN_HI: BYTES [0]
+        |root_function_depth2___VAR_RETURN_LO: BYTES [0]
+        |root_function_depth2___VAR_b1: BYTES [0]
+        |root_function_depth1___VAR_RETURN_HI: BYTES [0]
+        |root_function_depth1___VAR_RETURN_LO: BYTES [0]
+        |root_function_depth1___VAR_a1: BYTES [0]
+        |root_function_depth1___VAR_compoundBlkExpr2: BYTES [0]
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_arg1: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |root_function_depth2___LABEL_START:
@@ -595,8 +595,8 @@ class SpamCCTest extends Matchers {
         |PC = [:root_function_depth2___VAR_RETURN_LO]
         |root_function_depth1___LABEL_START:
         |REGA = [:root_function_depth1___VAR_a1]
-        |[:root_function_depth1___VAR_blkExprs2] = REGA
-        |REGA = [:root_function_depth1___VAR_blkExprs2]
+        |[:root_function_depth1___VAR_compoundBlkExpr2] = REGA
+        |REGA = [:root_function_depth1___VAR_compoundBlkExpr2]
         |[:root_function_depth2___VAR_b1] = REGA
         |[:root_function_depth2___VAR_RETURN_HI] = < :root_function_depth1___LABEL_RETURN_1
         |[:root_function_depth2___VAR_RETURN_LO] = > :root_function_depth1___LABEL_RETURN_1
@@ -611,8 +611,93 @@ class SpamCCTest extends Matchers {
         |root_function_main___LABEL_START:
         |[:root_function_main___VAR_arg1] = 65
         |REGA = [:root_function_main___VAR_arg1]
-        |[:root_function_main___VAR_blkExprs2] = REGA
-        |REGA = [:root_function_main___VAR_blkExprs2]
+        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
+        |[:root_function_depth1___VAR_a1] = REGA
+        |[:root_function_depth1___VAR_RETURN_HI] = < :root_function_main___LABEL_RETURN_2
+        |[:root_function_depth1___VAR_RETURN_LO] = > :root_function_main___LABEL_RETURN_2
+        |PCHITMP = < :root_function_depth1___LABEL_START
+        |PC = > :root_function_depth1___LABEL_START
+        |root_function_main___LABEL_RETURN_2:
+        |REGA = [:root_function_depth1___VAR_a1]
+        |[:root_function_main___VAR_arg1] = REGA
+        |root_function_main_putcharN_arg1____LABEL_wait_3:
+        |PCHITMP = <:root_function_main_putcharN_arg1____LABEL_transmit_4
+        |PC = >:root_function_main_putcharN_arg1____LABEL_transmit_4 _DO
+        |PCHITMP = <:root_function_main_putcharN_arg1____LABEL_wait_3
+        |PC = <:root_function_main_putcharN_arg1____LABEL_wait_3
+        |root_function_main_putcharN_arg1____LABEL_transmit_4:
+        |UART = [:root_function_main___VAR_arg1]
+        |PCHITMP = <:root_end
+        |PC = >:root_end
+        |root_end:
+        |END""".stripMargin)
+
+    assertSame(expected, actual)
+  }
+
+  @Test
+  def aStringIteration(): Unit = {
+
+    val lines =
+      """
+        |fun main() {
+        | var string = "ABC\\0";
+        | var ac = string[0];
+        | var b = 1;
+        | var bc = string[1];
+        | putchar(ac)
+        | putchar(bc)
+        |}
+        |""".stripMargin
+//    | putchar(string[2])
+
+    val actual: List[String] = compile(lines, quiet = true, outputCheck = str => {
+      checkTransmitted(str, 'A')
+      checkTransmitted(str, 'B')
+      checkTransmitted(str, 'C')
+    })
+
+    val expected = split(
+      """root_function_depth2___VAR_RETURN_HI: BYTES [0]
+        |root_function_depth2___VAR_RETURN_LO: BYTES [0]
+        |root_function_depth2___VAR_b1: BYTES [0]
+        |root_function_depth1___VAR_RETURN_HI: BYTES [0]
+        |root_function_depth1___VAR_RETURN_LO: BYTES [0]
+        |root_function_depth1___VAR_a1: BYTES [0]
+        |root_function_depth1___VAR_compoundBlkExpr2: BYTES [0]
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_arg1: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
+        |PCHITMP = < :ROOT________main_start
+        |PC = > :ROOT________main_start
+        |root_function_depth2___LABEL_START:
+        |REGA = [:root_function_depth2___VAR_b1]
+        |REGA = REGA + 1
+        |[:root_function_depth2___VAR_b1] = REGA
+        |PCHITMP = [:root_function_depth2___VAR_RETURN_HI]
+        |PC = [:root_function_depth2___VAR_RETURN_LO]
+        |root_function_depth1___LABEL_START:
+        |REGA = [:root_function_depth1___VAR_a1]
+        |[:root_function_depth1___VAR_compoundBlkExpr2] = REGA
+        |REGA = [:root_function_depth1___VAR_compoundBlkExpr2]
+        |[:root_function_depth2___VAR_b1] = REGA
+        |[:root_function_depth2___VAR_RETURN_HI] = < :root_function_depth1___LABEL_RETURN_1
+        |[:root_function_depth2___VAR_RETURN_LO] = > :root_function_depth1___LABEL_RETURN_1
+        |PCHITMP = < :root_function_depth2___LABEL_START
+        |PC = > :root_function_depth2___LABEL_START
+        |root_function_depth1___LABEL_RETURN_1:
+        |REGA = [:root_function_depth2___VAR_b1]
+        |[:root_function_depth1___VAR_a1] = REGA
+        |PCHITMP = [:root_function_depth1___VAR_RETURN_HI]
+        |PC = [:root_function_depth1___VAR_RETURN_LO]
+        |ROOT________main_start:
+        |root_function_main___LABEL_START:
+        |[:root_function_main___VAR_arg1] = 65
+        |REGA = [:root_function_main___VAR_arg1]
+        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_depth1___VAR_a1] = REGA
         |[:root_function_depth1___VAR_RETURN_HI] = < :root_function_main___LABEL_RETURN_2
         |[:root_function_depth1___VAR_RETURN_LO] = > :root_function_main___LABEL_RETURN_2
@@ -643,7 +728,7 @@ class SpamCCTest extends Matchers {
     }
   }
 
-  private def compile(linesRaw: String, quiet: Boolean = true, outputCheck: List[String] => Unit = _ => {}): List[String] = {
+  private def compile(linesRaw: String, verbose: Boolean = false, quiet: Boolean = true, outputCheck: List[String] => Unit = _ => {}): List[String] = {
     val scc = new SpamCC
 
     val lines = "program {\n" + linesRaw + "\n}"
@@ -661,6 +746,7 @@ class SpamCCTest extends Matchers {
     val IsEqu = "^\\s*[a-zA-Z0-9_]+:\\s*EQU.*$".r
     val IsLabel = "^\\s*[a-zA-Z0-9_]+:\\s*$".r
     val IsComment = "^\\s*;.*$".r
+    val IsString = """^\s*[a-zA-Z0-9_]+:\s*STR\s*"[^"]*"\s*$""".r
 
     actual.foreach { l =>
       if (IsComment.matches(l)) {
@@ -671,6 +757,15 @@ class SpamCCTest extends Matchers {
       }
       else if (IsLabel.matches(l)) {
         println(s"${"".formatted("%5s")}  $l")
+      } else if (IsString.matches(l)) {
+        val withoutQuotes = l.replaceAll("""^[^"]+"""","").replaceAll(""""[^"]*$""","")
+        val lstr = org.apache.commons.text.StringEscapeUtils.unescapeJava(withoutQuotes)
+
+        val bytes = lstr.getBytes("UTF-8").toSeq
+
+        println(s"${pc.formatted("%5d")}  $l")
+        pc += bytes.length
+
       } else {
         println(s"${pc.formatted("%5d")}  $l")
         pc += 1
@@ -690,7 +785,7 @@ class SpamCCTest extends Matchers {
     println("WRITING ROM TO :\n" + tmpFileRom)
     writeFile(roms, tmpFileRom)
 
-    exec(tmpFileRom, outputCheck)
+    exec(tmpFileRom, verbose, outputCheck)
 
     print("ASM RAN OK\n" + filtered.map(_.stripLeading()).mkString("\n"))
     filtered
@@ -709,7 +804,7 @@ class SpamCCTest extends Matchers {
     pw.close()
   }
 
-  def exec(romsPath: File, outputCheck: List[String] => Unit): Unit = {
+  def exec(romsPath: File, verbose: Boolean, outputCheck: List[String] => Unit): Unit = {
     import scala.language.postfixOps
 
     import scala.sys.process._
@@ -727,11 +822,11 @@ class SpamCCTest extends Matchers {
       fout = output => {
         lines.append(output)
         if (output.contains("SUCCESS - AT EXPECTED END OF PROGRAM")) success.set(true)
-        println("\t   \t: " + output)
+        if (verbose) println("\t   \t: " + output)
       },
       ferr = output => {
         lines.append(output)
-        println("\tERR\t: " + output)
+        if (verbose) println("\tERR\t: " + output)
       }
     )
 
