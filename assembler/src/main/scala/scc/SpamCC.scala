@@ -63,7 +63,7 @@ class SpamCC extends JavaTokenParsers {
   private var varLocn = -1
 
   //  val labels = mutable.TreeMap.empty[String, Int]
-  private val varLocations = mutable.TreeMap.empty[String, (String, Int)]
+  private val variables = mutable.TreeMap.empty[String, List[Byte]]
 
   def compile(code: String): List[String] = {
 
@@ -370,7 +370,7 @@ class SpamCC extends JavaTokenParsers {
     case target ~ _ ~ v =>
       new Block("statementVarEqString", s"$target = $v") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val labelTarget = parent.assignVarLabel(target, v)
+          parent.assignVarLabel(target, v.getBytes("UTF-8").toList)
           //
           //          val stmts: List[String] = List(
           //            s"""[:$labelTarget] = $v"""
@@ -935,8 +935,26 @@ class SpamCC extends JavaTokenParsers {
       val newReg = (functionScope, newFunction)
       functions.append(newReg)
     }
+//
+//    def assignVarLabel(name: String): String = {
+//      val label = lookupVarLabel(name)
+//      label.getOrElse {
+//
+//        val localName = toVarPath(name)
+//
+//        // need a separate "var a" vs "let a" if want to distinguish definition from update!!
+//        //        vars.get(locaName).map { existing =>
+//        //          sys.error(s"scc error: $name is already defined as $existing")
+//        //        }
+//
+//        varLocn += 1
+//
+//        varLocations.getOrElseUpdate(localName, varLocn)
+//        localName
+//      }
+//    }
 
-    def assignVarLabel(name: String): String = {
+    def assignVarLabel(name: String, data: List[Byte]=List(0)): String = {
       val label = lookupVarLabel(name)
       label.getOrElse {
 
@@ -947,46 +965,22 @@ class SpamCC extends JavaTokenParsers {
         //          sys.error(s"scc error: $name is already defined as $existing")
         //        }
 
-        def upd = {
-          varLocn += 1
-          (localName, varLocn)
-        }
+        varLocn += 1
 
-        varLocations.getOrElseUpdate(localName, upd)._1
-      }
-    }
-
-    def assignVarLabel(name: String, str: String): String = {
-      val label = lookupVarLabel(name)
-      label.getOrElse {
-
-        val localName = toVarPath(name)
-
-        // need a separate "var a" vs "let a" if want to distinguish definition from update!!
-        //        vars.get(locaName).map { existing =>
-        //          sys.error(s"scc error: $name is already defined as $existing")
-        //        }
-
-        def upd = {
-          varLocn += 1
-          (localName, varLocn)
-        }
-
-        varLocations.getOrElseUpdate(localName, upd)._1
+        variables.getOrElseUpdate(localName, data)
+        localName
       }
     }
 
     def lookupVarLabel(name: String): Option[String] = {
       val fqn1 = toVarPath(name)
-      val maybeTuple: Option[(String, Int)] = varLocations.get(fqn1)
-      val labelAndPos = maybeTuple.map(si => si._1).orElse {
+      if (variables.contains(fqn1)) Some(fqn1)
+      else {
         if (parent != null)
           parent.lookupVarLabel(name)
         else
           None
       }
-
-      labelAndPos
     }
 
     def getVarLabel(name: String): String = {
@@ -1009,22 +1003,10 @@ class SpamCC extends JavaTokenParsers {
         }
       }
 
-      val varlist = varLocations.toList.sortBy(_._2._2).map {
+      val varlist = variables.toList.sortBy(_._1).map {
         x =>
-          s"${
-            x._1
-          }: BYTES [0]"
+          s"${x._1}: BYTES [${x._2.map( _.toInt ).mkString(", ") }]"
       }
-
-      //
-      //      val varlist = vars.toList.sortBy(_._2._2).map {
-      //        x =>
-      //          s"${
-      //            x._1
-      //          }: EQU ${
-      //            x._2._2
-      //          }"
-      //      }
 
       val jumpToMain = split(
         s"""

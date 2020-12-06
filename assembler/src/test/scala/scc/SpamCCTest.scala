@@ -213,12 +213,13 @@ class SpamCCTest extends Matchers {
     })
 
     val expected = split(
-      """root_function_main___VAR_RETURN_HI: BYTES [0]
+      """
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
         |root_function_main___VAR_RETURN_LO: BYTES [0]
         |root_function_main___VAR_a: BYTES [0]
+        |root_function_main___VAR_b: BYTES [0]
         |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
         |root_function_main___VAR_compoundBlkExpr3: BYTES [0]
-        |root_function_main___VAR_b: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -246,7 +247,8 @@ class SpamCCTest extends Matchers {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
-        |END""".stripMargin)
+        |END
+        |""".stripMargin)
 
     assertSame(expected, actual)
   }
@@ -451,18 +453,18 @@ class SpamCCTest extends Matchers {
     })
 
     val expected = split(
-      """root_function_print___VAR_RETURN_HI: BYTES [0]
+      """root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_arg1: BYTES [0]
+        |root_function_main___VAR_arg2: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
+        |root_function_print___VAR_RETURN_HI: BYTES [0]
         |root_function_print___VAR_RETURN_LO: BYTES [0]
         |root_function_print___VAR_a1: BYTES [0]
         |root_function_print___VAR_a2: BYTES [0]
         |root_function_print___VAR_a3: BYTES [0]
         |root_function_print___VAR_a4: BYTES [0]
         |root_function_print___VAR_d: BYTES [0]
-        |root_function_main___VAR_RETURN_HI: BYTES [0]
-        |root_function_main___VAR_RETURN_LO: BYTES [0]
-        |root_function_main___VAR_arg1: BYTES [0]
-        |root_function_main___VAR_arg2: BYTES [0]
-        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |root_function_print___LABEL_START:
@@ -574,13 +576,13 @@ class SpamCCTest extends Matchers {
     })
 
     val expected = split(
-      """root_function_depth2___VAR_RETURN_HI: BYTES [0]
-        |root_function_depth2___VAR_RETURN_LO: BYTES [0]
-        |root_function_depth2___VAR_b1: BYTES [0]
-        |root_function_depth1___VAR_RETURN_HI: BYTES [0]
+      """root_function_depth1___VAR_RETURN_HI: BYTES [0]
         |root_function_depth1___VAR_RETURN_LO: BYTES [0]
         |root_function_depth1___VAR_a1: BYTES [0]
         |root_function_depth1___VAR_compoundBlkExpr2: BYTES [0]
+        |root_function_depth2___VAR_RETURN_HI: BYTES [0]
+        |root_function_depth2___VAR_RETURN_LO: BYTES [0]
+        |root_function_depth2___VAR_b1: BYTES [0]
         |root_function_main___VAR_RETURN_HI: BYTES [0]
         |root_function_main___VAR_RETURN_LO: BYTES [0]
         |root_function_main___VAR_arg1: BYTES [0]
@@ -642,77 +644,74 @@ class SpamCCTest extends Matchers {
     val lines =
       """
         |fun main() {
-        | var string = "ABC\\0";
+        | // define string
+        | var string = "ABC\0";
+        | // index by literal
         | var ac = string[0];
+        | // index by variable
         | var b = 1;
-        | var bc = string[1];
+        | var bc = string[b];
+        | // print values so we can test correct values selected
         | putchar(ac)
         | putchar(bc)
         |}
         |""".stripMargin
 //    | putchar(string[2])
 
-    val actual: List[String] = compile(lines, quiet = true, outputCheck = str => {
+    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
       checkTransmitted(str, 'A')
       checkTransmitted(str, 'B')
-      checkTransmitted(str, 'C')
+//      checkTransmitted(str, 'C')
     })
 
     val expected = split(
-      """root_function_depth2___VAR_RETURN_HI: BYTES [0]
-        |root_function_depth2___VAR_RETURN_LO: BYTES [0]
-        |root_function_depth2___VAR_b1: BYTES [0]
-        |root_function_depth1___VAR_RETURN_HI: BYTES [0]
-        |root_function_depth1___VAR_RETURN_LO: BYTES [0]
-        |root_function_depth1___VAR_a1: BYTES [0]
-        |root_function_depth1___VAR_compoundBlkExpr2: BYTES [0]
-        |root_function_main___VAR_RETURN_HI: BYTES [0]
+      """root_function_main___VAR_RETURN_HI: BYTES [0]
         |root_function_main___VAR_RETURN_LO: BYTES [0]
-        |root_function_main___VAR_arg1: BYTES [0]
+        |root_function_main___VAR_ac: BYTES [0]
+        |root_function_main___VAR_b: BYTES [0]
+        |root_function_main___VAR_bc: BYTES [0]
         |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr4: BYTES [0]
+        |root_function_main___VAR_string: BYTES [65, 66, 67, 0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
-        |root_function_depth2___LABEL_START:
-        |REGA = [:root_function_depth2___VAR_b1]
-        |REGA = REGA + 1
-        |[:root_function_depth2___VAR_b1] = REGA
-        |PCHITMP = [:root_function_depth2___VAR_RETURN_HI]
-        |PC = [:root_function_depth2___VAR_RETURN_LO]
-        |root_function_depth1___LABEL_START:
-        |REGA = [:root_function_depth1___VAR_a1]
-        |[:root_function_depth1___VAR_compoundBlkExpr2] = REGA
-        |REGA = [:root_function_depth1___VAR_compoundBlkExpr2]
-        |[:root_function_depth2___VAR_b1] = REGA
-        |[:root_function_depth2___VAR_RETURN_HI] = < :root_function_depth1___LABEL_RETURN_1
-        |[:root_function_depth2___VAR_RETURN_LO] = > :root_function_depth1___LABEL_RETURN_1
-        |PCHITMP = < :root_function_depth2___LABEL_START
-        |PC = > :root_function_depth2___LABEL_START
-        |root_function_depth1___LABEL_RETURN_1:
-        |REGA = [:root_function_depth2___VAR_b1]
-        |[:root_function_depth1___VAR_a1] = REGA
-        |PCHITMP = [:root_function_depth1___VAR_RETURN_HI]
-        |PC = [:root_function_depth1___VAR_RETURN_LO]
         |ROOT________main_start:
         |root_function_main___LABEL_START:
-        |[:root_function_main___VAR_arg1] = 65
-        |REGA = [:root_function_main___VAR_arg1]
+        |REGA = 0
+        |[:root_function_main___VAR_compoundBlkExpr4] = REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr4]
+        |MARLO = REGA + (>:root_function_main___VAR_string) _S
+        |MARHI = <:root_function_main___VAR_string
+        |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
+        |REGA = RAM
         |[:root_function_main___VAR_compoundBlkExpr2] = REGA
         |REGA = [:root_function_main___VAR_compoundBlkExpr2]
-        |[:root_function_depth1___VAR_a1] = REGA
-        |[:root_function_depth1___VAR_RETURN_HI] = < :root_function_main___LABEL_RETURN_2
-        |[:root_function_depth1___VAR_RETURN_LO] = > :root_function_main___LABEL_RETURN_2
-        |PCHITMP = < :root_function_depth1___LABEL_START
-        |PC = > :root_function_depth1___LABEL_START
-        |root_function_main___LABEL_RETURN_2:
-        |REGA = [:root_function_depth1___VAR_a1]
-        |[:root_function_main___VAR_arg1] = REGA
-        |root_function_main_putcharN_arg1____LABEL_wait_3:
-        |PCHITMP = <:root_function_main_putcharN_arg1____LABEL_transmit_4
-        |PC = >:root_function_main_putcharN_arg1____LABEL_transmit_4 _DO
-        |PCHITMP = <:root_function_main_putcharN_arg1____LABEL_wait_3
-        |PC = <:root_function_main_putcharN_arg1____LABEL_wait_3
-        |root_function_main_putcharN_arg1____LABEL_transmit_4:
-        |UART = [:root_function_main___VAR_arg1]
+        |[:root_function_main___VAR_ac] = REGA
+        |[:root_function_main___VAR_b] = 1
+        |REGA = [:root_function_main___VAR_b]
+        |[:root_function_main___VAR_compoundBlkExpr4] = REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr4]
+        |MARLO = REGA + (>:root_function_main___VAR_string) _S
+        |MARHI = <:root_function_main___VAR_string
+        |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
+        |REGA = RAM
+        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
+        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
+        |[:root_function_main___VAR_bc] = REGA
+        |root_function_main_putcharN_ac____LABEL_wait_1:
+        |PCHITMP = <:root_function_main_putcharN_ac____LABEL_transmit_2
+        |PC = >:root_function_main_putcharN_ac____LABEL_transmit_2 _DO
+        |PCHITMP = <:root_function_main_putcharN_ac____LABEL_wait_1
+        |PC = <:root_function_main_putcharN_ac____LABEL_wait_1
+        |root_function_main_putcharN_ac____LABEL_transmit_2:
+        |UART = [:root_function_main___VAR_ac]
+        |root_function_main_putcharN_bc____LABEL_wait_3:
+        |PCHITMP = <:root_function_main_putcharN_bc____LABEL_transmit_4
+        |PC = >:root_function_main_putcharN_bc____LABEL_transmit_4 _DO
+        |PCHITMP = <:root_function_main_putcharN_bc____LABEL_wait_3
+        |PC = <:root_function_main_putcharN_bc____LABEL_wait_3
+        |root_function_main_putcharN_bc____LABEL_transmit_4:
+        |UART = [:root_function_main___VAR_bc]
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
