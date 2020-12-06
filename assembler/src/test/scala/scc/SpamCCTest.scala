@@ -213,8 +213,7 @@ class SpamCCTest extends Matchers {
     })
 
     val expected = split(
-      """
-        |root_function_main___VAR_RETURN_HI: BYTES [0]
+      """root_function_main___VAR_RETURN_HI: BYTES [0]
         |root_function_main___VAR_RETURN_LO: BYTES [0]
         |root_function_main___VAR_a: BYTES [0]
         |root_function_main___VAR_b: BYTES [0]
@@ -237,18 +236,17 @@ class SpamCCTest extends Matchers {
         |[:root_function_main___VAR_compoundBlkExpr2] = REGC + REGA
         |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_main___VAR_b] = REGA
-        |root_function_main_putcharN_b____LABEL_wait_1:
-        |PCHITMP = <:root_function_main_putcharN_b____LABEL_transmit_2
-        |PC = >:root_function_main_putcharN_b____LABEL_transmit_2 _DO
-        |PCHITMP = <:root_function_main_putcharN_b____LABEL_wait_1
-        |PC = <:root_function_main_putcharN_b____LABEL_wait_1
-        |root_function_main_putcharN_b____LABEL_transmit_2:
+        |root_function_main_putcharVar_b____LABEL_wait_1:
+        |PCHITMP = <:root_function_main_putcharVar_b____LABEL_transmit_2
+        |PC = >:root_function_main_putcharVar_b____LABEL_transmit_2 _DO
+        |PCHITMP = <:root_function_main_putcharVar_b____LABEL_wait_1
+        |PC = <:root_function_main_putcharVar_b____LABEL_wait_1
+        |root_function_main_putcharVar_b____LABEL_transmit_2:
         |UART = [:root_function_main___VAR_b]
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
-        |END
-        |""".stripMargin)
+        |END""".stripMargin)
 
     assertSame(expected, actual)
   }
@@ -270,26 +268,25 @@ class SpamCCTest extends Matchers {
     })
 
     val expected = split(
-      """
-        |root_function_main___VAR_RETURN_HI: BYTES [0]
+      """root_function_main___VAR_RETURN_HI: BYTES [0]
         |root_function_main___VAR_RETURN_LO: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
         |root_function_main___LABEL_START:
-        |root_function_main_putcharI___LABEL_wait_1:
-        |PCHITMP = <:root_function_main_putcharI___LABEL_transmit_2
-        |PC = >:root_function_main_putcharI___LABEL_transmit_2 _DO
-        |PCHITMP = <:root_function_main_putcharI___LABEL_wait_1
-        |PC = <:root_function_main_putcharI___LABEL_wait_1
-        |root_function_main_putcharI___LABEL_transmit_2:
+        |root_function_main_putcharI_65____LABEL_wait_1:
+        |PCHITMP = <:root_function_main_putcharI_65____LABEL_transmit_2
+        |PC = >:root_function_main_putcharI_65____LABEL_transmit_2 _DO
+        |PCHITMP = <:root_function_main_putcharI_65____LABEL_wait_1
+        |PC = <:root_function_main_putcharI_65____LABEL_wait_1
+        |root_function_main_putcharI_65____LABEL_transmit_2:
         |UART = 65
-        |root_function_main_putcharI___LABEL_wait_3:
-        |PCHITMP = <:root_function_main_putcharI___LABEL_transmit_4
-        |PC = >:root_function_main_putcharI___LABEL_transmit_4 _DO
-        |PCHITMP = <:root_function_main_putcharI___LABEL_wait_3
-        |PC = <:root_function_main_putcharI___LABEL_wait_3
-        |root_function_main_putcharI___LABEL_transmit_4:
+        |root_function_main_putcharI_66____LABEL_wait_3:
+        |PCHITMP = <:root_function_main_putcharI_66____LABEL_transmit_4
+        |PC = >:root_function_main_putcharI_66____LABEL_transmit_4 _DO
+        |PCHITMP = <:root_function_main_putcharI_66____LABEL_wait_3
+        |PC = <:root_function_main_putcharI_66____LABEL_wait_3
+        |root_function_main_putcharI_66____LABEL_transmit_4:
         |UART = 66
         |PCHITMP = <:root_end
         |PC = >:root_end
@@ -336,12 +333,12 @@ class SpamCCTest extends Matchers {
         |REGA = [:root_function_main___VAR_a]
         |REGA = REGA - 1
         |[:root_function_main___VAR_a] = REGA
-        |root_function_main_whileCond1_putcharN_a____LABEL_wait_2:
-        |PCHITMP = <:root_function_main_whileCond1_putcharN_a____LABEL_transmit_3
-        |PC = >:root_function_main_whileCond1_putcharN_a____LABEL_transmit_3 _DO
-        |PCHITMP = <:root_function_main_whileCond1_putcharN_a____LABEL_wait_2
-        |PC = <:root_function_main_whileCond1_putcharN_a____LABEL_wait_2
-        |root_function_main_whileCond1_putcharN_a____LABEL_transmit_3:
+        |root_function_main_whileCond1_putcharVar_a____LABEL_wait_2:
+        |PCHITMP = <:root_function_main_whileCond1_putcharVar_a____LABEL_transmit_3
+        |PC = >:root_function_main_whileCond1_putcharVar_a____LABEL_transmit_3 _DO
+        |PCHITMP = <:root_function_main_whileCond1_putcharVar_a____LABEL_wait_2
+        |PC = <:root_function_main_whileCond1_putcharVar_a____LABEL_wait_2
+        |root_function_main_whileCond1_putcharVar_a____LABEL_transmit_3:
         |UART = [:root_function_main___VAR_a]
         |PCHITMP = <:root_function_main_whileCond1___LABEL_CHECK
         |PC = >:root_function_main_whileCond1___LABEL_CHECK
@@ -470,33 +467,33 @@ class SpamCCTest extends Matchers {
         |root_function_print___LABEL_START:
         |REGA = [:root_function_print___VAR_a1]
         |[:root_function_print___VAR_d] = REGA
-        |root_function_print_putcharN_d____LABEL_wait_1:
-        |PCHITMP = <:root_function_print_putcharN_d____LABEL_transmit_2
-        |PC = >:root_function_print_putcharN_d____LABEL_transmit_2 _DO
-        |PCHITMP = <:root_function_print_putcharN_d____LABEL_wait_1
-        |PC = <:root_function_print_putcharN_d____LABEL_wait_1
-        |root_function_print_putcharN_d____LABEL_transmit_2:
+        |root_function_print_putcharVar_d____LABEL_wait_1:
+        |PCHITMP = <:root_function_print_putcharVar_d____LABEL_transmit_2
+        |PC = >:root_function_print_putcharVar_d____LABEL_transmit_2 _DO
+        |PCHITMP = <:root_function_print_putcharVar_d____LABEL_wait_1
+        |PC = <:root_function_print_putcharVar_d____LABEL_wait_1
+        |root_function_print_putcharVar_d____LABEL_transmit_2:
         |UART = [:root_function_print___VAR_d]
-        |root_function_print_putcharN_a2____LABEL_wait_3:
-        |PCHITMP = <:root_function_print_putcharN_a2____LABEL_transmit_4
-        |PC = >:root_function_print_putcharN_a2____LABEL_transmit_4 _DO
-        |PCHITMP = <:root_function_print_putcharN_a2____LABEL_wait_3
-        |PC = <:root_function_print_putcharN_a2____LABEL_wait_3
-        |root_function_print_putcharN_a2____LABEL_transmit_4:
+        |root_function_print_putcharVar_a2____LABEL_wait_3:
+        |PCHITMP = <:root_function_print_putcharVar_a2____LABEL_transmit_4
+        |PC = >:root_function_print_putcharVar_a2____LABEL_transmit_4 _DO
+        |PCHITMP = <:root_function_print_putcharVar_a2____LABEL_wait_3
+        |PC = <:root_function_print_putcharVar_a2____LABEL_wait_3
+        |root_function_print_putcharVar_a2____LABEL_transmit_4:
         |UART = [:root_function_print___VAR_a2]
-        |root_function_print_putcharN_a3____LABEL_wait_5:
-        |PCHITMP = <:root_function_print_putcharN_a3____LABEL_transmit_6
-        |PC = >:root_function_print_putcharN_a3____LABEL_transmit_6 _DO
-        |PCHITMP = <:root_function_print_putcharN_a3____LABEL_wait_5
-        |PC = <:root_function_print_putcharN_a3____LABEL_wait_5
-        |root_function_print_putcharN_a3____LABEL_transmit_6:
+        |root_function_print_putcharVar_a3____LABEL_wait_5:
+        |PCHITMP = <:root_function_print_putcharVar_a3____LABEL_transmit_6
+        |PC = >:root_function_print_putcharVar_a3____LABEL_transmit_6 _DO
+        |PCHITMP = <:root_function_print_putcharVar_a3____LABEL_wait_5
+        |PC = <:root_function_print_putcharVar_a3____LABEL_wait_5
+        |root_function_print_putcharVar_a3____LABEL_transmit_6:
         |UART = [:root_function_print___VAR_a3]
-        |root_function_print_putcharN_a4____LABEL_wait_7:
-        |PCHITMP = <:root_function_print_putcharN_a4____LABEL_transmit_8
-        |PC = >:root_function_print_putcharN_a4____LABEL_transmit_8 _DO
-        |PCHITMP = <:root_function_print_putcharN_a4____LABEL_wait_7
-        |PC = <:root_function_print_putcharN_a4____LABEL_wait_7
-        |root_function_print_putcharN_a4____LABEL_transmit_8:
+        |root_function_print_putcharVar_a4____LABEL_wait_7:
+        |PCHITMP = <:root_function_print_putcharVar_a4____LABEL_transmit_8
+        |PC = >:root_function_print_putcharVar_a4____LABEL_transmit_8 _DO
+        |PCHITMP = <:root_function_print_putcharVar_a4____LABEL_wait_7
+        |PC = <:root_function_print_putcharVar_a4____LABEL_wait_7
+        |root_function_print_putcharVar_a4____LABEL_transmit_8:
         |UART = [:root_function_print___VAR_a4]
         |[:root_function_print___VAR_a1] = 33
         |PCHITMP = [:root_function_print___VAR_RETURN_HI]
@@ -534,12 +531,12 @@ class SpamCCTest extends Matchers {
         |root_function_main___LABEL_RETURN_9:
         |REGA = [:root_function_print___VAR_a1]
         |[:root_function_main___VAR_arg1] = REGA
-        |root_function_main_putcharN_arg1____LABEL_wait_10:
-        |PCHITMP = <:root_function_main_putcharN_arg1____LABEL_transmit_11
-        |PC = >:root_function_main_putcharN_arg1____LABEL_transmit_11 _DO
-        |PCHITMP = <:root_function_main_putcharN_arg1____LABEL_wait_10
-        |PC = <:root_function_main_putcharN_arg1____LABEL_wait_10
-        |root_function_main_putcharN_arg1____LABEL_transmit_11:
+        |root_function_main_putcharVar_arg1____LABEL_wait_10:
+        |PCHITMP = <:root_function_main_putcharVar_arg1____LABEL_transmit_11
+        |PC = >:root_function_main_putcharVar_arg1____LABEL_transmit_11 _DO
+        |PCHITMP = <:root_function_main_putcharVar_arg1____LABEL_wait_10
+        |PC = <:root_function_main_putcharVar_arg1____LABEL_wait_10
+        |root_function_main_putcharVar_arg1____LABEL_transmit_11:
         |UART = [:root_function_main___VAR_arg1]
         |PCHITMP = <:root_end
         |PC = >:root_end
@@ -623,12 +620,12 @@ class SpamCCTest extends Matchers {
         |root_function_main___LABEL_RETURN_2:
         |REGA = [:root_function_depth1___VAR_a1]
         |[:root_function_main___VAR_arg1] = REGA
-        |root_function_main_putcharN_arg1____LABEL_wait_3:
-        |PCHITMP = <:root_function_main_putcharN_arg1____LABEL_transmit_4
-        |PC = >:root_function_main_putcharN_arg1____LABEL_transmit_4 _DO
-        |PCHITMP = <:root_function_main_putcharN_arg1____LABEL_wait_3
-        |PC = <:root_function_main_putcharN_arg1____LABEL_wait_3
-        |root_function_main_putcharN_arg1____LABEL_transmit_4:
+        |root_function_main_putcharVar_arg1____LABEL_wait_3:
+        |PCHITMP = <:root_function_main_putcharVar_arg1____LABEL_transmit_4
+        |PC = >:root_function_main_putcharVar_arg1____LABEL_transmit_4 _DO
+        |PCHITMP = <:root_function_main_putcharVar_arg1____LABEL_wait_3
+        |PC = <:root_function_main_putcharVar_arg1____LABEL_wait_3
+        |root_function_main_putcharVar_arg1____LABEL_transmit_4:
         |UART = [:root_function_main___VAR_arg1]
         |PCHITMP = <:root_end
         |PC = >:root_end
@@ -645,7 +642,7 @@ class SpamCCTest extends Matchers {
       """
         |fun main() {
         | // define string
-        | var string = "ABC\0";
+        | var string = "ABCD\0";
         |
         | // index by literal
         | var ac = string[0];
@@ -655,16 +652,19 @@ class SpamCCTest extends Matchers {
         | var bc = string[b];
         |
         | // print values so we can test correct values selected
+        | var d = 3;
         | putchar(ac)
         | putchar(bc)
         | putchar(string[2])
+        | putchar(string[d])
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    val actual: List[String] = compile(lines, verbose = false, quiet = true, outputCheck = str => {
       checkTransmitted(str, 'A')
       checkTransmitted(str, 'B')
       checkTransmitted(str, 'C')
+      checkTransmitted(str, 'D')
     })
 
     val expected = split(
@@ -675,7 +675,9 @@ class SpamCCTest extends Matchers {
         |root_function_main___VAR_bc: BYTES [0]
         |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
         |root_function_main___VAR_compoundBlkExpr4: BYTES [0]
-        |root_function_main___VAR_string: BYTES [65, 66, 67, 0]
+        |root_function_main___VAR_d: BYTES [0]
+        |root_function_main___VAR_string: BYTES [65, 66, 67, 68, 0]
+        |root_function_main_putcharGeneral___VAR_compoundBlkExpr3: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -701,20 +703,49 @@ class SpamCCTest extends Matchers {
         |[:root_function_main___VAR_compoundBlkExpr2] = REGA
         |REGA = [:root_function_main___VAR_compoundBlkExpr2]
         |[:root_function_main___VAR_bc] = REGA
-        |root_function_main_putcharN_ac____LABEL_wait_1:
-        |PCHITMP = <:root_function_main_putcharN_ac____LABEL_transmit_2
-        |PC = >:root_function_main_putcharN_ac____LABEL_transmit_2 _DO
-        |PCHITMP = <:root_function_main_putcharN_ac____LABEL_wait_1
-        |PC = <:root_function_main_putcharN_ac____LABEL_wait_1
-        |root_function_main_putcharN_ac____LABEL_transmit_2:
+        |[:root_function_main___VAR_d] = 3
+        |root_function_main_putcharVar_ac____LABEL_wait_1:
+        |PCHITMP = <:root_function_main_putcharVar_ac____LABEL_transmit_2
+        |PC = >:root_function_main_putcharVar_ac____LABEL_transmit_2 _DO
+        |PCHITMP = <:root_function_main_putcharVar_ac____LABEL_wait_1
+        |PC = <:root_function_main_putcharVar_ac____LABEL_wait_1
+        |root_function_main_putcharVar_ac____LABEL_transmit_2:
         |UART = [:root_function_main___VAR_ac]
-        |root_function_main_putcharN_bc____LABEL_wait_3:
-        |PCHITMP = <:root_function_main_putcharN_bc____LABEL_transmit_4
-        |PC = >:root_function_main_putcharN_bc____LABEL_transmit_4 _DO
-        |PCHITMP = <:root_function_main_putcharN_bc____LABEL_wait_3
-        |PC = <:root_function_main_putcharN_bc____LABEL_wait_3
-        |root_function_main_putcharN_bc____LABEL_transmit_4:
+        |root_function_main_putcharVar_bc____LABEL_wait_3:
+        |PCHITMP = <:root_function_main_putcharVar_bc____LABEL_transmit_4
+        |PC = >:root_function_main_putcharVar_bc____LABEL_transmit_4 _DO
+        |PCHITMP = <:root_function_main_putcharVar_bc____LABEL_wait_3
+        |PC = <:root_function_main_putcharVar_bc____LABEL_wait_3
+        |root_function_main_putcharVar_bc____LABEL_transmit_4:
         |UART = [:root_function_main___VAR_bc]
+        |REGA = 2
+        |[:root_function_main_putcharGeneral___VAR_compoundBlkExpr3] = REGA
+        |REGA = [:root_function_main_putcharGeneral___VAR_compoundBlkExpr3]
+        |MARLO = REGA + (>:root_function_main___VAR_string) _S
+        |MARHI = <:root_function_main___VAR_string
+        |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
+        |REGA = RAM
+        |root_function_main_putcharGeneral___LABEL_wait_5:
+        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_transmit_6
+        |PC = >:root_function_main_putcharGeneral___LABEL_transmit_6 _DO
+        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_wait_5
+        |PC = <:root_function_main_putcharGeneral___LABEL_wait_5
+        |root_function_main_putcharGeneral___LABEL_transmit_6:
+        |UART = REGA
+        |REGA = [:root_function_main___VAR_d]
+        |[:root_function_main_putcharGeneral___VAR_compoundBlkExpr3] = REGA
+        |REGA = [:root_function_main_putcharGeneral___VAR_compoundBlkExpr3]
+        |MARLO = REGA + (>:root_function_main___VAR_string) _S
+        |MARHI = <:root_function_main___VAR_string
+        |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
+        |REGA = RAM
+        |root_function_main_putcharGeneral___LABEL_wait_7:
+        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_transmit_8
+        |PC = >:root_function_main_putcharGeneral___LABEL_transmit_8 _DO
+        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_wait_7
+        |PC = <:root_function_main_putcharGeneral___LABEL_wait_7
+        |root_function_main_putcharGeneral___LABEL_transmit_8:
+        |UART = REGA
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
