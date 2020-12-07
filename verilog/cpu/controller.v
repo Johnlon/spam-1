@@ -16,6 +16,8 @@
 
 `timescale 1ns/1ns
 
+`timescale 1ns/1ns
+
 module controller(
     input [15:0] pc,
     input [7:0] _flags_czonGLEN,
@@ -36,6 +38,7 @@ module controller(
     output [3:0] targ_dev,
     output _set_flags
 );
+
     logic _do_exec;
      
     rom #(.AWIDTH(16)) rom_6(._CS(1'b0), ._OE(1'b0), .A(pc));
@@ -51,6 +54,9 @@ module controller(
     wire [7:0] instruction_3 = rom_3.D;
     wire [7:0] instruction_2 = rom_2.D;
     wire [7:0] instruction_1 = rom_1.D;
+
+    wire [47:0] instruction = {rom_6.D, rom_5.D, rom_4.D, rom_3.D, rom_2.D, rom_1.D};
+
 
     // instruction decompose
     assign alu_op   = {instruction_6[7:3]};

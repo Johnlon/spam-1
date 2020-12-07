@@ -14,20 +14,20 @@ fi
 
 shift
 
-parentProcess=$PPID
-{
-    myParentProcess=$PPID
-    while [ 1 ]; do
-        if [ ! -d /proc/$parentProcess ]; then
-            echo PARENT DIED SO EXITING
-            kill -TERM $myParentProcess
-            kill -INT $myParentProcess
-            kill -9 $myParentProcess
-            exit 1
-        fi
-        sleep 1
-    done
-} &
+#parentProcess=$PPID
+#{
+#    myParentProcess=$PPID
+#    while [ 1 ]; do
+#        if [ ! -d /proc/$parentProcess ]; then
+#            echo PARENT DIED SO EXITING
+#            kill -TERM $myParentProcess
+#            kill -INT $myParentProcess
+#            kill -9 $myParentProcess
+#            exit 1
+#        fi
+#        sleep 1
+#    done
+#} &
 
 echo ================ $TEST ===============
 root=/home/john/wslapps/iverilog/iverilog/
@@ -45,6 +45,7 @@ if [ $? != 0 ] ; then
     echo ERROR exit code iverilog
     exit 1
 fi
+
 #    echo $vvp
 $vvp -N -i $rootname.vvp "$@"
 if [ $? != 0 ] ; then

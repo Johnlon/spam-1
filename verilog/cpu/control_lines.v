@@ -171,6 +171,15 @@ package control;
     end
     endfunction    
 
+    function string amode(bit amodeBit); 
+    begin
+            if (amodeBit == 1) amode = "DIR";
+            else if (amodeBit == 0) amode = "REG";
+            else amode = "???";
+    end
+    endfunction
+
+
     function string fPhase(phaseFetch, phaseExec); 
     begin
             fPhase = `DECODE_PHASES;
