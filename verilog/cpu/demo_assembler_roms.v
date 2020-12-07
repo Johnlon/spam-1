@@ -201,15 +201,15 @@ endfunction
 */
         $display("%9t", $time, " DECOMPILE ",
             " %-5d : ", pc,
-            " %1s  =  ", control::tdevname(CPU.ctrl.instruction[42:39]),
+            " %-1s = ", control::tdevname(CPU.ctrl.instruction[42:39]),
             " %1s", control::adevname(CPU.ctrl.instruction[38:36]),
-            "  %1s ",  aluopName(CPU.ctrl.instruction[47:43]),
+            "  (%1s) ",  aluopName(CPU.ctrl.instruction[47:43]),
             " %1s", control::bdevname(CPU.ctrl.instruction[35:33]),
-            "  %1s ", control::condname(CPU.ctrl.instruction[32:29]),
-            "%1s ", CPU.ctrl.instruction[28] ? " " : "S",
+            "  {%1s ", control::condname(CPU.ctrl.instruction[32:29]),
+            "%1s} ", CPU.ctrl.instruction[28] ? " " : "S",
             "  %1s ", control::amode(CPU.ctrl.instruction[24]),
-            " a:%02x:%02x ", CPU.ctrl.instruction[23:17], CPU.ctrl.instruction[16:8],
-            " i:%02x (dec %d) ", CPU.ctrl.instruction[7:0], CPU.ctrl.instruction[7:0]
+            " addr:%02x:%02x ", CPU.ctrl.instruction[23:16], CPU.ctrl.instruction[15:8],
+            " imm:%02x (dec %d) ", CPU.ctrl.instruction[7:0], CPU.ctrl.instruction[7:0]
         );
 
         $display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
@@ -321,7 +321,8 @@ endfunction
    //             " alu_op=%b(%1s)", CPU.alu_op, aluopName(CPU.alu_op)
    //         );            
    //         `DD " condition=%02d(%1s) _do_exec=%b", CPU.ctrl.condition, control::condname(CPU.ctrl.condition), CPU.ctrl._do_exec);
-            `DD " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
+            `DD " address_bus=0x%4x (%d) ", CPU.address_bus, CPU.address_bus);
+            `DD " abus=%8b(%d) bbus=%8b(%d) alu_result_bus=%8b(%d)", CPU.abus, CPU.abus, CPU.bbus, CPU.bbus, CPU.alu_result_bus, CPU.alu_result_bus);
             `DD " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU.flags_czonGLEN.Q, CPU.gated_flags_clk);
             `DD " FLAGS I/O  _flagdo=%1b _flags_di=%1b", CPU._flag_do, CPU._flag_di);
             `DD " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);

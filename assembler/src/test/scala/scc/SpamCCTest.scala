@@ -45,8 +45,11 @@ class SpamCCTest {
 
     val expected = split(
       """
+        |root_function_main___VAR_RETURN_HI: EQU   0
         |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: EQU   2
         |root_function_main___VAR_a: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
@@ -56,8 +59,7 @@ class SpamCCTest {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
-        |END
-        """.stripMargin)
+        |END""".stripMargin)
 
     assertSame(expected, actual)
   }
@@ -77,9 +79,13 @@ class SpamCCTest {
 
     val expected = split(
       """
+        |root_function_main___VAR_RETURN_HI: EQU   0
         |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: EQU   2
         |root_function_main___VAR_a: BYTES [0]
+        |root_function_main___VAR_b: EQU   3
         |root_function_main___VAR_b: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
@@ -90,8 +96,7 @@ class SpamCCTest {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
-        |END
-        |""".stripMargin)
+        |END""".stripMargin)
 
     assertSame(expected, actual)
   }
@@ -115,14 +120,21 @@ class SpamCCTest {
     val actual: List[String] = compile(lines)
 
     val expected = split(
-      """
+      """root_function_main___VAR_RETURN_HI: EQU   0
         |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: EQU   2
         |root_function_main___VAR_a: BYTES [0]
+        |root_function_main___VAR_b: EQU   3
         |root_function_main___VAR_b: BYTES [0]
+        |root_function_other___VAR_RETURN_HI: EQU   4
         |root_function_other___VAR_RETURN_HI: BYTES [0]
+        |root_function_other___VAR_RETURN_LO: EQU   5
         |root_function_other___VAR_RETURN_LO: BYTES [0]
+        |root_function_other___VAR_a: EQU   6
         |root_function_other___VAR_a: BYTES [0]
+        |root_function_other___VAR_b: EQU   7
         |root_function_other___VAR_b: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
@@ -138,8 +150,7 @@ class SpamCCTest {
         |PCHITMP = [:root_function_other___VAR_RETURN_HI]
         |PC = [:root_function_other___VAR_RETURN_LO]
         |root_end:
-        |END
-        |""".stripMargin)
+        |END""".stripMargin)
 
     // not using Ex function as it assumes main is last function
     assertSame(expected, actual)
@@ -187,7 +198,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose= true, outputCheck = str => {
+    val actual: List[String] = compile(lines, verbose = true, outputCheck = str => {
       checkTransmitted(str, 'A')
       checkTransmitted(str, 'B')
       checkTransmitted(str, 'C')
@@ -197,16 +208,26 @@ class SpamCCTest {
     })
 
     val expected = split(
-      """root_function_main___VAR_RETURN_HI: BYTES [0]
+      """root_function_main___VAR_RETURN_HI: EQU   0
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: EQU   2
         |root_function_main___VAR_a: BYTES [0]
-        |root_function_main___VAR_at: BYTES [0]
+        |root_function_main___VAR_b: EQU   3
         |root_function_main___VAR_b: BYTES [0]
+        |root_function_main___VAR_c: EQU   4
         |root_function_main___VAR_c: BYTES [0]
-        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
-        |root_function_main___VAR_compoundBlkExpr3: BYTES [0]
+        |root_function_main___VAR_d: EQU   5
         |root_function_main___VAR_d: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr2: EQU   6
+        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr3: EQU   7
+        |root_function_main___VAR_compoundBlkExpr3: BYTES [0]
+        |root_function_main___VAR_e: EQU   8
         |root_function_main___VAR_e: BYTES [0]
+        |root_function_main___VAR_at: EQU   9
+        |root_function_main___VAR_at: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -285,8 +306,7 @@ class SpamCCTest {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
-        |END
-        |""".stripMargin)
+        |END""".stripMargin)
 
     assertSame(expected, actual)
   }
@@ -307,12 +327,18 @@ class SpamCCTest {
     })
 
     val expected = split(
-      """root_function_main___VAR_RETURN_HI: BYTES [0]
+      """root_function_main___VAR_RETURN_HI: EQU   0
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: EQU   2
         |root_function_main___VAR_a: BYTES [0]
-        |root_function_main___VAR_b: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr2: EQU   3
         |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr3: EQU   4
         |root_function_main___VAR_compoundBlkExpr3: BYTES [0]
+        |root_function_main___VAR_b: EQU   5
+        |root_function_main___VAR_b: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -367,9 +393,13 @@ class SpamCCTest {
     })
 
     val expected = split(
-      """root_function_main___VAR_RETURN_HI: BYTES [0]
+      """root_function_main___VAR_RETURN_HI: EQU   0
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_c: EQU   2
         |root_function_main___VAR_c: BYTES [0]
+        |root_function_main_putcharGeneral___VAR_compoundBlkExpr2: EQU   3
         |root_function_main_putcharGeneral___VAR_compoundBlkExpr2: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
@@ -435,8 +465,11 @@ class SpamCCTest {
     val actual: List[String] = compile(lines)
 
     val expected = split(
-      """root_function_main___VAR_RETURN_HI: BYTES [0]
+      """root_function_main___VAR_RETURN_HI: EQU   0
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: EQU   2
         |root_function_main___VAR_a: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
@@ -493,8 +526,11 @@ class SpamCCTest {
     val actual: List[String] = compile(lines)
 
     val expected = split(
-      """root_function_main___VAR_RETURN_HI: BYTES [0]
+      """root_function_main___VAR_RETURN_HI: EQU   0
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_a: EQU   2
         |root_function_main___VAR_a: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
@@ -562,7 +598,7 @@ class SpamCCTest {
         |// END  COMMAND
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, quiet = true, outputCheck = str => {
+    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
       checkTransmitted(str, 'A')
       checkTransmitted(str, 'B')
       checkTransmitted(str, '?')
@@ -571,18 +607,30 @@ class SpamCCTest {
     })
 
     val expected = split(
-      """root_function_main___VAR_RETURN_HI: BYTES [0]
-        |root_function_main___VAR_RETURN_LO: BYTES [0]
-        |root_function_main___VAR_arg1: BYTES [0]
-        |root_function_main___VAR_arg2: BYTES [0]
-        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
+      """root_function_print___VAR_RETURN_HI: EQU   0
         |root_function_print___VAR_RETURN_HI: BYTES [0]
+        |root_function_print___VAR_RETURN_LO: EQU   1
         |root_function_print___VAR_RETURN_LO: BYTES [0]
+        |root_function_print___VAR_a1: EQU   2
         |root_function_print___VAR_a1: BYTES [0]
+        |root_function_print___VAR_a2: EQU   3
         |root_function_print___VAR_a2: BYTES [0]
+        |root_function_print___VAR_a3: EQU   4
         |root_function_print___VAR_a3: BYTES [0]
+        |root_function_print___VAR_a4: EQU   5
         |root_function_print___VAR_a4: BYTES [0]
+        |root_function_print___VAR_d: EQU   6
         |root_function_print___VAR_d: BYTES [0]
+        |root_function_main___VAR_RETURN_HI: EQU   7
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   8
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_arg1: EQU   9
+        |root_function_main___VAR_arg1: BYTES [0]
+        |root_function_main___VAR_arg2: EQU   10
+        |root_function_main___VAR_arg2: BYTES [0]
+        |root_function_main___VAR_compoundBlkExpr2: EQU   11
+        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |root_function_print___LABEL_START:
@@ -690,14 +738,23 @@ class SpamCCTest {
     })
 
     val expected = split(
-      """root_function_depth1___VAR_RETURN_HI: BYTES [0]
-        |root_function_depth1___VAR_RETURN_LO: BYTES [0]
-        |root_function_depth1___VAR_a1: BYTES [0]
+      """root_function_depth2___VAR_RETURN_HI: EQU   0
         |root_function_depth2___VAR_RETURN_HI: BYTES [0]
+        |root_function_depth2___VAR_RETURN_LO: EQU   1
         |root_function_depth2___VAR_RETURN_LO: BYTES [0]
+        |root_function_depth2___VAR_b1: EQU   2
         |root_function_depth2___VAR_b1: BYTES [0]
+        |root_function_depth1___VAR_RETURN_HI: EQU   3
+        |root_function_depth1___VAR_RETURN_HI: BYTES [0]
+        |root_function_depth1___VAR_RETURN_LO: EQU   4
+        |root_function_depth1___VAR_RETURN_LO: BYTES [0]
+        |root_function_depth1___VAR_a1: EQU   5
+        |root_function_depth1___VAR_a1: BYTES [0]
+        |root_function_main___VAR_RETURN_HI: EQU   6
         |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   7
         |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_arg1: EQU   8
         |root_function_main___VAR_arg1: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
@@ -752,115 +809,115 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | var i = 10;
         |
         | // define string
         | var even = "Even\0";
         | var odd = "Odd\0";
         |
+        | // value at 16 bit var ptr becomes address of array odd
         | ref ptr = odd;
+        |
+        | var i = 10;
+        | while (i>0) {
+        |   var i = i - 1;
+        |   var c = i % 2;
+        |   if (c == 0) {
+        |       // set pointer to point at even
+        |       let ptr = even;
+        |   }
+        |   if (c != 0) {
+        |      let ptr = odd;
+        |   }
+        |   puts(ptr)
+        | }
         |}
         |""".stripMargin
 
-//    ;while (i>0) {
-//      ; ref result;
-//      if (i % 2 == 0) {
-//        let result = even;
-//      }
-//      if (i % 2 == 1) {
-//        //let result = odd;
-//      }
-//      putchar(result[0])
-//      putchar(i)
-//      //let i = i - 1;
-//    }
-//  }
-    val actual: List[String] = compile(lines, verbose = false, quiet = true, outputCheck = str => {
-      checkTransmitted(str, 'A')
-      checkTransmitted(str, 'B')
-      checkTransmitted(str, 'C')
-      checkTransmitted(str, 'D')
+    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
+      checkTransmitted(str, "OddEvenOddEvenOddEvenOddEvenOddEven")
     })
 
     val expected = split(
-      """root_function_main___VAR_RETURN_HI: BYTES [0]
+      """root_function_main___VAR_RETURN_HI: EQU   0
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
-        |root_function_main___VAR_ac: BYTES [0]
-        |root_function_main___VAR_b: BYTES [0]
-        |root_function_main___VAR_bc: BYTES [0]
-        |root_function_main___VAR_compoundBlkExpr2: BYTES [0]
-        |root_function_main___VAR_compoundBlkExpr4: BYTES [0]
-        |root_function_main___VAR_d: BYTES [0]
-        |root_function_main___VAR_string: BYTES [65, 66, 67, 68, 0]
-        |root_function_main_putcharGeneral___VAR_compoundBlkExpr3: BYTES [0]
+        |root_function_main___VAR_even: EQU   2
+        |root_function_main___VAR_even: BYTES [69, 118, 101, 110, 0]
+        |root_function_main___VAR_odd: EQU   7
+        |root_function_main___VAR_odd: BYTES [79, 100, 100, 0]
+        |root_function_main___VAR_ptr: EQU   11
+        |root_function_main___VAR_ptr: BYTES [0, 7]
+        |root_function_main___VAR_i: EQU   13
+        |root_function_main___VAR_i: BYTES [0]
+        |root_function_main_whileCond3___VAR_c: EQU   14
+        |root_function_main_whileCond3___VAR_c: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
         |root_function_main___LABEL_START:
-        |REGA = 0
-        |[:root_function_main___VAR_compoundBlkExpr4] = REGA
-        |REGA = [:root_function_main___VAR_compoundBlkExpr4]
-        |MARLO = REGA + (>:root_function_main___VAR_string) _S
-        |MARHI = <:root_function_main___VAR_string
-        |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
-        |REGA = RAM
-        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
-        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
-        |[:root_function_main___VAR_ac] = REGA
-        |[:root_function_main___VAR_b] = 1
-        |REGA = [:root_function_main___VAR_b]
-        |[:root_function_main___VAR_compoundBlkExpr4] = REGA
-        |REGA = [:root_function_main___VAR_compoundBlkExpr4]
-        |MARLO = REGA + (>:root_function_main___VAR_string) _S
-        |MARHI = <:root_function_main___VAR_string
-        |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
-        |REGA = RAM
-        |[:root_function_main___VAR_compoundBlkExpr2] = REGA
-        |REGA = [:root_function_main___VAR_compoundBlkExpr2]
-        |[:root_function_main___VAR_bc] = REGA
-        |[:root_function_main___VAR_d] = 3
-        |root_function_main_putcharVar_ac____LABEL_wait_1:
-        |PCHITMP = <:root_function_main_putcharVar_ac____LABEL_transmit_2
-        |PC = >:root_function_main_putcharVar_ac____LABEL_transmit_2 _DO
-        |PCHITMP = <:root_function_main_putcharVar_ac____LABEL_wait_1
-        |PC = <:root_function_main_putcharVar_ac____LABEL_wait_1
-        |root_function_main_putcharVar_ac____LABEL_transmit_2:
-        |UART = [:root_function_main___VAR_ac]
-        |root_function_main_putcharVar_bc____LABEL_wait_3:
-        |PCHITMP = <:root_function_main_putcharVar_bc____LABEL_transmit_4
-        |PC = >:root_function_main_putcharVar_bc____LABEL_transmit_4 _DO
-        |PCHITMP = <:root_function_main_putcharVar_bc____LABEL_wait_3
-        |PC = <:root_function_main_putcharVar_bc____LABEL_wait_3
-        |root_function_main_putcharVar_bc____LABEL_transmit_4:
-        |UART = [:root_function_main___VAR_bc]
-        |REGA = 2
-        |[:root_function_main_putcharGeneral___VAR_compoundBlkExpr3] = REGA
-        |REGA = [:root_function_main_putcharGeneral___VAR_compoundBlkExpr3]
-        |MARLO = REGA + (>:root_function_main___VAR_string) _S
-        |MARHI = <:root_function_main___VAR_string
-        |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
-        |REGA = RAM
-        |root_function_main_putcharGeneral___LABEL_wait_5:
-        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_transmit_6
-        |PC = >:root_function_main_putcharGeneral___LABEL_transmit_6 _DO
-        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_wait_5
-        |PC = <:root_function_main_putcharGeneral___LABEL_wait_5
-        |root_function_main_putcharGeneral___LABEL_transmit_6:
-        |UART = REGA
-        |REGA = [:root_function_main___VAR_d]
-        |[:root_function_main_putcharGeneral___VAR_compoundBlkExpr3] = REGA
-        |REGA = [:root_function_main_putcharGeneral___VAR_compoundBlkExpr3]
-        |MARLO = REGA + (>:root_function_main___VAR_string) _S
-        |MARHI = <:root_function_main___VAR_string
-        |MARHI = NU B_PLUS_1 <:root_function_main___VAR_string _C
-        |REGA = RAM
-        |root_function_main_putcharGeneral___LABEL_wait_7:
-        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_transmit_8
-        |PC = >:root_function_main_putcharGeneral___LABEL_transmit_8 _DO
-        |PCHITMP = <:root_function_main_putcharGeneral___LABEL_wait_7
-        |PC = <:root_function_main_putcharGeneral___LABEL_wait_7
-        |root_function_main_putcharGeneral___LABEL_transmit_8:
-        |UART = REGA
+        |[:root_function_main___VAR_i] = 10
+        |root_function_main_whileCond3___LABEL_CHECK:
+        |REGA = [:root_function_main___VAR_i]
+        |REGA = REGA PASS_A 0 _S
+        |PCHITMP = <:root_function_main_whileCond3___LABEL_BODY
+        |PC = >:root_function_main_whileCond3___LABEL_BODY _GT
+        |PCHITMP = <:root_function_main_whileCond3___LABEL_AFTER
+        |PC = >:root_function_main_whileCond3___LABEL_AFTER
+        |root_function_main_whileCond3___LABEL_BODY:
+        |REGA = [:root_function_main___VAR_i]
+        |REGA = REGA - 1
+        |[:root_function_main___VAR_i] = REGA
+        |REGA = [:root_function_main___VAR_i]
+        |REGA = REGA % 2
+        |[:root_function_main_whileCond3___VAR_c] = REGA
+        |root_function_main_whileCond3_ifCond1___LABEL_CHECK:
+        |REGA = [:root_function_main_whileCond3___VAR_c]
+        |REGA = REGA PASS_A 0 _S
+        |PCHITMP = <:root_function_main_whileCond3_ifCond1___LABEL_BODY
+        |PC = >:root_function_main_whileCond3_ifCond1___LABEL_BODY _EQ
+        |PCHITMP = <:root_function_main_whileCond3_ifCond1___LABEL_AFTER
+        |PC = >:root_function_main_whileCond3_ifCond1___LABEL_AFTER
+        |root_function_main_whileCond3_ifCond1___LABEL_BODY:
+        |REGA = <:root_function_main___VAR_even
+        |[:root_function_main___VAR_ptr] = REGA
+        |REGA = >:root_function_main___VAR_even
+        |[:root_function_main___VAR_ptr + 1] = REGA
+        |root_function_main_whileCond3_ifCond1___LABEL_AFTER:
+        |root_function_main_whileCond3_ifCond2___LABEL_CHECK:
+        |REGA = [:root_function_main_whileCond3___VAR_c]
+        |REGA = REGA PASS_A 0 _S
+        |PCHITMP = <:root_function_main_whileCond3_ifCond2___LABEL_BODY
+        |PC = >:root_function_main_whileCond3_ifCond2___LABEL_BODY _NE
+        |PCHITMP = <:root_function_main_whileCond3_ifCond2___LABEL_AFTER
+        |PC = >:root_function_main_whileCond3_ifCond2___LABEL_AFTER
+        |root_function_main_whileCond3_ifCond2___LABEL_BODY:
+        |REGA = <:root_function_main___VAR_odd
+        |[:root_function_main___VAR_ptr] = REGA
+        |REGA = >:root_function_main___VAR_odd
+        |[:root_function_main___VAR_ptr + 1] = REGA
+        |root_function_main_whileCond3_ifCond2___LABEL_AFTER:
+        |MARHI = [:root_function_main___VAR_ptr]
+        |MARLO = [:root_function_main___VAR_ptr+1]
+        |root_function_main_whileCond3_puts___LABEL_startloop_4:
+        |NOOP = RAM _S
+        |PCHITMP = <:root_function_main_whileCond3_puts___LABEL_endloop_7
+        |PC = >:root_function_main_whileCond3_puts___LABEL_endloop_7 _Z
+        |root_function_main_whileCond3_puts___LABEL_wait_5:
+        |PCHITMP = <:root_function_main_whileCond3_puts___LABEL_transmit_6
+        |PC = >:root_function_main_whileCond3_puts___LABEL_transmit_6 _DO
+        |PCHITMP = <:root_function_main_whileCond3_puts___LABEL_wait_5
+        |PC = <:root_function_main_whileCond3_puts___LABEL_wait_5
+        |root_function_main_whileCond3_puts___LABEL_transmit_6:
+        |UART = RAM
+        |MARLO = MARLO + 1 _S
+        |MARHI = MARHI + 1 _C
+        |PCHITMP = <:root_function_main_whileCond3_puts___LABEL_startloop_4
+        |PC = >:root_function_main_whileCond3_puts___LABEL_startloop_4
+        |root_function_main_whileCond3_puts___LABEL_endloop_7:
+        |PCHITMP = <:root_function_main_whileCond3___LABEL_CHECK
+        |PC = >:root_function_main_whileCond3___LABEL_CHECK
+        |root_function_main_whileCond3___LABEL_AFTER:
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
@@ -902,13 +959,20 @@ class SpamCCTest {
     })
 
     val expected = split(
-      """root_function_main___VAR_RETURN_HI: BYTES [0]
+      """root_function_main___VAR_RETURN_HI: EQU   0
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
-        |root_function_main___VAR_ac: BYTES [0]
-        |root_function_main___VAR_b: BYTES [0]
-        |root_function_main___VAR_bc: BYTES [0]
-        |root_function_main___VAR_d: BYTES [0]
+        |root_function_main___VAR_string: EQU   2
         |root_function_main___VAR_string: BYTES [65, 66, 67, 68, 0]
+        |root_function_main___VAR_ac: EQU   7
+        |root_function_main___VAR_ac: BYTES [0]
+        |root_function_main___VAR_b: EQU   8
+        |root_function_main___VAR_b: BYTES [0]
+        |root_function_main___VAR_bc: EQU   9
+        |root_function_main___VAR_bc: BYTES [0]
+        |root_function_main___VAR_d: EQU   10
+        |root_function_main___VAR_d: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -1000,11 +1064,16 @@ class SpamCCTest {
     })
 
     val expected = split(
-      """root_function_main___VAR_RETURN_HI: BYTES [0]
+      """root_function_main___VAR_RETURN_HI: EQU   0
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
-        |root_function_main___VAR_c: BYTES [0]
-        |root_function_main___VAR_idx: BYTES [0]
+        |root_function_main___VAR_string: EQU   2
         |root_function_main___VAR_string: BYTES [65, 66, 67, 68, 0]
+        |root_function_main___VAR_idx: EQU   7
+        |root_function_main___VAR_idx: BYTES [0]
+        |root_function_main___VAR_c: EQU   8
+        |root_function_main___VAR_c: BYTES [0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
@@ -1063,7 +1132,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose=true, quiet = true, outputCheck = str => {
+    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
       checkTransmitted(str, 'A')
       checkTransmitted(str, 'B')
       checkTransmitted(str, 'C')
@@ -1071,9 +1140,11 @@ class SpamCCTest {
     })
 
     val expected = split(
-      """
+      """root_function_main___VAR_RETURN_HI: EQU   0
         |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_string: EQU   2
         |root_function_main___VAR_string: BYTES [65, 66, 67, 68, 0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
@@ -1100,17 +1171,26 @@ class SpamCCTest {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
-        |END
-        |""".stripMargin)
+        |END""".stripMargin)
 
     assertSame(expected, actual)
   }
 
-  private def checkTransmitted(str: List[String], c: Char) = {
-    val hex = c.charValue().toHexString
-    if (!str.find(_.contains(s"TRANSMITTING h$hex")).isDefined) {
-      fail(s"did not transmit '$c' char")
-    }
+  private def checkTransmitted(str: List[String], c: Char, required : Int = 1) = {
+    val actual: String = extractTransmitted(str)
+    val matches = actual.count(_ == c)
+
+    if (matches == 0) fail(s"did not transmit '$c' char")
+    if (matches < required) fail(s"did not find $required transmits of '$c' char; found only $matches")
+  }
+
+  private def checkTransmitted(str: List[String], expected: String) = {
+    val actual: String = extractTransmitted(str)
+    assertEquals(expected, actual)
+  }
+
+  private def extractTransmitted(str: List[String]) = {
+    str.filter(_.contains(s"TRANSMITTING")).map(s => s.replaceAll(".*\\[c:", "").replaceAll("\\].*", "")).mkString("")
   }
 
   private def compile(linesRaw: String, verbose: Boolean = false, quiet: Boolean = true, outputCheck: List[String] => Unit = _ => {}): List[String] = {
@@ -1144,7 +1224,7 @@ class SpamCCTest {
       else if (IsLabel.matches(l)) {
         println(s"${"".formatted("%5s")}  $l")
       } else if (IsBytes.matches(l)) {
-        val withoutBrackets = l.replaceAll(""".*\[""","").replaceAll("""\].*$""","")
+        val withoutBrackets = l.replaceAll(""".*\[""", "").replaceAll("""\].*$""", "")
 
         val bytes = withoutBrackets.split(",").length
 
@@ -1152,7 +1232,7 @@ class SpamCCTest {
         pc += bytes
 
       } else if (IsString.matches(l)) {
-        val withoutQuotes = l.replaceAll("""^[^"]+"""","").replaceAll(""""[^"]*$""","")
+        val withoutQuotes = l.replaceAll("""^[^"]+"""", "").replaceAll(""""[^"]*$""", "")
         val lstr = org.apache.commons.text.StringEscapeUtils.unescapeJava(withoutQuotes)
 
         val bytes = lstr.getBytes("UTF-8").toSeq

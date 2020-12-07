@@ -35,8 +35,8 @@ $vvp -N -i $rootname.vvp "$@" &
 
 # timeout to prenent orphanned processes when Java test harness goes away
 
-timeout=10
-while [ -d /proc/$! -a $timeout > 0 ]; do
+timeout=20
+while [ -d /proc/$! -a $timeout -gt 0 ]; do
     sleep 1
     timeout=$((timeout-1))
 done
