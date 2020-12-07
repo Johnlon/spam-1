@@ -4,15 +4,14 @@ import java.io.{File, PrintWriter}
 import java.util.concurrent.atomic.AtomicBoolean
 
 import asm.Assembler
-import org.junit.Assert.assertEquals
+import org.junit.Assert.{assertEquals, fail}
 import org.junit.runners.MethodSorters
 import org.junit.{FixMethodOrder, Test}
-import org.scalatest.matchers.must.Matchers
 
 import scala.collection.mutable.ListBuffer
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-class SpamCCTest extends Matchers {
+class SpamCCTest {
 
   def split(s: String): List[String] = {
     val strings = s.split("\n")
@@ -759,21 +758,23 @@ class SpamCCTest extends Matchers {
         | var even = "Even\0";
         | var odd = "Odd\0";
         |
-        | while (i>0) {
-        |   // ref result;
-//        |   if (i % 2 == 0) {
-//        |     //let result = even;
-//        |   }
-//        |   if (i % 2 == 1) {
-//        |     //let result = odd;
-//        |   }
-//        |   putchar(result[0])
-        |   putchar(i)
-        |   //let i = i - 1;
-        | }
+        | ref ptr = odd;
         |}
         |""".stripMargin
 
+//    ;while (i>0) {
+//      ; ref result;
+//      if (i % 2 == 0) {
+//        let result = even;
+//      }
+//      if (i % 2 == 1) {
+//        //let result = odd;
+//      }
+//      putchar(result[0])
+//      putchar(i)
+//      //let i = i - 1;
+//    }
+//  }
     val actual: List[String] = compile(lines, verbose = false, quiet = true, outputCheck = str => {
       checkTransmitted(str, 'A')
       checkTransmitted(str, 'B')

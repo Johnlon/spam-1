@@ -2,7 +2,7 @@ package scc
 
 import java.io.{File, PrintWriter}
 
-import asm.{AluOp, EnumParserOps}
+import asm.{AluOp, E, EnumParserOps}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -57,12 +57,8 @@ object SpamCC {
 
 class SpamCC extends EnumParserOps with JavaTokenParsers {
   private val MAIN_LABEL = "ROOT________main_start"
-
-  private def SEMICOLON = ";"
-
   private val SPACE = " "
-
-  private val variables = mutable.TreeMap.empty[String, List[Byte]]
+  private val variables = mutable.ListBuffer.empty[Variable]
 
   def compile(code: String): List[String] = {
 
@@ -122,14 +118,12 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       })
   }
 
-  def name: Parser[String] = "[a-zA-Z][a-zA-Z0-9_]*".r ^^ (a => a)
-
   // optimisation of "var VARIABLE=CONST"
   def statementEqConst: Parser[Block] = "var" ~> name ~ "=" ~ constExpr <~ SEMICOLON ^^ {
     case targetVar ~ _ ~ konst =>
       new Block("statementEqConst", s"$targetVar=$konst") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val label = parent.assignVarLabel(targetVar)
+          val label = parent.assignVarLabel(targetVar, IsVar).fqn
           List(
             s"[:$label] = $konst",
           )
@@ -142,8 +136,8 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
     case targetVar ~ _ ~ konst ~ oper ~ srcVar =>
       new Block("statementEqConstOpVar", s"$targetVar=$konst $oper $srcVar") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val sLabel = parent.getVarLabel(srcVar)
-          val tLabel = parent.assignVarLabel(targetVar)
+          val sLabel = parent.getVar(srcVar).fqn
+          val tLabel = parent.assignVarLabel(targetVar, IsVar).fqn
           List(
             s"REGA = $konst",
             s"REGA = REGA $oper [:$sLabel]",
@@ -158,8 +152,8 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
     case targetVar ~ _ ~ srcVar ~ op ~ konst =>
       new Block("statementEqVarOpConst", s"$targetVar=$srcVar $op $konst") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val sLabel = parent.getVarLabel(srcVar)
-          val tLabel = parent.assignVarLabel(targetVar)
+          val sLabel = parent.getVar(srcVar).fqn
+          val tLabel = parent.assignVarLabel(targetVar, IsVar).fqn
           List(
             s"REGA = [:$sLabel]",
             s"REGA = REGA $op $konst",
@@ -169,17 +163,13 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       }
   }
 
-  trait IsVariable
-
-  trait IsConst
-
   // optimisation of "var VARIABLE=VARIABLE"
   def statementEqVar: Parser[Block] = "var" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
-    case targetVar ~ _ ~ srvVar =>
-      new Block("statementEqVar", s"$targetVar=$srvVar") {
+    case targetVar ~ _ ~ srcVar =>
+      new Block("statementEqVar", s"$targetVar=$srcVar") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val sLabel = parent.getVarLabel(srvVar)
-          val tLabel = parent.assignVarLabel(targetVar)
+          val sLabel = parent.getVar(srcVar).fqn
+          val tLabel = parent.assignVarLabel(targetVar, IsVar).fqn
           List(
             s"REGA = [:$sLabel]",
             s"[:$tLabel] = REGA",
@@ -193,9 +183,9 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
     case targetVar ~ _ ~ srcVar1 ~ op ~ srcVar2 =>
       new Block("statementEqVarOpVar", s"$targetVar=$srcVar1 $op $srcVar2") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val s1Label = parent.getVarLabel(srcVar1)
-          val s2Label = parent.getVarLabel(srcVar2)
-          val tLabel = parent.assignVarLabel(targetVar)
+          val s1Label = parent.getVar(srcVar1).fqn
+          val s2Label = parent.getVar(srcVar2).fqn
+          val tLabel = parent.assignVarLabel(targetVar, IsVar).fqn
           List(
             s"REGA = [:$s1Label]",
             s"REGB = [:$s2Label]",
@@ -205,17 +195,13 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       }
   }
 
-  trait IsStandaloneVarExpr {
-    def variableName: String
-  }
-
   def blkVarExpr: Parser[Block] = name ^^ {
     n =>
       new Block("blkVar", s"$n") with IsStandaloneVarExpr {
         override def toString = s"$n"
 
         override def gen(depth: Int, parent: Name): List[String] = {
-          val labelSrcVar = parent.getVarLabel(n)
+          val labelSrcVar = parent.getVar(n).fqn
           List(
             s"REGA = [:$labelSrcVar]",
           )
@@ -235,7 +221,7 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
           // drops result into A
           val stmts: List[String] = blkExpr.expr(depth + 1, parent)
 
-          val labelSrcVar = parent.getVarLabel(arrayName)
+          val labelSrcVar = parent.getVar(arrayName).fqn
 
           stmts ++ List(
             s"MARLO = REGA + (>:$labelSrcVar) _S",
@@ -264,44 +250,8 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
   }
 
   def blkSingleExpr: Parser[Block] = blkArrayElementExpr | blkNExpr | blkVarExpr
-//
-//  def blkBiExpr: Parser[Block] = blkSingleExpr ~ aluOp ~ blkSingleExpr ^^ {
-//    case leftExpr ~ oper ~ rightExpr =>
-//      val description = s"$leftExpr $oper $rightExpr"
-//
-//      new Block("blkBiExpr", s" $description") with IsCompoundExpressionBlock {
-//
-//        override def toString = s"$description"
-//
-//        override def gen(depth: Int, parent: Name): List[String] = {
-//          val temporaryVarLabel = parent.assignVarLabel("blkBiExpr" + depth)
-//
-//          val leftStatement: List[String] = leftExpr.expr(depth + 1, parent)
-//          val rightStatement: List[String] = rightExpr.expr(depth + 1, parent)
-//
-//
-//          List(s"; load right expression") ++
-//            rightStatement ++
-//            List(s"[:$temporaryVarLabel] = REGA") ++
-//            List(s"; load left expression") ++
-//            leftStatement ++
-//            List(s"; perform op") ++
-//            List(s"REGA = REGA $oper [:$temporaryVarLabel]")
-//        }
-//
-//        /* populated only if this block evaluates to a standalone variable reference*/
-//        override def variableName: Option[String] = {
-//          None
-//        }
-//      }
-//  }
 
   def blkExpr: Parser[Block] = blkSingleExpr | "(" ~> compoundBlkExpr <~ ")"
-//  def blkExpr: Parser[Block] = blkBiExpr | blkSingleExpr | "(" ~> compoundBlkExpr <~ ")"
-
-  sealed trait IsCompoundExpressionBlock {
-    def variableName: Option[String]
-  }
 
   def compoundBlkExpr: Parser[Block] = blkExpr ~ ((aluOp ~ blkExpr) *) ^^ {
     case leftExpr ~ otherExpr =>
@@ -320,7 +270,7 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
 
           // if there is no right side then no need for temporary variables or merge logic
           val optionalExtraForRight = if (otherExpr.size > 0) {
-            val temporaryVarLabel = parent.assignVarLabel("compoundBlkExpr" + depth)
+            val temporaryVarLabel = parent.assignVarLabel("compoundBlkExpr" + depth, IsVar).fqn
 
             val assignLeftToTemp =
               List(
@@ -374,7 +324,6 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       }
   }
 
-
   def statementVarOp: Parser[Block] = "var" ~> name ~ "=" ~ compoundBlkExpr <~ SEMICOLON ^^ {
     case target ~ _ ~ v =>
       new Block("statementVarOp", s"$target = $v") {
@@ -382,7 +331,7 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
 
           val stmts: List[String] = v.expr(depth + 1, parent)
 
-          val labelTarget = parent.assignVarLabel(target)
+          val labelTarget = parent.assignVarLabel(target, IsVar).fqn
 
           val assign = List(
             s"[:$labelTarget] = REGA",
@@ -408,14 +357,79 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
     case target ~ _ ~ str =>
       new Block("statementVarEqString", s"$target = $str") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          // nothing to but record the data with current scope - data will be laid out later
-          parent.assignVarLabel(target, str.getBytes("UTF-8").toList)
+          // nothing to do but record the data with current scope - data will be laid out later
+          parent.assignVarLabel(target, IsData, str.getBytes("UTF-8").toList).fqn
           List(
-            s"""; $target = "$str""""
+            s"""; var $target = "$str""""
           )
         }
       }
   }
+
+  val ZERO = 0.toByte
+
+  case class Address(hi: Byte, lo: Byte) {
+    def bytes: Array[Byte] = {
+      List(hi, lo).toArray
+    }
+  }
+
+  def posToAddress(pos: Int): List[Byte] = {
+    List((pos >> 8)toByte, pos.toByte)
+  }
+
+  def statementRef: Parser[Block] = "ref" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
+    case refName ~ _ ~ target =>
+      new Block("statementVRef", s"$refName = $target") {
+        override def gen(depth: Int, parent: Name): List[String] = {
+          val targetLabelPos = parent.getVar(target).pos
+          val addr = posToAddress(targetLabelPos)
+          val refLabel = parent.assignVarLabel(refName, IsRef, addr).fqn
+
+          List(
+            s"""; ref $refName = "$target ($refLabel = $addr)""""
+          )
+        }
+      }
+  }
+
+  //
+  //  def blkBiExpr: Parser[Block] = blkSingleExpr ~ aluOp ~ blkSingleExpr ^^ {
+  //    case leftExpr ~ oper ~ rightExpr =>
+  //      val description = s"$leftExpr $oper $rightExpr"
+  //
+  //      new Block("blkBiExpr", s" $description") with IsCompoundExpressionBlock {
+  //
+  //        override def toString = s"$description"
+  //
+  //        override def gen(depth: Int, parent: Name): List[String] = {
+  //          val temporaryVarLabel = parent.assignVarLabel("blkBiExpr" + depth)
+  //
+  //          val leftStatement: List[String] = leftExpr.expr(depth + 1, parent)
+  //          val rightStatement: List[String] = rightExpr.expr(depth + 1, parent)
+  //
+  //
+  //          List(s"; load right expression") ++
+  //            rightStatement ++
+  //            List(s"[:$temporaryVarLabel] = REGA") ++
+  //            List(s"; load left expression") ++
+  //            leftStatement ++
+  //            List(s"; perform op") ++
+  //            List(s"REGA = REGA $oper [:$temporaryVarLabel]")
+  //        }
+  //
+  //        /* populated only if this block evaluates to a standalone variable reference*/
+  //        override def variableName: Option[String] = {
+  //          None
+  //        }
+  //      }
+  //  }
+
+  private def SEMICOLON = ";"
+
+  //  def blkExpr: Parser[Block] = blkBiExpr | blkSingleExpr | "(" ~> compoundBlkExpr <~ ")"
+
+  def name: Parser[String] = "[a-zA-Z][a-zA-Z0-9_]*".r ^^ (a => a)
 
   def split(s: String): List[String] = {
     s.split("\\|").map(_.stripTrailing().stripLeading()).filterNot(_.isEmpty).toList
@@ -430,7 +444,7 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
           val labelTransmit = parent.fqnLabelPathUnique("transmit")
           val labelEndLoop = parent.fqnLabelPathUnique("endloop")
 
-          val varLocn = parent.getVarLabel(varName)
+          val varLocn = parent.getVar(varName).fqn
 
           split(
             s"""
@@ -491,7 +505,7 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
         override def gen(depth: Int, parent: Name): List[String] = {
           val labelWait = parent.fqnLabelPathUnique("wait")
           val labelTransmit = parent.fqnLabelPathUnique("transmit")
-          val varLocn = parent.getVarLabel(varName)
+          val varLocn = parent.getVar(varName).fqn
           split(
             s"""
                |$labelWait:
@@ -526,35 +540,9 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       }
   }
 
-  //
-  //  def stmtPutsGeneral: Parser[Block] = "puts" ~ "(" ~> blkExpr <~ ")" ^^ {
-  //    bex =>
-  //      new Block("stmtPutsGeneral", s"$bex", nestedName = "putsGeneral") {
-  //        override def gen(depth: Int, parent: Name): List[String] = {
-  //          val labelWait = parent.fqnLabelPathUnique("wait")
-  //          val labelTransmit = parent.fqnLabelPathUnique("transmit")
-  //
-  //          // leaves result in REGA
-  //          val stmts: List[String] = bex.expr(depth + 1, parent)
-  //
-  //          stmts ++ split(
-  //            s"""
-  //               |$labelWait:
-  //               |PCHITMP = <:$labelTransmit
-  //               |PC = >:$labelTransmit _DO
-  //               |PCHITMP = <:$labelWait
-  //               |PC = <:$labelWait
-  //               |$labelTransmit:
-  //               |UART = REGA
-  //               |""")
-  //        }
-  //      }
-  //  }
-
-
   def statement: Parser[Block] =
     statementEqVarOpVar | statementEqVar | statementEqVarOpConst | statementEqConstOpVar | statementEqConst |
-      statementVarOp |
+      statementVarOp | statementRef |
       statementPutcharVarOptimisation | statementPutcharConstOptimisation | stmtPutcharGeneral |
       stmtPutsName |
       whileTrue | whileCond | ifCond | breakOut | functionCall | comment |
@@ -567,35 +555,6 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
     case a ~ b =>
       a +: b
   }
-
-  case class FunctionArgName(name: String, output: Boolean)
-
-  case class FunctionArgNameAndLabel(labelName: String, argName: FunctionArgName)
-
-  case class FunctionDef(startLabel: String, returnHiLabel: String, returnLoLabel: String, args: List[FunctionArgNameAndLabel])
-
-  trait IsFunction {
-    self: Block =>
-
-    def functionName: String
-
-    def functionArgs: List[FunctionArgName]
-
-    def scopedArgLabels(scope: Name): FunctionDef = {
-      val returnHiLabel = scope.assignVarLabel("RETURN_HI")
-      val returnLoLabel = scope.assignVarLabel("RETURN_LO")
-      // These locations where we write the input parameters into the function.
-      // Also, read from these locations to fetch "out" values.
-      val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.map {
-        argName =>
-          FunctionArgNameAndLabel(scope.assignVarLabel(argName.name), FunctionArgName(argName.name, argName.output))
-      }
-      val fnStart = scope.toLabelPath("START")
-
-      FunctionDef(fnStart, returnHiLabel, returnLoLabel, argNamesLabelsDirection)
-    }
-  }
-
 
   def functionDef: Parser[Block] = "fun " ~> name ~ "(" ~ repsep((name ~ ("out" ?)), ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
     case fnName ~ _ ~ args ~ _ ~ content =>
@@ -655,8 +614,8 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
 
       new Block("whileTrue", s"${SPACE}true", nestedName = s"whileTrue${Name.nextInt}") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val labelBody = parent.toLabelPath("BODY")
-          val labelAfter = parent.toLabelPath("AFTER")
+          val labelBody = parent.toFqLabelPath("BODY")
+          val labelAfter = parent.toFqLabelPath("AFTER")
 
           val prefix = split(s"""$labelBody:""")
 
@@ -686,9 +645,9 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       new Block(s"whileCond", s"$SPACE($cond) with ${content.size} inner blocks", nestedName = s"whileCond${Name.nextInt}") {
         override def gen(depth: Int, parent: Name): List[String] = {
 
-          val labelCheck = parent.toLabelPath("CHECK")
-          val labelBody = parent.toLabelPath("BODY")
-          val labelBot = parent.toLabelPath("AFTER")
+          val labelCheck = parent.toFqLabelPath("CHECK")
+          val labelBody = parent.toFqLabelPath("BODY")
+          val labelBot = parent.toFqLabelPath("AFTER")
 
           val flagToCheck = cond._1
           val conditionBlock = cond._2
@@ -727,15 +686,40 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       }
   }
 
+  //
+  //  def stmtPutsGeneral: Parser[Block] = "puts" ~ "(" ~> blkExpr <~ ")" ^^ {
+  //    bex =>
+  //      new Block("stmtPutsGeneral", s"$bex", nestedName = "putsGeneral") {
+  //        override def gen(depth: Int, parent: Name): List[String] = {
+  //          val labelWait = parent.fqnLabelPathUnique("wait")
+  //          val labelTransmit = parent.fqnLabelPathUnique("transmit")
+  //
+  //          // leaves result in REGA
+  //          val stmts: List[String] = bex.expr(depth + 1, parent)
+  //
+  //          stmts ++ split(
+  //            s"""
+  //               |$labelWait:
+  //               |PCHITMP = <:$labelTransmit
+  //               |PC = >:$labelTransmit _DO
+  //               |PCHITMP = <:$labelWait
+  //               |PC = <:$labelWait
+  //               |$labelTransmit:
+  //               |UART = REGA
+  //               |""")
+  //        }
+  //      }
+  //  }
+
   def ifCond: Parser[Block] = "if" ~ "(" ~> condition ~ ")" ~ "{" ~ statements <~ "}" ^^ {
     case cond ~ _ ~ _ ~ content =>
 
       new Block(s"ifCond", s"$SPACE($cond) with ${content.size} inner blocks", nestedName = s"ifCond${Name.nextInt}") {
         override def gen(depth: Int, parent: Name): List[String] = {
 
-          val labelCheck = parent.toLabelPath("CHECK")
-          val labelBody = parent.toLabelPath("BODY")
-          val labelBot = parent.toLabelPath("AFTER")
+          val labelCheck = parent.toFqLabelPath("CHECK")
+          val labelBody = parent.toFqLabelPath("BODY")
+          val labelBot = parent.toFqLabelPath("AFTER")
 
           val flagToCheck = cond._1
           val conditionBlock = cond._2
@@ -789,11 +773,6 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       }
   }
 
-
-  trait isFunctionCall
-
-  // DODO - NEED T HANDLE OUT PARAMS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
   def functionCall: Parser[Block] = name ~ "(" ~ repsep(compoundBlkExpr, ",") ~ ")" ^^ {
     case fnName ~ _ ~ argExpr ~ _ =>
       new Block(s"functionCall", s"""$fnName(${argExpr.mkString(", ")})""") with isFunctionCall {
@@ -835,7 +814,7 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
                       case Some(name) =>
                         val localVarLabel = parent.lookupVarLabel(name).getOrElse {
                           sys.error(s"""output parameter variable '$name' in call to function "$fnName" is not defined""")
-                        }
+                        }.fqn
 
                         // recover ourput value from the function and assign back to the local variable
                         List(
@@ -881,7 +860,7 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
     case varName ~ compOp ~ konst =>
       val b = new Block("condition", s"$SPACE$varName $compOp $konst") {
         override def gen(depth: Int, parent: Name): List[String] = {
-          val label = parent.getVarLabel(varName)
+          val label = parent.getVar(varName).fqn
 
           compOp match {
             case ">" | "<" | "==" | "!=" =>
@@ -917,14 +896,7 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       (cpuFlag, b)
   }
 
-  trait Generator {
-    def apply(depth: Int, blk: Block): List[String]
-
-    override def toString = "Code()"
-  }
-
-
-  def comment: Parser[Block] = "//.*".r ^^ {
+  def comment: Parser[Block] = "//" ~> ".*".r ^^ {
     c =>
       new Block("comment", s"${SPACE}$c") {
         override def gen(depth: Int, parent: Name): List[String] = {
@@ -933,9 +905,79 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       }
   }
 
-  abstract class Block(val typ: String, val context: String, nestedName: String = "", logEntryExit: Boolean = true) {
+  def program: Parser[List[String]] = "program" ~ "{" ~> ((comment | functionDef) +) <~ "}" ^^ {
+    fns =>
+      val Depth0 = 0
 
-    protected[this] def gen(depth: Int, parent: Name): List[String]
+      val asm: List[String] = fns.flatMap {
+        b => {
+          b.expr(Depth0, Name.RootName)
+        }
+      }
+
+      val varlist = variables.flatMap {
+        case Variable(name, fqn, pos, bytes, typ) =>
+          Seq(
+            s"; $typ : $name : $fqn",
+            s"$fqn: EQU   $pos",
+            s"$fqn: BYTES [${bytes.map(_.toInt).mkString(", ")}]"
+          )
+      }.toList
+
+      val jumpToMain = split(
+        s"""
+           |PCHITMP = < :$MAIN_LABEL
+           |PC = > :$MAIN_LABEL
+           |""")
+
+      varlist ++ jumpToMain ++ asm :+ "root_end:" :+ "END"
+  }
+
+  sealed trait IsCompoundExpressionBlock {
+    def variableName: Option[String]
+  }
+
+  trait IsVariable
+
+  trait IsConst
+
+  trait IsStandaloneVarExpr {
+    def variableName: String
+  }
+
+  trait IsFunction {
+    self: Block =>
+
+    def functionName: String
+
+    def functionArgs: List[FunctionArgName]
+
+    def scopedArgLabels(scope: Name): FunctionDef = {
+      val returnHiLabel = scope.assignVarLabel("RETURN_HI",IsVar).fqn
+      val returnLoLabel = scope.assignVarLabel("RETURN_LO",IsVar).fqn
+      // These locations where we write the input parameters into the function.
+      // Also, read from these locations to fetch "out" values.
+      val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.map {
+        argName =>
+          FunctionArgNameAndLabel(scope.assignVarLabel(argName.name,IsVar).fqn, FunctionArgName(argName.name, argName.output))
+      }
+      val fnStart = scope.toFqLabelPath("START")
+
+      FunctionDef(fnStart, returnHiLabel, returnLoLabel, argNamesLabelsDirection)
+    }
+  }
+
+  // DODO - NEED T HANDLE OUT PARAMS !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  trait isFunctionCall
+
+  trait Generator {
+    def apply(depth: Int, blk: Block): List[String]
+
+    override def toString = "Code()"
+  }
+
+  abstract class Block(val typ: String, val context: String, nestedName: String = "", logEntryExit: Boolean = true) {
 
     final def expr(depth: Int, parentScope: Name): List[String] = {
 
@@ -958,7 +1000,7 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
             })
         }
 
-        if (logEntryExit)enter +: value :+ exit
+        if (logEntryExit) enter +: value :+ exit
         else value
 
       } catch {
@@ -976,12 +1018,115 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
       parent.pushScope(nestedName)
     }
 
-    override def toString = s"Block($typ $context)"
-
     private def prefixComment(depth: Int) = s"; ($depth) ${" " * depth}"
 
     private def prefixOp(depth: Int) = prefixComment(depth).replaceAll(".", " ")
 
+    override def toString = s"Block($typ $context)"
+
+    protected[this] def gen(depth: Int, parent: Name): List[String]
+
+  }
+
+  sealed trait VarType extends E
+  object IsData extends VarType
+  object IsVar extends VarType
+  object IsRef extends VarType
+
+  case class Variable(name: String, fqn: String, pos: Int, bytes: List[Byte], typ: VarType)
+
+  case class FunctionArgName(name: String, output: Boolean)
+
+  case class FunctionArgNameAndLabel(labelName: String, argName: FunctionArgName)
+
+  case class FunctionDef(startLabel: String, returnHiLabel: String, returnLoLabel: String, args: List[FunctionArgNameAndLabel])
+
+  case class Name private(parent: Name, name: String, endLabel: Option[String] = None, functions: ListBuffer[(Name, Block with IsFunction)] = ListBuffer.empty) {
+
+    final val LABEL_NAME_SEPARATOR = "_"
+
+    def lookupFunction(name: String): Option[(Name, Block with IsFunction)] = {
+      val maybeBlock = functions.find(f => f._2.functionName == name)
+      maybeBlock.orElse {
+        Option(parent).flatMap(_.lookupFunction(name))
+      }
+    }
+
+    def blockName: String = {
+      if (parent != null) {
+        parent.blockName + "_" + name
+      } else
+        name
+    }
+
+    def getEndLabel: Option[String] = endLabel.orElse(Option(parent).flatMap(_.getEndLabel))
+
+    override def toString = s"Name(path=$blockName, endLabel=$endLabel)"
+
+    def toFqVarPath(child: String): String = {
+      blockName + (LABEL_NAME_SEPARATOR * 3) + "VAR_" + child
+    }
+
+    def toFqLabelPath(child: String): String = {
+      blockName + (LABEL_NAME_SEPARATOR * 3) + "LABEL_" + child
+    }
+
+    /* returns a globally unique name that is contextual by ibcluding the block name*/
+    def fqnLabelPathUnique(child: String): String = {
+      toFqLabelPath(child) + LABEL_NAME_SEPARATOR + Name.nextInt
+    }
+
+    /* returns a globally unique name that is contextual by ibcluding the block name*/
+    def fqnVarPathUnique(child: String): String = {
+      toFqVarPath(child) + LABEL_NAME_SEPARATOR + Name.nextInt
+    }
+
+    def pushScope(newScopeName: String): Name = {
+      if (newScopeName.length > 0) this.copy(parent = this, name = newScopeName)
+      else this
+    }
+
+    def addFunction(functionScope: Name, newFunction: Block with IsFunction): Unit = {
+      val newReg = (functionScope, newFunction)
+      functions.append(newReg)
+    }
+
+    def assignVarLabel(name: String, typ: VarType, data: List[Byte] = List(0)): Variable = {
+      val label = lookupVarLabel(name)
+      label.getOrElse {
+
+        val fqn = toFqVarPath(name)
+
+        // need a separate "var a" vs "let a" if want to distinguish definition from update!!
+        //        vars.get(locaName).map { existing =>
+        //          sys.error(s"scc error: $name is already defined as $existing")
+        //        }
+
+        val pos = variables.lastOption.map(v => v.pos + v.bytes.length).getOrElse(0)
+        val v = Variable(name, fqn, pos, data, typ)
+        variables.append(v)
+        v
+      }
+    }
+
+    def lookupVarLabel(name: String): Option[Variable] = {
+      val fqn = toFqVarPath(name)
+      val maybeExists = variables.map(l => (l.fqn, l)).toMap.get(fqn)
+
+      maybeExists match {
+        case s@Some(_) => s
+        case _ if parent != null => parent.lookupVarLabel(name)
+        case _ => None
+      }
+    }
+
+    def getVar(name: String): Variable = {
+      val label = lookupVarLabel(name)
+      label.getOrElse {
+        val str = s"scc error: $name has not been defined yet @ $this"
+        sys.error(str)
+      }
+    }
   }
 
   object Name {
@@ -995,115 +1140,5 @@ class SpamCC extends EnumParserOps with JavaTokenParsers {
     }
   }
 
-  case class Name private(parent: Name, name: String, endLabel: Option[String] = None, functions: ListBuffer[(Name, Block with IsFunction)] = ListBuffer.empty) {
-
-    def lookupFunction(name: String): Option[(Name, Block with IsFunction)] = {
-      val maybeBlock = functions.find(f => f._2.functionName == name)
-      maybeBlock.orElse {
-        Option(parent).flatMap(_.lookupFunction(name))
-      }
-    }
-
-    final val LABEL_NAME_SEPARATOR = "_"
-
-    def blockName: String = {
-      if (parent != null) {
-        parent.blockName + "_" + name
-      } else
-        name
-    }
-
-    def getEndLabel: Option[String] = endLabel.orElse(Option(parent).flatMap(_.getEndLabel))
-
-    override def toString = s"Name(path=$blockName, endLabel=$endLabel)"
-
-    def toVarPath(child: String): String = {
-      blockName + (LABEL_NAME_SEPARATOR * 3) + "VAR_" + child
-    }
-
-    def toLabelPath(child: String): String = {
-      blockName + (LABEL_NAME_SEPARATOR * 3) + "LABEL_" + child
-    }
-
-    /* returns a globally unique name that is contextual by ibcluding the block name*/
-    def fqnLabelPathUnique(child: String): String = {
-      toLabelPath(child) + LABEL_NAME_SEPARATOR + Name.nextInt
-    }
-
-    /* returns a globally unique name that is contextual by ibcluding the block name*/
-    def fqnVarPathUnique(child: String): String = {
-      toVarPath(child) + LABEL_NAME_SEPARATOR + Name.nextInt
-    }
-
-    def pushScope(newScopeName: String): Name = {
-      if (newScopeName.length > 0) this.copy(parent = this, name = newScopeName)
-      else this
-    }
-
-    def addFunction(functionScope: Name, newFunction: Block with IsFunction): Unit = {
-      val newReg = (functionScope, newFunction)
-      functions.append(newReg)
-    }
-
-    def assignVarLabel(name: String, data: List[Byte] = List(0)): String = {
-      val label = lookupVarLabel(name)
-      label.getOrElse {
-
-        val localName = toVarPath(name)
-
-        // need a separate "var a" vs "let a" if want to distinguish definition from update!!
-        //        vars.get(locaName).map { existing =>
-        //          sys.error(s"scc error: $name is already defined as $existing")
-        //        }
-
-        variables.getOrElseUpdate(localName, data)
-        localName
-      }
-    }
-
-    def lookupVarLabel(name: String): Option[String] = {
-      val fqn1 = toVarPath(name)
-      if (variables.contains(fqn1)) Some(fqn1)
-      else {
-        if (parent != null)
-          parent.lookupVarLabel(name)
-        else
-          None
-      }
-    }
-
-    def getVarLabel(name: String): String = {
-      val label = lookupVarLabel(name)
-      label.getOrElse {
-        val str = s"scc error: $name has not been defined yet @ $this"
-        sys.error(str)
-      }
-    }
-  }
-
-  def program: Parser[List[String]] = "program" ~ "{" ~> ((comment | functionDef) +) <~ "}" ^^ {
-    //  def program: Parser[List[String]] =  (functionWithArgs +) <~ "}" ^^ {
-    fns =>
-      val Depth0 = 0
-
-      val asm: List[String] = fns.flatMap {
-        b => {
-          b.expr(Depth0, Name.RootName)
-        }
-      }
-
-      val varlist = variables.toList.sortBy(_._1).map {
-        x =>
-          s"${x._1}: BYTES [${x._2.map(_.toInt).mkString(", ")}]"
-      }
-
-      val jumpToMain = split(
-        s"""
-           |PCHITMP = < :$MAIN_LABEL
-           |PC = > :$MAIN_LABEL
-           |""")
-
-      varlist ++ jumpToMain ++ asm :+ "root_end:" :+ "END"
-  }
 }
 
