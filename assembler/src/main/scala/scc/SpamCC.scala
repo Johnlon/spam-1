@@ -2,7 +2,7 @@ package scc
 
 import java.io.{File, PrintWriter}
 
-import asm.{E, EnumParserOps}
+import asm.EnumParserOps
 import scc.SpamCC.{posToAddress, split}
 
 import scala.collection.mutable
@@ -10,65 +10,9 @@ import scala.io.Source
 import scala.language.postfixOps
 import scala.util.parsing.combinator.JavaTokenParsers
 
-
-object SpamCC {
-  val ZERO = 0.toByte
-
-  def main(args: Array[String]): Unit = {
-    if (args.length == 1) {
-      compile(args)
-    }
-    else {
-      System.err.println("SpamCC ...")
-      System.err.println("    usage:  file-name.asm ")
-      sys.exit(1)
-    }
-  }
-
-  private def compile(args: Array[String]): Unit = {
-    val fileName = args(0)
-
-    val code = readAllLines(fileName)
-
-    val compiler = new SpamCC()
-
-    val asm: List[String] = compiler.compile(code)
-
-    val pw = new PrintWriter(new File(s"$fileName.asm"))
-    asm.foreach { line =>
-      line.foreach { rom =>
-        pw.write(rom)
-      }
-      pw.write("\n")
-    }
-    pw.close()
-  }
-
-  private def readAllLines(fileName: String): String = {
-    val src = Source.fromFile(fileName)
-    try {
-      src.getLines().mkString("\n")
-    }
-    catch {
-      case ex: Throwable =>
-        src.close()
-        throw ex
-    }
-  }
-
-  def posToAddress(pos: Int): List[Byte] = {
-    List((pos >> 8) toByte, pos.toByte)
-  }
-
-  def split(s: String): List[String] = {
-    s.split("\\|").map(_.stripTrailing().stripLeading()).filterNot(_.isEmpty).toList
-  }
-
-}
-
 class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with EnumParserOps with JavaTokenParsers {
   val SPACE = " "
-  val variables = mutable.ListBuffer.empty[Variable]
+  val variables: mutable.ListBuffer[Variable] = mutable.ListBuffer.empty[Variable]
   private val MAIN_LABEL = "ROOT________main_start"
 
   def compile(code: String): List[String] = {
@@ -317,7 +261,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
                 s"MARLO = >:$varLabel",
                 s"MARHI = <:$varLabel"
               )
-            case IsRef => variable.fqn
+            case IsRef =>
               val varLabel = variable.fqn
               List(
                 s"MARHI = [:$varLabel]",
@@ -790,10 +734,6 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
       varlist ++ jumpToMain ++ asm :+ "root_end:" :+ "END"
   }
 
-  //  trait IsVariable
-
-  //  trait IsConst
-
   trait IsFunction {
     self: Block =>
 
@@ -878,7 +818,59 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     override def toString = s"Block($typ $context)"
 
     protected[this] def gen(depth: Int, parent: Name): List[String]
+  }
+}
 
+object SpamCC {
+  val ZERO = 0.toByte
+
+  def main(args: Array[String]): Unit = {
+    if (args.length == 1) {
+      compile(args)
+    }
+    else {
+      System.err.println("SpamCC ...")
+      System.err.println("    usage:  file-name.asm ")
+      sys.exit(1)
+    }
   }
 
+  private def compile(args: Array[String]): Unit = {
+    val fileName = args(0)
+
+    val code = readAllLines(fileName)
+
+    val compiler = new SpamCC()
+
+    val asm: List[String] = compiler.compile(code)
+
+    val pw = new PrintWriter(new File(s"$fileName.asm"))
+    asm.foreach { line =>
+      line.foreach { rom =>
+        pw.write(rom)
+      }
+      pw.write("\n")
+    }
+    pw.close()
+  }
+
+  private def readAllLines(fileName: String): String = {
+    val src = Source.fromFile(fileName)
+    try {
+      src.getLines().mkString("\n")
+    }
+    catch {
+      case ex: Throwable =>
+        src.close()
+        throw ex
+    }
+  }
+
+  def posToAddress(pos: Int): List[Byte] = {
+    List((pos >> 8) toByte, pos.toByte)
+  }
+
+  def split(s: String): List[String] = {
+    s.split("\\|").map(_.stripTrailing().stripLeading()).filterNot(_.isEmpty).toList
+  }
 }

@@ -116,7 +116,7 @@ always @(negedge WR) begin
             `FINISH_AND_RETURN(1);
     end
 
-    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING [h:%02x] [c:%c] [b:%08b] [d:%d]", D, printable(D), D, D);
+    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING [h:%02x] [c:%c] [b:%08b] [d:%1d]", D, printable(D), D, D);
 //    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING h%02x (b=%08b)", D, D, D);
 
     $fwrite(fOut, "%02x\n", D);

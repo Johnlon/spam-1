@@ -7,6 +7,7 @@ import asm.Assembler
 import org.junit.Assert.{assertEquals, fail}
 import org.junit.runners.MethodSorters
 import org.junit.{FixMethodOrder, Test}
+import scc.Checks._
 
 import scala.collection.mutable.ListBuffer
 
@@ -199,12 +200,12 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = true, outputCheck = str => {
-      checkTransmitted(str, 'A')
-      checkTransmitted(str, 'B')
-      checkTransmitted(str, 'C')
-      checkTransmitted(str, 'D')
-      checkTransmitted(str, 'b')
-      checkTransmitted(str, '@')
+      checkTransmittedC(str, 'A')
+      checkTransmittedC(str, 'B')
+      checkTransmittedC(str, 'C')
+      checkTransmittedC(str, 'D')
+      checkTransmittedC(str, 'b')
+      checkTransmittedC(str, '@')
     })
 
     val expected = split(
@@ -308,7 +309,7 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-    assertSame(expected, actual)
+    //assertSame(expected, actual)
   }
 
   @Test
@@ -323,7 +324,7 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, outputCheck = str => {
-      checkTransmitted(str, 'D')
+      checkTransmittedC(str, 'D')
     })
 
     val expected = split(
@@ -368,7 +369,7 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-    assertSame(expected, actual)
+   // assertSame(expected, actual)
   }
 
   @Test
@@ -386,10 +387,10 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, outputCheck = str => {
-      checkTransmitted(str, 'A')
-      checkTransmitted(str, 'B')
-      checkTransmitted(str, 'C')
-      checkTransmitted(str, 'D')
+      checkTransmittedC(str, 'A')
+      checkTransmittedC(str, 'B')
+      checkTransmittedC(str, 'C')
+      checkTransmittedC(str, 'D')
     })
 
     val expected = split(
@@ -445,7 +446,7 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-    assertSame(expected, actual)
+   // assertSame(expected, actual)
   }
 
   @Test
@@ -462,7 +463,10 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines)
+    val actual: List[String] = compile(lines, verbose = true, outputCheck = {
+      lines =>
+        checkTransmitted('d', lines, List(  9,   8,   7,   6,   5,   4,   3,   2,   1,   0).map(_.toString))
+    })
 
     val expected = split(
       """root_function_main___VAR_RETURN_HI: EQU   0
@@ -502,7 +506,7 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-    assertSame(expected, actual)
+    //assertSame(expected, actual)
   }
 
 
@@ -519,11 +523,16 @@ class SpamCCTest {
         |   if (a>10) {
         |     break
         |   }
+        |   putchar(a)
+        |
         | }
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines)
+    val actual: List[String] = compile(lines, outputCheck = {
+      lines =>
+        checkTransmitted('d', lines, List(  2,3,4,5,6,7,8,9,10 ).map(_.toString))
+    })
 
     val expected = split(
       """root_function_main___VAR_RETURN_HI: EQU   0
@@ -560,7 +569,7 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-    assertSame(expected, actual)
+    //assertSame(expected, actual)
   }
 
   @Test
@@ -600,11 +609,11 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
-      checkTransmitted(str, 'A')
-      checkTransmitted(str, 'B')
-      checkTransmitted(str, '?')
-      checkTransmitted(str, 'E')
-      checkTransmitted(str, '!')
+      checkTransmittedC(str, 'A')
+      checkTransmittedC(str, 'B')
+      checkTransmittedC(str, '?')
+      checkTransmittedC(str, 'E')
+      checkTransmittedC(str, '!')
     })
 
     val expected = split(
@@ -709,7 +718,7 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-    assertSame(expected, actual)
+    //assertSame(expected, actual)
   }
 
   @Test
@@ -734,8 +743,9 @@ class SpamCCTest {
         |// END  COMMAND
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, quiet = true, outputCheck = str => {
-      checkTransmitted(str, 'B')
+    val actual: List[String] = compile(lines, quiet = true, outputCheck = {
+      lines =>
+        checkTransmitted('c', lines, List(  "B"))
     })
 
     val expected = split(
@@ -801,7 +811,7 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-    assertSame(expected, actual)
+    //assertSame(expected, actual)
   }
 
   @Test
@@ -835,7 +845,8 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
-      checkTransmitted(str, "OddEvenOddEvenOddEvenOddEvenOddEven")
+      val value: List[String] = "OddEvenOddEvenOddEvenOddEvenOddEven".toList.map(_.toString)
+      checkTransmittedL('c', str, value)
     })
 
     val expected = split(
@@ -924,7 +935,7 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-    assertSame(expected, actual)
+    //assertSame(expected, actual)
   }
 
   @Test
@@ -953,10 +964,10 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = false, quiet = true, outputCheck = str => {
-      checkTransmitted(str, 'A')
-      checkTransmitted(str, 'B')
-      checkTransmitted(str, 'C')
-      checkTransmitted(str, 'D')
+      checkTransmittedC(str, 'A')
+      checkTransmittedC(str, 'B')
+      checkTransmittedC(str, 'C')
+      checkTransmittedC(str, 'D')
     })
 
     val expected = split(
@@ -1035,7 +1046,7 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-    assertSame(expected, actual)
+    //assertSame(expected, actual)
   }
 
   @Test
@@ -1058,10 +1069,10 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
-      checkTransmitted(str, 'A')
-      checkTransmitted(str, 'B')
-      checkTransmitted(str, 'C')
-      checkTransmitted(str, 'D')
+      checkTransmittedC(str, 'A')
+      checkTransmittedC(str, 'B')
+      checkTransmittedC(str, 'C')
+      checkTransmittedC(str, 'D')
     })
 
     val expected = split(
@@ -1118,7 +1129,7 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-    assertSame(expected, actual)
+   // assertSame(expected, actual)
   }
 
   @Test
@@ -1134,10 +1145,10 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
-      checkTransmitted(str, 'A')
-      checkTransmitted(str, 'B')
-      checkTransmitted(str, 'C')
-      checkTransmitted(str, 'D')
+      checkTransmittedC(str, 'A')
+      checkTransmittedC(str, 'B')
+      checkTransmittedC(str, 'C')
+      checkTransmittedC(str, 'D')
     })
 
     val expected = split(
@@ -1174,27 +1185,64 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-    assertSame(expected, actual)
+  //  assertSame(expected, actual)
   }
 
-  private def checkTransmitted(str: List[String], c: Char, required : Int = 1) = {
-    val actual: String = extractTransmitted(str)
-    val matches = actual.count(_ == c)
 
-    if (matches == 0) fail(s"did not transmit '$c' char")
-    if (matches < required) fail(s"did not find $required transmits of '$c' char; found only $matches")
+  def writeFile(roms: List[List[String]], tmpFileRom: File): Unit = {
+    val pw = new PrintWriter(tmpFileRom)
+
+    roms.foreach { line =>
+      line.foreach { rom =>
+        pw.write(rom)
+      }
+      pw.write("\n")
+    }
+
+    pw.close()
   }
 
-  private def checkTransmitted(str: List[String], expected: String) = {
-    val actual: String = extractTransmitted(str)
-    assertEquals(expected, actual)
+  def exec(romsPath: File, verbose: Boolean, outputCheck: List[String] => Unit): Unit = {
+    import scala.language.postfixOps
+    import scala.sys.process._
+    val abs = romsPath.getPath.replaceAll("\\\\", "/")
+
+    println("RUNNING :\n" + abs)
+
+    //    val pb: ProcessBuilder = Process(Seq("cmd", "/c", "bash", "-c", s"""../verilog/simulate_one.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$abs"""))
+    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$abs"""))
+
+    val success = new AtomicBoolean()
+    val lines = ListBuffer.empty[String]
+
+    val logger = ProcessLogger.apply(
+      fout = output => {
+        lines.append(output)
+        if (output.contains("SUCCESS - AT EXPECTED END OF PROGRAM")) success.set(true)
+        if (verbose) println("\t   \t: " + output)
+      },
+      ferr = output => {
+        lines.append(output)
+        if (verbose) println("\tERR\t: " + output)
+      }
+    )
+
+    // process has builtin timeout
+    val process = pb.run(logger)
+    val ex = process.exitValue()
+
+    println("EXIT CODE " + ex)
+
+    outputCheck(lines.toList)
+
+    if (success.get())
+      println("SUCCESSFUL SIMULATION")
+    else
+      fail("SIMULATION - DID NOT REACH END")
+
   }
 
-  private def extractTransmitted(str: List[String]) = {
-    str.filter(_.contains(s"TRANSMITTING")).map(s => s.replaceAll(".*\\[c:", "").replaceAll("\\].*", "")).mkString("")
-  }
-
-  private def compile(linesRaw: String, verbose: Boolean = false, quiet: Boolean = true, outputCheck: List[String] => Unit = _ => {}): List[String] = {
+  def compile(linesRaw: String, verbose: Boolean = false, quiet: Boolean = true, outputCheck: List[String] => Unit = _ => {}): List[String] = {
     val scc = new SpamCC
 
     val lines = "program {\n" + linesRaw + "\n}"
@@ -1266,57 +1314,4 @@ class SpamCCTest {
     filtered
   }
 
-  private def writeFile(roms: List[List[String]], tmpFileRom: File): Unit = {
-    val pw = new PrintWriter(tmpFileRom)
-
-    roms.foreach { line =>
-      line.foreach { rom =>
-        pw.write(rom)
-      }
-      pw.write("\n")
-    }
-
-    pw.close()
-  }
-
-  def exec(romsPath: File, verbose: Boolean, outputCheck: List[String] => Unit): Unit = {
-    import scala.language.postfixOps
-
-    import scala.sys.process._
-    val abs = romsPath.getPath.replaceAll("\\\\", "/")
-
-    println("RUNNING :\n" + abs)
-
-    //    val pb: ProcessBuilder = Process(Seq("cmd", "/c", "bash", "-c", s"""../verilog/simulate_one.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$abs"""))
-    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$abs"""))
-
-    val success = new AtomicBoolean()
-    val lines = ListBuffer.empty[String]
-
-    val logger = ProcessLogger.apply(
-      fout = output => {
-        lines.append(output)
-        if (output.contains("SUCCESS - AT EXPECTED END OF PROGRAM")) success.set(true)
-        if (verbose) println("\t   \t: " + output)
-      },
-      ferr = output => {
-        lines.append(output)
-        if (verbose) println("\tERR\t: " + output)
-      }
-    )
-
-    // process has builtin timeout
-    val process = pb.run(logger)
-    val ex = process.exitValue()
-
-    println("EXIT CODE " + ex)
-
-    outputCheck(lines.toList)
-
-    if (success.get())
-      println("SUCCESSFUL SIMULATION")
-    else
-      fail("SIMULATION - DID NOT REACH END")
-
-  }
 }
