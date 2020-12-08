@@ -6,9 +6,9 @@ trait Naming {
 
   self: SpamCC =>
 
-  case class Name private(parent: Name, name: String, endLabel: Option[String] = None, functions: ListBuffer[(Name, Block with IsFunction)] = ListBuffer.empty) {
+  final val LABEL_NAME_SEPARATOR = "_"
 
-    final val LABEL_NAME_SEPARATOR = "_"
+  case class Name private(parent: Name, name: String, endLabel: Option[String] = None, functions: ListBuffer[(Name, Block with IsFunction)] = ListBuffer.empty) {
 
     def lookupFunction(name: String): Option[(Name, Block with IsFunction)] = {
       val maybeBlock = functions.find(f => f._2.functionName == name)
@@ -61,7 +61,7 @@ trait Naming {
 
       label.map { existing =>
         if (existing.typ != typ) sys.error(s"cannot redefine '$name' as $typ; it is already defined as a ${existing.typ}' with label ${existing.fqn}")
-        if (typ == IsRef) sys.error(s"cannot redefine '$name' it is already defined with label ${existing.fqn} with initial value 0x${existing.pos.toHexString}(${existing.pos} dec)")
+        sys.error(s"cannot redefine '$name' it is already defined with label ${existing.fqn} with initial value 0x${existing.pos.toHexString}(${existing.pos} dec)")
       }
 
       label.getOrElse {
@@ -75,7 +75,7 @@ trait Naming {
 
     def lookupVarLabel(name: String): Option[Variable] = {
       val fqn = toFqVarPath(name)
-      val maybeExists = variables.map(l => (l.fqn, l)).toMap.get(fqn)
+      val maybeExists = lookupVarLabelByFqn(fqn)
 
       maybeExists match {
         case s@Some(_) => s
@@ -84,12 +84,27 @@ trait Naming {
       }
     }
 
+    def lookupVarLabelByFqn(fqn: String): Option[Variable] = {
+      variables.map(l => (l.fqn, l)).toMap.get(fqn)
+    }
+
     def getVarLabel(name: String): Variable = {
       val label = lookupVarLabel(name)
       label.getOrElse {
         val str = s"scc error: $name has not been defined yet @ $this"
         sys.error(str)
       }
+    }
+    def getVarLabel(name: String, typ: VarType): Variable = {
+      val label = lookupVarLabel(name)
+      val v = label.getOrElse {
+        val str = s"scc error: $name has not been defined yet @ $this"
+        sys.error(str)
+      }
+      if (v.typ!=typ) {
+        sys.error(s"cannot locate '$name' as $typ; but found it defined as a ${v.typ}' with label ${v.fqn}")
+      }
+      v
     }
   }
 

@@ -173,7 +173,7 @@ class SpamCCTest {
         |
         |  // d = c the d++
         |  var d = c;
-        |  var d = d + 1;
+        |  let d = d + 1;
         |
         |  // e = a + (b/2) = 'b'
         |  var e = a + (b/2);
@@ -190,8 +190,8 @@ class SpamCCTest {
         |  putchar(e)
         |
         |  // should shift left twice to become the '@' char
-        |  var a = %00010000;
-        |  var b = 2;
+        |  let a = %00010000;
+        |  let b = 2;
         |  var at = a A_LSL_B b;
         |  // should print '@'
         |  putchar(at)
@@ -456,7 +456,7 @@ class SpamCCTest {
         |fun main() {
         | var a=10;
         | while(a>0) {
-        |   var a=a-1;
+        |   let a=a-1;
         |   putchar(a)
         | }
         |}
@@ -514,7 +514,7 @@ class SpamCCTest {
         |fun main() {
         | var a = 1;
         | while(true) {
-        |   var a = a + 1;
+        |   let a = a + 1;
         |
         |   if (a>10) {
         |     break
@@ -573,13 +573,14 @@ class SpamCCTest {
         |fun print(a1 out, a2, a3, a4) {
         | // FN COMMENT
         | var d = a1;
+        | //let d = a2;
         | putchar(d)
         | putchar(a2)
         | putchar(a3)
         | putchar(a4)
         |
         | // ascii 33 dec
-        | var a1 = '!';
+        | let a1 = '!';
         | // END FN COMMENT
         |}
         |
@@ -717,7 +718,7 @@ class SpamCCTest {
     val lines =
       """
         |fun depth2(b1 out) {
-        | var b1 = b1 + 1;
+        | let b1 = b1 + 1;
         |}
         |
         |fun depth1(a1 out) {
@@ -819,7 +820,7 @@ class SpamCCTest {
         |
         | var i = 10;
         | while (i>0) {
-        |   var i = i - 1;
+        |   let i = i - 1;
         |   var c = i % 2;
         |   if (c == 0) {
         |       // set pointer to point at even
@@ -1050,8 +1051,8 @@ class SpamCCTest {
         | var c = string[idx];
         | while (c != 0) {
         |   putchar(c)
-        |   var idx = idx + 1;
-        |   var c = string[idx];
+        |   let idx = idx + 1;
+        |   let c = string[idx];
         | }
         |}
         |""".stripMargin

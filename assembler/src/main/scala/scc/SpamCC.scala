@@ -86,7 +86,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
   def statement: Parser[Block] = {
     comment |
       statementVarEqVarOpVar | statementVarEqVar | statementVarEqVarOpConst | statementVarEqConstOpVar | statementVarEqConst | statementVarOp | statementRef |
-      statementLetEqConst | statementLetVarEqVar |
+      statementLetEqConst | statementLetVarEqVar | statementLetVarEqOp |
       statementPutcharVarOptimisation | statementPutcharConstOptimisation | stmtPutcharGeneral |
       stmtPutsName |
       whileTrue | whileCond | ifCond | breakOut | functionCall |
@@ -212,6 +212,24 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
           val stmts: List[String] = v.expr(depth + 1, parent)
 
           val labelTarget = parent.assignVarLabel(target, IsVar).fqn
+
+          val assign = List(
+            s"[:$labelTarget] = REGA",
+          )
+          stmts ++ assign
+        }
+      }
+  }
+
+  // general purpose
+  def statementLetVarEqOp: Parser[Block] = "let" ~> name ~ "=" ~ compoundBlkExpr <~ SEMICOLON ^^ {
+    case target ~ _ ~ v =>
+      new Block("statementLetVarEqOp", s"$target = $v") {
+        override def gen(depth: Int, parent: Name): List[String] = {
+
+          val stmts: List[String] = v.expr(depth + 1, parent)
+
+          val labelTarget = parent.getVarLabel(target, IsVar).fqn
 
           val assign = List(
             s"[:$labelTarget] = REGA",
@@ -422,7 +440,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
         override def gen(depth: Int, scope: Name): List[String] = {
 
-          val FunctionDef(startLabel, returnHi, returnLo, argsLabels) = scopedArgLabels(scope)
+          val FunctionDef(startLabel, returnHi, returnLo, argsLabels) = defScopedArgLabels(scope)
 
           val prefix = if (fnName == "main") {
             List(
@@ -647,7 +665,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
           val fns = parent.lookupFunction(fnName)
           val (functionScope: Name, fn: Block with IsFunction) = fns.getOrElse(sys.error(s"no such function '$fnName''"))
 
-          val FunctionDef(startLabel, returnHiLabel, returnLoLabel, argsLabelsAndDir) = fn.scopedArgLabels(functionScope)
+          val FunctionDef(startLabel, returnHiLabel, returnLoLabel, argsLabelsAndDir) = fn.getScopedArgLabels(functionScope)
 
           val argNamesAndDir: List[FunctionArgName] = fn.functionArgs
 
@@ -783,7 +801,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
     def functionArgs: List[FunctionArgName]
 
-    def scopedArgLabels(scope: Name): FunctionDef = {
+    def defScopedArgLabels(scope: Name): FunctionDef = {
       val returnHiLabel = scope.assignVarLabel("RETURN_HI", IsVar).fqn
       val returnLoLabel = scope.assignVarLabel("RETURN_LO", IsVar).fqn
       // These locations where we write the input parameters into the function.
@@ -791,6 +809,19 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
       val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.map {
         argName =>
           FunctionArgNameAndLabel(scope.assignVarLabel(argName.name, IsVar).fqn, FunctionArgName(argName.name, argName.output))
+      }
+      val fnStart = scope.toFqLabelPath("START")
+
+      FunctionDef(fnStart, returnHiLabel, returnLoLabel, argNamesLabelsDirection)
+    }
+    def getScopedArgLabels(scope: Name): FunctionDef = {
+      val returnHiLabel = scope.getVarLabel("RETURN_HI", IsVar).fqn
+      val returnLoLabel = scope.getVarLabel("RETURN_LO", IsVar).fqn
+      // These locations where we write the input parameters into the function.
+      // Also, read from these locations to fetch "out" values.
+      val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.map {
+        argName =>
+          FunctionArgNameAndLabel(scope.getVarLabel(argName.name, IsVar).fqn, FunctionArgName(argName.name, argName.output))
       }
       val fnStart = scope.toFqLabelPath("START")
 

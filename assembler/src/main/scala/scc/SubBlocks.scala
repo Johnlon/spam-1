@@ -89,7 +89,7 @@ trait SubBlocks {
 
           // if there is no right side then no need for temporary variables or merge logic
           val optionalExtraForRight = if (otherExpr.size > 0) {
-            val temporaryVarLabel = parent.assignVarLabel("compoundBlkExpr" + depth, IsVar).fqn
+            val temporaryVarLabel = parent.assignVarLabel("compoundBlkExpr" + depth + LABEL_NAME_SEPARATOR + Name.nextInt, IsVar).fqn
 
             val assignLeftToTemp =
               List(
