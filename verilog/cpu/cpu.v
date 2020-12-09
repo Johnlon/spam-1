@@ -49,7 +49,7 @@ module cpu(
     wire [2:0] bbus_dev, abus_dev;
     wire [3:0] targ_dev;
     wire [4:0] alu_op;
-    wire [7:0] _registered_flags;
+    wire [7:0] _registered_flags_czonGLEN;
     wire _flag_di;
     wire _flag_do;
     wire _set_flags;
@@ -119,7 +119,7 @@ module cpu(
 
     controller ctrl(
         .pc(pc_addr),
-        ._flags_czonGLEN(_registered_flags),
+        ._flags_czonGLEN(_registered_flags_czonGLEN),
         ._flag_di, ._flag_do,
 
         ._addrmode_register, ._addrmode_direct,
@@ -209,18 +209,19 @@ module cpu(
     wire gated_flags_clk;
     nor #(9) gating( gated_flags_clk , _phaseExec , _set_flags);
 
-    always @*  begin
+    /*always @*  begin
         $display("!!!! gated_flags_clk %b  = _set_flags %b | phaseExec %b" , gated_flags_clk , _set_flags , phaseExec);
     end
+*/
 
-    wire [7:0] alu_flags = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
+    wire [7:0] alu_flags_czonGLEN = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
 
-    hct74574 #(.LOG(1)) flags_czonGLEN( .D(alu_flags),
-                                       .Q(_registered_flags),
+    hct74574 #(.LOG(LOG)) flags_czonGLEN( .D(alu_flags_czonGLEN),
+                                       .Q(_registered_flags_czonGLEN),
                                         .CLK(gated_flags_clk), 
                                         ._OE(1'b0)); 
 
-    assign {_flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne} = _registered_flags;
+    assign {_flag_c, _flag_z, _flag_o, _flag_n, _flag_gt, _flag_lt, _flag_eq, _flag_ne} = _registered_flags_czonGLEN;
 
     // REGISTER FILE =====================================================================================
     // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
@@ -240,7 +241,7 @@ module cpu(
 
 
     // !!!!!!! NOTE THAT THIS USES THE phaseExec AS CLOCK !!!
-    syncRegisterFile #(.LOG(1)) regFile(
+    syncRegisterFile #(.LOG(LOG)) regFile(
         .clk(phaseExec), // only on the execute phase edge (clock going low) otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
         ._wr_en(_gated_regfile_in), // only enabled on the execute phase (low clock)
         .wr_addr(regfile_wr_addr),
@@ -261,7 +262,7 @@ module cpu(
 
     wire [7:0] uart_d;
 
-    um245r #(.LOG(2))  uart (
+    um245r #(.LOG(LOG*2))  uart (
         .D(uart_d),
         .WR(_gated_uart_wr),// Writes data on -ve edge
         ._RD(_adev_uart),	// When goes from high to low then the FIFO data is placed onto D (equates to _OE)

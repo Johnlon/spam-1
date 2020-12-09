@@ -74,10 +74,10 @@ package control;
     localparam [3:0] CONDITION_Z= 2; 
     localparam [3:0] CONDITION_O= 3; 
     localparam [3:0] CONDITION_N= 4; 
-    localparam [3:0] CONDITION_EQ=5; 
-    localparam [3:0] CONDITION_NE=6; 
-    localparam [3:0] CONDITION_GT=7; 
-    localparam [3:0] CONDITION_LT=8; 
+    localparam [3:0] CONDITION_GT=5; 
+    localparam [3:0] CONDITION_LT=6; 
+    localparam [3:0] CONDITION_EQ=7; 
+    localparam [3:0] CONDITION_NE=8; 
     localparam [3:0] CONDITION_DI=9; 
     localparam [3:0] CONDITION_DO=10; 
 
@@ -156,10 +156,10 @@ package control;
             CONDITION_Z: condname = "Z";
             CONDITION_O: condname = "O";
             CONDITION_N: condname = "N";
-            CONDITION_EQ: condname = "EQ";
-            CONDITION_NE: condname = "NE";
             CONDITION_GT: condname = "GT";
             CONDITION_LT: condname = "LT";
+            CONDITION_EQ: condname = "EQ";
+            CONDITION_NE: condname = "NE";
             CONDITION_DI: condname = "DI";
             CONDITION_DO: condname = "DO";
             default: begin

@@ -106,12 +106,12 @@ module controller(
             };
 
     wire [7:0] _flags_lo = {
-            _flags_czonGLEN[1], // GT
-            _flags_czonGLEN[2],
-            _flags_czonGLEN[3],
-            _flags_czonGLEN[4],
-            _flags_czonGLEN[5],
-            _flags_czonGLEN[6],
+            _flags_czonGLEN[1], // EQ
+            _flags_czonGLEN[2], // LT
+            _flags_czonGLEN[3], // GT
+            _flags_czonGLEN[4], // n
+            _flags_czonGLEN[5], // o
+            _flags_czonGLEN[6], // z
             _flags_czonGLEN[7], // Carry
             1'b0}; // Always
 

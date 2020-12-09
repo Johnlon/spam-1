@@ -68,7 +68,7 @@ end
 
   if (LOG)
     always @(Mem[A]) begin
-        if (!_WE) $display("%9t ", $time, "RAM : UPDATE - RAM[0x%04x]=%08b     Mem[A]=%02h", A, D , Mem[A]);
+        if (!_WE) $display("%9t ", $time, "RAM : UPDATE - RAM[0x%04x]=%08b(%1d)     Mem[A]=%02h", A, D, D , Mem[A]);
   end
 
   if (LOG) always @(delayedA)
