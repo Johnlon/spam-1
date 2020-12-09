@@ -369,7 +369,7 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-   // assertSame(expected, actual)
+    // assertSame(expected, actual)
   }
 
   @Test
@@ -446,7 +446,7 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-   // assertSame(expected, actual)
+    // assertSame(expected, actual)
   }
 
   @Test
@@ -465,7 +465,7 @@ class SpamCCTest {
 
     val actual: List[String] = compile(lines, verbose = true, outputCheck = {
       lines =>
-        checkTransmitted('d', lines, List(  9,   8,   7,   6,   5,   4,   3,   2,   1,   0).map(_.toString))
+        checkTransmitted('d', lines, List(9, 8, 7, 6, 5, 4, 3, 2, 1, 0).map(_.toString))
     })
 
     val expected = split(
@@ -531,7 +531,7 @@ class SpamCCTest {
 
     val actual: List[String] = compile(lines, outputCheck = {
       lines =>
-        checkTransmitted('d', lines, List(  2,3,4,5,6,7,8,9,10 ).map(_.toString))
+        checkTransmitted('d', lines, List(2, 3, 4, 5, 6, 7, 8, 9, 10).map(_.toString))
     })
 
     val expected = split(
@@ -745,7 +745,7 @@ class SpamCCTest {
 
     val actual: List[String] = compile(lines, quiet = true, outputCheck = {
       lines =>
-        checkTransmitted('c', lines, List(  "B"))
+        checkTransmitted('c', lines, List("B"))
     })
 
     val expected = split(
@@ -1129,7 +1129,41 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-   // assertSame(expected, actual)
+    // assertSame(expected, actual)
+  }
+
+  @Test
+  def snake(): Unit = {
+    import terminal.Terminal._
+
+    val lines =
+      s"""
+         |
+         |fun main() {
+         | var a = 33;
+         | var l = 0;
+         | putchar(${ORIGIN.toInt})
+         |
+         | while ( a < 255 ) {
+         |   putchar( a )
+         |   putchar(${RIGHT.toInt})
+         |
+         |   let a = a + 1;
+         | }
+         |
+         |}
+         |
+         |// END  COMMAND
+         |""".stripMargin
+
+    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
+      checkTransmittedC(str, 'A')
+      checkTransmittedC(str, 'B')
+      checkTransmittedC(str, '?')
+      checkTransmittedC(str, 'E')
+      checkTransmittedC(str, '!')
+    })
+
   }
 
   @Test
@@ -1185,7 +1219,7 @@ class SpamCCTest {
         |root_end:
         |END""".stripMargin)
 
-  //  assertSame(expected, actual)
+    //  assertSame(expected, actual)
   }
 
 

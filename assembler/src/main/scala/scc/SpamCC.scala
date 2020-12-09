@@ -282,7 +282,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
                  |PCHITMP = <:$labelTransmit
                  |PC = >:$labelTransmit _DO
                  |PCHITMP = <:$labelWait
-                 |PC = <:$labelWait
+                 |PC = >:$labelWait
                  |; do transmit
                  |$labelTransmit:
                  |UART = RAM
@@ -314,7 +314,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
                |PCHITMP = <:$labelTransmit
                |PC = >:$labelTransmit _DO
                |PCHITMP = <:$labelWait
-               |PC = <:$labelWait
+               |PC = >:$labelWait
                |$labelTransmit:
                |UART = REGA
                |""")
@@ -337,7 +337,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
                |PCHITMP = <:$labelTransmit
                |PC = >:$labelTransmit _DO
                |PCHITMP = <:$labelWait
-               |PC = <:$labelWait
+               |PC = >:$labelWait
                |$labelTransmit:
                |UART = [:$varLocn]
                |""")
@@ -359,7 +359,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
                |PCHITMP = <:$labelTransmit
                |PC = >:$labelTransmit _DO
                |PCHITMP = <:$labelWait
-               |PC = <:$labelWait
+               |PC = >:$labelWait
                |$labelTransmit:
                |UART = $varName
                |""")
@@ -524,7 +524,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
   //               |PCHITMP = <:$labelTransmit
   //               |PC = >:$labelTransmit _DO
   //               |PCHITMP = <:$labelWait
-  //               |PC = <:$labelWait
+  //               |PC = >:$labelWait
   //               |$labelTransmit:
   //               |UART = REGA
   //               |""")

@@ -29,6 +29,11 @@ dependencies {
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.3'
     compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.3'
     compile group: 'org.apache.commons', name: 'commons-text', version: '1.9'
+    compile group: 'org.scala-lang.modules', name: 'scala-swing_2.13', version: '3.0.0'
+
+    // tailer
+    compile group: 'commons-io', name: 'commons-io', version: '2.6'
+
 
 }
 

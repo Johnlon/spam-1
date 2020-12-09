@@ -29,6 +29,8 @@
 module test();
     string rom;
 
+    parameter LOG = 0;
+
     initial begin
         if (! $value$plusargs("rom=%s", rom)) begin
             $display("ERROR: please specify +rom=<rom> to start.");
@@ -58,7 +60,7 @@ module test();
     //always begin
     //   #CLOCK_INTERVAL clk = !clk;
     //end
-    cpu CPU(_RESET_SWITCH, clk);
+    cpu #(.LOG(LOG)) CPU(_RESET_SWITCH, clk);
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -156,7 +158,7 @@ endfunction
         if (_RESET_SWITCH) icount++; else icount=0;
 
         $display("\n%9t", $time, " END OF EXECUTE VALUES"); 
-        DUMP; 
+        if (LOG > 0) DUMP; 
 
         $display("\n%9t", $time, " CLK GOING HIGH  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ INSTRUCTION %1d\n", icount); 
         clk = 1;
@@ -200,7 +202,7 @@ endfunction
         );
 */
         $display("%9t", $time, " DECOMPILE ",
-            " %-5d : ", pc,
+            " PC=%-5d : ", pc,
             " %-1s = ", control::tdevname(CPU.ctrl.instruction[42:39]),
             " %1s", control::adevname(CPU.ctrl.instruction[38:36]),
             "  (%1s) ",  aluopName(CPU.ctrl.instruction[47:43]),
@@ -251,7 +253,7 @@ endfunction
             #HALF_CLK_HI
             CLK_DN;
             #HALF_CLK_LO
-            $display("%9t", $time, " DUMPREG:", "  PC=%d ", pcval, " REGA:%08d", CPU.regFile.get(0), "  REGB:%08d", CPU.regFile.get(1), "  REGC:%08d", CPU.regFile.get(2), "  REGD:%08d", CPU.regFile.get(3));
+            $display("%9t", $time, " DUMPREG:", "  PC=%d ", pcval, " REGA:%03d", CPU.regFile.get(0), "  REGB:%03d", CPU.regFile.get(1), "  REGC:%03d", CPU.regFile.get(2), "  REGD:%03d", CPU.regFile.get(3));
             CLK_UP;
         end
 
@@ -273,7 +275,8 @@ endfunction
         currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
         currentCodeText = string_bits'(CODE_TEXT[pcval]);
         $display("%9t ", $time, "INCREMENTED PC=%1d    INSTRUCTION: %1s", {CPU.PCHI, CPU.PCLO}, currentCode);
-        if (currentCodeText != "") $display("%9t ", $time, "COMMENT: %1s", currentCodeText);
+
+        //if (currentCodeText != "") $display("%9t ", $time, "COMMENT: %1s", currentCodeText);
 
         if (pcval >= counter) begin
             $display("%9t ", $time, "INCREMENTED PC=%1d    BEYOND PROGRAM LENGTH %d", {CPU.PCHI, CPU.PCLO}, counter);

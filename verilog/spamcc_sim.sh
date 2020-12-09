@@ -22,6 +22,7 @@ vvp=$root/vvp/vvp
 #    echo $iverilog
 
 cd $(dirname $(readlink -f $TEST))
+pwd
 filename=$(basename $TEST)
 rootname=$(basename $filename .v)
 
@@ -35,7 +36,7 @@ $vvp -N -i $rootname.vvp "$@" &
 
 # timeout to prenent orphanned processes when Java test harness goes away
 
-timeout=20
+timeout=60
 while [ -d /proc/$! -a $timeout -gt 0 ]; do
     sleep 1
     timeout=$((timeout-1))
