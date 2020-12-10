@@ -19,6 +19,23 @@ trait SubBlocks {
     n => BlkName(n)
   }
 
+  def blkArrayElementExpr: Parser[Block] = name ~ "[" ~ compoundBlkExpr ~ "]" ^^ {
+    case arrayName ~ _ ~ blkExpr ~ _ => BlkArrayElement(arrayName, blkExpr)
+  }
+
+
+  def blkNExpr: Parser[Block] = constExpr ^^ {
+    konst => BlkConst(konst)
+  }
+
+  def blkSingleExpr: Parser[Block] = blkArrayElementExpr | blkNExpr | blkVarExpr
+
+  def blkExpr: Parser[Block] = blkSingleExpr | "(" ~> compoundBlkExpr <~ ")"
+
+  def compoundBlkExpr: Parser[Block] = blkExpr ~ ((aluOp ~ blkExpr) *) ^^ {
+    case leftExpr ~ otherExpr => BlkCompound(leftExpr, otherExpr)
+  }
+
   case class BlkName(variableName: String) extends Block with IsStandaloneVarExpr {
     override def toString = s"$variableName"
 
@@ -28,12 +45,14 @@ trait SubBlocks {
         s"REGA = [:$labelSrcVar]",
       )
     }
+
+    override def dump(depth: Int): List[(Int, String)] =
+      List(
+        (depth, this.getClass.getSimpleName + s"( $variableName )")
+      )
+
   }
 
-
-  def blkArrayElementExpr: Parser[Block] = name ~ "[" ~ compoundBlkExpr ~ "]" ^^ {
-    case arrayName ~ _ ~ blkExpr ~ _ => BlkArrayElement(arrayName, blkExpr)
-  }
 
   case class BlkArrayElement(arrayName: String, indexExpr: Block) extends Block with IsStandaloneVarExpr {
     override def toString = s"$arrayName"
@@ -54,10 +73,14 @@ trait SubBlocks {
     }
 
     override def variableName: String = arrayName
-  }
 
-  def blkNExpr: Parser[Block] = constExpr ^^ {
-    konst => BlkConst(konst)
+    override def dump(depth: Int): List[(Int, String)] =
+      List(
+        (depth, this.getClass.getSimpleName + "( name [")
+      ) ++
+        indexExpr.dump(depth + 1) ++
+        List((depth, "] )"))
+
   }
 
   case class BlkConst(konst: Int) extends Block {
@@ -68,14 +91,12 @@ trait SubBlocks {
         s"REGA = $konst",
       )
     }
-  }
 
-  def blkSingleExpr: Parser[Block] = blkArrayElementExpr | blkNExpr | blkVarExpr
+    override def dump(depth: Int): List[(Int, String)] =
+      List(
+        (depth, this.getClass.getSimpleName + s"( $konst )")
+      )
 
-  def blkExpr: Parser[Block] = blkSingleExpr | "(" ~> compoundBlkExpr <~ ")"
-
-  def compoundBlkExpr: Parser[Block] = blkExpr ~ ((aluOp ~ blkExpr) *) ^^ {
-    case leftExpr ~ otherExpr => BlkCompound(leftExpr, otherExpr)
   }
 
   case class BlkCompound(leftExpr: Block, otherExpr: List[String ~ Block]) extends Block with IsCompoundExpressionBlock {
@@ -143,6 +164,20 @@ trait SubBlocks {
         }
       } else None
     }
+
+    override def dump(depth: Int): List[(Int, String)] =
+      List(
+        (depth, this.getClass.getSimpleName + "( ")
+      ) ++
+        leftExpr.dump(depth + 1) ++
+        otherExpr.flatMap {
+          case op ~ more =>
+            List(depth + 2 -> op) ++
+              more.dump(depth + 2)
+
+        } ++
+        List((depth, ")"))
+
   }
 
 }

@@ -1137,16 +1137,14 @@ class SpamCCTest {
     import terminal.Terminal._
 
     val lines =
-      s"""
-         |
-         |fun main() {
+      s"""fun main() {
          | var a = 33;
          | var b = 0;
          | var l = 0;
          | putchar(${ORIGIN.toInt})
-         |
          | while ( a < 255 ) {
          |  let b = 10;
+         |
          |  while ( b > 0 ) {
          |   putchar(${RIGHT.toInt})
          |   putchar( a )
@@ -1154,7 +1152,6 @@ class SpamCCTest {
          |   //putchar( '.' )
          |   let b = b - 1;
          |  }
-         |
          |  let b = 10;
          |  while ( b > 0 ) {
          |   putchar(${DOWN.toInt})
@@ -1163,7 +1160,6 @@ class SpamCCTest {
          |   //putchar( '.' )
          |   let b = b - 1;
          |  }
-         |
          |  let b = 10;
          |  while ( b > 0 ) {
          |   putchar(${LEFT.toInt})

@@ -21,7 +21,11 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
     parse(program, code) match {
       case Success(matched, _) =>
-        matched
+        var indent = 0
+        println("SpamCC parsed : " )
+        println(matched.dump(1))
+
+        matched.compile()
       case msg: Failure =>
         sys.error(s"FAILURE: $msg ")
       case msg: Error =>
@@ -55,6 +59,160 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     }
   }
 
+  // optimisation of "var VARIABLE=CONST"
+  def statementLetEqConst: Parser[Block] = positioned {
+    "let" ~> name ~ "=" ~ constExpr <~ SEMICOLON ^^ {
+      case targetVar ~ _ ~ konst =>
+        LetVarEqConst(targetVar, konst)
+    }
+  }
+
+  // optimisation of "var VARIABLE=CONST op VARIABLE"
+  def statementVarEqConstOpVar: Parser[Block] = positioned {
+    "var" ~> name ~ "=" ~ constExpr ~ aluOp ~ name <~ SEMICOLON ^^ {
+      case targetVar ~ _ ~ konst ~ oper ~ srcVar =>
+        DefVarEqConstOpVar(targetVar, konst, oper, srcVar)
+    }
+  }
+
+  // optimisation of "var VARIABLE=VARIABLE op CONST"
+  def statementVarEqVarOpConst: Parser[Block] = positioned {
+    "var" ~> name ~ "=" ~ name ~ aluOp ~ constExpr <~ SEMICOLON ^^ {
+      case targetVar ~ _ ~ srcVar ~ op ~ konst =>
+        DefVarEqVarOpConst(targetVar, srcVar, op, konst)
+    }
+  }
+
+  // optimisation of "var VARIABLE=VARIABLE"
+  def statementVarEqVar: Parser[Block] = positioned {
+    "var" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
+      case targetVar ~ _ ~ srcVar =>
+        DefVarEqVar(targetVar, srcVar)
+    }
+  }
+
+  // optimisation of "var VARIABLE=VARIABLE op VARIABLE"
+  def statementVarEqVarOpVar: Parser[Block] = positioned {
+    "var" ~> name ~ "=" ~ name ~ aluOp ~ name <~ SEMICOLON ^^ {
+      case targetVar ~ _ ~ srcVar1 ~ op ~ srcVar2 =>
+        DefVarEqVarOpVar(targetVar, srcVar1, op, srcVar2)
+    }
+  }
+
+  // general purpose
+  def statementVarOp: Parser[Block] = positioned {
+    "var" ~> name ~ "=" ~ compoundBlkExpr <~ SEMICOLON ^^ {
+      case targetVar ~ _ ~ block => DefVarEqExpr(targetVar, block)
+    }
+  }
+
+
+  // general purpose
+  def statementLetVarEqOp: Parser[Block] = positioned {
+    "let" ~> name ~ "=" ~ compoundBlkExpr <~ SEMICOLON ^^ {
+      case target ~ _ ~ expr =>
+        LetVarEqExpr(target, expr)
+    }
+  }
+
+  def statementLetVarEqVar: Parser[Block] = positioned {
+    "let" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
+      case targetVarName ~ _ ~ srcVarName => LetVarEqVar(targetVarName, srcVarName)
+    }
+  }
+
+  /*
+  STRING:     STR     "ABC\n\0\u0000"
+  BYTE_ARR:   BYTES   [ 'A', 65 ,$41, %10101010 ] ; parse as hex bytes and then treat as per STR
+  */
+  def statementVarString: Parser[Block] = positioned {
+    "var" ~> name ~ "=" ~ quotedString <~ SEMICOLON ^^ {
+      case target ~ _ ~ str => DefVarEqString(target, str)
+    }
+  }
+
+  def statementRef: Parser[Block] = positioned {
+    "ref" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
+      case refName ~ _ ~ target => DefRefEqVar(refName, target)
+    }
+  }
+
+  def stmtPutsName: Parser[Block] = positioned {
+    "puts" ~ "(" ~> name <~ ")" ^^ {
+      varName => Puts(varName)
+    }
+  }
+
+  def statementPutcharConstOptimisation: Parser[Block] = positioned {
+    "putchar" ~ "(" ~> constExpr <~ ")" ^^ {
+      konst => PutcharConst(konst)
+    }
+  }
+
+
+  def statementPutcharVarOptimisation: Parser[Block] = positioned {
+    "putchar" ~ "(" ~> name <~ ")" ^^ {
+      varName: String => PutcharVar(varName)
+    }
+  }
+
+
+  def stmtPutcharGeneral: Parser[Block] = positioned {
+    "putchar" ~ "(" ~> compoundBlkExpr <~ ")" ^^ {
+      block => PutChar(block)
+    }
+  }
+
+
+  def functionDef: Parser[Block] = positioned {
+    "fun " ~> name ~ "(" ~ repsep((name ~ ("out" ?)), ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
+      case fnName ~ _ ~ args ~ _ ~ content => DefFunction(fnName, args, content)
+    }
+  }
+
+  def functionCall: Parser[Block] = positioned {
+    name ~ "(" ~ repsep(compoundBlkExpr, ",") ~ ")" ^^ {
+      case fnName ~ _ ~ argExpr ~ _ => CallFunction(fnName, argExpr)
+    }
+  }
+
+  def whileTrue: Parser[Block] = positioned {
+    "while" ~ "(" ~ "true" ~ ")" ~ "{" ~> statements <~ "}" ^^ {
+      content => WhileTrue(content)
+    }
+  }
+
+  def whileCond: Parser[Block] = positioned {
+    "while" ~ "(" ~> condition ~ ")" ~ "{" ~ statements <~ "}" ^^ {
+      case cond ~ _ ~ _ ~ content =>
+        WhileCond(cond._1, cond._2, content)
+    }
+  }
+
+  def breakOut: Parser[Block] = positioned {
+    "break" ^^ {
+      _ => Break()
+    }
+  }
+
+  def ifCond: Parser[Block] = positioned {
+    "if" ~ "(" ~> condition ~ ")" ~ "{" ~ statements <~ "}" ^^ {
+      case cond ~ _ ~ _ ~ content => IfCond(cond._1, cond._2, content)
+    }
+  }
+
+
+  def comment: Parser[Block] = positioned {
+    "//.*".r ^^ {
+      c => Comment(c)
+    }
+  }
+
+  def program: Parser[Program] = "program" ~ "{" ~> ((comment | functionDef) +) <~ "}" ^^ {
+    fns => Program(fns)
+  }
+
+
   case class DefVarEqConst(targetVar: String, konst: Int) extends Block {
     override def gen(depth: Int, parent: Name): List[String] = {
       val label = parent.assignVarLabel(targetVar, IsVar).fqn
@@ -64,13 +222,72 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     }
   }
 
-
-  // optimisation of "var VARIABLE=CONST"
-  def statementLetEqConst: Parser[Block] = positioned {
-    "let" ~> name ~ "=" ~ constExpr <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ konst =>
-        LetVarEqConst(targetVar, konst)
+  case class DefVarEqConstOpVar(targetVar: String, konst: Int, oper: String, srcVar: String) extends Block {
+    override def gen(depth: Int, parent: Name): List[String] = {
+      val sLabel = parent.getVarLabel(srcVar).fqn
+      val tLabel = parent.assignVarLabel(targetVar, IsVar).fqn
+      List(
+        s"REGA = $konst",
+        s"REGA = REGA $oper [:$sLabel]",
+        s"[:$tLabel] = REGA",
+      )
     }
+  }
+
+  case class DefVarEqVarOpConst(targetVar: String, srcVar: String, op: String, konst: Int) extends Block {
+    override def gen(depth: Int, parent: Name): List[String] = {
+      val sLabel = parent.getVarLabel(srcVar).fqn
+      val tLabel = parent.assignVarLabel(targetVar, IsVar).fqn
+      List(
+        s"REGA = [:$sLabel]",
+        s"REGA = REGA $op $konst",
+        s"[:$tLabel] = REGA",
+      )
+    }
+  }
+
+
+  case class DefVarEqVar(targetVar: String, srcVar: String) extends Block {
+    override def gen(depth: Int, parent: Name): List[String] = {
+      val sLabel = parent.getVarLabel(srcVar).fqn
+      val tLabel = parent.assignVarLabel(targetVar, IsVar).fqn
+      List(
+        s"REGA = [:$sLabel]",
+        s"[:$tLabel] = REGA",
+      )
+    }
+  }
+
+  case class DefVarEqVarOpVar(targetVar: String, srcVar1: String, op: String, srcVar2: String) extends Block {
+    override def gen(depth: Int, parent: Name): List[String] = {
+      val s1Label = parent.getVarLabel(srcVar1).fqn
+      val s2Label = parent.getVarLabel(srcVar2).fqn
+      val tLabel = parent.assignVarLabel(targetVar, IsVar).fqn
+      List(
+        s"REGA = [:$s1Label]",
+        s"REGB = [:$s2Label]",
+        s"[:$tLabel] = REGA $op REGB",
+      )
+    }
+  }
+
+  case class DefVarEqExpr(targetVar: String, block: Block) extends Block {
+    override def gen(depth: Int, parent: Name): List[String] = {
+
+      val stmts: List[String] = block.expr(depth + 1, parent)
+
+      val labelTarget = parent.assignVarLabel(targetVar, IsVar).fqn
+
+      val assign = List(
+        s"[:$labelTarget] = REGA",
+      )
+      stmts ++ assign
+    }
+
+    override def dump(depth: Int): List[(Int, String)] =
+      List((depth, this.getClass.getSimpleName + "("), (depth + 1, targetVar)) ++
+        block.dump(depth + 1) ++
+        List((depth, ")"))
   }
 
   case class LetVarEqConst(targetVar: String, konst: Int) extends Block {
@@ -95,122 +312,10 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     }
   }
 
-  // optimisation of "var VARIABLE=CONST op VARIABLE"
-  def statementVarEqConstOpVar: Parser[Block] = positioned {
-    "var" ~> name ~ "=" ~ constExpr ~ aluOp ~ name <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ konst ~ oper ~ srcVar =>
-        DefVarEqConstOpVar(targetVar, konst, oper, srcVar)
-    }
-  }
-
-  case class DefVarEqConstOpVar(targetVar: String, konst: Int, oper: String, srcVar: String) extends Block {
-    override def gen(depth: Int, parent: Name): List[String] = {
-      val sLabel = parent.getVarLabel(srcVar).fqn
-      val tLabel = parent.assignVarLabel(targetVar, IsVar).fqn
-      List(
-        s"REGA = $konst",
-        s"REGA = REGA $oper [:$sLabel]",
-        s"[:$tLabel] = REGA",
-      )
-    }
-  }
-
-  // optimisation of "var VARIABLE=VARIABLE op CONST"
-  def statementVarEqVarOpConst: Parser[Block] = positioned {
-    "var" ~> name ~ "=" ~ name ~ aluOp ~ constExpr <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ srcVar ~ op ~ konst =>
-        DefVarEqVarOpConst(targetVar, srcVar, op, konst)
-    }
-  }
-
-  case class DefVarEqVarOpConst(targetVar: String, srcVar: String, op: String, konst: Int) extends Block {
-    override def gen(depth: Int, parent: Name): List[String] = {
-      val sLabel = parent.getVarLabel(srcVar).fqn
-      val tLabel = parent.assignVarLabel(targetVar, IsVar).fqn
-      List(
-        s"REGA = [:$sLabel]",
-        s"REGA = REGA $op $konst",
-        s"[:$tLabel] = REGA",
-      )
-    }
-  }
-
-
-  // optimisation of "var VARIABLE=VARIABLE"
-  def statementVarEqVar: Parser[Block] = positioned {
-    "var" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ srcVar =>
-        DefVarEqVar(targetVar, srcVar)
-    }
-  }
-
-  case class DefVarEqVar(targetVar: String, srcVar: String) extends Block {
-    override def gen(depth: Int, parent: Name): List[String] = {
-      val sLabel = parent.getVarLabel(srcVar).fqn
-      val tLabel = parent.assignVarLabel(targetVar, IsVar).fqn
-      List(
-        s"REGA = [:$sLabel]",
-        s"[:$tLabel] = REGA",
-      )
-    }
-  }
-
-  // optimisation of "var VARIABLE=VARIABLE op VARIABLE"
-  def statementVarEqVarOpVar: Parser[Block] = positioned {
-    "var" ~> name ~ "=" ~ name ~ aluOp ~ name <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ srcVar1 ~ op ~ srcVar2 =>
-        DefVarEqVarOpVar(targetVar, srcVar1, op, srcVar2)
-    }
-  }
-
-  case class DefVarEqVarOpVar(targetVar: String, srcVar1: String, op: String, srcVar2: String) extends Block {
-    override def gen(depth: Int, parent: Name): List[String] = {
-      val s1Label = parent.getVarLabel(srcVar1).fqn
-      val s2Label = parent.getVarLabel(srcVar2).fqn
-      val tLabel = parent.assignVarLabel(targetVar, IsVar).fqn
-      List(
-        s"REGA = [:$s1Label]",
-        s"REGB = [:$s2Label]",
-        s"[:$tLabel] = REGA $op REGB",
-      )
-    }
-  }
-
-  // general purpose
-  def statementVarOp: Parser[Block] = positioned {
-    "var" ~> name ~ "=" ~ compoundBlkExpr <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ block => DefVarEqExpr(targetVar, block)
-    }
-  }
-
-  case class DefVarEqExpr(targetVar: String, block: Block) extends Block {
+  case class LetVarEqExpr(targetVar: String, block: Block) extends Block {
     override def gen(depth: Int, parent: Name): List[String] = {
 
       val stmts: List[String] = block.expr(depth + 1, parent)
-
-      val labelTarget = parent.assignVarLabel(targetVar, IsVar).fqn
-
-      val assign = List(
-        s"[:$labelTarget] = REGA",
-      )
-      stmts ++ assign
-    }
-  }
-
-
-  // general purpose
-  def statementLetVarEqOp: Parser[Block] = positioned {
-    "let" ~> name ~ "=" ~ compoundBlkExpr <~ SEMICOLON ^^ {
-      case target ~ _ ~ expr =>
-        LetVarEqExpr(target, expr)
-    }
-  }
-
-
-  case class LetVarEqExpr(targetVar: String, compoundBlkExpr: Block) extends Block {
-    override def gen(depth: Int, parent: Name): List[String] = {
-
-      val stmts: List[String] = compoundBlkExpr.expr(depth + 1, parent)
       val labelTarget = parent.getVarLabel(targetVar, IsVar).fqn
 
       val assign = List(
@@ -218,13 +323,13 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
       )
       stmts ++ assign
     }
-  }
 
-
-  def statementLetVarEqVar: Parser[Block] = positioned {
-    "let" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
-      case targetVarName ~ _ ~ srcVarName => LetVarEqVar(targetVarName, srcVarName)
-    }
+    override def dump(depth: Int): List[(Int, String)] =
+      List(
+        (depth, this.getClass.getSimpleName + "("),
+        (depth + 1, targetVar)
+      ) ++ block.dump(depth + 1) ++
+        List((depth, ")"))
   }
 
   case class LetVarEqVar(targetVarName: String, srcVarName: String) extends Block {
@@ -250,15 +355,6 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     }
   }
 
-  /*
-  STRING:     STR     "ABC\n\0\u0000"
-  BYTE_ARR:   BYTES   [ 'A', 65 ,$41, %10101010 ] ; parse as hex bytes and then treat as per STR
-  */
-  def statementVarString: Parser[Block] = positioned {
-    "var" ~> name ~ "=" ~ quotedString <~ SEMICOLON ^^ {
-      case target ~ _ ~ str => DefVarEqString(target, str)
-    }
-  }
 
   case class DefVarEqString(target: String, str: String) extends Block {
     override def gen(depth: Int, parent: Name): List[String] = {
@@ -267,12 +363,6 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
       List(
         s"""; var $target = "$str""""
       )
-    }
-  }
-
-  def statementRef: Parser[Block] = positioned {
-    "ref" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
-      case refName ~ _ ~ target => DefRefEqVar(refName, target)
     }
   }
 
@@ -291,13 +381,9 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
   }
 
 
-  def stmtPutsName: Parser[Block] = positioned {
-    "puts" ~ "(" ~> name <~ ")" ^^ {
-      varName => Puts(varName)
-    }
-  }
+  case class Puts(varName: String)
+    extends Block(nestedName = s"puts_${varName}_") {
 
-  case class Puts(varName: String) extends Block(nestedName = s"puts_${varName}_") {
     override def gen(depth: Int, parent: Name): List[String] = {
       val labelStartLoop = parent.fqnLabelPathUnique("startloop")
       val labelWait = parent.fqnLabelPathUnique("wait")
@@ -349,19 +435,13 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     }
   }
 
-  def stmtPutcharGeneral: Parser[Block] = positioned {
-    "putchar" ~ "(" ~> compoundBlkExpr <~ ")" ^^ {
-      block => PutChar(block)
-    }
-  }
-
-  case class PutChar(bex: Block) extends Block(nestedName = "putcharGeneral") {
+  case class PutChar(block: Block) extends Block(nestedName = "putcharGeneral") {
     override def gen(depth: Int, parent: Name): List[String] = {
       val labelWait = parent.fqnLabelPathUnique("wait")
       val labelTransmit = parent.fqnLabelPathUnique("transmit")
 
       // leaves result in REGA
-      val stmts: List[String] = bex.expr(depth + 1, parent)
+      val stmts: List[String] = block.expr(depth + 1, parent)
 
       stmts ++ split(
         s"""
@@ -374,14 +454,38 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
            |UART = REGA
            |""")
     }
+
+    override def dump(depth: Int): List[(Int, String)] =
+      List(
+        (depth, this.getClass.getSimpleName + "(")
+      ) ++ block.dump(depth + 1) ++
+        List((depth, ")"))
   }
 
-
-  def statementPutcharVarOptimisation: Parser[Block] = positioned {
-    "putchar" ~ "(" ~> name <~ ")" ^^ {
-      varName: String => PutcharVar(varName)
-    }
-  }
+  //
+  //  def stmtPutsGeneral: Parser[Block] = "puts" ~ "(" ~> blkExpr <~ ")" ^^ {
+  //    bex =>
+  //      new Block("stmtPutsGeneral", s"$bex", nestedName = "putsGeneral") {
+  //        override def gen(depth: Int, parent: Name): List[String] = {
+  //          val labelWait = parent.fqnLabelPathUnique("wait")
+  //          val labelTransmit = parent.fqnLabelPathUnique("transmit")
+  //
+  //          // leaves result in REGA
+  //          val stmts: List[String] = bex.expr(depth + 1, parent)
+  //
+  //          stmts ++ split(
+  //            s"""
+  //               |$labelWait:
+  //               |PCHITMP = <:$labelTransmit
+  //               |PC = >:$labelTransmit _DO
+  //               |PCHITMP = <:$labelWait
+  //               |PC = >:$labelWait
+  //               |$labelTransmit:
+  //               |UART = REGA
+  //               |""")
+  //        }
+  //      }
+  //  }
 
   case class PutcharVar(varName: String) extends Block(nestedName = s"putcharVar_${varName}_") {
     override def gen(depth: Int, parent: Name): List[String] = {
@@ -401,12 +505,6 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     }
   }
 
-  def statementPutcharConstOptimisation: Parser[Block] = positioned {
-    "putchar" ~ "(" ~> constExpr <~ ")" ^^ {
-      konst => PutcharConst(konst)
-    }
-  }
-
   case class PutcharConst(konst: Int) extends Block(nestedName = s"putcharConst_${konst}_") {
     override def gen(depth: Int, parent: Name): List[String] = {
       val labelWait = parent.fqnLabelPathUnique("wait")
@@ -421,12 +519,6 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
            |$labelTransmit:
            |UART = $konst
            |""")
-    }
-  }
-
-  def functionDef: Parser[Block] = positioned {
-    "fun " ~> name ~ "(" ~ repsep((name ~ ("out" ?)), ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
-      case fnName ~ _ ~ args ~ _ ~ content => DefFunction(fnName, args, content)
     }
   }
 
@@ -474,13 +566,15 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
       prefix ++ stmts ++ suffix
     }
-  }
 
-
-  def whileTrue: Parser[Block] = positioned {
-    "while" ~ "(" ~ "true" ~ ")" ~ "{" ~> statements <~ "}" ^^ {
-      content => WhileTrue(content)
-    }
+    override def dump(depth: Int): List[(Int, String)] =
+      List(
+        (depth, this.getClass.getSimpleName + s" $fnName ("),
+      ) ++
+        args.map {
+          a => (depth + 1, a._1 + " " + a._2.getOrElse(""))
+        } ++
+        content.flatMap(_.dump(depth + 1))
   }
 
   case class WhileTrue(content: List[Block])
@@ -510,14 +604,12 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
       prefix ++ stmts ++ suffix
     }
-  }
 
-
-  def whileCond: Parser[Block] = positioned {
-    "while" ~ "(" ~> condition ~ ")" ~ "{" ~ statements <~ "}" ^^ {
-      case cond ~ _ ~ _ ~ content =>
-        WhileCond(cond._1, cond._2, content)
-    }
+    override def dump(depth: Int): List[(Int, String)] =
+      List(
+        (depth, this.getClass.getSimpleName),
+      ) ++
+        content.flatMap(_.dump(depth + 1))
   }
 
   case class WhileCond(flagToCheck: String, conditionBlock: Block, content: List[Block])
@@ -559,37 +651,17 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
       conditionalJump ++ stmts ++ suffix
     }
-  }
 
-  //
-  //  def stmtPutsGeneral: Parser[Block] = "puts" ~ "(" ~> blkExpr <~ ")" ^^ {
-  //    bex =>
-  //      new Block("stmtPutsGeneral", s"$bex", nestedName = "putsGeneral") {
-  //        override def gen(depth: Int, parent: Name): List[String] = {
-  //          val labelWait = parent.fqnLabelPathUnique("wait")
-  //          val labelTransmit = parent.fqnLabelPathUnique("transmit")
-  //
-  //          // leaves result in REGA
-  //          val stmts: List[String] = bex.expr(depth + 1, parent)
-  //
-  //          stmts ++ split(
-  //            s"""
-  //               |$labelWait:
-  //               |PCHITMP = <:$labelTransmit
-  //               |PC = >:$labelTransmit _DO
-  //               |PCHITMP = <:$labelWait
-  //               |PC = >:$labelWait
-  //               |$labelTransmit:
-  //               |UART = REGA
-  //               |""")
-  //        }
-  //      }
-  //  }
+    override def dump(depth: Int): List[(Int, String)] =
+      List(
+        (depth, this.getClass.getSimpleName + "( " + flagToCheck)
+      ) ++
+        conditionBlock.dump(depth + 1) ++
+        List(
+          (depth, ")")
+        ) ++
+        content.flatMap(_.dump(depth + 1))
 
-  def ifCond: Parser[Block] = positioned {
-    "if" ~ "(" ~> condition ~ ")" ~ "{" ~ statements <~ "}" ^^ {
-      case cond ~ _ ~ _ ~ content => IfCond(cond._1, cond._2, content)
-    }
   }
 
   case class IfCond(flagToCheck: String, conditionBlock: Block, content: List[Block])
@@ -629,12 +701,17 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
       conditionalJump ++ stmts ++ suffix
     }
-  }
 
-  def breakOut: Parser[Block] = positioned {
-    "break" ^^ {
-      _ => Break()
-    }
+    override def dump(depth: Int): List[(Int, String)] =
+      List(
+        (depth, this.getClass.getSimpleName + "( " + flagToCheck)
+      ) ++
+        conditionBlock.dump(depth + 1) ++
+        List(
+          (depth, ")")
+        ) ++
+        content.flatMap(_.dump(depth + 1))
+
   }
 
   case class Break() extends Block {
@@ -649,12 +726,6 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
            |PCHITMP = <:$breakToLabel
            |PC = >:$breakToLabel
            """)
-    }
-  }
-
-  def functionCall: Parser[Block] = positioned {
-    name ~ "(" ~ repsep(compoundBlkExpr, ",") ~ ")" ^^ {
-      case fnName ~ _ ~ argExpr ~ _ => CallFunction(fnName, argExpr)
     }
   }
 
@@ -743,12 +814,14 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
       setupCallParams ++ setupReturnJumpParams ++ setupJumpToFn ++ setupOutParams
     }
-  }
 
-  def comment: Parser[Block] = positioned {
-    "//.*".r ^^ {
-      c => Comment(c)
-    }
+
+    override def dump(depth: Int): List[(Int, String)] =
+      List(
+        (depth, this.getClass.getSimpleName + s" $fnName ( ")
+      ) ++
+        argExpr.flatMap(_.dump(depth + 1)) ++
+        List((depth, " ) "))
   }
 
   case class Comment(comment: String) extends Block(logEntryExit = false) {
@@ -758,13 +831,24 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     }
   }
 
-  def program: Parser[List[String]] = "program" ~ "{" ~> ((comment | functionDef) +) <~ "}" ^^ {
-    fns =>
+  case class Program(fns: List[Block]) {
+    def dump(depth: Int): String = {
+
+      fns.flatMap {
+        _.dump(depth)
+      }.map {
+        ds => ("      " * ds._1) + ds._2
+      }.mkString("\n")
+    }
+
+
+    def compile(): List[String] = {
+
       val Depth0 = 0
 
       val asm: List[String] = fns.flatMap {
         b => {
-          b.expr(Depth0, Name.RootName)
+          b.expr(0, Name.RootName)
         }
       }
 
@@ -785,7 +869,9 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
            |PC = > :$MAIN_LABEL
            |""")
 
-      varlist ++ jumpToMain ++ asm :+ "root_end:" :+ "END"
+      varlist ++ jumpToMain ++ asm :+
+        "root_end:" :+ "END"
+    }
   }
 
   trait IsFunction {
@@ -825,11 +911,13 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
   }
 
 
-  abstract class Block(var nestedName: String = "", logEntryExit: Boolean = true) extends Positional {
+  abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) extends Positional {
 
     if (!nestedName.matches("^[a-zA-Z0-9_]*$")) {
       sys.error(s"invalid block nested name ;'$nestedName'")
     }
+
+    def dump(depth: Int): List[(Int, String)] = List((depth, this.toString))
 
     final def expr(depth: Int, parentScope: Name): List[String] = {
 
