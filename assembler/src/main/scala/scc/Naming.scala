@@ -10,6 +10,10 @@ trait Naming {
 
   case class Name private(parent: Name, name: String, endLabel: Option[String] = None, functions: ListBuffer[(Name, Block with IsFunction)] = ListBuffer.empty) {
 
+    if (!name.matches("^[a-zA-Z0-9_]+$")) {
+      sys.error(s"invalid name ;'$name'")
+    }
+
     def lookupFunction(name: String): Option[(Name, Block with IsFunction)] = {
       val maybeBlock = functions.find(f => f._2.functionName == name)
       maybeBlock.orElse {
@@ -64,13 +68,11 @@ trait Naming {
         sys.error(s"cannot redefine '$name' it is already defined with label ${existing.fqn} with initial value 0x${existing.pos.toHexString}(${existing.pos} dec)")
       }
 
-      label.getOrElse {
-        val fqn = toFqVarPath(name)
-        val pos = variables.lastOption.map(v => v.pos + v.bytes.length).getOrElse(0)
-        val v = Variable(name, fqn, pos, data, typ)
-        variables.append(v)
-        v
-      }
+      val fqn = toFqVarPath(name)
+      val pos = variables.lastOption.map(v => v.pos + v.bytes.length).getOrElse(0)
+      val v = Variable(name, fqn, pos, data, typ)
+      variables.append(v)
+      v
     }
 
     def lookupVarLabel(name: String): Option[Variable] = {
@@ -95,13 +97,14 @@ trait Naming {
         sys.error(str)
       }
     }
+
     def getVarLabel(name: String, typ: VarType): Variable = {
       val label = lookupVarLabel(name)
       val v = label.getOrElse {
         val str = s"scc error: $name has not been defined yet @ $this"
         sys.error(str)
       }
-      if (v.typ!=typ) {
+      if (v.typ != typ) {
         sys.error(s"cannot locate '$name' as $typ; but found it defined as a ${v.typ}' with label ${v.fqn}")
       }
       v
@@ -118,5 +121,6 @@ trait Naming {
       idx
     }
   }
+
 }
 

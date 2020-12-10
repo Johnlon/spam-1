@@ -386,7 +386,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, outputCheck = str => {
+    val actual: List[String] = compile(lines, verbose=true, outputCheck = str => {
       checkTransmittedC(str, 'A')
       checkTransmittedC(str, 'B')
       checkTransmittedC(str, 'C')
@@ -1141,12 +1141,48 @@ class SpamCCTest {
          |
          |fun main() {
          | var a = 33;
+         | var b = 0;
          | var l = 0;
          | putchar(${ORIGIN.toInt})
          |
          | while ( a < 255 ) {
-         |   putchar( a )
+         |  let b = 10;
+         |  while ( b > 0 ) {
          |   putchar(${RIGHT.toInt})
+         |   putchar( a )
+         |   //putchar( '#' )
+         |   //putchar( '.' )
+         |   let b = b - 1;
+         |  }
+         |
+         |  let b = 10;
+         |  while ( b > 0 ) {
+         |   putchar(${DOWN.toInt})
+         |   putchar( a )
+         |   //putchar( '#' )
+         |   //putchar( '.' )
+         |   let b = b - 1;
+         |  }
+         |
+         |  let b = 10;
+         |  while ( b > 0 ) {
+         |   putchar(${LEFT.toInt})
+         |   putchar( a )
+         |   //putchar( '#' )
+         |   //putchar( '.' )
+         |   let b = b - 1;
+         |  }
+         |
+         |  let b = 10;
+         |  while ( b > 0 ) {
+         |   putchar(${UP.toInt})
+         |   putchar( a )
+         |   //putchar( '#' )
+         |   //putchar( '.' )
+         |   let b = b - 1;
+         |  }
+         |  putchar(${RIGHT.toInt})
+         |  putchar(${DOWN.toInt})
          |
          |   let a = a + 1;
          | }
