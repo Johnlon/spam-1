@@ -27,10 +27,10 @@
     end
 
 module test();
-    string rom;
 
     parameter LOG = 0;
 
+    string rom;
     initial begin
         if (! $value$plusargs("rom=%s", rom)) begin
             $display("ERROR: please specify +rom=<rom> to start.");

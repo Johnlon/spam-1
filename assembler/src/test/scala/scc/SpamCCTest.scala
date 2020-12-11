@@ -1268,15 +1268,26 @@ class SpamCCTest {
     pw.close()
   }
 
-  def exec(romsPath: File, verbose: Boolean, outputCheck: List[String] => Unit): Unit = {
+  def writeUartControlFile(tmpFileRom: File): Unit = {
+    val pw = new PrintWriter(tmpFileRom)
+
+    // permit a big transmit
+    pw.write("t1000000")
+    pw.write("#100000000")
+
+    pw.close()
+  }
+
+  def exec(romsPath: File, tmpUartControl: File, verbose: Boolean, outputCheck: List[String] => Unit): Unit = {
     import scala.language.postfixOps
     import scala.sys.process._
-    val abs = romsPath.getPath.replaceAll("\\\\", "/")
+    val romFileUnix = romsPath.getPath.replaceAll("\\\\", "/")
+    val controlFileUnix = tmpUartControl.getPath.replaceAll("\\\\", "/")
 
-    println("RUNNING :\n" + abs)
+    println("RUNNING :\n" + romFileUnix)
 
     //    val pb: ProcessBuilder = Process(Seq("cmd", "/c", "bash", "-c", s"""../verilog/simulate_one.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$abs"""))
-    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$abs"""))
+    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix  +uart_control_file=`pwd`/$controlFileUnix"""))
 
     val success = new AtomicBoolean()
     val lines = ListBuffer.empty[String]
@@ -1370,11 +1381,12 @@ class SpamCCTest {
     }
 
     val tmpFileRom = new File("build", "spammcc-test.rom")
+    val tmpUartControl = new File("build", "spammcc-test-uart.control")
 
     println("WRITING ROM TO :\n" + tmpFileRom)
     writeFile(roms, tmpFileRom)
-
-    exec(tmpFileRom, verbose, outputCheck)
+    writeUartControlFile(tmpUartControl)
+    exec(tmpFileRom, tmpUartControl, verbose, outputCheck)
 
     print("ASM RAN OK\n" + filtered.map(_.stripLeading()).mkString("\n"))
     filtered

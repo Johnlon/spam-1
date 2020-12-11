@@ -40,6 +40,22 @@ function string strip;
 endfunction
 
 
+string uart_control_file;
+initial begin
+    if (! $value$plusargs("uart_control_file=%s", uart_control_file)) begin
+        uart_control_file="uart.control";
+    end
+end
+
+string uart_out_file;
+initial begin
+    if (! $value$plusargs("uart_out_file=%s", uart_out_file)) begin
+        uart_out_file="uart.out";
+    end
+end
+
+
+
 logic _MR=0; // master reset
 
 integer fOut=`NULL, fControl, c, r, txLength, tDelta;
@@ -218,25 +234,27 @@ initial
     #50
 
     if (1) begin
-        $display("%9t ", $time, "UART: opening uart.control");
+        $display("%9t ", $time, "UART: opening %s", uart_control_file);
 `ifndef verilator
-        fControl = $fopenr("uart.control"); 
+        fControl = $fopenr(uart_control_file); 
 `endif
         //fControl = $fopenr("/dev/stdin"); 
         if (fControl == `NULL) // If error opening file 
         begin
-                $error("%9t ERROR ", $time, "failed opening file");
+                $error("%9t ERROR ", $time, "failed opening file %s", uart_control_file);
+                $finish_and_return(1);
                 disable file_block; // Just quit 
         end
 
-        $display("%9t ", $time, "UART: opening uart.out");
+        $display("%9t ", $time, "UART: opening %s", uart_out_file);
 `ifndef verilator
-        fOut = $fopen("uart.out", "w+"); 
+        fOut = $fopen(uart_out_file, "w+"); 
 `endif
         //fOut = $fopen("/dev/stdout", "w+"); 
         if (fOut == `NULL) // If error opening file 
         begin
-                $error("%9t ERROR ", $time, "failed opening file");
+                $error("%9t ERROR ", $time, "failed opening file %s", uart_out_file);
+                $finish_and_return(1);
                 disable file_block; // Just quit 
         end
 
