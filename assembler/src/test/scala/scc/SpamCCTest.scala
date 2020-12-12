@@ -457,7 +457,7 @@ class SpamCCTest {
       """
         |fun main() {
         |  var o =1;
-        |  while ( true ) {
+        |  while (true) {
         |    var g = getchar();
         |    putchar(g)
         |  }
@@ -467,6 +467,22 @@ class SpamCCTest {
     compile(lines, verbose=true, timeout=1000)
   }
 
+  @Test
+  def valEqLogical(): Unit = {
+
+    val lines =
+      """
+        |fun main() {
+        | var a=1>0;
+        | putchar(a)
+        |}
+        |""".stripMargin
+
+    val actual: List[String] = compile(lines, verbose = true, outputCheck = {
+      lines =>
+        checkTransmitted(1, lines, List(1).map(_.toString))
+    })
+  }
 
   @Test
   def whileLoopCond(): Unit = {
@@ -1306,7 +1322,7 @@ class SpamCCTest {
     println("RUNNING :\n" + romFileUnix)
 
 //    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix  +uart_control_file=`pwd`/$controlFileUnix"""))
-    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh $timeout ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix"""))
+    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh '$timeout' ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix"""))
 
     val success = new AtomicBoolean()
     val lines = ListBuffer.empty[String]
