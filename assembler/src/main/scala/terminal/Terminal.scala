@@ -1,6 +1,6 @@
 package terminal
 
-import java.io.File
+import java.io.{File, FileOutputStream, PrintStream}
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.commons.io.input.{Tailer, TailerListener}
@@ -8,52 +8,63 @@ import org.apache.commons.io.input.{Tailer, TailerListener}
 import scala.swing.event._
 import scala.swing.{Rectangle, _}
 
-object Terminal extends SimpleSwingApplication {
+object Terminal extends SimpleSwingApplication   {
+  val uartOut = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.out"
+  val uartControl = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.control"
 
   val width = 50
+
   val height = 40
-
   val BLANK = "."
-  var last: Char = 0
 
+  var last: Char = 0
   var x = new AtomicInteger(0)
+
   var y = new AtomicInteger(0)
 
   val UP: Char = 2
   val DOWN: Char = 3
   val LEFT: Char = 4
   val RIGHT: Char = 5
+
+  val K_UP: Char = 'U'
+  val K_DOWN: Char = 'D'
+  val K_LEFT: Char = 'L'
+  val K_RIGHT: Char = 'R'
+
   val ORIGIN: Char = 6
   val CENTRE: Char = 7
   val SETX: Char = 8
+
   val SETY: Char = 9
 
   var data = fill()
 
   val text = new TextArea("Java Version: " + util.Properties.javaVersion + "\n" + "john")
-
   private def run(): Unit = {
-    val listener = new MyListener
     //public Tailer (file: File, cset: Charset, listener: TailerListener, delayMillis: Long, `end`: Boolean, reOpen: Boolean, bufSize: Int) {
 
-    val tailer = Tailer.create(  new File("C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.out"), listener, 0, true, false, 1000)
+    val listener = new FileListener
+    val tailer = Tailer.create(  new File(uartOut), listener, 0, true, false, 1000)
 
   }
 
-  class MyListener extends TailerListener {
+  class FileListener extends TailerListener {
     def handle(line: String): Unit = {
 
       if (line.trim.length > 0) {
         println("! " + line)
         val c = Integer.parseInt(line, 16)
-        plot(c.toChar)
+        val char = c.toChar
+        plot(char)
       }
     }
 
     override def init(tailer: Tailer): Unit = {}
 
     override def fileNotFound(): Unit = {
-      println("file not found")
+//      println("file not found")
+      Thread.sleep(1000)
     }
 
     override def fileRotated(): Unit = {
@@ -76,16 +87,37 @@ object Terminal extends SimpleSwingApplication {
 
     plot(CENTRE)
 
+    listenTo(text.keys, brefresh, bpaint)
 
-    listenTo(brefresh, bpaint)
+    val uartCtrl = new PrintStream(new FileOutputStream(uartControl, true))
+
+    def send(c: Char): Unit = {
+      uartCtrl.print(f"x${c.toInt}%02X\n")
+      uartCtrl.flush()
+      println("sent " + c)
+    }
+
     reactions += {
       case ButtonClicked(b) if b == brefresh =>
         data = fill()
-        plot(CENTRE)
+        send(CENTRE)
+        send('#')
 
       case ButtonClicked(b) if b == bpaint =>
         doRepaint()
 
+      case KeyPressed(_, c, _, _) if c == Key.Left =>
+        send(LEFT)
+        send('#')
+      case KeyPressed(_, c, _, _) if c == Key.Right =>
+        send(RIGHT)
+        send('#')
+      case KeyPressed(_, c, _, _) if c == Key.Up =>
+        send(UP)
+        send('#')
+      case KeyPressed(_, c, _, _) if c == Key.Down =>
+        send(DOWN)
+        send('#')
       case _ =>
     }
 

@@ -3,4 +3,7 @@ t512
 // give program time to do the transmit
 #100000
 // tell uart to exit the program
-q
+//q
+t10
+t10
+rabc

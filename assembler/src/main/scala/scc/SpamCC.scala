@@ -22,7 +22,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     parse(program, code) match {
       case Success(matched, _) =>
         var indent = 0
-        println("SpamCC parsed : " )
+        println("SpamCC parsed : ")
         println(matched.dump(1))
 
         matched.compile()
@@ -33,13 +33,15 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     }
   }
 
+
   def statement: Parser[Block] = positioned {
     comment |
       statementVarEqVarOpVar | statementVarEqVar | statementVarEqVarOpConst | statementVarEqConstOpVar | statementVarEqConst | statementVarOp | statementRef |
       statementLetEqConst | statementLetVarEqVar | statementLetVarEqOp |
       statementPutcharVarOptimisation | statementPutcharConstOptimisation | stmtPutcharGeneral |
       stmtPutsName |
-      whileTrue | whileCond | ifCond | breakOut | functionCall |
+      statementGetchar |
+      whileCond | whileTrue | ifCond | breakOut | functionCall |
       statementVarString ^^ {
         s =>
           s
@@ -143,6 +145,12 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     }
   }
 
+  def statementGetchar: Parser[Block] = positioned {
+    "getchar" ~ "(" ~ ")" ^^ {
+      _ => Getchar()
+    }
+  }
+
   def statementPutcharConstOptimisation: Parser[Block] = positioned {
     "putchar" ~ "(" ~> constExpr <~ ")" ^^ {
       konst => PutcharConst(konst)
@@ -163,22 +171,26 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     }
   }
 
+  def argumentDefTerm: Parser[FunctionArg] = name ~ opt("out") ^^ {
+    case name ~ isOutput => FunctionArg(name, isOutput.isDefined)
+  }
 
   def functionDef: Parser[Block] = positioned {
-    "fun " ~> name ~ "(" ~ repsep((name ~ ("out" ?)), ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
+    "fun " ~> name ~ "(" ~ repsep(argumentDefTerm, ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
       case fnName ~ _ ~ args ~ _ ~ content => DefFunction(fnName, args, content)
     }
   }
 
   def functionCall: Parser[Block] = positioned {
     name ~ "(" ~ repsep(compoundBlkExpr, ",") ~ ")" ^^ {
-      case fnName ~ _ ~ argExpr ~ _ => CallFunction(fnName, argExpr)
+      case fnName ~ _ ~ argExpr ~ _ =>
+        CallFunction(fnName, argExpr)
     }
   }
 
   def whileTrue: Parser[Block] = positioned {
-    "while" ~ "(" ~ "true" ~ ")" ~ "{" ~> statements <~ "}" ^^ {
-      content => WhileTrue(content)
+    ("while" ~ "(" ~ "true" ~ ")" ~ "{") ~> statements <~ "}" ^^ {
+      case content => WhileTrue(content)
     }
   }
 
@@ -505,6 +517,23 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     }
   }
 
+  case class Getchar() extends Block(nestedName = s"getchar_") {
+    override def gen(depth: Int, parent: Name): List[String] = {
+      val labelWait = parent.fqnLabelPathUnique("wait")
+      val labelReceive = parent.fqnLabelPathUnique("receive")
+      split(
+        s"""
+           |$labelWait:
+           |PCHITMP = <:$labelReceive
+           |PC = >:$labelReceive _DI
+           |PCHITMP = <:$labelWait
+           |PC = >:$labelWait
+           |$labelReceive:
+           |REGA = UART
+           |""")
+    }
+  }
+
   case class PutcharConst(konst: Int) extends Block(nestedName = s"putcharConst_${konst}_") {
     override def gen(depth: Int, parent: Name): List[String] = {
       val labelWait = parent.fqnLabelPathUnique("wait")
@@ -522,18 +551,15 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     }
   }
 
-  case class DefFunction(fnName: String, args: List[(String ~ Option[String])], content: List[Block])
+
+  case class DefFunction(fnName: String, functionArgs: List[FunctionArg], content: List[Block])
     extends Block(nestedName = s"function_$fnName") with IsFunction {
 
     override def functionName: String = fnName
 
-    override def functionArgs: List[FunctionArgName] = args.map {
-      case n ~ io =>
-        FunctionArgName(n, io.isDefined)
-    }
-
     override def gen(depth: Int, scope: Name): List[String] = {
 
+      // side affect of defining the function args as vars
       val FunctionDef(startLabel, returnHi, returnLo, argsLabels) = defScopedArgLabels(scope)
 
       val prefix = if (fnName == "main") {
@@ -571,8 +597,8 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
       List(
         (depth, this.getClass.getSimpleName + s" $fnName ("),
       ) ++
-        args.map {
-          a => (depth + 1, a._1 + " " + a._2.getOrElse(""))
+        functionArgs.flatMap {
+          a => a.dump(depth + 1)
         } ++
         content.flatMap(_.dump(depth + 1))
   }
@@ -736,7 +762,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
       val FunctionDef(startLabel, returnHiLabel, returnLoLabel, argsLabelsAndDir) = fn.getScopedArgLabels(functionScope)
 
-      val argNamesAndDir: List[FunctionArgName] = fn.functionArgs
+      val argNamesAndDir: List[FunctionArg] = fn.functionArgs
 
       if (argExpr.length != argNamesAndDir.size) {
         val argsNames = argNamesAndDir.map(_.name)
@@ -762,7 +788,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
       // instructions needed to capture the output of the function into local vars within the caller's scope
       val setupOutParams: List[String] = argDefinitionVsExpression.flatMap {
         case (FunctionArgNameAndLabel(argLabel, nameAndOutput), argBlk) =>
-          if (nameAndOutput.output) {
+          if (nameAndOutput.isOutput) {
             // if this arg is defined as an output then ...
             argBlk match {
               case v: IsCompoundExpressionBlock =>
@@ -879,7 +905,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
     def functionName: String
 
-    def functionArgs: List[FunctionArgName]
+    def functionArgs: List[FunctionArg]
 
     def defScopedArgLabels(scope: Name): FunctionDef = {
       val returnHiLabel = scope.assignVarLabel("RETURN_HI", IsVar).fqn
@@ -888,7 +914,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
       // Also, read from these locations to fetch "out" values.
       val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.map {
         argName =>
-          FunctionArgNameAndLabel(scope.assignVarLabel(argName.name, IsVar).fqn, FunctionArgName(argName.name, argName.output))
+          FunctionArgNameAndLabel(scope.assignVarLabel(argName.name, IsVar).fqn, FunctionArg(argName.name, argName.isOutput))
       }
       val fnStart = scope.toFqLabelPath("START")
 
@@ -902,7 +928,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
       // Also, read from these locations to fetch "out" values.
       val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.map {
         argName =>
-          FunctionArgNameAndLabel(scope.getVarLabel(argName.name, IsVar).fqn, FunctionArgName(argName.name, argName.output))
+          FunctionArgNameAndLabel(scope.getVarLabel(argName.name, IsVar).fqn, FunctionArg(argName.name, argName.isOutput))
       }
       val fnStart = scope.toFqLabelPath("START")
 

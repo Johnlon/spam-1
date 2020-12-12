@@ -28,7 +28,7 @@ module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80, PRINTMODE=`
 );
 
 function string strip;
-    input string str; 
+    input string str;
     begin
         strip = str;
         if (str.len() > 0) begin
@@ -65,7 +65,8 @@ reg [8*MAX_LINE_LENGTH:0] line; /* Line of text read from file */
 reg _TXE_SUPPRESS; // purpose is actually to suppress readiness
 reg _RXF_SUPPRESS; // purpose is actually to suppress readiness
 
-string str = "";
+string strInput = "";
+integer iInput;
 
 localparam BUFFER_SIZE=255;
 
@@ -272,22 +273,30 @@ initial
                     begin 
                         line="";
                         r = $fgets(line, fControl); 
-                        str = strip(line);
+                        strInput = strip(line);
 
-                        $display("%9t ", $time, "UART: /%s", str);
+                        $display("%9t ", $time, "UART: /%s", strInput);
                     end
 
-                    if (c == "r") // pass string back to simulatiom
+                    if (c == "x" || c == "r") // pass string back to simulatiom
                     begin
                         line="";
                         r = $fgets(line, fControl); 
-                        str = strip(line);
+                        strInput = strip(line);
 
-                        if (LOG>1) 
-                        $display("%9t ", $time, "UART: RX: '%s' into ringpos=%3d abs=%3d, spaceAvailable=%1b", str, absWritePos%BUFFER_SIZE, absWritePos, spaceAvailable);
+                        if (c == "x") begin
+                            r = $sscanf(strInput, "%02x", iInput);
+                            if (r == 0) begin
+                                $display("%9t ", $time, "UART: RX: '%s' can't convert %s from hex", strInput, strInput);
+                            end
+                            $sformat(strInput, "%c", iInput);
+                        end
 
-                        for (int p=0; p<str.len() && spaceAvailable; p++) begin
-                            rxBuf[absWritePos%BUFFER_SIZE] = str[p];
+                        if (LOG>1)
+                        $display("%9t ", $time, "UART: RX: '%s' into ringpos=%3d abs=%3d, spaceAvailable=%1b", strInput, absWritePos%BUFFER_SIZE, absWritePos, spaceAvailable);
+
+                        for (int p=0; p<strInput.len() && spaceAvailable; p++) begin
+                            rxBuf[absWritePos%BUFFER_SIZE] = strInput[p];
                             absWritePos++;
                         end
                         if (! spaceAvailable)

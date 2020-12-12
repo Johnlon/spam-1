@@ -28,7 +28,7 @@ trait SubBlocks {
     konst => BlkConst(konst)
   }
 
-  def blkSingleExpr: Parser[Block] = blkArrayElementExpr | blkNExpr | blkVarExpr
+  def blkSingleExpr: Parser[Block] = statementGetchar | blkArrayElementExpr | blkNExpr | blkVarExpr
 
   def blkExpr: Parser[Block] = blkSingleExpr | "(" ~> compoundBlkExpr <~ ")"
 
