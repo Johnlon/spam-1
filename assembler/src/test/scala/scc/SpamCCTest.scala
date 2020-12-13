@@ -450,7 +450,6 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        |  var o =1;
         |  var g = getchar();
         |  putchar(g)
         |}
@@ -510,7 +509,7 @@ class SpamCCTest {
 
     val actual: List[String] = compile(lines, verbose = true, outputCheck = {
       lines =>
-        checkTransmittedDec(lines, List(9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
+        checkTransmittedDecs(lines, List(9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
     })
 
     val expected = split(
@@ -576,7 +575,7 @@ class SpamCCTest {
 
     val actual: List[String] = compile(lines, outputCheck = {
       lines =>
-        checkTransmittedDec(lines, List(2, 3, 4, 5, 6, 7, 8, 9, 10))
+        checkTransmittedDecs(lines, List(2, 3, 4, 5, 6, 7, 8, 9, 10))
     })
 
     val expected = split(
@@ -1183,34 +1182,27 @@ class SpamCCTest {
 
     val lines =
       s"""fun main() {
-         | var a = 33;
-         | var b = 0;
-         | var l = 0;
+         | var loop = 0;
          | putchar(${ORIGIN.toInt})
-         | while ( a < 255 ) {
-         |  let b = 10;
+         | while ( loop < 2 ) {
+         |  var a = 33 + loop;
          |
+         |  var b = 10;
          |  while ( b > 0 ) {
          |   putchar(${RIGHT.toInt})
          |   putchar( a )
-         |   //putchar( '#' )
-         |   //putchar( '.' )
          |   let b = b - 1;
          |  }
          |  let b = 10;
          |  while ( b > 0 ) {
          |   putchar(${DOWN.toInt})
          |   putchar( a )
-         |   //putchar( '#' )
-         |   //putchar( '.' )
          |   let b = b - 1;
          |  }
          |  let b = 10;
          |  while ( b > 0 ) {
          |   putchar(${LEFT.toInt})
          |   putchar( a )
-         |   //putchar( '#' )
-         |   //putchar( '.' )
          |   let b = b - 1;
          |  }
          |
@@ -1218,27 +1210,20 @@ class SpamCCTest {
          |  while ( b > 0 ) {
          |   putchar(${UP.toInt})
          |   putchar( a )
-         |   //putchar( '#' )
-         |   //putchar( '.' )
          |   let b = b - 1;
          |  }
          |  putchar(${RIGHT.toInt})
          |  putchar(${DOWN.toInt})
          |
-         |   let a = a + 1;
+         |   let loop = loop + 1;
          | }
-         |
          |}
          |
          |// END  COMMAND
          |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
-      checkTransmittedChar(str, 'A')
-      checkTransmittedChar(str, 'B')
-      checkTransmittedChar(str, '?')
-      checkTransmittedChar(str, 'E')
-      checkTransmittedChar(str, '!')
+      checkTransmittedDec(str, ORIGIN)
     })
 
   }

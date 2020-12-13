@@ -14,9 +14,12 @@ object Checks {
     assertEquals(expected, matches)
   }
 
- def checkTransmittedDec(actual: List[String], expected: List[Int]): Unit = {
+ def checkTransmittedDecs(actual: List[String], expected: List[Int]): Unit = {
     val matches = extractTransmitted('d', actual)
     assertEquals(expected.map(_.toString), matches)
+  }
+  def checkTransmittedDec(actual: List[String], expected: Int): Unit = {
+    checkTransmittedCN('d', actual, expected.toString)
   }
 
   def checkTransmittedChar(str: List[String], c: Char): Unit = {

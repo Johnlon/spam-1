@@ -100,8 +100,7 @@ object Terminal extends SimpleSwingApplication   {
     reactions += {
       case ButtonClicked(b) if b == brefresh =>
         data = fill()
-        send(CENTRE)
-        send('#')
+        doRepaint()
 
       case ButtonClicked(b) if b == bpaint =>
         doRepaint()
@@ -132,7 +131,9 @@ object Terminal extends SimpleSwingApplication   {
 
 
   def doRepaint(): Unit ={
-    text.repaint()
+    val t = "\n" + data.map("   " + _.mkString(" ")).mkString("\n")
+    text.text = t
+//    text.repaint()
   }
 
   def plot(c: Char): Unit = synchronized {
@@ -177,10 +178,7 @@ object Terminal extends SimpleSwingApplication   {
         }
     }
 
-    val t = "\n" + data.map("   " + _.mkString(" ")).mkString("\n")
-    text.text = t
-
-    //doRepaint()
+    doRepaint()
   }
 
   def fill() = {

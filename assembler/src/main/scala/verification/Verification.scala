@@ -12,7 +12,13 @@ import scala.collection.mutable.ListBuffer
 
 object Verification {
 
-  def compile(linesRaw: String, verbose: Boolean = false, quiet: Boolean = true, dataIn: List[String] = Nil, outputCheck: List[String] => Unit = _ => {}, timeout: Int = 20): List[String] = {
+  def compile(linesRaw: String,
+              verbose: Boolean = false,
+              quiet: Boolean = true,
+              dataIn: List[String] = List("t10000000"),
+              outputCheck: List[String] => Unit = _ => {},
+              timeout: Int = 20): List[String] = {
+
     val scc = new SpamCC
 
     val lines = "program {\n" + linesRaw + "\n}"
@@ -78,6 +84,7 @@ object Verification {
 
     println("WRITING ROM TO :\n" + tmpFileRom)
     writeFile(roms, tmpFileRom)
+
     writeUartControlFile(tmpUartControl, dataIn)
     exec(tmpFileRom, tmpUartControl, verbose, outputCheck, timeout)
 
