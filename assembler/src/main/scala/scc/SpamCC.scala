@@ -1,3 +1,12 @@
+/*
+todo:
+  block comment
+  peek/poke of const or expr
+  16 bits maths / 32?
+  chip 8
+
+ */
+
 package scc
 
 import java.io.{File, PrintWriter}

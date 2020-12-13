@@ -1,6 +1,5 @@
 package scc
 
-import asm.AluOp
 import scala.language.postfixOps
 
 trait ConstExpr {

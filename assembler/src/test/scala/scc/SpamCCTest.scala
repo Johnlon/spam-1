@@ -1183,8 +1183,7 @@ class SpamCCTest {
     val lines =
       s"""fun main() {
          | var loop = 0;
-         | putchar(${ORIGIN.toInt})
-         | while ( loop < 2 ) {
+         | while ( loop <= -1 ) {
          |  var a = 33 + loop;
          |
          |  var b = 10;

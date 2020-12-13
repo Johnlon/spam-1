@@ -254,6 +254,7 @@ endfunction
             CLK_DN;
             #HALF_CLK_LO
             $display("%9t", $time, " DUMPREG:", "  PC=%d ", pcval, " REGA:%03d", CPU.regFile.get(0), "  REGB:%03d", CPU.regFile.get(1), "  REGC:%03d", CPU.regFile.get(2), "  REGD:%03d", CPU.regFile.get(3));
+            $display("%9t", $time, " FLAGS czonGLEN=%8b" , CPU.flags_czonGLEN.Q);
             CLK_UP;
         end
 
