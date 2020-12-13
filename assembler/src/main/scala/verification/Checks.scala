@@ -1,4 +1,4 @@
-package scc
+package verification
 
 import org.junit.Assert.{assertEquals, fail}
 
