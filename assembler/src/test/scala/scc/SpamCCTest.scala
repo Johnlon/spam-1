@@ -201,12 +201,12 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = true, outputCheck = str => {
-      checkTransmittedC(str, 'A')
-      checkTransmittedC(str, 'B')
-      checkTransmittedC(str, 'C')
-      checkTransmittedC(str, 'D')
-      checkTransmittedC(str, 'b')
-      checkTransmittedC(str, '@')
+      checkTransmittedChar(str, 'A')
+      checkTransmittedChar(str, 'B')
+      checkTransmittedChar(str, 'C')
+      checkTransmittedChar(str, 'D')
+      checkTransmittedChar(str, 'b')
+      checkTransmittedChar(str, '@')
     })
 
     val expected = split(
@@ -325,7 +325,7 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, outputCheck = str => {
-      checkTransmittedC(str, 'D')
+      checkTransmittedChar(str, 'D')
     })
 
     val expected = split(
@@ -387,11 +387,11 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose=true, outputCheck = str => {
-      checkTransmittedC(str, 'A')
-      checkTransmittedC(str, 'B')
-      checkTransmittedC(str, 'C')
-      checkTransmittedC(str, 'D')
+    val actual: List[String] = compile(lines, verbose = true, outputCheck = str => {
+      checkTransmittedChar(str, 'A')
+      checkTransmittedChar(str, 'B')
+      checkTransmittedChar(str, 'C')
+      checkTransmittedChar(str, 'D')
     })
 
     val expected = split(
@@ -464,7 +464,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    compile(lines, verbose=true, timeout=1000)
+    compile(lines, verbose = true, timeout = 1000)
   }
 
   @Test
@@ -475,12 +475,27 @@ class SpamCCTest {
         |fun main() {
         | var a=1>0;
         | putchar(a)
+        |
+        | let a=0>1;
+        | putchar(a)
+        |
+        | let a=0==1;
+        | putchar(a)
+        |
+        | let a=1==1;
+        | putchar(a)
+        |
+        | let a=%1010 & %1100;
+        | putchar(a)
+
+        | let a=%1010 | %1100;
+        | putchar(a)
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose = true, outputCheck = {
-      lines =>
-        checkTransmitted(1, lines, List(1).map(_.toString))
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+        checkTransmittedL('h', str, List("01", "00", "00", "01", "08", "0e"))
     })
   }
 
@@ -500,7 +515,7 @@ class SpamCCTest {
 
     val actual: List[String] = compile(lines, verbose = true, outputCheck = {
       lines =>
-        checkTransmitted('d', lines, List(9, 8, 7, 6, 5, 4, 3, 2, 1, 0).map(_.toString))
+        checkTransmittedDec(lines, List(9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
     })
 
     val expected = split(
@@ -566,7 +581,7 @@ class SpamCCTest {
 
     val actual: List[String] = compile(lines, outputCheck = {
       lines =>
-        checkTransmitted('d', lines, List(2, 3, 4, 5, 6, 7, 8, 9, 10).map(_.toString))
+        checkTransmittedDec(lines, List(2, 3, 4, 5, 6, 7, 8, 9, 10))
     })
 
     val expected = split(
@@ -644,11 +659,11 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
-      checkTransmittedC(str, 'A')
-      checkTransmittedC(str, 'B')
-      checkTransmittedC(str, '?')
-      checkTransmittedC(str, 'E')
-      checkTransmittedC(str, '!')
+      checkTransmittedChar(str, 'A')
+      checkTransmittedChar(str, 'B')
+      checkTransmittedChar(str, '?')
+      checkTransmittedChar(str, 'E')
+      checkTransmittedChar(str, '!')
     })
 
     val expected = split(
@@ -780,7 +795,7 @@ class SpamCCTest {
 
     val actual: List[String] = compile(lines, quiet = true, outputCheck = {
       lines =>
-        checkTransmitted('c', lines, List("B"))
+        checkTransmittedChars(lines, List("B"))
     })
 
     val expected = split(
@@ -999,10 +1014,10 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = false, quiet = true, outputCheck = str => {
-      checkTransmittedC(str, 'A')
-      checkTransmittedC(str, 'B')
-      checkTransmittedC(str, 'C')
-      checkTransmittedC(str, 'D')
+      checkTransmittedChar(str, 'A')
+      checkTransmittedChar(str, 'B')
+      checkTransmittedChar(str, 'C')
+      checkTransmittedChar(str, 'D')
     })
 
     val expected = split(
@@ -1104,10 +1119,10 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
-      checkTransmittedC(str, 'A')
-      checkTransmittedC(str, 'B')
-      checkTransmittedC(str, 'C')
-      checkTransmittedC(str, 'D')
+      checkTransmittedChar(str, 'A')
+      checkTransmittedChar(str, 'B')
+      checkTransmittedChar(str, 'C')
+      checkTransmittedChar(str, 'D')
     })
 
     val expected = split(
@@ -1224,11 +1239,11 @@ class SpamCCTest {
          |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
-      checkTransmittedC(str, 'A')
-      checkTransmittedC(str, 'B')
-      checkTransmittedC(str, '?')
-      checkTransmittedC(str, 'E')
-      checkTransmittedC(str, '!')
+      checkTransmittedChar(str, 'A')
+      checkTransmittedChar(str, 'B')
+      checkTransmittedChar(str, '?')
+      checkTransmittedChar(str, 'E')
+      checkTransmittedChar(str, '!')
     })
 
   }
@@ -1246,10 +1261,10 @@ class SpamCCTest {
         |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
-      checkTransmittedC(str, 'A')
-      checkTransmittedC(str, 'B')
-      checkTransmittedC(str, 'C')
-      checkTransmittedC(str, 'D')
+      checkTransmittedChar(str, 'A')
+      checkTransmittedChar(str, 'B')
+      checkTransmittedChar(str, 'C')
+      checkTransmittedChar(str, 'D')
     })
 
     val expected = split(
@@ -1321,7 +1336,7 @@ class SpamCCTest {
 
     println("RUNNING :\n" + romFileUnix)
 
-//    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix  +uart_control_file=`pwd`/$controlFileUnix"""))
+    //    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix  +uart_control_file=`pwd`/$controlFileUnix"""))
     val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh '$timeout' ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix"""))
 
     val success = new AtomicBoolean()

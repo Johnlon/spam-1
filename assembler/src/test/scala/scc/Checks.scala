@@ -4,19 +4,28 @@ import org.junit.Assert.{assertEquals, fail}
 
 object Checks {
 
+  def checkTransmittedHex(actual: List[String], expected: String): Unit = {
+    val matches = extractTransmitted('h', actual)
+    assertEquals(List(expected), matches)
+  }
 
-  def checkTransmitted(selector: Char = 'c', actual: List[String], expected: List[String]): Unit = {
-    val matches = extractTransmitted(selector, actual)
+  def checkTransmittedChars(actual: List[String], expected: List[String]): Unit = {
+    val matches = extractTransmitted('c', actual)
     assertEquals(expected, matches)
   }
 
-  def checkTransmittedC(str: List[String], c: Char): Unit = {
-    checkTransmittedCN('c', str, c)
+ def checkTransmittedDec(actual: List[String], expected: List[Int]): Unit = {
+    val matches = extractTransmitted('d', actual)
+    assertEquals(expected.map(_.toString), matches)
   }
 
-  def checkTransmittedCN(selector: Char = 'c', str: List[String], expectedValue: Char, requiredCount: Int = 1): Unit = {
+  def checkTransmittedChar(str: List[String], c: Char): Unit = {
+    checkTransmittedCN('c', str, c.toString)
+  }
+
+  def checkTransmittedCN(selector: Char = 'c', str: List[String], expectedValue: String, requiredCount: Int = 1): Unit = {
     val actual = extractTransmitted(selector, str)
-    val matches = actual.count(_ == expectedValue.toString)
+    val matches = actual.count(_ == expectedValue)
 
     if (matches == 0) fail(s"did not transmit '$expectedValue' char")
     if (matches < requiredCount) fail(s"did not find $requiredCount transmits of value '$expectedValue' ; found only $matches")
@@ -28,7 +37,7 @@ object Checks {
   }
 
   private def extractTransmitted(selector: Char, str: List[String]): List[String] = {
-    str.filter(_.contains(s"TRANSMITTING")).map(s => s.replaceAll(s".*\\[$selector:", "").replaceAll("\\].*", ""))
+    str.filter(_.contains(s"TRANSMITTING")).map(s => s.replaceAll(s".*\\[$selector:", "").replaceAll("].*", ""))
   }
 
 }

@@ -2,7 +2,7 @@ package scc
 
 import java.io.{File, PrintWriter}
 
-import asm.EnumParserOps
+import asm.{AluOp, EnumParserOps}
 import scc.SpamCC.{posToAddress, split}
 
 import scala.collection.mutable
@@ -55,7 +55,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
   // optimisation of "var VARIABLE=CONST"
   def statementVarEqConst: Parser[Block] = positioned {
-    "var" ~> name ~ "=" ~ constExpr <~ SEMICOLON ^^ {
+    "var" ~> name ~ "=" ~ constExpression <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ konst =>
         DefVarEqConst(targetVar, konst)
     }
@@ -63,7 +63,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
   // optimisation of "var VARIABLE=CONST"
   def statementLetEqConst: Parser[Block] = positioned {
-    "let" ~> name ~ "=" ~ constExpr <~ SEMICOLON ^^ {
+    "let" ~> name ~ "=" ~ constExpression <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ konst =>
         LetVarEqConst(targetVar, konst)
     }
@@ -71,7 +71,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
   // optimisation of "var VARIABLE=CONST op VARIABLE"
   def statementVarEqConstOpVar: Parser[Block] = positioned {
-    "var" ~> name ~ "=" ~ constExpr ~ aluOp ~ name <~ SEMICOLON ^^ {
+    "var" ~> name ~ "=" ~ constExpression ~ aluOp ~ name <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ konst ~ oper ~ srcVar =>
         DefVarEqConstOpVar(targetVar, konst, oper, srcVar)
     }
@@ -79,7 +79,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
   // optimisation of "var VARIABLE=VARIABLE op CONST"
   def statementVarEqVarOpConst: Parser[Block] = positioned {
-    "var" ~> name ~ "=" ~ name ~ aluOp ~ constExpr <~ SEMICOLON ^^ {
+    "var" ~> name ~ "=" ~ name ~ aluOp ~ constExpression <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ srcVar ~ op ~ konst =>
         DefVarEqVarOpConst(targetVar, srcVar, op, konst)
     }
@@ -152,7 +152,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
   }
 
   def statementPutcharConstOptimisation: Parser[Block] = positioned {
-    "putchar" ~ "(" ~> constExpr <~ ")" ^^ {
+    "putchar" ~ "(" ~> constExpression <~ ")" ^^ {
       konst => PutcharConst(konst)
     }
   }
@@ -222,6 +222,20 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
   def program: Parser[Program] = "program" ~ "{" ~> ((comment | functionDef) +) <~ "}" ^^ {
     fns => Program(fns)
+  }
+
+  def aluOp: Parser[String] = {
+    val shortAluOps = {
+      // reverse sorted to put longer operators ahead of shorter ones otherwise shorter ones gobble
+      val reverseSorted = AluOp.values.filter(_.isAbbreviated).sortBy(x => x.abbrev).reverse.toList
+      reverseSorted map { m =>
+        literal(m.abbrev) ^^^ m
+      } reduceLeft {
+        _ | _
+      }
+    }
+    val longAluOps = enumToParser(AluOp.values)
+    (longAluOps | shortAluOps).map(_.preferredName)
   }
 
 
@@ -990,7 +1004,6 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
     protected[this] def gen(depth: Int, parent: Name): List[String]
   }
-
 }
 
 object SpamCC {

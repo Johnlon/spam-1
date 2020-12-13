@@ -6,7 +6,7 @@ trait Condition {
   def comparison: Parser[String] = ">" | "<" | ">=" | "<" | "<=" | "==" | "!="
 
   // return the block of code and the name of the flag to add to the jump operation
-  def condition: Parser[(String, Block)] = name ~ comparison ~ constExpr ^^ {
+  def condition: Parser[(String, Block)] = name ~ comparison ~ constExpression ^^ {
     case varName ~ compOp ~ konst =>
       val b = Condition(varName, compOp, konst)
 

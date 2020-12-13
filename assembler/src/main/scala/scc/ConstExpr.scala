@@ -1,9 +1,10 @@
 package scc
+
 import asm.AluOp
 import scala.language.postfixOps
 
 trait ConstExpr {
-  self : SpamCC =>
+  self: SpamCC =>
 
   def SEMICOLON = ";"
 
@@ -34,34 +35,25 @@ trait ConstExpr {
 
   def octToken: Parser[Int] = "@" ~ "[0-7]+".r ^^ { case _ ~ v => Integer.valueOf(v, 8) }
 
-  def aluOp: Parser[String] = {
-    val shortAluOps = {
-      // reverse sorted to put longer operators ahead of shorter ones otherwise shorter ones gobble
-      val reverseSorted = AluOp.values.filter(_.isAbbreviated).sortBy(x => x.abbrev).reverse.toList
-      reverseSorted map { m =>
-        literal(m.abbrev) ^^^ m
-      } reduceLeft {
-        _ | _
-      }
-    }
-    val longAluOps = enumToParser(AluOp.values)
-    (longAluOps | shortAluOps).map(_.preferredName)
-  }
+  def constFactor: Parser[Int] = (charToken | decToken | hexToken | binToken | octToken | "(" ~> constExpression <~ ")")
 
-  def nFactor: Parser[Int] = charToken | decToken | hexToken | binToken | octToken | "(" ~> constExpr <~ ")"
+  def contOperation: Parser[String] =  "*" | "/" | "%" | "+" | "-" | ">" | "<" | "&" | "|" | "^" | "==" | "!="
 
-  def contOperations: Parser[String] = "+" | "-" | "*" | "/" | "%"
-
-  def constExpr: Parser[Int] = nFactor ~ ((contOperations ~ nFactor) *) ^^ {
+  def constExpression: Parser[Int] = constFactor ~ ((contOperation ~ constFactor) *) ^^ {
     case x ~ list =>
       list.foldLeft(x)({
-        case (acc, "+" ~ i) => acc + i
         case (acc, "*" ~ i) => acc * i
         case (acc, "/" ~ i) => acc / i
-        case (acc, "-" ~ i) => acc - i
         case (acc, "%" ~ i) => acc % i
+        case (acc, "+" ~ i) => acc + i
+        case (acc, "-" ~ i) => acc - i
+        case (acc, ">" ~ i) => if (acc > i) 1 else 0
+        case (acc, "<" ~ i) => if (acc < i) 1 else 0
+        case (acc, "&" ~ i) => acc & i
+        case (acc, "|" ~ i) => acc | i
+        case (acc, "^" ~ i) => acc ^ i
+        case (acc, "==" ~ i) =>if (acc == i) 1 else 0
+        case (acc, "!=" ~ i) =>if (acc != i) 1 else 0
       })
   }
-
-
 }

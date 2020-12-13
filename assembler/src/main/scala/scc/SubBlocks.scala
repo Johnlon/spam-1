@@ -24,13 +24,18 @@ trait SubBlocks {
   }
 
 
-  def blkNExpr: Parser[Block] = constExpr ^^ {
+  def blkNExpr: Parser[Block] = constExpression ^^ {
     konst => BlkConst(konst)
   }
 
-  def blkSingleExpr: Parser[Block] = statementGetchar | blkArrayElementExpr | blkNExpr | blkVarExpr
+  def factor: Parser[Block] = statementGetchar | blkArrayElementExpr | blkNExpr | blkVarExpr
 
-  def blkExpr: Parser[Block] = blkSingleExpr | "(" ~> compoundBlkExpr <~ ")"
+  def blkExpr: Parser[Block] = factor | "(" ~> compoundBlkExpr <~ ")"
+
+
+  def aluOperation: Parser[Block] = blkExpr ~ ((aluOp ~ blkExpr) *) ^^ {
+    case leftExpr ~ otherExpr => BlkCompound(leftExpr, otherExpr)
+  }
 
   def compoundBlkExpr: Parser[Block] = blkExpr ~ ((aluOp ~ blkExpr) *) ^^ {
     case leftExpr ~ otherExpr => BlkCompound(leftExpr, otherExpr)
