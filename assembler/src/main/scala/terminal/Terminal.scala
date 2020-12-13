@@ -42,11 +42,8 @@ object Terminal extends SimpleSwingApplication   {
 
   val text = new TextArea("Java Version: " + util.Properties.javaVersion + "\n" + "john")
   private def run(): Unit = {
-    //public Tailer (file: File, cset: Charset, listener: TailerListener, delayMillis: Long, `end`: Boolean, reOpen: Boolean, bufSize: Int) {
-
     val listener = new FileListener
-    val tailer = Tailer.create(  new File(uartOut), listener, 0, true, false, 1000)
-
+    Tailer.create(  new File(uartOut), listener, 0, true, false, 1000)
   }
 
   class FileListener extends TailerListener {
@@ -90,6 +87,9 @@ object Terminal extends SimpleSwingApplication   {
     listenTo(text.keys, brefresh, bpaint)
 
     val uartCtrl = new PrintStream(new FileOutputStream(uartControl, true))
+
+    uartCtrl.print(f"t100000\n")
+    uartCtrl.flush()
 
     def send(c: Char): Unit = {
       uartCtrl.print(f"x${c.toInt}%02X\n")

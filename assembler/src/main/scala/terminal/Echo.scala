@@ -1,6 +1,5 @@
 package terminal
 
-import verification.Checks.checkTransmittedChar
 import verification.Verification
 
 object Echo extends App {
@@ -15,8 +14,5 @@ object Echo extends App {
       |}
       |""".stripMargin
 
-  Verification.compile(lines, verbose = true, timeout = 1000, dataIn = List("t1", "rA" ), outputCheck = {
-    str =>
-      checkTransmittedChar(str, 'A')
-  })
+  Verification.compile(lines, verbose = true, timeout = 1000, dataIn = List("t100000000"))
 }
