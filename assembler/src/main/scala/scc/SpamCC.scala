@@ -4,6 +4,21 @@ todo:
   peek/poke of const or expr
   16 bits maths / 32?
   chip 8
+  basic compiler?
+  "else"
+
+
+   TODO: work out how to designate use of Signed of Unsigned comparison!!
+   record vars as signed or unsigned?
+
+   unsigned int8 e a = 1   // ditch var
+   unsigned int16 e a = 1  // ditch var
+   var                     // short for unsigned int8
+
+   do it with the op?     "a <:s b"
+   what about signed vs unsigned const?     a < -1:s   or is -1 automatically signed and 255 is automatically unsigned?
+   and if using octal or hex then are they signed or unsigned?
+   maybe restrict signs to the ops??
 
  */
 
@@ -45,6 +60,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
 
   def statement: Parser[Block] = positioned {
     comment |
+      statementUInt8Eq |       statementVarEqOp |
       statementVarEqVarOpVar | statementVarEqVar | statementVarEqVarOpConst | statementVarEqConstOpVar | statementVarEqConst | statementVarOp | statementRef |
       statementLetEqConst | statementLetVarEqVar | statementLetVarEqOp |
       statementPutcharVarOptimisation | statementPutcharConstOptimisation | stmtPutcharGeneral |
@@ -113,7 +129,14 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
   // general purpose
   def statementVarOp: Parser[Block] = positioned {
     "var" ~> name ~ "=" ~ compoundBlkExpr <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ block => DefVarEqExpr(targetVar, block)
+      case targetVar ~ _ ~ block => DefUint8EqExpr(targetVar, block)
+    }
+  }
+
+  // general purpose
+  def statementUInt8Eq: Parser[Block] = positioned {
+    "uint8" ~> name ~ "=" ~ compoundBlkExpr <~ SEMICOLON ^^ {
+      case targetVar ~ _ ~ block => DefUint8EqExpr(targetVar, block)
     }
   }
 
@@ -121,6 +144,13 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
   // general purpose
   def statementLetVarEqOp: Parser[Block] = positioned {
     "let" ~> name ~ "=" ~ compoundBlkExpr <~ SEMICOLON ^^ {
+      case target ~ _ ~ expr =>
+        LetVarEqExpr(target, expr)
+    }
+  }
+  // general purpose
+  def statementVarEqOp: Parser[Block] = positioned {
+    name ~ "=" ~ compoundBlkExpr <~ SEMICOLON ^^ {
       case target ~ _ ~ expr =>
         LetVarEqExpr(target, expr)
     }
@@ -306,7 +336,7 @@ class SpamCC extends Naming with SubBlocks with ConstExpr with Condition with En
     }
   }
 
-  case class DefVarEqExpr(targetVar: String, block: Block) extends Block {
+  case class DefUint8EqExpr(targetVar: String, block: Block) extends Block {
     override def gen(depth: Int, parent: Name): List[String] = {
 
       val stmts: List[String] = block.expr(depth + 1, parent)

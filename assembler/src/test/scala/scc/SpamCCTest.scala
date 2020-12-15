@@ -1182,47 +1182,50 @@ class SpamCCTest {
 
     val lines =
       s"""fun main() {
-         | var loop = 0;
-         | while ( loop <= -1 ) {
-         |  var a = 33 + loop;
+         | uint8 loop = 0;
+         | while ( loop <= 2) {
+         |  uint8 a = 33 + loop;
          |
-         |  var b = 10;
+         |  uint8 b = 10;
          |  while ( b > 0 ) {
          |   putchar(${RIGHT.toInt})
          |   putchar( a )
-         |   let b = b - 1;
+         |   b = b - 1;
          |  }
-         |  let b = 10;
+         |  b = 10;
          |  while ( b > 0 ) {
          |   putchar(${DOWN.toInt})
          |   putchar( a )
-         |   let b = b - 1;
+         |   b = b - 1;
          |  }
-         |  let b = 10;
+         |  b = 10;
          |  while ( b > 0 ) {
          |   putchar(${LEFT.toInt})
          |   putchar( a )
-         |   let b = b - 1;
+         |   b = b - 1;
          |  }
          |
-         |  let b = 10;
+         |  b = 10;
          |  while ( b > 0 ) {
          |   putchar(${UP.toInt})
          |   putchar( a )
-         |   let b = b - 1;
+         |   b = b - 1;
          |  }
          |  putchar(${RIGHT.toInt})
          |  putchar(${DOWN.toInt})
          |
-         |   let loop = loop + 1;
+         |   loop = loop + 1;
          | }
          |}
          |
          |// END  COMMAND
          |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
-      checkTransmittedDec(str, ORIGIN)
+    compile(lines, verbose = true, quiet = true, outputCheck = str => {
+      checkTransmittedDec(str, RIGHT)
+      checkTransmittedDec(str, DOWN)
+      checkTransmittedDec(str, LEFT)
+      checkTransmittedDec(str, UP)
     })
 
   }
