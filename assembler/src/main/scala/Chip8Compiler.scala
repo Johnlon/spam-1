@@ -34,18 +34,19 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
   val AddressRegex: Regex = "([0-9A-F][0-9A-F][0-9A-F][0-9A-F]):" r
 
   val ClearScreenRegex: Regex = "00E0" r
-  val JumpRegex: Regex = "1([0-9A-F][0-9A-F][0-9A-F])" r
   val ReturnSubRegex: Regex = "00EE" r
+  val ObsoleteMachineJumpRegex: Regex = "0([0-9A-F][0-9A-F][0-9A-F])" r
+  val JumpRegex: Regex = "1([0-9A-F][0-9A-F][0-9A-F])" r
   val GoSubRegex: Regex = "2([0-9A-F][0-9A-F][0-9A-F])" r
   val SkipIfVxEqNRegex: Regex = "3([0-9A-F])([0-9A-F][0-9A-F])" r
   val SkipIfVxNENRegex: Regex = "4([0-9A-F])([0-9A-F][0-9A-F])" r
   val SkipIfVxEqVyRegex: Regex = "5([0-9A-F])([0-9A-F])0" r
-  val SkipIfVxNeVyRegex: Regex = "9([0-9A-F])([0-9A-F])0" r
   val SetVxRegex: Regex = "6([0-9A-F])([0-9A-F][0-9A-F])" r
   val AddVxRegex: Regex = "7([0-9A-F])([0-9A-F][0-9A-F])" r
+  val SetXEqYRegex: Regex = "8([0-9A-F])([0-9A-F])0" r
+  val SkipIfVxNeVyRegex: Regex = "9([0-9A-F])([0-9A-F])0" r
   val SetIndexRegex: Regex = "A([0-9A-F][0-9A-F][0-9A-F])" r
   val DisplayRegex: Regex = "D([0-9A-F])([0-9A-F])([0-9A-F])" r
-  val ObsoleteMachineJumpRegex: Regex = "0([0-9A-F][0-9A-F][0-9A-F])" r
 
   def opCode: Parser[Instruction] = "[0-9a-hA-H]{4}".r ^^ {
     case op => op.toUpperCase match {
@@ -53,15 +54,16 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
       case JumpRegex(nnn) => Jump(op, nnn.hexToInt)
       case GoSubRegex(nnn) => GoSub(op, nnn.hexToInt)
       case ReturnSubRegex() => ReturnSub(op)
-      case SkipIfVxEqNRegex(x, nn) => SkipIfVxEqN(op, x.hexToInt, nn.hexToInt)
-      case SkipIfVxNENRegex(vx, nn) => SkipIfVxNeN(op, vx.hexToInt, nn.hexToInt)
-      case SkipIfVxEqVyRegex(vx, vy) => SkipIfVxEqVy(op, vx.hexToInt, vy.hexToInt)
-      case SkipIfVxNeVyRegex(vx, vy) => SkipIfVxNeVy(op, vx.hexToInt, vy.hexToInt)
-      case SetVxRegex(vx, nn) => SetVx(op, vx.hexToInt, nn.hexToInt)
-      case AddVxRegex(vx, nn) => AddVx(op, vx.hexToInt, nn.hexToInt)
+      case SkipIfVxEqNRegex(x, nn) => SkipIfXEqN(op, x.hexToInt, nn.hexToInt)
+      case SkipIfVxNENRegex(xReg, nn) => SkipIfXNeN(op, xReg.hexToInt, nn.hexToInt)
+      case SkipIfVxEqVyRegex(xReg, yReg) => SkipIfXEqY(op, xReg.hexToInt, yReg.hexToInt)
+      case SkipIfVxNeVyRegex(xReg, yReg) => SkipIfXNeY(op, xReg.hexToInt, yReg.hexToInt)
+      case SetVxRegex(xReg, nn) => SetX(op, xReg.hexToInt, nn.hexToInt)
+      case AddVxRegex(xReg, nn) => AddX(op, xReg.hexToInt, nn.hexToInt)
       case SetIndexRegex(nnn) => SetIndex(op, nnn.hexToInt)
-      case DisplayRegex(vx, vy, n) => Display(op, vx.hexToInt, vy.hexToInt, n.hexToInt)
+      case DisplayRegex(xReg, yReg, n) => Display(op, xReg.hexToInt, yReg.hexToInt, n.hexToInt)
       case ObsoleteMachineJumpRegex(nnn) => ObsoleteMachineJump(op, nnn.hexToInt)
+      case SetXEqYRegex(xReg, yReg) => SetXEqY(op, xReg.hexToInt, yReg.hexToInt)
       case _ => NotRecognised(op)
     }
   }
@@ -109,21 +111,21 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
 
   case class ClearScreen(op: String) extends Instruction
 
-  case class SkipIfVxEqN(op: String, vx: Int, nn: Int) extends Instruction
+  case class SkipIfXEqN(op: String, xReg: Int, nn: Int) extends Instruction
 
-  case class SkipIfVxNeN(op: String, vx: Int, nn: Int) extends Instruction
+  case class SkipIfXNeN(op: String, xReg: Int, nn: Int) extends Instruction
 
-  case class SkipIfVxEqVy(op: String, vx: Int, vy: Int) extends Instruction
+  case class SkipIfXEqY(op: String, xReg: Int, vReg: Int) extends Instruction
 
-  case class SkipIfVxNeVy(op: String, vx: Int, vy: Int) extends Instruction
+  case class SkipIfXNeY(op: String, xReg: Int, vReg: Int) extends Instruction
 
-  case class SetVx(op: String, vx: Int, nn: Int) extends Instruction
+  case class SetX(op: String, xReg: Int, nn: Int) extends Instruction
 
-  case class AddVx(op: String, vx: Int, nn: Int) extends Instruction // Does not set carry
+  case class AddX(op: String, xReg: Int, nn: Int) extends Instruction // Does not set carry
 
   case class SetIndex(op: String, nnn: Int) extends Instruction
 
-  case class Display(op: String, vx: Int, vy: Int, n: Int) extends Instruction
+  case class Display(op: String, xReg: Int, vReg: Int, n: Int) extends Instruction
 
   case class NotRecognised(op: String) extends Instruction
 
@@ -147,6 +149,8 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
     }
   }
 
+
+  case class SetXEqY(op: String, xReg: Int, yReg: Any) extends Instruction
 
 }
 
@@ -223,39 +227,39 @@ object Chip8Emulator {
           skipPcInc = true
         case ReturnSub(_) =>
           pc = pop()
-        case SkipIfVxEqN(_, vx, nn) =>
-          val vxVal: Int = register(vx)
-          if (vxVal == nn) {
+        case SkipIfXEqN(_, vx, nn) =>
+          val xVal: Int = register(vx)
+          if (xVal == nn) {
             pc += 2
           }
-        case SkipIfVxNeN(_, vx, nn) =>
-          val vxVal: Int = register(vx)
-          if (vxVal != nn) {
+        case SkipIfXNeN(_, vx, nn) =>
+          val xVal: Int = register(vx)
+          if (xVal != nn) {
             pc += 2
           }
-        case SkipIfVxEqVy(_, vx, vy) =>
-          val vxVal: Int = register(vx)
-          val vyVal: Int = register(vy)
-          if (vxVal == vyVal) {
+        case SkipIfXEqY(_, vx, vy) =>
+          val xVal: Int = register(vx)
+          val yVal: Int = register(vy)
+          if (xVal == yVal) {
             pc += 2
           }
-        case SkipIfVxNeVy(_, vx, vy) =>
-          val vxVal: Int = register(vx)
-          val vyVal: Int = register(vy)
-          if (vxVal != vyVal) {
+        case SkipIfXNeY(_, vx, vy) =>
+          val xVal: Int = register(vx)
+          val yVal: Int = register(vy)
+          if (xVal != yVal) {
             pc += 2
           }
-        case SetVx(_, vx, nn) =>
+        case SetX(_, vx, nn) =>
           register(vx) = nn
-        case AddVx(_, vx, nn) =>
+        case AddX(_, vx, nn) =>
           register(vx) = register(vx) + nn
         case SetIndex(_, nnn) =>
           index = nnn
         case Display(_, vx, vy, n) =>
-          val vxVal: Int = register(vx)
-          val vyVal: Int = register(vy)
+          val xVal: Int = register(vx)
+          val yVal: Int = register(vy)
 
-          drawSprite(n, vxVal, vyVal)
+          drawSprite(n, xVal, yVal)
           refreshScreen()
         case ignored =>
           //println("ignoring " + ignored)
@@ -279,7 +283,7 @@ object Chip8Emulator {
   }
 
 
-  private def drawSprite(height: Int, vxVal: Int, vyVal: Int): Unit = {
+  private def drawSprite(height: Int, xVal: Int, yVal: Int): Unit = {
 
     register(0xF) = 0 // no collision yet
 
@@ -292,7 +296,7 @@ object Chip8Emulator {
           val bit = spr & 0x80
           val isSet = bit > 0
           if (isSet) {
-            val collision = setPixel(vxVal + x, vyVal + y)
+            val collision = setPixel(xVal + x, yVal + y)
             if (collision) {
               register(0xF) = 1
             }
