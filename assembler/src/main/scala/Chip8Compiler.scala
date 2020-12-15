@@ -17,21 +17,8 @@ import scala.util.parsing.combinator.JavaTokenParsers
 
 object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
 
-  //  override val whiteSpace = """[ \t]+""".r
-
   implicit class Ops(value: String) {
     val charArray: Array[Char] = value.toCharArray
-
-    // 3 is left most
-//    def b3: Integer = Integer.valueOf(charArray(0).toString, 16)
-//
-//    def b2: Integer = Integer.valueOf(charArray(1).toString, 16)
-//
-//    def b1: Integer = Integer.valueOf(charArray(2).toString, 16)
-//
-//    def b0: Integer = Integer.valueOf(charArray(3).toString, 16)
-
-    // b3 is left most ie msb
 
     def b32: Int = Integer.valueOf(value.substring(0, 2), 16)
 
@@ -61,7 +48,7 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
   val ObsoleteMachineJumpRegex: Regex = "0([0-9A-F][0-9A-F][0-9A-F])" r
 
   def opCode: Parser[Instruction] = "[0-9a-hA-H]{4}".r ^^ {
-    case op => op match {
+    case op => op.toUpperCase match {
       case ClearScreenRegex() => ClearScreen(op)
       case JumpRegex(nnn) => Jump(op, nnn.hexToInt)
       case GoSubRegex(nnn) => GoSub(op, nnn.hexToInt)
@@ -144,10 +131,13 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
     fns => fns
   }
 
-  def compile(code: String): List[Line] = {
 
-    //println("code:\n" + code)
-    parse(program, code) match {
+
+  def compile(code: List[Short]): List[Line] = {
+
+    val prog = code.map { x =>   f"$x%04x" }.mkString("\n")
+
+    parse(program, prog) match {
       case Success(matched, _) =>
         matched
       case msg: Failure =>
@@ -161,20 +151,13 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
 }
 
 object C8 extends App {
-  val asm: List[String] = Disasm.read(Disasm.BC_Test)
-//  val asm: List[String] = Disasm.read(Disasm.IBMLogo2)
-  //asm.zipWithIndex.foreach(println)
+  val asm: List[Short] = Loader.read(Loader.IBMLogo)
 
-  val ast: List[Chip8Compiler.Line] = Chip8Compiler.compile(asm.mkString("\n"))
+  val ast: List[Chip8Compiler.Line] = Chip8Compiler.compile(asm)
   ast.zipWithIndex.foreach(println)
 
   Chip8Emulator.run(ast)
 
-  //
-  //    """0001: 00E0 some words
-  //      |      00E0 more words
-  //      |      3123
-  //      |""".stripMargin)
 }
 
 object Chip8Emulator {
@@ -184,8 +167,9 @@ object Chip8Emulator {
   val BLANK = ' '
   val PIXEL = '#'
   var index = 0x200
-  val register = ListBuffer.empty[Int]
-  val memory = ListBuffer.empty[Int] // char is unsigned
+
+  private val register = ListBuffer.empty[Int]
+  private val memory = ListBuffer.empty[Int] // char is unsigned
 
   def run(program: List[Line]): Unit = {
 

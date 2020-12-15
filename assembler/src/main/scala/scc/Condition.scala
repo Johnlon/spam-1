@@ -31,6 +31,13 @@ trait Condition {
 //      if (l != konst)
 //        println(l)
 
+      // TODO: work out how to designate use of Signed of Unsigned comparison!!
+      // record vars as signed or unsigned?    unsigned byte a = 1    // ditch var
+      // do it with the op?     a <:s
+      // what about signed vs unsigned const?     a < -1:s   or is -1 automatically signed and 255 is automatically unsigned?
+      // and if using octal or hex then are they signed or unsigned?
+      // maybe restrict signs to the ops??
+
       val UseSigned = true
       val op = (if (UseSigned)
         AluOp.A_MINUS_B_SIGNEDMAG
