@@ -1,12 +1,12 @@
 package scc
 
-import org.junit.Assert.assertEquals
-import org.junit.runners.MethodSorters
-import org.junit.{FixMethodOrder, Test}
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.MethodOrderer.MethodName
+import org.junit.jupiter.api.{Test, TestMethodOrder}
 import verification.Checks._
 import verification.Verification._
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(classOf[MethodName])
 class SpamCCTest {
 
   def split(s: String): List[String] = {

@@ -1,13 +1,13 @@
 package asm
 
 import asm.Mode._
-import org.junit.Assert.{assertEquals, fail}
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.{assertEquals, fail}
+import org.junit.jupiter.api.Test
 
 class AssemblerTest {
 
   @Test
-  def `allow_positioning_of_data`() {
+  def `allow_positioning_of_data`(): Unit =  {
     val code = Seq(
       "A:     STR \"A\"",
       "POSN:  EQU 10",
@@ -28,7 +28,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `LEN_and_EQU_arith`() {
+  def `LEN_and_EQU_arith`(): Unit =  {
     val codeTuples = Seq[(String, java.lang.Integer)](
       ("A0: EQU 0             ", 0),
       ("A1: EQU 1             ", 1),
@@ -73,7 +73,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `EQU_const`() {
+  def `EQU_const`(): Unit =  {
     val code = Seq("CONST:    EQU ($10 + 1) ; some arbitrarily complicated constant expression", "END")
 
     val asm = new Assembler()
@@ -84,7 +84,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `EQU_CHAR`() {
+  def `EQU_CHAR`(): Unit =  {
     val code = Seq("CONSTA:    EQU 'A'",
       "CONSTB: EQU :CONSTA+1",
       "END")
@@ -97,7 +97,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGA_eq_immed_dec`() {
+  def `REGA_eq_immed_dec`(): Unit =  {
     val code = Seq("REGA=17", "END")
     val asm = new Assembler()
     import asm._
@@ -108,7 +108,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGA_eq_UART`() {
+  def `REGA_eq_UART`(): Unit =  {
     val code = Seq("REGA=UART", "END")
     val asm = new Assembler()
     import asm._
@@ -119,7 +119,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGA_eq_RAM`() {
+  def `REGA_eq_RAM`(): Unit =  {
     val code = Seq("REGA=RAM", "END")
     val asm = new Assembler()
     import asm._
@@ -130,7 +130,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `NOOP_eq_RAM`() {
+  def `NOOP_eq_RAM`(): Unit =  {
     val code = Seq("NOOP = RAM", "END")
     val asm = new Assembler()
     import asm._
@@ -141,7 +141,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGA_eq_immed_hex`() {
+  def `REGA_eq_immed_hex`(): Unit =  {
     val code = Seq("REGA=$11", "END")
 
     val asm = new Assembler()
@@ -153,7 +153,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGA_eq_immed_expr`() {
+  def `REGA_eq_immed_expr`(): Unit =  {
     val code = Seq("REGA=($11+%1+2+@7)", "END")
     val asm = new Assembler()
     import asm._
@@ -163,7 +163,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGA_eq_REGB`() {
+  def `REGA_eq_REGB`(): Unit =  {
     val code = List(
       "REGA=REGB",
       "END")
@@ -176,7 +176,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGA_eq_REGA__PASS_A__NU`() {
+  def `REGA_eq_REGA__PASS_A__NU`(): Unit =  {
     val code = List(
       "REGA=REGA PASS_A NU",
       "END")
@@ -189,7 +189,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGA_eq_forward_label`() {
+  def `REGA_eq_forward_label`(): Unit =  {
     val code = Seq(
       "REGA=:LABEL",
       "LABEL: REGB=$ff",
@@ -205,7 +205,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGB_eq_REGC_plus_KONST_setflags`() {
+  def `REGB_eq_REGC_plus_KONST_setflags`(): Unit =  {
     val code = Seq(
       "REGB=REGC A_PLUS_B $ff _S",
       "END")
@@ -219,7 +219,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGB_eq_REGC_plus_REGA`() {
+  def `REGB_eq_REGC_plus_REGA`(): Unit =  {
     val code = Seq(
       "REGB=REGC A_PLUS_B REGA",
       "END")
@@ -233,7 +233,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGB_eq_REGC_plus_REGA__setflags_C_S`() {
+  def `REGB_eq_REGC_plus_REGA__setflags_C_S`(): Unit =  {
     val code = Seq(
       "REGB=REGC A_PLUS_B REGA _C_S",
       "END")
@@ -247,7 +247,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGB_eq_REGC_plus_RAM_direct__setflags_C_S`() {
+  def `REGB_eq_REGC_plus_RAM_direct__setflags_C_S`(): Unit = {
     val code = Seq(
       "REGB=REGC A_PLUS_B [1000] _C_S",
       "END")
@@ -261,7 +261,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `RAM_direct__eq__REGA__setflags__C_S`() {
+  def `RAM_direct__eq__REGA__setflags__C_S`(): Unit =  {
     val code = Seq(
       "[1000]=REGA _C_S",
       "END")
@@ -275,7 +275,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `const_strings_to_RAM`() {
+  def `const_strings_to_RAM`(): Unit =  {
     val code = Seq(
       "STRING1: STR     \"AB\\u0000\\n\"",
       "END")
@@ -295,7 +295,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `compile_bytes_to_RAM`() {
+  def `compile_bytes_to_RAM`(): Unit =  {
     val code = Seq(
       "FIRST:       BYTES     [ 1,2,3 ]",
       "SECOND:      BYTES     [ 'A', 65, $41, %01000001, 255 , -1, 127, 128 ]",
@@ -342,7 +342,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `strings_len`() {
+  def `strings_len`(): Unit =  {
     val code = Seq(
       "REGA = 1", // put this ahead of the data so make sure it's not simply counting the PC then allocating addresses for data
       "MYSTR:     STR     \"AB\"", // should be at address 0
@@ -373,7 +373,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `ram_direct_eq_ram_direct_illegal`() {
+  def `ram_direct_eq_ram_direct_illegal`(): Unit =  {
     val code = List(
       "[1000]=[1]",
       "END")

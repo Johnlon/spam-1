@@ -1,6 +1,7 @@
 package verification
 
-import org.junit.Assert.{assertEquals, fail}
+import org.junit.jupiter.api.Assertions._
+
 
 object Checks {
 

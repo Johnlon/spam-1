@@ -4,7 +4,7 @@ import java.io.{File, PrintWriter}
 import java.util.concurrent.atomic.AtomicBoolean
 
 import asm.Assembler
-import org.junit.Assert.fail
+import org.junit.jupiter.api.Assertions.fail
 import scc.SpamCC
 import terminal.Terminal
 

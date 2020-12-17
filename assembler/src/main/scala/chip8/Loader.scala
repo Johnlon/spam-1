@@ -1,3 +1,5 @@
+package chip8
+
 import java.io.{File, FileInputStream}
 
 import scala.collection.mutable.ListBuffer

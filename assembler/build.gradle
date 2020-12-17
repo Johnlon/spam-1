@@ -19,7 +19,9 @@ apply plugin: 'scala'
 apply plugin: 'com.github.johnrengelman.shadow'
 
 dependencies {
-    compile 'junit:junit:4.12'
+    testCompile 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+    compile 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+
     implementation 'org.scala-lang:scala-library:2.13.3'
 
     compile group: "org.scala-lang.modules", name: "scala-parser-combinators_2.13", version: "1.1.2"
