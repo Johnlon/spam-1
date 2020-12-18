@@ -1,7 +1,7 @@
 package chip8
 
+import chip8.Chip8Compiler.State
 import chip8.Chip8Compiler.State.{INITIAL_PC, emptyMemory, emptyRegisters}
-import chip8.Chip8Compiler.{STATUS_REGISTER_VF, State}
 import chip8.Chip8Emulator.PIXEL
 import org.junit.jupiter.api.MethodOrderer.MethodName
 import org.junit.jupiter.api.{Test, TestMethodOrder}

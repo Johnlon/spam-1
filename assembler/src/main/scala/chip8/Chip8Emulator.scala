@@ -9,9 +9,10 @@ object Chip8Emulator {
   import Chip8Compiler._
 
   def BLANK: Pixel = ' '
-  def PIXEL : Pixel = '#'
 
-  def GAP = ""
+  def PIXEL: Pixel = '#'
+
+  def GAP = " "
 
   def run(program: List[Line]): Unit = {
 
@@ -44,16 +45,34 @@ object Chip8Emulator {
     }
 
     println("Run ...")
+    var loopcount = 0
+    val interval = 1000/1000
+    var lastTime = System.currentTimeMillis()
     while (true) {
-      val inst = rom(state.pc)
+      val elapsed = System.currentTimeMillis()- lastTime
 
-      val screen = state.screen
-      state = inst.exec(state)
+      if (elapsed > interval) {
+        loopcount = loopcount + 1
+        lastTime = System.currentTimeMillis()
 
-      if (screen != state.screen) {
-        paintScreen(state.screen)
+        val inst = rom(state.pc)
+        val screen = state.screen
+        state = inst.exec(state)
+
+        // TODO FIX TIMING AND DELAYS = 60Hx - but slowed down here
+
+        var t: U8 = state.delayTmer
+        if (t.ubyte > 0) {
+          t = t - 1
+        }
+        state = state.copy(delayTmer = t)
+
+        // print screen if changed
+        if (screen != state.screen) {
+          paintScreen(state.screen)
+        }
+//        println(s"t=$loopcount")
       }
-
     }
   }
 

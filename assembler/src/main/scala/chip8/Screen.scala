@@ -15,9 +15,11 @@ case class Screen(
 
   def setPixel(x: Int, y: Int): (Screen, Boolean) = {
     val xMod = x % width
-    val wasSet = buffer(y)(xMod) != BLANK
+    val yMod = y % height
 
-    val row = buffer(y)
+    val wasSet = buffer(yMod)(xMod) != BLANK
+
+    val row = buffer(yMod)
 
     /*
     We are setting a pixel by using XOR.
@@ -33,7 +35,7 @@ case class Screen(
 
     // convert to string so it prints nicer in debugger
     val str: String = updatedRow.mkString("")
-    val newBuf: List[String] = buffer.set(y, str)
+    val newBuf: List[String] = buffer.set(yMod, str)
     (copy(buffer = newBuf), erased)
   }
 

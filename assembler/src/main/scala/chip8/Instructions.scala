@@ -4,6 +4,7 @@ import chip8.Chip8Compiler.State
 import chip8.Instructions.{Legacy, LoadStoreBehaviour}
 
 import scala.language.{implicitConversions, postfixOps}
+import scala.util.Random
 import scala.util.matching.Regex
 
 sealed trait Instruction {
@@ -40,7 +41,12 @@ object Instructions {
   val XShiftLeftRegex: Regex = "8([0-9A-F])0E" r // as per https://github.com/mwales/chip8.git ambiguity
   val SkipIfVxNeVyRegex: Regex = "9([0-9A-F])([0-9A-F])0" r
   val SetIndexRegex: Regex = "A([0-9A-F][0-9A-F][0-9A-F])" r
+  val XEqRandomRegex: Regex = "C([0-9A-F])([0-9A-F][0-9A-F])" r
   val DisplayRegex: Regex = "D([0-9A-F])([0-9A-F])([0-9A-F])" r
+  val DelayTimerSetRegex: Regex = "F([0-9A-F])15" r
+  val DelayTimerGetRegex: Regex = "F([0-9A-F])07" r
+  val SkipIfNotKeyRegex: Regex = "E([0-9A-F])A1" r
+  val SkipIfKeyRegex: Regex = "E([0-9A-F])9E" r
   val FontCharacterRegex: Regex = "F([0-9A-F])29" r
   val StoreRegistersRegex: Regex = "F([0-9A-F])55" r
   val LoadRegistersRegex: Regex = "F([0-9A-F])65" r
@@ -372,6 +378,20 @@ case class IEqIPlusX(op: String, xReg: U8) extends Instruction {
   }
 }
 
+case class XEqRandom(op: String, xReg: U8, kk: U8) extends Instruction {
+  override def exec(state: State): State = {
+
+    val rnd: Int = Random.nextBytes(1)(0)
+
+    val r: U8 = U8.valueOf(rnd & kk.ubyte)
+
+    state.copy(
+      register = state.register.set(xReg.ubyte, r),
+      pc = state.pc + 2,
+    )
+  }
+}
+
 case class FontCharacter(op: String, xReg: U8) extends Instruction {
   override def exec(state: State): State = {
     val v = state.register(xReg)
@@ -382,6 +402,55 @@ case class FontCharacter(op: String, xReg: U8) extends Instruction {
       pc = state.pc + 2)
   }
 }
+
+// TODO: TEST ME
+case class DelayTimerSet(op: String, xReg: U8) extends Instruction {
+  override def exec(state: State): State = {
+    val v = state.register(xReg)
+    state.copy(
+      delayTmer = v,
+      pc = state.pc + 2)
+  }
+}
+
+// TODO: TEST ME
+case class DelayTimerGet(op: String, xReg: U8) extends Instruction {
+  override def exec(state: State): State = {
+    state.copy(
+      register = state.register.set(xReg, state.delayTmer),
+      pc = state.pc + 2)
+  }
+}
+
+
+case class SkipIfNotKey(op: String, xReg: U8) extends Instruction {
+  override def exec(state: State): State = {
+    val key: U8 = state.register(xReg)
+
+    /// TODO = NEED KEYBOARD IMNPUT
+    val keyPressed = Random.nextInt() < Integer.MAX_VALUE * 0.9
+
+    val skip = if (keyPressed) 2 else 4
+    state.copy(
+      pc = state.pc + skip
+    )
+  }
+}
+
+case class SkipIfKey(op: String, xReg: U8) extends Instruction {
+  override def exec(state: State): State = {
+    val key: U8 = state.register(xReg)
+
+    /// TODO = NEED KEYBOARD IMNPUT
+    val keyPressed = Random.nextInt() < Integer.MAX_VALUE * 0.1
+
+    val skip = if (keyPressed) 4 else 2
+    state.copy(
+      pc = state.pc + skip
+    )
+  }
+}
+
 
 case class ObsoleteMachineJump(op: String, value: Int) extends Instruction {
   override def exec(state: State): State =

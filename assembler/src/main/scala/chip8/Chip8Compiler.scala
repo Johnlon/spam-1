@@ -35,10 +35,14 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
       case AddVxRegex(xReg, nn) => AddX(op, xReg.hexToByte, nn.hexToByte)
       case SetIndexRegex(nnn) => SetIndex(op, nnn.hexToInt)
       case DisplayRegex(xReg, yReg, n) => Display(op, xReg.hexToByte, yReg.hexToByte, n.hexToByte)
+      case DelayTimerSetRegex(xReg) => DelayTimerSet(op, xReg.hexToByte)
+      case DelayTimerGetRegex(xReg) => DelayTimerGet(op, xReg.hexToByte)
       case ObsoleteMachineJumpRegex(nnn) => ObsoleteMachineJump(op, nnn.hexToInt)
       case SetXEqYRegex(xReg, yReg) => SetXEqY(op, xReg.hexToByte, yReg.hexToByte)
       case XShiftRightRegex(xReg) => XShiftRight(op, xReg.hexToByte)
       case XShiftLeftRegex(xReg) => XShiftLeft(op, xReg.hexToByte)
+      case SkipIfKeyRegex(xReg) => SkipIfKey(op, xReg.hexToByte)
+      case SkipIfNotKeyRegex(xReg) => SkipIfNotKey(op, xReg.hexToByte)
       case FontCharacterRegex(xReg) => FontCharacter(op, xReg.hexToByte)
       case XEqXMinusYRegex(xReg, yReg) => XEqXMinusY(op, xReg.hexToByte, yReg.hexToByte)
       case XEqYMinusXRegex(xReg, yReg) => XEqYMinusX(op, xReg.hexToByte, yReg.hexToByte)
@@ -49,6 +53,7 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
       case LoadRegistersRegex(xReg) => LoadRegisters(op, xReg.hexToByte)
       case StoreBCDRegex(xReg) => StoreBCD(op, xReg.hexToByte)
       case IEqIPlusXRegex(xReg) => IEqIPlusX(op, xReg.hexToByte)
+      case XEqRandomRegex(xReg, kk) => XEqRandom(op, xReg.hexToByte, kk.hexToByte)
       case _ => NotRecognised(op)
     }
   }
@@ -96,6 +101,7 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
                     stack: Seq[Int] = Nil,
                     register: Seq[U8] = emptyRegisters,
                     memory: Seq[U8] = emptyMemory,
+                    delayTmer: U8 = U8(0),
                     fontCharLocation: Int => Int = Fonts.fontCharLocation) {
 
     if (stack.length > 16) {

@@ -17,6 +17,7 @@ object Loader extends App {
   def IBMLogo = new File("src/main/resources/chip8/roms/IBM_Logo.ch8")
   def BC_Test = new File("src/main/resources/chip8/roms/BC_test.ch8")
   def IBMLogo2 = new File("src/main/resources/chip8/roms/roms_programs_IBM_Logo.ch8")
+  def rom(name: String)  = new File("src/main/resources/chip8/roms/", name)
 
   def read(file: File): List[Short] = {
     val dataIn = new FileInputStream(file)
