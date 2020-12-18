@@ -4,12 +4,11 @@ package object chip8 {
   type Pixel = Char
 
   case class U8(ubyte: Char) {
-
     override def toString() =  ubyte.toHexString
 
     def isZero: Boolean = ubyte == 0
     def isNotZero: Boolean = ubyte != 0
-    def asOneZero: U8 = if (ubyte != 0) U8_One else U8_Zero
+    def asOneZero: U8 = if (ubyte != 0) U8(1) else U8(0)
 
     def >(yVal: U8): Boolean = (ubyte > yVal.ubyte)
 
@@ -20,8 +19,8 @@ package object chip8 {
     def ^(yVal: U8): chip8.U8 = U8.valueOf(ubyte ^ yVal.ubyte)
 
     def &(yVal: Int): chip8.U8 = U8.valueOf(ubyte & yVal)
-    def >>(yVal: Int): chip8.U8 = U8.valueOf(ubyte >> yVal)
-    def <<(yVal: Int): chip8.U8 = U8.valueOf(ubyte << yVal)
+    def >>(yVal: Int): chip8.U8 = U8.valueOf(ubyte >> yVal )
+    def <<(yVal: Int): chip8.U8 = U8.valueOf((ubyte << yVal) & 0xff)
 
     def +(x: U8): U8 = {
       val u = (ubyte + x.ubyte) & 0xff
@@ -41,7 +40,7 @@ package object chip8 {
 
   object U8 {
 
-    def valueOf(b: Boolean) : U8 = if (b) U8_One else U8_Zero
+    def valueOf(b: Boolean) : U8 = if (b) U8(1) else U8(0)
 
     def valueOf(x: Int): U8 = {
       if (x < 0 || x > 255)
@@ -53,12 +52,6 @@ package object chip8 {
       U8.valueOf(parseInt(s, radix))
     }
   }
-
-
-  val U8_Zero = U8(0)
-  val U8_One = U8(1)
-
-  type UByte = U8
 
   implicit class StringOps(value: String) {
     val charArray: Array[Char] = value.toCharArray

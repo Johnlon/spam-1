@@ -85,8 +85,8 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
 
   object State {
     val INITIAL_PC = 0x200
-    val emptyRegisters: List[U8] = List.fill(16)(U8_Zero)
-    val emptyMemory: List[U8] = List.fill(4096)(U8_Zero)
+    val emptyRegisters: List[U8] = List.fill(16)(U8(0))
+    val emptyMemory: List[U8] = List.fill(4096)(U8(0))
   }
 
   case class State(
