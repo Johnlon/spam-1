@@ -192,7 +192,7 @@ case class XEqXMinusY(op: String, xReg: U8, yReg: U8) extends Instruction {
     val yVal: U8 = state.register(yReg)
     val updatedRegs = state.register.
       set(xReg, xVal - yVal).
-      set(STATUS_REGISTER_VF, if (xVal > yVal) U8(1) else U8(0))
+      set(STATUS_REGISTER_VF, if (xVal < yVal) U8(0) else U8(1)) // active low carry flag
 
     state.copy(
       register = updatedRegs,
@@ -206,7 +206,7 @@ case class XEqYMinusX(op: String, xReg: U8, yReg: U8) extends Instruction {
     val yVal: U8 = state.register(yReg)
     val updatedRegs = state.register.
       set(xReg, yVal - xVal).
-      set(STATUS_REGISTER_VF, if (yVal > xVal) U8(1) else U8(0))
+      set(STATUS_REGISTER_VF, if (yVal < xVal) U8(0) else U8(1))// active low carry flag
 
     state.copy(
       register = updatedRegs,

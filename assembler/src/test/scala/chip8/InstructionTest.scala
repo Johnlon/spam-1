@@ -336,17 +336,21 @@ class InstructionTest {
   }
 
   @Test
-  def testXEqXMinusY_NotGt(): Unit = {
+  def testXEqXMinusY_Carry(): Unit = {
     val sut = XEqXMinusY("op", U8(1), U8(2))
 
     val initialState = State(
-      register = emptyRegisters.set(1, U8(0)).set(2, U8(1)),
+      register = emptyRegisters.set(1, U8(0)).set(2, U8(1))
+        .set(STATUS_REGISTER_VF, U8(1)), // this unsets the carry bit
     )
 
     val actual = sut.exec(initialState)
 
     val expectedState = State(
-      register = emptyRegisters.set(1, U8.valueOf(255 /*== -1*/)).set(2, U8(1)),
+      register = emptyRegisters.
+        set(1, U8.valueOf(255 /*== -1*/)).
+        set(2, U8(1)).
+        set(STATUS_REGISTER_VF, U8(0)), // expect carry
       pc = INITIAL_PC + 2
     )
 
@@ -354,17 +358,118 @@ class InstructionTest {
   }
 
   @Test
-  def testXEqXMinusY_Gt(): Unit = {
+  def testXEqXMinusY_NoCarryEq(): Unit = {
     val sut = XEqXMinusY("op", U8(1), U8(2))
 
     val initialState = State(
-      register = emptyRegisters.set(1, U8(100)).set(2, U8(30)),
+      register = emptyRegisters
+        .set(1, U8(1))
+        .set(2, U8(1))
+        .set(STATUS_REGISTER_VF, U8(0)), // this sets the carry bit
     )
 
     val actual = sut.exec(initialState)
 
     val expectedState = State(
-      register = emptyRegisters.set(1, U8(70)).set(2, U8(30)).set(STATUS_REGISTER_VF, U8(1)),
+      register = emptyRegisters.
+        set(1, U8(0)).
+        set(2, U8(1)).
+        set(STATUS_REGISTER_VF, U8(1)), // should be unset
+      pc = INITIAL_PC + 2
+    )
+
+    assertEquals(expectedState, actual)
+  }
+
+  @Test
+  def testXEqXMinusY_NoCarry(): Unit = {
+    val sut = XEqXMinusY("op", U8(1), U8(2))
+
+    val initialState = State(
+      register = emptyRegisters.set(1, U8(100))
+        .set(2, U8(30))
+        .set(STATUS_REGISTER_VF, U8(0)), // this sets the carry bit
+    )
+
+    val actual = sut.exec(initialState)
+
+    val expectedState = State(
+      register = emptyRegisters.
+        set(1, U8(70)).
+        set(2, U8(30)).
+        set(STATUS_REGISTER_VF, U8(1)), // should be unset
+      pc = INITIAL_PC + 2
+    )
+
+    assertEquals(expectedState, actual)
+  }
+
+  @Test
+  def testXEqYMinusX_NoCarry(): Unit = {
+    val sut = XEqYMinusX("op", U8(1), U8(2))
+
+    val initialState = State(
+      register = emptyRegisters.
+        set(1, U8(1)).
+        set(2, U8(4)).
+        set(STATUS_REGISTER_VF, U8(0)), // this sets the carry bit
+    )
+
+    val actual = sut.exec(initialState)
+
+    val expectedState = State(
+      register = emptyRegisters.
+        set(1, U8(3)).
+        set(2, U8(4)).
+        set(STATUS_REGISTER_VF, U8(1)), // should clear the bit
+      pc = INITIAL_PC + 2
+    )
+
+    assertEquals(expectedState, actual)
+  }
+
+  @Test
+  def testXEqYMinusX_NoCarryEq(): Unit = {
+    val sut = XEqYMinusX("op", U8(1), U8(2))
+
+    val initialState = State(
+      register = emptyRegisters.
+        set(1, U8(1)).
+        set(2, U8(1)).
+        set(STATUS_REGISTER_VF, U8(0)), // this sets the carry bit
+    )
+
+    val actual = sut.exec(initialState)
+
+    val expectedState = State(
+      register = emptyRegisters.
+        set(1, U8(0)).
+        set(2, U8(1)).
+        set(STATUS_REGISTER_VF, U8(1)), // should clear the bit
+      pc = INITIAL_PC + 2
+    )
+
+    assertEquals(expectedState, actual)
+  }
+
+  @Test
+  def testXEqYMinusX_Carry(): Unit = {
+    val sut = XEqYMinusX("op", U8(1), U8(2))
+
+    val initialState = State(
+      register = emptyRegisters.
+        set(1, U8(4)).
+        set(2, U8(1)).
+        set(STATUS_REGISTER_VF, U8(1)), // this clears the carry bit
+    )
+
+    val actual = sut.exec(initialState)
+
+    val expectedState = State(
+      register = emptyRegisters.
+        set(1, U8(253)).
+        set(2, U8(1))
+        set(STATUS_REGISTER_VF, U8(0)), // this sets the carry bit
       pc = INITIAL_PC + 2
     )
 
