@@ -1,6 +1,7 @@
 package chip8
 
-import chip8.Chip8Compiler.{STATUS_REGISTER_VF, State}
+import chip8.Chip8Compiler.State
+import chip8.Instructions.{Legacy, LoadStoreBehaviour}
 
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.matching.Regex
@@ -12,6 +13,13 @@ sealed trait Instruction {
 }
 
 object Instructions {
+
+  // Index register behaviour
+  // https://tobiasvl.github.io/blog/write-a-chip-8-emulator/#fx55-and-fx65-store-and-load-memory
+  val Modern = 1
+  val Legacy = 0
+  val LoadStoreBehaviour = Modern
+
   val ClearScreenRegex: Regex = "00E0" r
   val ReturnSubRegex: Regex = "00EE" r
   val ObsoleteMachineJumpRegex: Regex = "0([0-9A-F][0-9A-F][0-9A-F])" r
@@ -36,6 +44,8 @@ object Instructions {
   val FontCharacterRegex: Regex = "F([0-9A-F])29" r
   val StoreRegistersRegex: Regex = "F([0-9A-F])55" r
   val LoadRegistersRegex: Regex = "F([0-9A-F])65" r
+  val StoreBCDRegex: Regex = "F([0-9A-F])33" r
+  val IEqIPlusXRegex: Regex = "F([0-9A-F])1E" r
 }
 
 case class GoSub(op: String, nnn: Int) extends Instruction {
@@ -206,7 +216,7 @@ case class XEqYMinusX(op: String, xReg: U8, yReg: U8) extends Instruction {
     val yVal: U8 = state.register(yReg)
     val updatedRegs = state.register.
       set(xReg, yVal - xVal).
-      set(STATUS_REGISTER_VF, if (yVal < xVal) U8(0) else U8(1))// active low carry flag
+      set(STATUS_REGISTER_VF, if (yVal < xVal) U8(0) else U8(1)) // active low carry flag
 
     state.copy(
       register = updatedRegs,
@@ -296,17 +306,16 @@ case class StoreRegisters(op: String, xReg: U8) extends Instruction {
     val registerValuesToSave = state.register.take(xReg.ubyte + 1)
 
     var st = state
-    registerValuesToSave.foreach {
-      v: U8 =>
-        val updatedMemory = st.memory.set(st.index, v)
-        val nextIndex = st.index + 1
-        st = st.copy(
-          memory = updatedMemory,
-          index = nextIndex
-        )
+
+    registerValuesToSave.zipWithIndex.foreach {
+      case (v: U8, i) =>
+        st = st.copy(memory = st.memory.set(st.index + i, v))
     }
 
-    st.copy(pc = state.pc + 2)
+    st.copy(
+      pc = state.pc + 2,
+      index = if (LoadStoreBehaviour == Legacy) (st.index + xReg.ubyte + 1) else st.index
+    )
   }
 }
 
@@ -314,17 +323,52 @@ case class LoadRegisters(op: String, xReg: U8) extends Instruction {
   override def exec(state: State): State = {
     val data = state.memory.slice(state.index, state.index + xReg.ubyte + 1)
 
-    var st = state.copy(index = state.index + xReg.ubyte + 1)
+    var st = state
 
     data.zipWithIndex.foreach {
-      case (v, i) =>
-        val updatedRegisters = st.register.set(i, v)
-        st = st.copy(
-          register = updatedRegisters
-        )
+      case (v: U8, i) =>
+        st = st.copy(register = st.register.set(i, v))
     }
 
-    st.copy(pc = state.pc + 2)
+    st.copy(
+      pc = state.pc + 2,
+      index = if (LoadStoreBehaviour == Legacy) (st.index + xReg.ubyte + 1) else st.index
+    )
+  }
+}
+
+case class StoreBCD(op: String, xReg: U8) extends Instruction {
+  override def exec(state: State): State = {
+    val v: U8 = state.register(xReg)
+    val i100 = v.ubyte / 100
+    val i10 = (v.ubyte / 10) % 10
+    val i1 = v.ubyte % 10
+
+    state.copy(
+      memory = state.memory.
+        set(state.index, U8.valueOf(i100)).
+        set(state.index + 1, U8.valueOf(i10)).
+        set(state.index + 2, U8.valueOf(i1)),
+      pc = state.pc + 2,
+    )
+  }
+}
+
+case class IEqIPlusX(op: String, xReg: U8) extends Instruction {
+  override def exec(state: State): State = {
+    val v: U8 = state.register(xReg)
+
+    val newAddress = state.index + v.ubyte
+
+    // https://tobiasvl.github.io/blog/write-a-chip-8-emulator/#fx55-and-fx65-store-and-load-memory
+    // later atari update V15
+    val carry = if (newAddress > MAX_ADDRESS) U8(1) else U8(0)
+
+    state.copy(
+      index = newAddress,
+      register = state.register.set(STATUS_REGISTER_VF, carry),
+      pc = state.pc + 2,
+    )
   }
 }
 

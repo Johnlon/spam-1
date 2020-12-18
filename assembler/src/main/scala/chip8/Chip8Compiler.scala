@@ -19,8 +19,6 @@ import scala.util.parsing.combinator.JavaTokenParsers
 
 object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
 
-  val STATUS_REGISTER_VF: Int = 0xF
-
   val AddressRegex: Regex = "([0-9A-F][0-9A-F][0-9A-F][0-9A-F]):" r
 
   def opCode: Parser[Instruction] = "[0-9a-fA-F]{4}".r ^^ {
@@ -49,6 +47,8 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
       case XEqLogicalXorRegex(xReg, yReg) => XEqLogicalXor(op, xReg.hexToByte, yReg.hexToByte)
       case StoreRegistersRegex(xReg) => StoreRegisters(op, xReg.hexToByte)
       case LoadRegistersRegex(xReg) => LoadRegisters(op, xReg.hexToByte)
+      case StoreBCDRegex(xReg) => StoreBCD(op, xReg.hexToByte)
+      case IEqIPlusXRegex(xReg) => IEqIPlusX(op, xReg.hexToByte)
       case _ => NotRecognised(op)
     }
   }

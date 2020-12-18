@@ -3,6 +3,9 @@ import java.lang.Integer.parseInt
 package object chip8 {
   type Pixel = Char
 
+  val MAX_ADDRESS = 0xfff
+  val STATUS_REGISTER_VF: Int = 0xF
+
   case class U8(ubyte: Char) {
     override def toString() =  s"${ubyte.toHexString}(${ubyte.toInt & 0xff})"
 

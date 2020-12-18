@@ -476,6 +476,172 @@ class InstructionTest {
     assertEquals(expectedState, actual)
   }
 
+  @Test
+  def testXEqLogicalOr(): Unit = {
+    val sut = XEqLogicalOr("op", U8(1), U8(2))
+
+    val initialState = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("01010101", 2)).
+        set(2, U8.valueOf("00001111", 2))
+    )
+
+    val actual = sut.exec(initialState)
+
+    val expectedState = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("01011111", 2)).
+        set(2, U8.valueOf("00001111", 2)),
+      pc = INITIAL_PC + 2
+    )
+
+    assertEquals(expectedState, actual)
+  }
+
+  @Test
+  def testXEqLogicalAnd(): Unit = {
+    val sut = XEqLogicalAnd("op", U8(1), U8(2))
+
+    val initialState = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("01010101", 2)).
+        set(2, U8.valueOf("00001111", 2))
+    )
+
+    val actual = sut.exec(initialState)
+
+    val expectedState = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("00000101", 2)).
+        set(2, U8.valueOf("00001111", 2)),
+      pc = INITIAL_PC + 2
+    )
+
+    assertEquals(expectedState, actual)
+  }
+
+
+  @Test
+  def testXEqLogicalXor(): Unit = {
+    val sut = XEqLogicalXor("op", U8(1), U8(2))
+
+    val initialState = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("01010101", 2)).
+        set(2, U8.valueOf("00001111", 2))
+    )
+
+    val actual = sut.exec(initialState)
+
+    val expectedState = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("01011010", 2)).
+        set(2, U8.valueOf("00001111", 2)),
+      pc = INITIAL_PC + 2
+    )
+
+    assertEquals(expectedState, actual)
+  }
+
+  @Test
+  def testXShiftRight(): Unit = {
+    val sut = XShiftRight("op", U8(1))
+
+    val initialState = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("01010101", 2)).
+        set(STATUS_REGISTER_VF, U8(0)),
+    )
+
+    val actual = sut.exec(initialState)
+
+    val expectedState = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("00101010", 2)).
+        set(STATUS_REGISTER_VF, U8(1)),
+      pc = INITIAL_PC + 2
+    )
+
+    assertEquals(expectedState, actual)
+
+    val actual2 = sut.exec(expectedState)
+
+    val expectedState2 = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("00010101", 2)).
+        set(STATUS_REGISTER_VF, U8(0)),
+      pc = INITIAL_PC + 4
+    )
+
+    assertEquals(expectedState2, actual2)
+  }
+
+  @Test
+  def testXShiftLeft(): Unit = {
+    val sut = XShiftLeft("op", U8(1))
+
+    val initialState = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("01010101", 2)).
+        set(STATUS_REGISTER_VF, U8(1)),
+    )
+
+    val actual = sut.exec(initialState)
+
+    val expectedState = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("10101010", 2)).
+        set(STATUS_REGISTER_VF, U8(0)),
+      pc = INITIAL_PC + 2
+    )
+
+    assertEquals(expectedState, actual)
+
+    val actual2 = sut.exec(expectedState)
+
+    val expectedState2 = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("01010100", 2)).
+        set(STATUS_REGISTER_VF, U8(1)),
+      pc = INITIAL_PC + 4
+    )
+
+    assertEquals(expectedState2, actual2)
+  }
+
+  @Test
+  def testStoreRegisters(): Unit = {
+    val sut = StoreRegisters("op", U8(1))
+
+    val initialState = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("01010101", 2)).
+        set(STATUS_REGISTER_VF, U8(1)),
+    )
+
+    val actual = sut.exec(initialState)
+
+    val expectedState = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("10101010", 2)).
+        set(STATUS_REGISTER_VF, U8(0)),
+      pc = INITIAL_PC + 2
+    )
+
+    assertEquals(expectedState, actual)
+
+    val actual2 = sut.exec(expectedState)
+
+    val expectedState2 = State(
+      register = emptyRegisters.
+        set(1, U8.valueOf("01010100", 2)).
+        set(STATUS_REGISTER_VF, U8(1)),
+      pc = INITIAL_PC + 4
+    )
+
+    assertEquals(expectedState2, actual2)
+  }
+
   def assertEquals(p1: Product, p2: Product): Unit = {
     org.junit.jupiter.api.Assertions.assertEquals(p1.productIterator.mkString("\n"), p2.productIterator.mkString("\n"))
   }
