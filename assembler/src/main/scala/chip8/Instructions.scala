@@ -69,7 +69,7 @@ case class ClearScreen(op: String) extends Instruction {
 
 case class SkipIfXEqN(op: String, xReg: UByte, nn: UByte) extends Instruction {
   override def exec(state: State): State = {
-    val xVal = state.register.apply(xReg)
+    val xVal = state.register(xReg)
     if (xVal == nn) {
       state.copy(pc = state.pc + 4)
     } else
@@ -79,7 +79,7 @@ case class SkipIfXEqN(op: String, xReg: UByte, nn: UByte) extends Instruction {
 
 case class SkipIfXNeN(op: String, xReg: UByte, nn: UByte) extends Instruction {
   override def exec(state: State): State = {
-    val xVal: Int = state.register(xReg)
+    val xVal = state.register(xReg)
     if (xVal != nn) {
       state.copy(pc = state.pc + 4)
     } else
@@ -89,8 +89,8 @@ case class SkipIfXNeN(op: String, xReg: UByte, nn: UByte) extends Instruction {
 
 case class SkipIfXEqY(op: String, xReg: UByte, yReg: UByte) extends Instruction {
   override def exec(state: State): State = {
-    val xVal: Int = state.register(xReg)
-    val yVal: Int = state.register(yReg)
+    val xVal = state.register(xReg)
+    val yVal = state.register(yReg)
     if (xVal == yVal) {
       state.copy(pc = state.pc + 4)
     } else
@@ -100,8 +100,8 @@ case class SkipIfXEqY(op: String, xReg: UByte, yReg: UByte) extends Instruction 
 
 case class SkipIfXNeY(op: String, xReg: UByte, yReg: UByte) extends Instruction {
   override def exec(state: State): State = {
-    val xVal: Int = state.register(xReg)
-    val yVal: Int = state.register(yReg)
+    val xVal = state.register(xReg)
+    val yVal = state.register(yReg)
     if (xVal != yVal) {
       state.copy(pc = state.pc + 4)
     } else
@@ -110,7 +110,7 @@ case class SkipIfXNeY(op: String, xReg: UByte, yReg: UByte) extends Instruction 
 
 }
 
-case class SetX(op: String, xReg: UByte, nn: UByte) extends Instruction {
+case class SetX(op: String, xReg: U8, nn: U8) extends Instruction {
   override def exec(state: State): State = {
     state.copy(
       register = state.register.set(xReg, nn),
@@ -122,8 +122,9 @@ case class SetX(op: String, xReg: UByte, nn: UByte) extends Instruction {
 case class AddX(op: String, xReg: UByte, nn: UByte) extends Instruction { // Does not set carry
   override def exec(state: State): State = {
     val current = state.register(xReg)
+    val u = current + nn
     state.copy(
-      register = state.register.set(xReg, (current + nn).toByte),
+      register = state.register.set(xReg, u),
       pc = state.pc + 2
     )
   }
@@ -141,19 +142,19 @@ case class Display(op: String, xReg: UByte, yReg: UByte, nHeight: UByte) extends
     val xPos: UByte = state.register(xReg)
     val yPos: UByte = state.register(yReg)
 
-    val st = updateScreen(state, nHeight, xPos, yPos)
+    val st = updateScreen(state, nHeight.ubyte, xPos.ubyte, yPos.ubyte)
     st.copy(pc = state.pc + 2)
   }
 
-  private def updateScreen(state: State, height: UByte, xPos: UByte, yPos: UByte): State = {
+  private def updateScreen(state: State, height: Int, xPos: Int, yPos: Int): State = {
 
-    var st = state.copy(register = state.register.set(STATUS_REGISTER_VF, 0)) // no collision yet
+    var st = state.copy(register = state.register.set(STATUS_REGISTER_VF, U8(0))) // no collision yet
 
     (0 until height).foreach { y =>
       val location = state.index + y
       val memory = st.memory
       val c = memory.apply(location)
-      var spr: Int = c
+      var spr: Int = c.ubyte
 
       (0 to 7).foreach {
         x =>
@@ -164,7 +165,7 @@ case class Display(op: String, xReg: UByte, yReg: UByte, nHeight: UByte) extends
             val (newScreen, isErased) = st.screen.setPixel(xPos + x, yPos + y)
             st = st.copy(screen = newScreen)
             if (isErased) {
-              st = st.copy(register = st.register.set(STATUS_REGISTER_VF, 1))
+              st = st.copy(register = st.register.set(STATUS_REGISTER_VF, U8(1)))
             }
           }
           spr <<= 1
@@ -175,7 +176,7 @@ case class Display(op: String, xReg: UByte, yReg: UByte, nHeight: UByte) extends
 }
 
 
-case class SetXEqY(op: String, xReg: Int, yReg: Int) extends Instruction {
+case class SetXEqY(op: String, xReg: U8, yReg: U8) extends Instruction {
   override def exec(state: State): State = {
     val YVal: UByte = state.register(yReg)
     val updatedRegs = state.register.set(xReg, YVal)
@@ -185,13 +186,13 @@ case class SetXEqY(op: String, xReg: Int, yReg: Int) extends Instruction {
   }
 }
 
-case class XEqXMinusY(op: String, xReg: Int, yReg: Int) extends Instruction {
+case class XEqXMinusY(op: String, xReg: U8, yReg: U8) extends Instruction {
   override def exec(state: State): State = {
     val xVal: UByte = state.register(xReg)
     val yVal: UByte = state.register(yReg)
     val updatedRegs = state.register.
-      set(xReg, (xVal - yVal).toByte).
-      set(STATUS_REGISTER_VF, if (xVal > yVal) UByte1 else UByte0)
+      set(xReg, xVal - yVal).
+      set(STATUS_REGISTER_VF, if (xVal > yVal) U8(1) else U8(0))
 
     state.copy(
       register = updatedRegs,
@@ -199,13 +200,13 @@ case class XEqXMinusY(op: String, xReg: Int, yReg: Int) extends Instruction {
   }
 }
 
-case class XEqYMinusX(op: String, xReg: Int, yReg: Int) extends Instruction {
+case class XEqYMinusX(op: String, xReg: U8, yReg: U8) extends Instruction {
   override def exec(state: State): State = {
     val xVal: UByte = state.register(xReg)
     val yVal: UByte = state.register(yReg)
     val updatedRegs = state.register.
-      set(xReg, (yVal - xVal).toByte).
-      set(STATUS_REGISTER_VF, if (yVal > xVal) UByte1 else UByte0)
+      set(xReg, yVal - xVal).
+      set(STATUS_REGISTER_VF, if (yVal > xVal) U8(1) else U8(0))
 
     state.copy(
       register = updatedRegs,
@@ -213,12 +214,12 @@ case class XEqYMinusX(op: String, xReg: Int, yReg: Int) extends Instruction {
   }
 }
 
-case class XEqLogicalOr(op: String, xReg: Int, yReg: Int) extends Instruction {
+case class XEqLogicalOr(op: String, xReg: U8, yReg: U8) extends Instruction {
   override def exec(state: State): State = {
     val xVal: UByte = state.register(xReg)
     val yVal: UByte = state.register(yReg)
     val updatedRegs = state.register.
-      set(xReg, (yVal | xVal).toByte)
+      set(xReg, yVal | xVal)
 
     state.copy(
       register = updatedRegs,
@@ -226,12 +227,12 @@ case class XEqLogicalOr(op: String, xReg: Int, yReg: Int) extends Instruction {
   }
 }
 
-case class XEqLogicalAnd(op: String, xReg: Int, yReg: Int) extends Instruction {
+case class XEqLogicalAnd(op: String, xReg: U8, yReg: U8) extends Instruction {
   override def exec(state: State): State = {
     val xVal: UByte = state.register(xReg)
     val yVal: UByte = state.register(yReg)
     val updatedRegs = state.register.
-      set(xReg, (yVal & xVal).toByte)
+      set(xReg, yVal & xVal)
 
     state.copy(
       register = updatedRegs,
@@ -239,12 +240,12 @@ case class XEqLogicalAnd(op: String, xReg: Int, yReg: Int) extends Instruction {
   }
 }
 
-case class XEqLogicalXor(op: String, xReg: Int, yReg: Int) extends Instruction {
+case class XEqLogicalXor(op: String, xReg: U8, yReg: U8) extends Instruction {
   override def exec(state: State): State = {
     val xVal: UByte = state.register(xReg)
     val yVal: UByte = state.register(yReg)
     val updatedRegs = state.register.
-      set(xReg, (yVal ^ xVal).toByte)
+      set(xReg, yVal ^ xVal)
 
     state.copy(
       register = updatedRegs,
@@ -258,15 +259,15 @@ case class XEqLogicalXor(op: String, xReg: Int, yReg: Int) extends Instruction {
  * this impl ignores vy ... https://github.com/JamesGriffin/CHIP-8-Emulator/blob/master/src/chip8.cpp
  *
  * */
-case class XShiftRight(op: String, xReg: Int) extends Instruction {
+case class XShiftRight(op: String, xReg: U8) extends Instruction {
   override def exec(state: State): State = {
-    val v: UByte = state.register(xReg)
-    val bottom = (if ((v & 1) != 0) 1 else 0).toByte
-    val shifted = (v >> 1).toByte
+    val v = state.register(xReg)
+    val shiftOut: U8 = (v & 1).asOneZero
+    val shifted: U8 = v >> 1
 
     val updatedRegs = state.register.
       set(xReg, shifted).
-      set(STATUS_REGISTER_VF, bottom)
+      set(STATUS_REGISTER_VF, shiftOut)
 
     state.copy(
       register = updatedRegs,
@@ -274,15 +275,15 @@ case class XShiftRight(op: String, xReg: Int) extends Instruction {
   }
 }
 
-case class XShiftLeft(op: String, xReg: Int) extends Instruction {
+case class XShiftLeft(op: String, xReg: U8) extends Instruction {
   override def exec(state: State): State = {
     val v: UByte = state.register(xReg)
-    val top = (if ((v & 0x80) != 0) 1 else 0).toByte
-    val shifted = (v << 1).toByte
+    val shiftOut = (v & 0x80).asOneZero
+    val shifted = v << 1
 
     val updatedRegs = state.register.
       set(xReg, shifted).
-      set(STATUS_REGISTER_VF, top)
+      set(STATUS_REGISTER_VF, shiftOut)
 
     state.copy(
       register = updatedRegs,
@@ -290,9 +291,9 @@ case class XShiftLeft(op: String, xReg: Int) extends Instruction {
   }
 }
 
-case class StoreRegisters(op: String, xReg: Int) extends Instruction {
+case class StoreRegisters(op: String, xReg: U8) extends Instruction {
   override def exec(state: State): State = {
-    val registerValuesToSave = state.register.take(xReg + 1)
+    val registerValuesToSave = state.register.take(xReg.ubyte + 1)
 
     var st = state
     registerValuesToSave.foreach {
@@ -309,11 +310,11 @@ case class StoreRegisters(op: String, xReg: Int) extends Instruction {
   }
 }
 
-case class LoadRegisters(op: String, xReg: Int) extends Instruction {
+case class LoadRegisters(op: String, xReg: U8) extends Instruction {
   override def exec(state: State): State = {
-    val data = state.memory.slice(state.index, state.index + xReg + 1)
+    val data = state.memory.slice(state.index, state.index + xReg.ubyte + 1)
 
-    var st = state.copy(index = state.index + xReg + 1)
+    var st = state.copy(index = state.index + xReg.ubyte + 1)
 
     data.zipWithIndex.foreach {
       case (v, i) =>
@@ -327,10 +328,10 @@ case class LoadRegisters(op: String, xReg: Int) extends Instruction {
   }
 }
 
-case class FontCharacter(op: String, xReg: Int) extends Instruction {
+case class FontCharacter(op: String, xReg: U8) extends Instruction {
   override def exec(state: State): State = {
-    val v: Int = state.register(xReg)
-    val locn = state.fontCharLocation(v)
+    val v = state.register(xReg)
+    val locn = state.fontCharLocation(v.ubyte)
 
     state.copy(
       index = locn,

@@ -2,7 +2,6 @@ package chip8
 
 import chip8.Chip8Compiler.State
 
-
 object Fonts {
   // load fonts from Ram[0] onwards
   val FontMemAddress = 0
@@ -21,7 +20,7 @@ object Fonts {
     FontMemAddress + (n * FontCharWidth)
   }
 
-  def hexFonts: Seq[UByte] = {
+  def hexFonts: Seq[U8] = {
     List(
       0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
       0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -39,6 +38,6 @@ object Fonts {
       0xE0, 0x90, 0x90, 0x90, 0xE0, // D
       0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
       0xF0, 0x80, 0xF0, 0x80, 0x80 // F
-    ).map(_.toByte)
+    ).map(x => U8.valueOf(x))
   }
 }

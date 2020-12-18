@@ -11,6 +11,10 @@ import scala.collection.mutable
 @TestMethodOrder(classOf[MethodName])
 class InstructionTest {
 
+  val U100 = U8(100)
+  val U70 = U8(70)
+  val U30 = U8(30)
+
   @Test
   def tesGoSub(): Unit = {
     val sut = GoSub("thsOp", 123)
@@ -75,16 +79,16 @@ class InstructionTest {
 
   @Test
   def testSkipIfXEqN_Eq(): Unit = {
-    val sut = SkipIfXEqN("op", 0.toByte, 123.toByte)
+    val sut = SkipIfXEqN("op", U8(0), U8(123))
 
     val initialState = State(
-      register = emptyRegisters.set(0, 123.toByte)
+      register = emptyRegisters.set(0, U8(123))
     )
 
     val actual = sut.exec(initialState)
 
     val expectedState = State(
-      register = emptyRegisters.set(0, 123.toByte),
+      register = emptyRegisters.set(0, U8(123)),
       pc = INITIAL_PC + 4
     )
 
@@ -93,7 +97,7 @@ class InstructionTest {
 
   @Test
   def testSkipIfXEqN_Neq(): Unit = {
-    val sut = SkipIfXEqN("op", 0.toByte, 123.toByte)
+    val sut = SkipIfXEqN("op", U8(0), U8(123))
 
     val initialState = State()
 
@@ -108,16 +112,16 @@ class InstructionTest {
 
   @Test
   def testSkipIfXNeN_Eq(): Unit = {
-    val sut = SkipIfXNeN("op", 0.toByte, 123.toByte)
+    val sut = SkipIfXNeN("op", U8(0), U8(123))
 
     val initialState = State(
-      register = emptyRegisters.set(0, 123.toByte)
+      register = emptyRegisters.set(0, U8(123))
     )
 
     val actual = sut.exec(initialState)
 
     val expectedState = State(
-      register = emptyRegisters.set(0, 123.toByte),
+      register = emptyRegisters.set(0, U8(123)),
       pc = INITIAL_PC + 2
     )
 
@@ -126,7 +130,7 @@ class InstructionTest {
 
   @Test
   def testSkipIfXNeN_Neq(): Unit = {
-    val sut = SkipIfXNeN("op", 0.toByte, 123.toByte)
+    val sut = SkipIfXNeN("op", U8(0), U8(123))
 
     val initialState = State()
 
@@ -142,16 +146,16 @@ class InstructionTest {
 
   @Test
   def testSkipIfXEqY_Eq(): Unit = {
-    val sut = SkipIfXEqY("op", 0.toByte, 1.toByte)
+    val sut = SkipIfXEqY("op", U8(0), U8(1))
 
     val initialState = State(
-      register = emptyRegisters.set(0, 123.toByte).set(1, 123.toByte)
+      register = emptyRegisters.set(0, U8(123)).set(1, U8(123))
     )
 
     val actual = sut.exec(initialState)
 
     val expectedState = State(
-      register = emptyRegisters.set(0, 123.toByte).set(1, 123.toByte),
+      register = emptyRegisters.set(0, U8(123)).set(1, U8(123)),
       pc = INITIAL_PC + 4
     )
 
@@ -160,16 +164,16 @@ class InstructionTest {
 
   @Test
   def testSkipIfXEqY_Neq(): Unit = {
-    val sut = SkipIfXEqY("op", 0.toByte, 1.toByte)
+    val sut = SkipIfXEqY("op", U8(0), U8(1))
 
     val initialState = State(
-      register = emptyRegisters.set(0, 123.toByte)
+      register = emptyRegisters.set(0, U8(123))
     )
 
     val actual = sut.exec(initialState)
 
     val expectedState = State(
-      register = emptyRegisters.set(0, 123.toByte),
+      register = emptyRegisters.set(0, U8(123)),
       pc = INITIAL_PC + 2
     )
 
@@ -179,16 +183,16 @@ class InstructionTest {
 
   @Test
   def testSkipIfXNeY_Eq(): Unit = {
-    val sut = SkipIfXNeY("op", 0.toByte, 1.toByte)
+    val sut = SkipIfXNeY("op", U8(0), U8(1))
 
     val initialState = State(
-      register = emptyRegisters.set(0, 123.toByte).set(1, 123.toByte)
+      register = emptyRegisters.set(0, U8(123)).set(1, U8(123))
     )
 
     val actual = sut.exec(initialState)
 
     val expectedState = State(
-      register = emptyRegisters.set(0, 123.toByte).set(1, 123.toByte),
+      register = emptyRegisters.set(0, U8(123)).set(1, U8(123)),
       pc = INITIAL_PC + 2
     )
 
@@ -197,16 +201,16 @@ class InstructionTest {
 
   @Test
   def testSkipIfXNeY_Neq(): Unit = {
-    val sut = SkipIfXNeY("op", 0.toByte, 1.toByte)
+    val sut = SkipIfXNeY("op", U8(0), U8(1))
 
     val initialState = State(
-      register = emptyRegisters.set(0, 123.toByte)
+      register = emptyRegisters.set(0, U8(123))
     )
 
     val actual = sut.exec(initialState)
 
     val expectedState = State(
-      register = emptyRegisters.set(0, 123.toByte),
+      register = emptyRegisters.set(0, U8(123)),
       pc = INITIAL_PC + 4
     )
 
@@ -216,14 +220,14 @@ class InstructionTest {
 
   @Test
   def testSetX(): Unit = {
-    val sut = SetX("op", 0.toByte, 1.toByte)
+    val sut = SetX("op", U8(0), U8(1))
 
     val initialState = State()
 
     val actual = sut.exec(initialState)
 
     val expectedState = State(
-      register = emptyRegisters.set(0, 1.toByte),
+      register = emptyRegisters.set(0, U8(1)),
       pc = INITIAL_PC + 2
     )
 
@@ -232,16 +236,16 @@ class InstructionTest {
 
   @Test
   def testAddX(): Unit = {
-    val sut = AddX("op", 0.toByte, 1.toByte)
+    val sut = AddX("op", U8(0), U8(1))
 
     val initialState = State(
-      register = emptyRegisters.set(0, 10.toByte),
+      register = emptyRegisters.set(0, U8(100)),
     )
 
     val actual = sut.exec(initialState)
 
     val expectedState = State(
-      register = emptyRegisters.set(0, 11.toByte),
+      register = emptyRegisters.set(0, U8(101)),
       pc = INITIAL_PC + 2
     )
 
@@ -266,12 +270,12 @@ class InstructionTest {
 
   @Test
   def testDisplay(): Unit = {
-    val sut = Display("op", 1.toByte, 2.toByte, 2.toByte)
+    val sut = Display("op", U8(1), U8(2), U8(2))
 
     val locationOfFont = 100
-    val memory = emptyMemory.set(locationOfFont, 0xaa.toByte).set(locationOfFont + 1, 0xff.toByte)
+    val memory = emptyMemory.set(locationOfFont, U8(0xaa)).set(locationOfFont + 1, U8(0xff))
     val initialState = State(
-      register = emptyRegisters.set(1, 3.toByte).set(2, 0.toByte),
+      register = emptyRegisters.set(1, U8(3)).set(2, U8(0)),
       memory = memory,
       index = locationOfFont
     )
@@ -291,7 +295,7 @@ class InstructionTest {
 
     val expectedState = State(
       memory = memory,
-      register = emptyRegisters.set(1, 3.toByte).set(2, 0.toByte),
+      register = emptyRegisters.set(1, U8(3)).set(2, U8(0)),
       screen = Screen(buffer = screenData),
       index = locationOfFont,
       pc = INITIAL_PC + 2
@@ -303,11 +307,11 @@ class InstructionTest {
     val actual2 = sut.exec(actual)
 
     val expectedState2 = State(
-        memory = memory,
-        register = emptyRegisters.set(1, 3.toByte).set(2, 0.toByte).set(STATUS_REGISTER_VF, 1.toByte),
-        screen = Screen(),
-        index = locationOfFont,
-        pc = INITIAL_PC + 4
+      memory = memory,
+      register = emptyRegisters.set(1, U8(3)).set(2, U8(0)).set(STATUS_REGISTER_VF, U8(1)),
+      screen = Screen(),
+      index = locationOfFont,
+      pc = INITIAL_PC + 4
     )
     assertEquals(expectedState2, actual2)
 
@@ -315,16 +319,16 @@ class InstructionTest {
 
   @Test
   def testSetXEqY(): Unit = {
-    val sut = SetXEqY("op", 1 ,2)
+    val sut = SetXEqY("op", U8(1), U8(2))
 
     val initialState = State(
-      register = emptyRegisters.set(1, 3.toByte).set(2, 42.toByte),
+      register = emptyRegisters.set(1, U8(3)).set(2, U8(42)),
     )
 
     val actual = sut.exec(initialState)
 
     val expectedState = State(
-      register = emptyRegisters.set(1, 42.toByte).set(2, 42.toByte),
+      register = emptyRegisters.set(1, U8(42)).set(2, U8(42)),
       pc = INITIAL_PC + 2
     )
 
@@ -333,16 +337,16 @@ class InstructionTest {
 
   @Test
   def testXEqXMinusY_NotGt(): Unit = {
-    val sut = XEqXMinusY("op", 1 ,2)
+    val sut = XEqXMinusY("op", U8(1), U8(2))
 
     val initialState = State(
-      register = emptyRegisters.set(1, 30.toByte).set(2, 100.toByte),
+      register = emptyRegisters.set(1, U8(0)).set(2, U8(1)),
     )
 
     val actual = sut.exec(initialState)
 
     val expectedState = State(
-      register = emptyRegisters.set(1, (-70.toByte).toByte).set(2, 100.toByte),
+      register = emptyRegisters.set(1, U8.valueOf(255 /*== -1*/)).set(2, U8(1)),
       pc = INITIAL_PC + 2
     )
 
@@ -351,16 +355,16 @@ class InstructionTest {
 
   @Test
   def testXEqXMinusY_Gt(): Unit = {
-    val sut = XEqXMinusY("op", 1 ,2)
+    val sut = XEqXMinusY("op", U8(1), U8(2))
 
     val initialState = State(
-      register = emptyRegisters.set(1, 100.toByte).set(2, 30.toByte),
+      register = emptyRegisters.set(1, U8(100)).set(2, U8(30)),
     )
 
     val actual = sut.exec(initialState)
 
     val expectedState = State(
-      register = emptyRegisters.set(1, 70.toByte).set(2, 30.toByte).set(STATUS_REGISTER_VF, 1.toByte),
+      register = emptyRegisters.set(1, U8(70)).set(2, U8(30)).set(STATUS_REGISTER_VF, U8(1)),
       pc = INITIAL_PC + 2
     )
 

@@ -8,9 +8,8 @@ object Chip8Emulator {
 
   import Chip8Compiler._
 
-  def BLANK: UByte = ' '.toByte
-
-  def PIXEL : UByte = '#'.toByte
+  def BLANK: Pixel = ' '
+  def PIXEL : Pixel = '#'
 
   def GAP = ""
 

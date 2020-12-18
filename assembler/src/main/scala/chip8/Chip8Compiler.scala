@@ -19,18 +19,15 @@ import scala.util.parsing.combinator.JavaTokenParsers
 
 object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
 
-
-
-  val STATUS_REGISTER_VF = 0xF
+  val STATUS_REGISTER_VF: Int = 0xF
 
   val AddressRegex: Regex = "([0-9A-F][0-9A-F][0-9A-F][0-9A-F]):" r
-
 
   def opCode: Parser[Instruction] = "[0-9a-fA-F]{4}".r ^^ {
     case op => op.toUpperCase match {
       case ClearScreenRegex() => ClearScreen(op)
-      case JumpRegex(nnn) => Jump(op, nnn.hexToByte)
-      case GoSubRegex(nnn) => GoSub(op, nnn.hexToByte)
+      case JumpRegex(nnn) => Jump(op, nnn.hexToInt)
+      case GoSubRegex(nnn) => GoSub(op, nnn.hexToInt)
       case ReturnSubRegex() => ReturnSub(op)
       case SkipIfVxEqNRegex(x, nn) => SkipIfXEqN(op, x.hexToByte, nn.hexToByte)
       case SkipIfVxNENRegex(xReg, nn) => SkipIfXNeN(op, xReg.hexToByte, nn.hexToByte)
@@ -38,9 +35,9 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
       case SkipIfVxNeVyRegex(xReg, yReg) => SkipIfXNeY(op, xReg.hexToByte, yReg.hexToByte)
       case SetVxRegex(xReg, nn) => SetX(op, xReg.hexToByte, nn.hexToByte)
       case AddVxRegex(xReg, nn) => AddX(op, xReg.hexToByte, nn.hexToByte)
-      case SetIndexRegex(nnn) => SetIndex(op, nnn.hexToByte)
+      case SetIndexRegex(nnn) => SetIndex(op, nnn.hexToInt)
       case DisplayRegex(xReg, yReg, n) => Display(op, xReg.hexToByte, yReg.hexToByte, n.hexToByte)
-      case ObsoleteMachineJumpRegex(nnn) => ObsoleteMachineJump(op, nnn.hexToByte)
+      case ObsoleteMachineJumpRegex(nnn) => ObsoleteMachineJump(op, nnn.hexToInt)
       case SetXEqYRegex(xReg, yReg) => SetXEqY(op, xReg.hexToByte, yReg.hexToByte)
       case XShiftRightRegex(xReg) => XShiftRight(op, xReg.hexToByte)
       case XShiftLeftRegex(xReg) => XShiftLeft(op, xReg.hexToByte)
@@ -88,8 +85,8 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
 
   object State {
     val INITIAL_PC = 0x200
-    val emptyRegisters: List[UByte] = List.fill(16)(0.toByte)
-    val emptyMemory: List[UByte] = List.fill(4096)(0.toByte)
+    val emptyRegisters: List[U8] = List.fill(16)(U8_Zero)
+    val emptyMemory: List[U8] = List.fill(4096)(U8_Zero)
   }
 
   case class State(
@@ -97,20 +94,12 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
                     pc: Int = INITIAL_PC,
                     index: Int = 0,
                     stack: Seq[Int] = Nil,
-                    register: Seq[UByte] = emptyRegisters,
-                    memory: Seq[UByte] = emptyMemory,
+                    register: Seq[U8] = emptyRegisters,
+                    memory: Seq[U8] = emptyMemory,
                     fontCharLocation: Int => Int = Fonts.fontCharLocation) {
 
     if (stack.length > 16) {
       sys.error("Stack may not exceed 16 levels but got " + stack.length)
-    }
-
-    memory.foreach {
-      x: UByte  =>
-        if(!x.isInstanceOf[UByte]) {
-          val s = x.getClass
-          println(s)
-        }
     }
 
     def push(i: Int): State = copy(stack = i +: stack)
@@ -131,7 +120,7 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
     val prog = code.map { x => f"$x%04x" }.mkString("\n")
 
     parse(program, prog) match {
-      case m @ Success(matched, _) =>
+      case Success(matched, _) =>
         matched
       case msg: Failure =>
         sys.error(s"FAILURE: $msg ")

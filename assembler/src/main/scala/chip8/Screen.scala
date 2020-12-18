@@ -59,7 +59,7 @@ object Screen {
     fillScreenBuffer(BLANK, width, height)
   }
 
-  def fillScreenBuffer(c: UByte, width: Int, height: Int): List[String] = {
+  def fillScreenBuffer(c: Pixel, width: Int, height: Int): List[String] = {
     val value = (0 until height).map {
       _ =>
         c.toChar.toString * width
