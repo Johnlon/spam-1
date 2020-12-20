@@ -32,6 +32,7 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
       case SkipIfVxEqVyRegex(xReg, yReg) => SkipIfXEqY(op, xReg.hexToByte, yReg.hexToByte)
       case SkipIfVxNeVyRegex(xReg, yReg) => SkipIfXNeY(op, xReg.hexToByte, yReg.hexToByte)
       case SetVxRegex(xReg, nn) => SetX(op, xReg.hexToByte, nn.hexToByte)
+      case AddXPlusYCarryRegex(xReg, yReg) => AddXPlusYCarry(op, xReg.hexToByte, yReg.hexToByte)
       case AddVxRegex(xReg, nn) => AddX(op, xReg.hexToByte, nn.hexToByte)
       case SetIndexRegex(nnn) => SetIndex(op, nnn.hexToInt)
       case DisplayRegex(xReg, yReg, n) => Display(op, xReg.hexToByte, yReg.hexToByte, n.hexToByte)
@@ -54,6 +55,7 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
       case StoreBCDRegex(xReg) => StoreBCD(op, xReg.hexToByte)
       case IEqIPlusXRegex(xReg) => IEqIPlusX(op, xReg.hexToByte)
       case XEqRandomRegex(xReg, kk) => XEqRandom(op, xReg.hexToByte, kk.hexToByte)
+      case SetSoundTimerRegex(xReg) => SetSoundTimer(op, xReg.hexToByte)
       case _ => NotRecognised(op)
     }
   }
@@ -101,7 +103,7 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
                     stack: Seq[Int] = Nil,
                     register: Seq[U8] = emptyRegisters,
                     memory: Seq[U8] = emptyMemory,
-                    delayTmer: U8 = U8(0),
+                    delayTimer: U8 = U8(0),
                     fontCharLocation: Int => Int = Fonts.fontCharLocation) {
 
     if (stack.length > 16) {

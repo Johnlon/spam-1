@@ -30,6 +30,7 @@ object Instructions {
   val SkipIfVxNENRegex: Regex = "4([0-9A-F])([0-9A-F][0-9A-F])" r
   val SkipIfVxEqVyRegex: Regex = "5([0-9A-F])([0-9A-F])0" r
   val SetVxRegex: Regex = "6([0-9A-F])([0-9A-F][0-9A-F])" r
+  val AddXPlusYCarryRegex: Regex = "8([0-9A-F])([0-9A-F])4" r
   val AddVxRegex: Regex = "7([0-9A-F])([0-9A-F][0-9A-F])" r
   val SetXEqYRegex: Regex = "8([0-9A-F])([0-9A-F])0" r
   val XEqLogicalOrRegex: Regex = "8([0-9A-F])([0-9A-F])1" r
@@ -51,6 +52,7 @@ object Instructions {
   val StoreRegistersRegex: Regex = "F([0-9A-F])55" r
   val LoadRegistersRegex: Regex = "F([0-9A-F])65" r
   val StoreBCDRegex: Regex = "F([0-9A-F])33" r
+  val SetSoundTimerRegex: Regex = "F([0-9A-F])18" r
   val IEqIPlusXRegex: Regex = "F([0-9A-F])1E" r
 }
 
@@ -408,7 +410,7 @@ case class DelayTimerSet(op: String, xReg: U8) extends Instruction {
   override def exec(state: State): State = {
     val v = state.register(xReg)
     state.copy(
-      delayTmer = v,
+      delayTimer = v,
       pc = state.pc + 2)
   }
 }
@@ -417,7 +419,7 @@ case class DelayTimerSet(op: String, xReg: U8) extends Instruction {
 case class DelayTimerGet(op: String, xReg: U8) extends Instruction {
   override def exec(state: State): State = {
     state.copy(
-      register = state.register.set(xReg, state.delayTmer),
+      register = state.register.set(xReg, state.delayTimer),
       pc = state.pc + 2)
   }
 }
@@ -428,7 +430,7 @@ case class SkipIfNotKey(op: String, xReg: U8) extends Instruction {
     val key: U8 = state.register(xReg)
 
     /// TODO = NEED KEYBOARD IMNPUT
-    val keyPressed = Random.nextInt() < Integer.MAX_VALUE * 0.9
+    val keyPressed = Random.nextInt() % 10  == key
 
     val skip = if (keyPressed) 2 else 4
     state.copy(
@@ -442,11 +444,34 @@ case class SkipIfKey(op: String, xReg: U8) extends Instruction {
     val key: U8 = state.register(xReg)
 
     /// TODO = NEED KEYBOARD IMNPUT
-    val keyPressed = Random.nextInt() < Integer.MAX_VALUE * 0.1
+    val keyPressed = Random.nextInt() % 10 == key
 
     val skip = if (keyPressed) 4 else 2
     state.copy(
       pc = state.pc + skip
+    )
+  }
+}
+
+case class AddXPlusYCarry(op: String, xReg: U8, yReg: U8) extends Instruction { // Does not set carry
+  override def exec(state: State): State = {
+    val x = state.register(xReg)
+    val y = state.register(yReg)
+    val result: Int = x.ubyte + y.ubyte
+
+    state.copy(
+      register = state.register.set(xReg, U8.valueOf(result & 0xff)).set(STATUS_REGISTER_VF, U8.valueOf(result > U8.MAX_INT)),
+      pc = state.pc + 2
+    )
+  }
+}
+
+case class SetSoundTimer(op: String, xReg: U8) extends Instruction { // Does not set carry
+  override def exec(state: State): State = {
+    val x = state.register(xReg)
+    // TODO Implement me
+    state.copy(
+      pc = state.pc + 2
     )
   }
 }

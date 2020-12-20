@@ -1178,7 +1178,7 @@ class SpamCCTest {
 
   @Test
   def snake(): Unit = {
-    import terminal.Terminal._
+    import terminal.UARTTerminal._
 
     val lines =
       s"""fun main() {

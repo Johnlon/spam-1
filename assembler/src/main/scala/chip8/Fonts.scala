@@ -3,8 +3,9 @@ package chip8
 import chip8.Chip8Compiler.State
 
 object Fonts {
-  // load fonts from Ram[0] onwards
-  val FontMemAddress = 0
+  // http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
+  val FontMemAddress = 0x50
+
   val FontCharWidth = 5
 
   def installFonts(state: State): State = {

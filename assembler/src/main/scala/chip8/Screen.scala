@@ -1,11 +1,16 @@
 package chip8
 
-import chip8.Chip8Emulator.{BLANK, GAP, PIXEL}
+import chip8.Screen.{BLANK, NullListener, PIXEL}
+
+trait PixelListener {
+  def apply(x: Int, y: Int, set: Boolean): Unit
+}
 
 case class Screen(
                    width: Int = Screen.WIDTH,
                    height: Int = Screen.HEIGHT,
-                   buffer: List[String] = Screen.makeEmptyScreenBuffer(Screen.WIDTH, Screen.HEIGHT)
+                   buffer: List[String] = Screen.makeEmptyScreenBuffer(Screen.WIDTH, Screen.HEIGHT),
+                   pixelListener: PixelListener = NullListener
                  ) {
   def clear(): Screen = {
     this.copy(
@@ -28,8 +33,10 @@ case class Screen(
     */
     val erased = wasSet
     val updatedRow = if (wasSet) {
+      pixelListener(xMod, yMod, false)
       row.set(xMod, BLANK)
     } else {
+      pixelListener(xMod, yMod, true)
       row.set(xMod, PIXEL)
     }
 
@@ -42,8 +49,17 @@ case class Screen(
 }
 
 object Screen {
+  private val BLANK: Pixel = ' '
+  val PIXEL: Pixel = 0x2588.toChar
+
   val HEIGHT = 32
   val WIDTH = 60
+
+  def GAP = ""
+
+  val NullListener = new PixelListener {
+    override def apply(x: Int, y: Int, set: Boolean): Unit = {}
+  }
 
   def paintScreen(screen: Screen): Unit = {
     println("--------\n")

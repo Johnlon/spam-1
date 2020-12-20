@@ -1,14 +1,16 @@
 package terminal
 
+import java.awt.Color
 import java.io.{File, FileOutputStream, PrintStream}
 import java.util.concurrent.atomic.AtomicInteger
 
+import javax.swing.BorderFactory
 import org.apache.commons.io.input.{Tailer, TailerListener}
 
 import scala.swing.event._
 import scala.swing.{Rectangle, _}
 
-object Terminal extends SimpleSwingApplication   {
+object UARTTerminal extends SimpleSwingApplication   {
   val uartOut = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.out"
   val uartControl = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.control"
 
@@ -41,6 +43,8 @@ object Terminal extends SimpleSwingApplication   {
   var data = fill()
 
   val text = new TextArea("Java Version: " + util.Properties.javaVersion + "\n" + "john")
+  text.border = BorderFactory.createLineBorder(Color.BLUE)
+
   private def run(): Unit = {
     val listener = new FileListener
     Tailer.create(  new File(uartOut), listener, 0, true, false, 1000)

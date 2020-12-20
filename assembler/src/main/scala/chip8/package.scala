@@ -14,6 +14,7 @@ package object chip8 {
     def asOneZero: U8 = if (ubyte != 0) U8(1) else U8(0)
 
     def >(yVal: U8): Boolean = (ubyte > yVal.ubyte)
+//    def >(yVal: Int): Boolean = (ubyte > U8.valueOf(yVal))
 
     def <(yVal: U8): Boolean = (ubyte < yVal.ubyte)
 
@@ -42,6 +43,8 @@ package object chip8 {
   }
 
   object U8 {
+    var MAX_INT = 255
+
 
     def valueOf(b: Boolean) : U8 = if (b) U8(1) else U8(0)
 
