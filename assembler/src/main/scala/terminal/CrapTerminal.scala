@@ -3,6 +3,7 @@ package terminal
 import java.awt.Color
 import java.util.concurrent.atomic.AtomicInteger
 
+import chip8.Pixel
 import javax.swing.BorderFactory
 import terminal.CrapTerminal._
 
@@ -13,6 +14,8 @@ import scala.swing.{Rectangle, _}
 object CrapTerminal {
 
   val FONT = "Courier New"
+  def BLANK: Pixel = ' '
+  def PIXEL: Pixel =  0x2588.toChar
 
   val NO_CHAR: Char = 0
 
@@ -128,7 +131,11 @@ class CrapTerminal(
         val xi = x.get()
 
         val row: mutable.Buffer[Char] = screen(yi)
-        row(xi) = data
+
+        if (data == 0)
+          row(xi) = BLANK
+        else
+          row(xi) = PIXEL
 
         doRepaint()
       case 0 =>

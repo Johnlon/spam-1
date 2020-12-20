@@ -140,16 +140,14 @@ object screenToTerminalAdaptor extends PixelListener {
   }
 
   override def apply(x: Int, y: Int, set: Boolean): Unit = {
-    def BLANK: Pixel = ' '
-//    def PIXEL: Pixel =  0x2588.toChar
-      def PIXEL: Pixel = '#'
+//      def PIXEL: Pixel = '#'
 
     fifo.add(control(CrapTerminal.SETX, x.toChar))
     fifo.add(control(CrapTerminal.SETY, y.toChar))
     if (set)
-      fifo.add(control(CrapTerminal.WRITE, PIXEL ))
+      fifo.add(control(CrapTerminal.WRITE, 1 ))
     else
-      fifo.add(control(CrapTerminal.WRITE, BLANK))
+      fifo.add(control(CrapTerminal.WRITE, 0))
 
 //    System.out.println("push buf = "+ fifo.size())
   }
