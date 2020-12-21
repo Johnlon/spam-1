@@ -10,14 +10,15 @@ import scala.swing.event.{Key, KeyEvent, KeyPressed, KeyReleased}
 import scala.swing.{Frame, SimpleSwingApplication}
 
 object Chip8Emulator extends SimpleSwingApplication {
-  private val BLITZ = "UFO"
+  private val BLITZ = "BLITZ"
+  private val UFO = "UFO"
   private val BLINKY = "BLINKY"
   private val TETRIS = "TETRIS"
   private val TANK = "TANK"
   private val PONG = "PONG"
   private val BC_Test = "BC_Test"
 
-  val asm: List[Short] = Loader.read(Loader.rom(TETRIS))
+  val asm: List[Short] = Loader.read(Loader.rom("PONG"))
 
   val ast: List[Chip8Compiler.Line] = Chip8Compiler.compile(asm)
   ast.zipWithIndex.foreach(println)
@@ -55,7 +56,7 @@ object Chip8Emulator extends SimpleSwingApplication {
       rom.append(null)
     }
 
-    var state = State(    )
+    var state = State()
 
     println("Init fonts ...")
     state = Fonts.installFonts(state)
@@ -76,28 +77,11 @@ object Chip8Emulator extends SimpleSwingApplication {
     state = state.copy(state.screen.copy(pixelListener = ScreenToTerminalAdaptor))
 
     println("Run ...")
-    var loopCount = 0
-    var last = System.currentTimeMillis()
 
     while (true) {
-      Thread.sleep(1000/60)
-//      Thread.sleep(1)
-      loopCount = loopCount + 1
-      val now = System.currentTimeMillis()
-      val elapsed = now - last
-
-      //      if (elapsed > 1000) {
-      //        val rate = loopCount / (elapsed / 1000.0)
-      //
-      //        println(f"rate = $rate%6.2f   count = $loopCount   took = $elapsed")
-      //
-      //        loopCount = 0
-      //        last = now
-      //      }
+      Thread.sleep(1)
 
       val inst = rom(state.pc)
-      //println(inst)
-      //      val lastState = state
       state = inst.exec(state)
 
       terminalComponent.update(inst)
@@ -110,8 +94,6 @@ object Chip8Emulator extends SimpleSwingApplication {
         soundTimer = decrementSoundToZero(state),
         pressedKeys = KeypressAdaptor.pressedKeys
       )
-
-      //    System.in.read()
 
       //      if (lastState.screen != state.screen) {
       //        paintScreen(state.screen)

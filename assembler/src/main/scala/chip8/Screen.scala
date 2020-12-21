@@ -53,7 +53,7 @@ object Screen {
   val PIXEL: Pixel = 0x2588.toChar
 
   val HEIGHT = 32
-  val WIDTH = 60
+  val WIDTH = 64
 
   def GAP = ""
 

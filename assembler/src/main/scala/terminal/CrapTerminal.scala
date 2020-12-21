@@ -4,6 +4,7 @@ import java.awt.Color
 import java.util.concurrent.atomic.AtomicInteger
 
 import chip8.Chip8Compiler.State
+import chip8.Screen.{HEIGHT, WIDTH}
 import chip8.{Chip8Compiler, Instruction, Pixel}
 import javax.swing.BorderFactory
 import terminal.CrapTerminal._
@@ -36,8 +37,8 @@ object CrapTerminal {
 }
 
 class CrapTerminal(
-                    width: Int = 64,
-                    height: Int = 34,
+                    width: Int = WIDTH,
+                    height: Int = HEIGHT,
                     source: () => (Char, Char),
                     receiveKey: KeyEvent => Unit) extends SimpleSwingApplication with Publisher {
   term =>
@@ -47,91 +48,91 @@ class CrapTerminal(
   var y = new AtomicInteger(0)
 
   var screen: mutable.Seq[mutable.Buffer[Char]] = fill()
-  //
-  //  val brefresh = new Button("Reset")
-  //  val bpaint = new Button("Paint")
 
   private val PaneHeight = 600
 
   val gameScreen = new TextArea()
   gameScreen.border = BorderFactory.createLineBorder(Color.BLUE)
-  gameScreen.preferredSize = new Dimension(750, PaneHeight)
+  gameScreen.preferredSize = new Dimension(800, PaneHeight)
   gameScreen.font = new Font(FONT, scala.swing.Font.Plain.id, 10)
   gameScreen.editable = false
 
   val stateScreen = new TextArea()
   stateScreen.border = BorderFactory.createLineBorder(Color.RED)
   stateScreen.font = new Font(FONT, scala.swing.Font.Plain.id, 10)
-  stateScreen.preferredSize = new Dimension(700, 150)
+  stateScreen.preferredSize = new Dimension(600, 150)
   stateScreen.editable = false
   stateScreen.focusable = false
 
   val instScreen = new TextArea()
   instScreen.border = BorderFactory.createLineBorder(Color.GREEN)
   instScreen.font = new Font(FONT, scala.swing.Font.Plain.id, 10)
-  instScreen.preferredSize = new Dimension(700, PaneHeight - 150)
+  instScreen.preferredSize = new Dimension(600, PaneHeight - 150)
   instScreen.editable = false
   instScreen.focusable = false
 
   val timer = new ScalaTimer(1000 / 60)
 
-  var start: Long = System.currentTimeMillis()
-
-  var count = 0
-
-  var rate = 0.0
-
   def updateData(): Unit = {
     val st = state.map {
       s =>
-        val registers = f"""reg: ${s.register.zipWithIndex.map { case (z, i) => f"R$i=${z.ubyte.toHexString}%2s" }.mkString(" ")}"""
-        val stack = f"""stack: ${s.stack.zipWithIndex.map { case (z, i) => f"R$i=${z.toHexString}%2s" }.mkString(" ")}"""
-        val index = f"""index: ${s.index}%04x"""
-        val soundTimer = f"""sound timer: ${s.soundTimer.ubyte}%02x"""
-        val delayTimer = f"""delay timer: ${s.delayTimer.ubyte}%02x"""
-        val pc = f"""pc: ${s.pc}%04x"""
-        val keys = f"""keys: ${s.pressedKeys.map { case k => f"${k}%5s" }.mkString(" ")}"""
+        val regIdx = s.register.zipWithIndex
+        val registers1 = printReg(regIdx.take(8))
+        val registers2 = printReg(regIdx.drop(8))
+        val stack = s.stack.map { d => f"$d%02x" }.mkString(" ")
+        val index = s.index
+        val soundTimer = s.soundTimer.ubyte
+        val delayTimer = s.delayTimer.ubyte
+        val pc = s.pc
+        val keys = s.pressedKeys.map { case k => f"${k}%5s" }.mkString(" ")
 
         f"""
-           |$pc
-           |$registers
-           |$index
-           |$stack
-           |$keys
-           |$soundTimer
-           |$delayTimer
+           |pc          : $pc%04x
+           |reg         : $registers1
+           |              $registers2
+           |idx         : $index%04x
+           |stack       : $stack
+           |keys        : $keys
+           |sound timer : $soundTimer%-3d
+           |delay timer : $delayTimer%-3d
            |""".stripMargin
-    }.getOrElse("")
+    }
+      .getOrElse("")
 
     stateScreen.text =
-      f"""paint rate : $rate%.2f/s
+      f"""
+         |instruction rate : $instructionRate%4d/s
+         |pixel rate       : $drawRate%4d/s
          |$st
          |""".stripMargin
 
 
-//    val curText = instScreen.text
-//    val text = instruction.map(_.toString + "\n").getOrElse("") + curText.substring(0, Math.min(curText.length, 10000))
-//    instScreen.text = text
-//    instruction = None
+    val curText = instScreen.text
+    val text = instruction.map(_.toString + "\n").getOrElse("") + curText.substring(0, Math.min(curText.length, 10000))
+    instScreen.text = text
+    instruction = None
 
   }
 
+  private def printReg(regIdx: Seq[(chip8.U8, Int)]): String = {
+    regIdx.map { case (z, i) =>
+      val ubyte = z.ubyte.toInt
+      f"R$i%02d=$ubyte%02x"
+    }.mkString(" ")
+  }
+
   def top: Frame = new MainFrame {
+    var lastDraw: Long = System.currentTimeMillis()
+
     bounds = new Rectangle(50, 100, 200, 30)
 
     gameScreen.requestFocus()
 
-    listenTo(gameScreen.keys, timer, term) //, brefresh, bpaint )
+    listenTo(gameScreen.keys, timer, term)
 
     timer.start()
 
     reactions += {
-      //      case ButtonClicked(b) if b == brefresh =>
-      //        screen = fill()
-      //        doRepaint()
-      //
-      //      case ButtonClicked(b) if b == bpaint =>
-      //        doRepaint()
 
       case e@KeyPressed(_, _, _, _) =>
         receiveKey(e)
@@ -144,19 +145,19 @@ class CrapTerminal(
 
       case InstructionProcessed(inst) =>
 
-      case TimerEvent() =>
+      case PlotTimerEvent() =>
         val now = System.currentTimeMillis()
         val c = source()
 
         if (c._1 != NO_CHAR) {
-          count += 1
+          drawCount += 1
 
-          if (count > 100) {
-            val elapsed = now - start
-            rate = (1000.0 * count) / elapsed
+          val elapsed = now - lastDraw
+          drawRate = (1000 * drawCount) / (1 + elapsed)
 
-            count = 0
-            start = System.currentTimeMillis()
+          if (drawCount > 100) {
+            drawCount = 0
+            lastDraw = System.currentTimeMillis()
             updateData()
           }
           plot(c)
@@ -181,9 +182,7 @@ class CrapTerminal(
   }
 
   def doRepaint(): Unit = {
-    val LeftMargin = "___"
-    val t = "\n" + screen.map(LeftMargin + _.mkString(".")).mkString("\n")
-    //    val t = "\n" + screen.map("   " + _.mkString(" ")).mkString("\n")
+    val t = "\n" + screen.map(_.mkString(".")).mkString("\n")
     gameScreen.text = s"""$t"""
   }
 
@@ -224,6 +223,18 @@ class CrapTerminal(
   @volatile
   var instruction: Option[Instruction] = None
 
+  @volatile
+  private var instCount = 0
+  @volatile
+  private var instructionRate = 0L
+
+  @volatile
+  private var drawCount = 0
+  @volatile
+  private var drawRate = 0L
+
+  private var since = System.currentTimeMillis()
+
   def update(updState: Chip8Compiler.State): Unit = {
     state = Some(updState)
     updateData()
@@ -231,6 +242,14 @@ class CrapTerminal(
 
   def update(inst: Instruction): Unit = {
     instruction = Some(inst)
+    instCount += 1
+    val elapsed = System.currentTimeMillis() - since
+    instructionRate = (1000 * instCount) / (1 + elapsed)
+    if (elapsed > 1000) {
+      instCount = 0
+      since = System.currentTimeMillis()
+    }
+
     updateData()
   }
 
@@ -240,15 +259,15 @@ case class StateUpdated(state: State) extends scala.swing.event.Event
 
 case class InstructionProcessed(inst: Instruction) extends scala.swing.event.Event
 
-case class TimerEvent() extends scala.swing.event.Event
+case class PlotTimerEvent() extends scala.swing.event.Event
 
 class ScalaTimer(val delay: Int) extends Publisher {
 
   private val thread = new Thread(new Runnable {
     override def run(): Unit = {
       while (true) {
-        publish(TimerEvent())
-        //        Thread.sleep(100)
+        publish(PlotTimerEvent())
+//        Thread.sleep(1000/60)
       }
     }
   })
