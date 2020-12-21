@@ -14,6 +14,7 @@ import chip8.Chip8Compiler.State.{INITIAL_PC, emptyMemory, emptyRegisters}
 import chip8.Instructions._
 
 import scala.language.postfixOps
+import scala.swing.event.Key
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 
@@ -104,7 +105,10 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
                     register: Seq[U8] = emptyRegisters,
                     memory: Seq[U8] = emptyMemory,
                     delayTimer: U8 = U8(0),
-                    fontCharLocation: Int => Int = Fonts.fontCharLocation) {
+                    soundTimer: U8 = U8(0),
+                    fontCharLocation: Int => Int = Fonts.fontCharLocation,
+                    pressedKeys: Set[Key.Value] = Set()
+                  ) {
 
     if (stack.length > 16) {
       sys.error("Stack may not exceed 16 levels but got " + stack.length)

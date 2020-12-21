@@ -2,52 +2,49 @@ package chip8
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
+import chip8.Chip8Compiler.{Line, State}
 import terminal.CrapTerminal
 
 import scala.collection.mutable.ListBuffer
+import scala.swing.event.{Key, KeyEvent, KeyPressed, KeyReleased}
 import scala.swing.{Frame, SimpleSwingApplication}
 
 object Chip8Emulator extends SimpleSwingApplication {
-  private val TETRIS = "BLINKY"
-  private val Tank = "TANK"
-  private val Pong = "PONG"
+  private val BLITZ = "UFO"
+  private val BLINKY = "BLINKY"
+  private val TETRIS = "TETRIS"
+  private val TANK = "TANK"
+  private val PONG = "PONG"
   private val BC_Test = "BC_Test"
 
   val asm: List[Short] = Loader.read(Loader.rom(TETRIS))
 
   val ast: List[Chip8Compiler.Line] = Chip8Compiler.compile(asm)
   ast.zipWithIndex.foreach(println)
-  val emulator = new Chip8Emulator()
 
   val emulatorThread = new Thread(new Runnable() {
     override def run(): Unit = {
       while (true) {
-        emulator.run(ast)
+        Chip8Emulator.run(ast)
         System.exit(1)
         System.out.println("exit!")
       }
     }
   })
 
+  private val terminalComponent = new CrapTerminal(
+    width = Screen.WIDTH,
+    height = Screen.HEIGHT,
+    source = ScreenToTerminalAdaptor.source,
+    receiveKey = KeypressAdaptor.registerKeypress
+  )
+
+  val terminal = terminalComponent.top
+
   override def top: Frame = {
-
-    val t = new CrapTerminal(
-      width = Screen.WIDTH,
-      height = Screen.HEIGHT,
-      separator = " ",
-      source = screenToTerminalAdaptor.source,
-      receiveKey = null
-    ).top
-
     emulatorThread.start()
-
-    t
+    terminal
   }
-}
-
-class Chip8Emulator {
-
-  import Chip8Compiler._
 
   val maxMem = 4096
 
@@ -58,7 +55,7 @@ class Chip8Emulator {
       rom.append(null)
     }
 
-    var state = State()
+    var state = State(    )
 
     println("Init fonts ...")
     state = Fonts.installFonts(state)
@@ -76,14 +73,15 @@ class Chip8Emulator {
         state = state.copy(memory = newMemory)
     }
 
-    state = state.copy(state.screen.copy(pixelListener = screenToTerminalAdaptor))
+    state = state.copy(state.screen.copy(pixelListener = ScreenToTerminalAdaptor))
 
     println("Run ...")
     var loopCount = 0
     var last = System.currentTimeMillis()
 
     while (true) {
-      Thread.sleep(1)
+      Thread.sleep(1000/60)
+//      Thread.sleep(1)
       loopCount = loopCount + 1
       val now = System.currentTimeMillis()
       val elapsed = now - last
@@ -99,64 +97,103 @@ class Chip8Emulator {
 
       val inst = rom(state.pc)
       //println(inst)
-      val lastState = state
+      //      val lastState = state
       state = inst.exec(state)
 
+      terminalComponent.update(inst)
+      terminalComponent.update(state)
+
       // TODO FIX TIMING AND DELAYS
-      val newDelay: U8 = if (state.delayTimer > U8(0)) {
-        state.delayTimer - 1
-      } else
-        U8(0)
 
       state = state.copy(
-        delayTimer = newDelay
+        delayTimer = decrementDelayToZero(state),
+        soundTimer = decrementSoundToZero(state),
+        pressedKeys = KeypressAdaptor.pressedKeys
       )
 
       //    System.in.read()
 
-//      if (lastState.screen != state.screen) {
-//        paintScreen(state.screen)
-//      }
+      //      if (lastState.screen != state.screen) {
+      //        paintScreen(state.screen)
+      //      }
     }
+  }
+
+  private def decrementDelayToZero(state: State) = {
+    if (state.delayTimer > U8(0)) {
+      state.delayTimer - 1
+    } else
+      U8(0)
+  }
+
+  private def decrementSoundToZero(state: State) = {
+    if (state.soundTimer > U8(0)) {
+      state.soundTimer - 1
+    } else
+      U8(0)
   }
 }
 
 
-object screenToTerminalAdaptor extends PixelListener {
+object ScreenToTerminalAdaptor extends PixelListener {
   private val fifo = new ConcurrentLinkedQueue[Int]()
 
   private def control(c: Char, d: Char): Int = {
     val encoded = (c << 8) | (d & 0xff)
-//    println("PUSH " + encoded)
     encoded
   }
 
   private def decode(i: Int): (Char, Char) = {
-//    if (i!=0) println("PULL " + i)
-
     val c = ((i & 0xff00) >> 8).toChar
     val d = (i & 0xff).toChar
     (c, d)
   }
 
   override def apply(x: Int, y: Int, set: Boolean): Unit = {
-//      def PIXEL: Pixel = '#'
-
     fifo.add(control(CrapTerminal.SETX, x.toChar))
     fifo.add(control(CrapTerminal.SETY, y.toChar))
     if (set)
-      fifo.add(control(CrapTerminal.WRITE, 1 ))
+      fifo.add(control(CrapTerminal.WRITE, 1))
     else
       fifo.add(control(CrapTerminal.WRITE, 0))
-
-//    System.out.println("push buf = "+ fifo.size())
   }
 
   def source(): (Char, Char) = {
-//    System.out.println("pop buf = "+ fifo.size())
     val i = fifo.poll()
     val tuple = decode(i)
     tuple
   }
 
+}
+
+object KeypressAdaptor {
+
+  @volatile
+  private var keys = Set.empty[Key.Value]
+
+  def pressedKeys: Set[Key.Value] = {
+    keys
+  }
+
+  def registerKeypress(ke: KeyEvent): Unit = {
+    ke match {
+      case KeyPressed(_, k, _, _) =>
+        val effK: Key.Value = keyAlternatives(k)
+        keys = keys + effK
+      case KeyReleased(_, k, _, _) =>
+        val effK: Key.Value = keyAlternatives(k)
+        keys = keys - effK
+      case _ => // ignore
+    }
+  }
+
+  // seek http://www.sunrise-ev.com/photos/1802/Chip8interpreter.pdf
+  private def keyAlternatives(k: Key.Value): Key.Value = {
+    if (k == Key.Up || k == Key.I) Key.Key2
+    else if (k == Key.Left || k == Key.J) Key.Key4
+    else if (k == Key.Right || k == Key.K) Key.Key6
+    else if (k == Key.Down || k == Key.M) Key.Key8
+    else if (k == Key.Space) Key.Key5
+    else k
+  }
 }

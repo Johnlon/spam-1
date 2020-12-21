@@ -2,8 +2,10 @@ package chip8
 
 import chip8.Chip8Compiler.State
 import chip8.Instructions.{Legacy, LoadStoreBehaviour}
+import chip8.KeyMap.{isKeyPressed, keyMap}
 
 import scala.language.{implicitConversions, postfixOps}
+import scala.swing.event.Key
 import scala.util.Random
 import scala.util.matching.Regex
 
@@ -424,15 +426,40 @@ case class DelayTimerGet(op: String, xReg: U8) extends Instruction {
   }
 }
 
+object KeyMap {
+  val keyMap = Map(
+    U8(0) -> Key.Key0,
+    U8(1) -> Key.Key1,
+    U8(2) -> Key.Key2,
+    U8(3) -> Key.Key3,
+    U8(4) -> Key.Key4,
+    U8(5) -> Key.Key5,
+    U8(6) -> Key.Key6,
+    U8(7) -> Key.Key7,
+    U8(8) -> Key.Key8,
+    U8(9) -> Key.Key9,
+    U8(10) -> Key.A,
+    U8(11) -> Key.B,
+    U8(12) -> Key.C,
+    U8(13) -> Key.D,
+    U8(14) -> Key.E,
+    U8(15) -> Key.F
+  )
+
+  def isKeyPressed(state : State, key: U8): Boolean = {
+     keyMap.get(key).exists {
+       c8Key => state.pressedKeys.contains(c8Key)
+     }
+  }
+}
 
 case class SkipIfNotKey(op: String, xReg: U8) extends Instruction {
+
   override def exec(state: State): State = {
     val key: U8 = state.register(xReg)
 
-    /// TODO = NEED KEYBOARD IMNPUT
-    val keyPressed = Random.nextInt() % 10  == key
-
-    val skip = if (keyPressed) 2 else 4
+    val k = isKeyPressed(state, key)
+    val skip = if (k) 2 else 4
     state.copy(
       pc = state.pc + skip
     )
@@ -443,10 +470,8 @@ case class SkipIfKey(op: String, xReg: U8) extends Instruction {
   override def exec(state: State): State = {
     val key: U8 = state.register(xReg)
 
-    /// TODO = NEED KEYBOARD IMNPUT
-    val keyPressed = Random.nextInt() % 10 == key
-
-    val skip = if (keyPressed) 4 else 2
+    val k = isKeyPressed(state, key)
+    val skip = if (k) 4 else 2
     state.copy(
       pc = state.pc + skip
     )
@@ -471,7 +496,8 @@ case class SetSoundTimer(op: String, xReg: U8) extends Instruction { // Does not
     val x = state.register(xReg)
     // TODO Implement me
     state.copy(
-      pc = state.pc + 2
+      pc = state.pc + 2,
+      soundTimer = x
     )
   }
 }
