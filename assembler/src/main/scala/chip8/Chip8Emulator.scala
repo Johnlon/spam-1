@@ -77,15 +77,43 @@ object Chip8Emulator extends SimpleSwingApplication {
     state = state.copy(state.screen.copy(pixelListener = ScreenToTerminalAdaptor))
 
     println("Run ...")
+    var stepMode = false
+
+    def debugHandler: Unit = {
+      if (KeypressAdaptor.pressedKeys.contains(Key.Escape)) {
+        stepMode = !stepMode
+        while (KeypressAdaptor.pressedKeys.contains(Key.Escape)) {
+          // wait for release
+        }
+      }
+      if (stepMode) {
+        while (!KeypressAdaptor.pressedKeys.contains(Key.Enter) && !KeypressAdaptor.pressedKeys.contains(Key.Escape)) {
+          // wait for key
+        }
+        if (KeypressAdaptor.pressedKeys.contains(Key.Escape)) {
+          stepMode = !stepMode
+          while (KeypressAdaptor.pressedKeys.contains(Key.Escape)) {
+            // wait for release
+          }
+        }
+        if (KeypressAdaptor.pressedKeys.contains(Key.Enter)) {
+          while (KeypressAdaptor.pressedKeys.contains(Key.Enter)) {
+            // wait for release
+          }
+        }
+      }
+    }
 
     while (true) {
       Thread.sleep(1)
 
+      debugHandler
+
       val inst = rom(state.pc)
       state = inst.exec(state)
 
-      terminalComponent.update(inst)
-      terminalComponent.update(state)
+      terminalComponent.updateView(inst)
+      terminalComponent.updateView(state)
 
       // TODO FIX TIMING AND DELAYS
 
@@ -117,35 +145,19 @@ object Chip8Emulator extends SimpleSwingApplication {
 }
 
 
+case class WritePixel(x: Int, y: Int, set: Boolean)
+
 object ScreenToTerminalAdaptor extends PixelListener {
-  private val fifo = new ConcurrentLinkedQueue[Int]()
 
-  private def control(c: Char, d: Char): Int = {
-    val encoded = (c << 8) | (d & 0xff)
-    encoded
-  }
-
-  private def decode(i: Int): (Char, Char) = {
-    val c = ((i & 0xff00) >> 8).toChar
-    val d = (i & 0xff).toChar
-    (c, d)
-  }
+  private val fifo = new ConcurrentLinkedQueue[WritePixel]()
 
   override def apply(x: Int, y: Int, set: Boolean): Unit = {
-    fifo.add(control(CrapTerminal.SETX, x.toChar))
-    fifo.add(control(CrapTerminal.SETY, y.toChar))
-    if (set)
-      fifo.add(control(CrapTerminal.WRITE, 1))
-    else
-      fifo.add(control(CrapTerminal.WRITE, 0))
+    fifo.add(WritePixel(x, y, set))
   }
 
-  def source(): (Char, Char) = {
-    val i = fifo.poll()
-    val tuple = decode(i)
-    tuple
+  def source(): WritePixel = {
+    fifo.poll()
   }
-
 }
 
 object KeypressAdaptor {

@@ -1,16 +1,15 @@
 package terminal
 
 import java.awt.Color
-import java.util.concurrent.atomic.AtomicInteger
 
 import chip8.Chip8Compiler.State
 import chip8.Screen.{HEIGHT, WIDTH}
-import chip8.{Chip8Compiler, Instruction, Pixel}
+import chip8.{Chip8Compiler, Instruction, Pixel, WritePixel}
 import javax.swing.BorderFactory
 import terminal.CrapTerminal._
 
 import scala.collection.mutable
-import scala.swing.event.{Key, _}
+import scala.swing.event._
 import scala.swing.{Rectangle, _}
 
 object CrapTerminal {
@@ -39,13 +38,9 @@ object CrapTerminal {
 class CrapTerminal(
                     width: Int = WIDTH,
                     height: Int = HEIGHT,
-                    source: () => (Char, Char),
+                    source: () => WritePixel,
                     receiveKey: KeyEvent => Unit) extends SimpleSwingApplication with Publisher {
   term =>
-
-  var last: Char = 0
-  var x = new AtomicInteger(0)
-  var y = new AtomicInteger(0)
 
   var screen: mutable.Seq[mutable.Buffer[Char]] = fill()
 
@@ -97,13 +92,12 @@ class CrapTerminal(
            |delay timer : $delayTimer%-3d
            |""".stripMargin
     }
-      .getOrElse("")
 
     stateScreen.text =
       f"""
          |instruction rate : $instructionRate%4d/s
          |pixel rate       : $drawRate%4d/s
-         |$st
+         |${st.getOrElse("")}
          |""".stripMargin
 
 
@@ -111,7 +105,6 @@ class CrapTerminal(
     val text = instruction.map(_.toString + "\n").getOrElse("") + curText.substring(0, Math.min(curText.length, 10000))
     instScreen.text = text
     instruction = None
-
   }
 
   private def printReg(regIdx: Seq[(chip8.U8, Int)]): String = {
@@ -149,7 +142,7 @@ class CrapTerminal(
         val now = System.currentTimeMillis()
         val c = source()
 
-        if (c._1 != NO_CHAR) {
+        if (c != null) {
           drawCount += 1
 
           val elapsed = now - lastDraw
@@ -182,33 +175,27 @@ class CrapTerminal(
   }
 
   def doRepaint(): Unit = {
-    val t = "\n" + screen.map(_.mkString(".")).mkString("\n")
-    gameScreen.text = s"""$t"""
+    //    val t = "\n" + screen.map(_.mkString(".")).mkString("\n")
+    val t = "\n" + screen.map { x =>
+      x.map {
+        y => s"$y$y"
+      }.mkString("")
+    }.mkString("\n")
+
+    gameScreen.text = t
   }
 
-  def plot(c: (Char, Char)): Unit = synchronized {
-    val (ctrl, data) = c
+  def plot(c: WritePixel): Unit = synchronized {
+    val row: mutable.Buffer[Char] = screen(c.y)
 
-    ctrl match {
-      case SETX =>
-        x.set(data)
-      case SETY =>
-        y.set(data)
-      case WRITE =>
-        val yi = y.get()
-        val xi = x.get()
-
-        val row: mutable.Buffer[Char] = screen(yi)
-
-        if (data == 0)
-          row(xi) = BLANK
-        else
-          row(xi) = PIXEL
-
-        doRepaint()
-      case 0 =>
-      // no data
+    if (c.set) {
+      row(c.x) = PIXEL
     }
+    else {
+      row(c.x) = BLANK
+    }
+
+    doRepaint()
   }
 
   def fill(): mutable.Seq[mutable.Buffer[Char]] = {
@@ -233,21 +220,21 @@ class CrapTerminal(
   @volatile
   private var drawRate = 0L
 
-  private var since = System.currentTimeMillis()
-
-  def update(updState: Chip8Compiler.State): Unit = {
+  def updateView(updState: Chip8Compiler.State): Unit = {
     state = Some(updState)
     updateData()
   }
 
-  def update(inst: Instruction): Unit = {
+  private var lastInstruction = System.currentTimeMillis()
+
+  def updateView(inst: Instruction): Unit = {
     instruction = Some(inst)
     instCount += 1
-    val elapsed = System.currentTimeMillis() - since
+    val elapsed = System.currentTimeMillis() - lastInstruction
     instructionRate = (1000 * instCount) / (1 + elapsed)
     if (elapsed > 1000) {
       instCount = 0
-      since = System.currentTimeMillis()
+      lastInstruction = System.currentTimeMillis()
     }
 
     updateData()
@@ -267,7 +254,7 @@ class ScalaTimer(val delay: Int) extends Publisher {
     override def run(): Unit = {
       while (true) {
         publish(PlotTimerEvent())
-//        Thread.sleep(1000/60)
+        //        Thread.sleep(1000/60)
       }
     }
   })
