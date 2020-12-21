@@ -48,9 +48,15 @@ class CrapTerminal(
 
   val gameScreen = new TextArea()
   gameScreen.border = BorderFactory.createLineBorder(Color.BLUE)
-  gameScreen.preferredSize = new Dimension(800, PaneHeight)
+  gameScreen.preferredSize = new Dimension(800, PaneHeight - 175)
   gameScreen.font = new Font(FONT, scala.swing.Font.Plain.id, 10)
   gameScreen.editable = false
+
+  val gameScreenSub = new TextArea()
+  gameScreenSub.border = BorderFactory.createLineBorder(Color.YELLOW)
+  gameScreenSub.preferredSize = new Dimension(800, PaneHeight - 200)
+  gameScreenSub.font = new Font(FONT, scala.swing.Font.Plain.id, 10)
+  gameScreenSub.enabled = false
 
   val stateScreen = new TextArea()
   stateScreen.border = BorderFactory.createLineBorder(Color.RED)
@@ -163,8 +169,8 @@ class CrapTerminal(
     }
 
     contents = new BoxPanel(Orientation.Horizontal) {
-      val left: BoxPanel = new BoxPanel(Orientation.Horizontal) {
-        contents ++= Seq(gameScreen)
+      val left: BoxPanel = new BoxPanel(Orientation.Vertical) {
+        contents ++= Seq(gameScreen, gameScreenSub)
       }
       val right: BoxPanel = new BoxPanel(Orientation.Vertical) {
         contents ++= Seq(stateScreen, instScreen)

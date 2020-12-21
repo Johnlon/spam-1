@@ -107,12 +107,11 @@ object Chip8Emulator extends SimpleSwingApplication {
     while (true) {
       Thread.sleep(1)
 
-      debugHandler
-
       val inst = rom(state.pc)
-      state = inst.exec(state)
-
       terminalComponent.updateView(inst)
+
+      debugHandler
+      state = inst.exec(state)
       terminalComponent.updateView(state)
 
       // TODO FIX TIMING AND DELAYS
