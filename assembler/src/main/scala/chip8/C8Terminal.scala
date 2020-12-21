@@ -1,18 +1,17 @@
-package terminal
+package chip8
 
 import java.awt.Color
 
+import chip8.C8Terminal._
 import chip8.Chip8Compiler.State
 import chip8.Screen.{HEIGHT, WIDTH}
-import chip8.{Chip8Compiler, Instruction, Pixel, WritePixel}
 import javax.swing.BorderFactory
-import terminal.CrapTerminal._
 
 import scala.collection.mutable
 import scala.swing.event._
 import scala.swing.{Rectangle, _}
 
-object CrapTerminal {
+object C8Terminal {
 
   val FONT = "Courier New"
 
@@ -35,44 +34,40 @@ object CrapTerminal {
 
 }
 
-class CrapTerminal(
-                    width: Int = WIDTH,
-                    height: Int = HEIGHT,
-                    source: () => WritePixel,
-                    receiveKey: KeyEvent => Unit) extends SimpleSwingApplication with Publisher {
+class C8Terminal(
+                  width: Int = WIDTH,
+                  height: Int = HEIGHT,
+                  source: () => WritePixel,
+                  receiveKey: KeyEvent => Unit) extends SimpleSwingApplication with Publisher {
   term =>
 
   var screen: mutable.Seq[mutable.Buffer[Char]] = fill()
 
-  private val PaneHeight = 600
+  private val PaneWidth = 675
+  private val PaneHeight = 420
+  private val BotHeight = 300
 
   val gameScreen = new TextArea()
   gameScreen.border = BorderFactory.createLineBorder(Color.BLUE)
-  gameScreen.preferredSize = new Dimension(800, PaneHeight - 175)
+  gameScreen.preferredSize = new Dimension(PaneWidth, PaneHeight)
   gameScreen.font = new Font(FONT, scala.swing.Font.Plain.id, 10)
   gameScreen.editable = false
-
-  val gameScreenSub = new TextArea()
-  gameScreenSub.border = BorderFactory.createLineBorder(Color.YELLOW)
-  gameScreenSub.preferredSize = new Dimension(800, PaneHeight - 200)
-  gameScreenSub.font = new Font(FONT, scala.swing.Font.Plain.id, 10)
-  gameScreenSub.enabled = false
 
   val stateScreen = new TextArea()
   stateScreen.border = BorderFactory.createLineBorder(Color.RED)
   stateScreen.font = new Font(FONT, scala.swing.Font.Plain.id, 10)
-  stateScreen.preferredSize = new Dimension(600, 150)
+  stateScreen.preferredSize = new Dimension(PaneWidth / 2, BotHeight)
   stateScreen.editable = false
   stateScreen.focusable = false
 
   val instScreen = new TextArea()
   instScreen.border = BorderFactory.createLineBorder(Color.GREEN)
   instScreen.font = new Font(FONT, scala.swing.Font.Plain.id, 10)
-  instScreen.preferredSize = new Dimension(600, PaneHeight - 150)
+  instScreen.preferredSize = new Dimension(PaneWidth / 2, BotHeight)
   instScreen.editable = false
   instScreen.focusable = false
 
-  val timer = new ScalaTimer(1000 / 60)
+  val timer = new PlotIntervalTimer(1000 / 60)
 
   def updateData(): Unit = {
     val st = state.map {
@@ -123,7 +118,7 @@ class CrapTerminal(
   def top: Frame = new MainFrame {
     var lastDraw: Long = System.currentTimeMillis()
 
-    bounds = new Rectangle(50, 100, 200, 30)
+    bounds = new Rectangle(50, 50, PaneWidth, PaneHeight + BotHeight)
 
     gameScreen.requestFocus()
 
@@ -168,11 +163,11 @@ class CrapTerminal(
 
     }
 
-    contents = new BoxPanel(Orientation.Horizontal) {
+    contents = new BoxPanel(Orientation.Vertical) {
       val left: BoxPanel = new BoxPanel(Orientation.Vertical) {
-        contents ++= Seq(gameScreen, gameScreenSub)
+        contents ++= Seq(gameScreen)
       }
-      val right: BoxPanel = new BoxPanel(Orientation.Vertical) {
+      val right: BoxPanel = new BoxPanel(Orientation.Horizontal) {
         contents ++= Seq(stateScreen, instScreen)
       }
       contents ++= Seq(left, right)
@@ -254,13 +249,14 @@ case class InstructionProcessed(inst: Instruction) extends scala.swing.event.Eve
 
 case class PlotTimerEvent() extends scala.swing.event.Event
 
-class ScalaTimer(val delay: Int) extends Publisher {
+class PlotIntervalTimer(val delay: Int) extends Publisher {
 
   private val thread = new Thread(new Runnable {
     override def run(): Unit = {
       while (true) {
         publish(PlotTimerEvent())
-        //        Thread.sleep(1000/60)
+        Thread.`yield`()
+        Thread.`yield`()
       }
     }
   })

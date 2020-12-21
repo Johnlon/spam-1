@@ -3,7 +3,6 @@ package chip8
 import java.util.concurrent.ConcurrentLinkedQueue
 
 import chip8.Chip8Compiler.{Line, State}
-import terminal.CrapTerminal
 
 import scala.collection.mutable.ListBuffer
 import scala.swing.event.{Key, KeyEvent, KeyPressed, KeyReleased}
@@ -18,7 +17,7 @@ object Chip8Emulator extends SimpleSwingApplication {
   private val PONG = "PONG"
   private val BC_Test = "BC_Test"
 
-  val asm: List[Short] = Loader.read(Loader.rom("PONG"))
+  val asm: List[Short] = Loader.read(Loader.rom("BLINKY"))
 
   val ast: List[Chip8Compiler.Line] = Chip8Compiler.compile(asm)
   ast.zipWithIndex.foreach(println)
@@ -33,7 +32,7 @@ object Chip8Emulator extends SimpleSwingApplication {
     }
   })
 
-  private val terminalComponent = new CrapTerminal(
+  private val terminalComponent = new C8Terminal(
     width = Screen.WIDTH,
     height = Screen.HEIGHT,
     source = ScreenToTerminalAdaptor.source,
