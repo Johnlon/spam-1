@@ -120,9 +120,18 @@ case class ReturnSub(op: String) extends Instruction {
 
 case class ClearScreen(op: String) extends Instruction {
   def exec(state: State): State = {
+    var sc = state.screen
+
+    (0 until Screen.WIDTH).foreach { x =>
+      (0 until Screen.HEIGHT).foreach { y =>
+        state.screen.setPixel(x,y)
+          sc.publishDrawEvent(WritePixelEvent(x,y, false))
+      }
+    }
+
     state.copy(
       screen = state.screen.clear(),
-      pc = state.pc + 2
+        pc = state.pc + 2
     )
   }
 }
@@ -202,33 +211,34 @@ case class Display(op: String, xReg: U8, yReg: U8, nHeight: U8) extends Instruct
     val xPos: U8 = state.register(xReg)
     val yPos: U8 = state.register(yReg)
 
-    val st = updateScreen(state, nHeight.ubyte, xPos.ubyte, yPos.ubyte)
+    val st = drawSprite(state, nHeight.ubyte, xPos.ubyte, yPos.ubyte)
     st.copy(pc = state.pc + 2)
   }
 
-  private def updateScreen(state: State, height: Int, xPos: Int, yPos: Int): State = {
+  private def drawSprite(state: State, height: Int, xPos: Int, yPos: Int): State = {
 
     var st = state.copy(register = state.register.set(STATUS_REGISTER_VF, U8(0))) // no collision yet
 
     (0 until height).foreach { y =>
       val location = state.index + y
       val memory = st.memory
-      val c = memory.apply(location)
-      var spr: Int = c.ubyte
+      val rowOfSprite: U8 = memory.apply(location)
+      val spriteRow = rowOfSprite.ubyte
 
-      (0 to 7).foreach {
-        x =>
-          // look at top bit
-          val bit = spr & 0x80
-          val isSet = bit > 0
-          if (isSet) {
-            val (newScreen, isErased) = st.screen.setPixel(xPos + x, yPos + y)
+      // convert to a list of bits
+      val rowBits = f"${spriteRow.toBinaryString}%8s".replace(' ', '0').map(x => x == '1')
+
+      // scan across sprite bits in this row and paint as cells on screen
+      rowBits.zipWithIndex.foreach {
+        case (bit, x) =>
+          // draw bit if true
+          if (bit) {
+            val (newScreen, erasedExistingPixel) = st.screen.setPixel(xPos + x, yPos + y)
             st = st.copy(screen = newScreen)
-            if (isErased) {
+            if (erasedExistingPixel) {
               st = st.copy(register = st.register.set(STATUS_REGISTER_VF, U8(1)))
             }
           }
-          spr <<= 1
       }
     }
     st
