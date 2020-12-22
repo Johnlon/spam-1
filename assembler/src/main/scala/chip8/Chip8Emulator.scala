@@ -27,7 +27,7 @@ object Chip8Emulator extends SimpleSwingApplication {
   private val testProgram = "corax89__test_opcode.ch8" // DOESNT PASS TES YET
   private val AIRPLANE = "Airplane.ch8"
 
-  private val rom: File = Loader.rom(PONG)
+  private val rom: File = Loader.rom("INVADERS")
   val bytes: List[U8] = Loader.read(rom)
   //
   //  val ast: List[Chip8CDecoder.Line] = Chip8CDecoder.decode(bytes)
@@ -148,7 +148,6 @@ object Chip8Emulator extends SimpleSwingApplication {
     }
     stepMode
   }
-
 
   private def decrementDelayToZero(state: State) = {
     if (state.delayTimer > U8(0)) {
