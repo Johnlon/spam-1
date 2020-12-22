@@ -10,7 +10,7 @@ package chip8
 * */
 
 import asm.EnumParserOps
-import chip8.Chip8Compiler.State.{INITIAL_PC, emptyMemory, emptyRegisters}
+import chip8.Chip8CDecoder.State.{INITIAL_PC, emptyMemory, emptyRegisters}
 import chip8.Instructions._
 
 import scala.language.postfixOps
@@ -18,7 +18,34 @@ import scala.swing.event.Key
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 
-object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
+object Chip8CDecoder extends EnumParserOps with JavaTokenParsers {
+
+  def decode(code: List[U8]): List[Line] = {
+
+    /* convert to pairs and assume that all instructions are word (ie two byte) aligned,
+    * which is not hard and fast according to the spec, so some programs will have instructions on
+    * odd addresses which is accessible via a jump for instance. This is ok for an interpreter
+    * but for our purposes this is no 100% reliable so some disdisassemblies will produce junk
+    * unless the disassembler walks the code and jumps to work out where the program ends up.
+    * Quite hard work probably so its lucky that loads stick to word alignment.
+    * It's conceivable that one would write an interpreter that rewrites the program as word aligned
+    * as it runs, or just compiles it to disk as it runs, nit it needs to preserve the areas of RAM that are
+    * no program code as they are data. It's also possible that some programs self modify, in which case al bets
+    * are off.
+    * */
+    val kex = code.map(_.ubyte.toInt).grouped(2).map(x => (x(0) << 8) + x(1)).map {
+      case x => f"${x}%04x"
+    }.mkString("\n")
+
+    parse(program, kex) match {
+      case Success(matched, _) =>
+        matched
+      case msg: Failure =>
+        sys.error(s"FAILURE: $msg ")
+      case msg: Error =>
+        sys.error(s"ERROR: $msg")
+    }
+  }
 
   val AddressRegex: Regex = "([0-9A-F][0-9A-F][0-9A-F][0-9A-F]):" r
 
@@ -118,6 +145,8 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
     def push(i: Int): State = copy(stack = i +: stack)
 
     def pop: (State, Int) = {
+      if (stack.size==0)
+        sys.error("attempt to pop empty stack ")
       val popped :: tail = stack
       (copy(stack = tail), popped)
     }
@@ -128,18 +157,5 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
   }
 
 
-  def compile(code: List[Short]): List[Line] = {
-
-    val prog = code.map { x => f"$x%04x" }.mkString("\n")
-
-    parse(program, prog) match {
-      case Success(matched, _) =>
-        matched
-      case msg: Failure =>
-        sys.error(s"FAILURE: $msg ")
-      case msg: Error =>
-        sys.error(s"ERROR: $msg")
-    }
-  }
 }
 

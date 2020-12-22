@@ -1,6 +1,6 @@
 package chip8
 
-import chip8.Chip8Compiler.State
+import chip8.Chip8CDecoder.State
 import chip8.Instructions.{Legacy, LoadStoreBehaviour}
 import chip8.KeyMap.{isKeyPressed, keyMap}
 

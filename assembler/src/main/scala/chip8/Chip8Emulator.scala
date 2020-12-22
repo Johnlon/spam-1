@@ -1,8 +1,9 @@
 package chip8
 
 import java.io.File
+import java.util.Objects
 
-import chip8.Chip8Compiler.{Line, State}
+import chip8.Chip8CDecoder.{Line, State}
 
 import scala.collection.mutable.ListBuffer
 import scala.swing.event.Key
@@ -28,10 +29,10 @@ object Chip8Emulator extends SimpleSwingApplication {
   private val testProgram = "corax89__test_opcode.ch8" // DOESNT PASS TES YET
   private val AIRPLANE = "Airplane.ch8"
 
-  private val rom: File = Loader.rom("WormV4.ch8")
-  val asm: List[Short] = Loader.read(rom)
+  private val rom: File = Loader.rom(PONG)
+  val bytes: List[U8] = Loader.read(rom)
 
-  val ast: List[Chip8Compiler.Line] = Chip8Compiler.compile(asm)
+  val ast: List[Chip8CDecoder.Line] = Chip8CDecoder.decode(bytes)
   ast.zipWithIndex.foreach(println)
 
   val emulatorThread = new Thread(new Runnable() {
@@ -60,81 +61,106 @@ object Chip8Emulator extends SimpleSwingApplication {
   val maxMem = 4096
 
   def run(program: List[Line]): Unit = {
-    println("Init rom ...")
-    val rom = ListBuffer.empty[Instruction]
-    (0 until maxMem).foreach { _ =>
-      rom.append(null)
+
+    try {
+      if (program.isEmpty) sys.error("program is empty")
+
+      println("Init rom ...")
+      val rom = ListBuffer.empty[Instruction]
+      (0 until maxMem).foreach { _ =>
+        rom.append(null)
+      }
+
+      var state = State()
+
+      println("Init fonts ...")
+      state = Fonts.installFonts(state)
+
+      println("Loading program...")
+      program.foreach {
+        case Chip8CDecoder.Line(i, o) =>
+
+          rom(i.location) = o
+
+          val nh = o.op.b32
+          val nl = o.op.b10
+
+          val newMemory = state.memory.set(i.location, nh).set(i.location + 1, nl)
+          state = state.copy(memory = newMemory)
+      }
+      Objects.requireNonNull(rom(state.pc), "no program loaded")
+
+      state = state.copy(state.screen.copy(publishDrawEvent = terminalComponent.publish))
+
+      println("Run ...")
+      var stepMode = false
+
+      var lastTime = System.nanoTime()
+      val stepTimeNs = (1000.0 * 1000000) / 60
+      while (true) {
+        // busy wait to eat up remaining time slice - to get more accurate timings
+        var now = System.nanoTime()
+        var remainingNs = stepTimeNs - ((now - lastTime))
+        while (remainingNs > 0) {
+          now = System.nanoTime()
+          remainingNs = stepTimeNs - ((now - lastTime))
+        }
+        lastTime = now
+
+        // process instructions
+        val inst = rom(state.pc)
+        terminalComponent.updateView(inst)
+
+        stepMode = debugHandler(stepMode)
+
+        state = inst.exec(state)
+        terminalComponent.updateView(state)
+
+        state = state.copy(
+          delayTimer = decrementDelayToZero(state),
+          soundTimer = decrementSoundToZero(state),
+          pressedKeys = KeypressAdaptor.pressedKeys
+        )
+
+        //      if (lastState.screen != state.screen) {
+        //        paintScreen(state.screen)
+        //      }
+      }
+    } catch {
+      case ex =>
+        ex.printStackTrace(System.err)
+        this.shutdown()
     }
+  }
 
-    var state = State()
 
-    println("Init fonts ...")
-    state = Fonts.installFonts(state)
-
-    println("Loading ...")
-    program.foreach {
-      case Chip8Compiler.Line(i, o) =>
-
-        rom(i.location) = o
-
-        val nh = o.op.b32
-        val nl = o.op.b10
-
-        val newMemory = state.memory.set(i.location, nh).set(i.location + 1, nl)
-        state = state.copy(memory = newMemory)
+  def debugHandler(stepModeIn: Boolean): Boolean = {
+    var stepMode = stepModeIn
+    if (KeypressAdaptor.pressedKeys.contains(Key.Escape)) {
+      stepMode = !stepMode
+      while (KeypressAdaptor.pressedKeys.contains(Key.Escape)) {
+        // wait for release
+      }
     }
-
-    state = state.copy(state.screen.copy(publishDrawEvent = terminalComponent.publish))
-
-    println("Run ...")
-    var stepMode = false
-
-    def debugHandler: Unit = {
+    if (stepMode) {
+      while (!KeypressAdaptor.pressedKeys.contains(Key.Enter) && !KeypressAdaptor.pressedKeys.contains(Key.Escape)) {
+        // wait for key
+      }
       if (KeypressAdaptor.pressedKeys.contains(Key.Escape)) {
         stepMode = !stepMode
         while (KeypressAdaptor.pressedKeys.contains(Key.Escape)) {
           // wait for release
         }
       }
-      if (stepMode) {
-        while (!KeypressAdaptor.pressedKeys.contains(Key.Enter) && !KeypressAdaptor.pressedKeys.contains(Key.Escape)) {
-          // wait for key
-        }
-        if (KeypressAdaptor.pressedKeys.contains(Key.Escape)) {
-          stepMode = !stepMode
-          while (KeypressAdaptor.pressedKeys.contains(Key.Escape)) {
-            // wait for release
-          }
-        }
-        if (KeypressAdaptor.pressedKeys.contains(Key.Enter)) {
-          while (KeypressAdaptor.pressedKeys.contains(Key.Enter)) {
-            // wait for release
-          }
+      if (KeypressAdaptor.pressedKeys.contains(Key.Enter)) {
+        while (KeypressAdaptor.pressedKeys.contains(Key.Enter)) {
+          // wait for release
         }
       }
     }
-
-    while (true) {
-      Thread.sleep(1)
-
-      val inst = rom(state.pc)
-      terminalComponent.updateView(inst)
-
-      debugHandler
-      state = inst.exec(state)
-      terminalComponent.updateView(state)
-
-      state = state.copy(
-        delayTimer = decrementDelayToZero(state),
-        soundTimer = decrementSoundToZero(state),
-        pressedKeys = KeypressAdaptor.pressedKeys
-      )
-
-      //      if (lastState.screen != state.screen) {
-      //        paintScreen(state.screen)
-      //      }
-    }
+    stepMode
   }
+
 
   private def decrementDelayToZero(state: State) = {
     if (state.delayTimer > U8(0)) {

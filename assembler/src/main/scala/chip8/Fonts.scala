@@ -1,6 +1,6 @@
 package chip8
 
-import chip8.Chip8Compiler.State
+import chip8.Chip8CDecoder.State
 
 object Fonts {
   // http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/

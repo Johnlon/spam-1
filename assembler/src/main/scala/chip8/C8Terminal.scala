@@ -1,9 +1,10 @@
 package chip8
 
 import java.awt.Color
+import java.util.Objects
 
 import chip8.C8Terminal._
-import chip8.Chip8Compiler.State
+import chip8.Chip8CDecoder.State
 import chip8.Screen.{HEIGHT, WIDTH}
 import javax.swing.BorderFactory
 
@@ -45,7 +46,7 @@ class C8Terminal(
   private val PaneWidth = 675
   private val PaneHeight = 400
   private val BotHeight = 300
-  private val statWidth = PaneWidth * 2/3
+  private val statWidth = PaneWidth * 2 / 3
 
   val gameScreen = new TextArea()
   gameScreen.border = BorderFactory.createLineBorder(Color.BLUE)
@@ -103,7 +104,12 @@ class C8Terminal(
 
 
     val curText = instScreen.text
-    val text = instruction.map(_.toString + "\n").getOrElse("") + curText.substring(0, Math.min(curText.length, 10000))
+    val text = instruction.
+      map { i =>
+        i.toString + "\n"
+      }.getOrElse("") +
+      curText.substring(0, Math.min(curText.length, 10000))
+
     instScreen.text = text
     instruction = None
   }
@@ -147,6 +153,7 @@ class C8Terminal(
     }
 
     import javax.swing.border.EmptyBorder
+
     contents = new BoxPanel(Orientation.Vertical) {
       val left: BoxPanel = new BoxPanel(Orientation.Vertical) {
         self: Component =>
@@ -205,7 +212,7 @@ class C8Terminal(
   @volatile
   private var drawRate = 0L
 
-  def updateView(updState: Chip8Compiler.State): Unit = {
+  def updateView(updState: Chip8CDecoder.State): Unit = {
     state = Some(updState)
     updateStats()
   }
@@ -213,6 +220,7 @@ class C8Terminal(
   private var lastInstruction = System.currentTimeMillis()
 
   def updateView(inst: Instruction): Unit = {
+    Objects.requireNonNull(inst)
     instruction = Some(inst)
     instCount += 1
     val elapsed = System.currentTimeMillis() - lastInstruction

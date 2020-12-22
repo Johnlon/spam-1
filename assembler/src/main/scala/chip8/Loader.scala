@@ -19,24 +19,17 @@ object Loader extends App {
   def IBMLogo2 = new File("src/main/resources/chip8/roms/roms_programs_IBM_Logo.ch8")
   def rom(name: String)  = new File("src/main/resources/chip8/roms/", name)
 
-  def read(file: File): List[Short] = {
+  def read(file: File): List[U8] = {
     val dataIn = new FileInputStream(file)
     var eof = false
 
-    val dataOut = ListBuffer.empty[Short]
+    val dataOut = ListBuffer.empty[U8]
     while (!eof) {
 
-      val hi = dataIn.read()
-      eof = hi == -1
+      val b = dataIn.read()
+      eof = b == -1
       if (!eof) {
-        val lo = dataIn.read()
-        if (lo == -1) {
-//          sys.error("odd number of bytes in file")
-        }
-
-        val instr: Short = ((hi << 8) + lo).toShort
-
-        dataOut.append( instr )
+        dataOut.append( U8.valueOf(b) )
       }
     }
     dataOut.toList
