@@ -1,6 +1,7 @@
 package chip8
 
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.Flow.Publisher
 
 import chip8.Chip8Compiler.{Line, State}
 
@@ -17,7 +18,7 @@ object Chip8Emulator extends SimpleSwingApplication {
   private val PONG = "PONG"
   private val BC_Test = "BC_Test"
 
-  val asm: List[Short] = Loader.read(Loader.rom("BLINKY"))
+  val asm: List[Short] = Loader.read(Loader.rom("PONG"))
 
   val ast: List[Chip8Compiler.Line] = Chip8Compiler.compile(asm)
   ast.zipWithIndex.foreach(println)
@@ -35,7 +36,6 @@ object Chip8Emulator extends SimpleSwingApplication {
   private val terminalComponent = new C8Terminal(
     width = Screen.WIDTH,
     height = Screen.HEIGHT,
-    source = ScreenToTerminalAdaptor.source,
     receiveKey = KeypressAdaptor.registerKeypress
   )
 
@@ -73,7 +73,7 @@ object Chip8Emulator extends SimpleSwingApplication {
         state = state.copy(memory = newMemory)
     }
 
-    state = state.copy(state.screen.copy(pixelListener = ScreenToTerminalAdaptor))
+    state = state.copy(state.screen.copy(publishDrawEvent = terminalComponent.publish))
 
     println("Run ...")
     var stepMode = false
@@ -143,20 +143,7 @@ object Chip8Emulator extends SimpleSwingApplication {
 }
 
 
-case class WritePixel(x: Int, y: Int, set: Boolean)
-
-object ScreenToTerminalAdaptor extends PixelListener {
-
-  private val fifo = new ConcurrentLinkedQueue[WritePixel]()
-
-  override def apply(x: Int, y: Int, set: Boolean): Unit = {
-    fifo.add(WritePixel(x, y, set))
-  }
-
-  def source(): WritePixel = {
-    fifo.poll()
-  }
-}
+case class WritePixelEvent(x: Int, y: Int, set: Boolean) extends scala.swing.event.Event
 
 object KeypressAdaptor {
 

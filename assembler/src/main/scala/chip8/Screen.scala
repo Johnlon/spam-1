@@ -2,15 +2,12 @@ package chip8
 
 import chip8.Screen.{BLANK, NullListener, PIXEL}
 
-trait PixelListener {
-  def apply(x: Int, y: Int, set: Boolean): Unit
-}
 
 case class Screen(
                    width: Int = Screen.WIDTH,
                    height: Int = Screen.HEIGHT,
                    buffer: List[String] = Screen.makeEmptyScreenBuffer(Screen.WIDTH, Screen.HEIGHT),
-                   pixelListener: PixelListener = NullListener
+                   publishDrawEvent: WritePixelEvent => Unit = NullListener
                  ) {
   def clear(): Screen = {
     this.copy(
@@ -33,10 +30,10 @@ case class Screen(
     */
     val erased = wasSet
     val updatedRow = if (wasSet) {
-      pixelListener(xMod, yMod, false)
+      publishDrawEvent(WritePixelEvent(xMod, yMod, false))
       row.set(xMod, BLANK)
     } else {
-      pixelListener(xMod, yMod, true)
+      publishDrawEvent(WritePixelEvent(xMod, yMod, true))
       row.set(xMod, PIXEL)
     }
 
@@ -57,9 +54,7 @@ object Screen {
 
   def GAP = ""
 
-  val NullListener = new PixelListener {
-    override def apply(x: Int, y: Int, set: Boolean): Unit = {}
-  }
+  def NullListener(writePixelEvent: WritePixelEvent): Unit = {}
 
   def paintScreen(screen: Screen): Unit = {
     println("--------\n")

@@ -37,15 +37,15 @@ object C8Terminal {
 class C8Terminal(
                   width: Int = WIDTH,
                   height: Int = HEIGHT,
-                  source: () => WritePixel,
                   receiveKey: KeyEvent => Unit) extends SimpleSwingApplication with Publisher {
   term =>
 
   var screen: mutable.Seq[mutable.Buffer[Char]] = fill()
 
   private val PaneWidth = 675
-  private val PaneHeight = 420
+  private val PaneHeight = 400
   private val BotHeight = 300
+  private val statWidth = PaneWidth * 2/3
 
   val gameScreen = new TextArea()
   gameScreen.border = BorderFactory.createLineBorder(Color.BLUE)
@@ -56,20 +56,20 @@ class C8Terminal(
   val stateScreen = new TextArea()
   stateScreen.border = BorderFactory.createLineBorder(Color.RED)
   stateScreen.font = new Font(FONT, scala.swing.Font.Plain.id, 10)
-  stateScreen.preferredSize = new Dimension(PaneWidth / 2, BotHeight)
+  stateScreen.preferredSize = new Dimension(statWidth, BotHeight)
   stateScreen.editable = false
   stateScreen.focusable = false
 
   val instScreen = new TextArea()
   instScreen.border = BorderFactory.createLineBorder(Color.GREEN)
   instScreen.font = new Font(FONT, scala.swing.Font.Plain.id, 10)
-  instScreen.preferredSize = new Dimension(PaneWidth / 2, BotHeight)
+  instScreen.preferredSize = new Dimension(PaneWidth - statWidth, BotHeight)
   instScreen.editable = false
   instScreen.focusable = false
 
-  val timer = new PlotIntervalTimer(1000 / 60)
+  //  val timer = new PlotIntervalTimer(1000 / 60)
 
-  def updateData(): Unit = {
+  def updateStats(): Unit = {
     val st = state.map {
       s =>
         val regIdx = s.register.zipWithIndex
@@ -77,10 +77,10 @@ class C8Terminal(
         val registers2 = printReg(regIdx.drop(8))
         val stack = s.stack.map { d => f"$d%02x" }.mkString(" ")
         val index = s.index
-        val soundTimer = s.soundTimer.ubyte
-        val delayTimer = s.delayTimer.ubyte
+        val soundTimer = s.soundTimer.ubyte.toInt
+        val delayTimer = s.delayTimer.ubyte.toInt
         val pc = s.pc
-        val keys = s.pressedKeys.map { case k => f"${k}%5s" }.mkString(" ")
+        val keys = s.pressedKeys.map { k => f"${k}%s" }.mkString(" ")
 
         f"""
            |pc          : $pc%04x
@@ -122,9 +122,7 @@ class C8Terminal(
 
     gameScreen.requestFocus()
 
-    listenTo(gameScreen.keys, timer, term)
-
-    timer.start()
+    listenTo(gameScreen.keys, term)
 
     reactions += {
 
@@ -134,37 +132,25 @@ class C8Terminal(
       case e@KeyReleased(_, _, _, _) =>
         receiveKey(e)
 
-      case StateUpdated(state) =>
-
-
-      case InstructionProcessed(inst) =>
-
-      case PlotTimerEvent() =>
+      case e@WritePixelEvent(_, _, _) =>
+        drawCount += 1
         val now = System.currentTimeMillis()
-        val c = source()
+        val elapsed = now - lastDraw
+        drawRate = (1000 * drawCount) / (1 + elapsed)
 
-        if (c != null) {
-          drawCount += 1
-
-          val elapsed = now - lastDraw
-          drawRate = (1000 * drawCount) / (1 + elapsed)
-
-          if (drawCount > 100) {
-            drawCount = 0
-            lastDraw = System.currentTimeMillis()
-            updateData()
-          }
-          plot(c)
-
+        if (drawCount > 100) {
+          drawCount = 0
+          lastDraw = now
+          updateStats()
         }
-
-      case e@KeyReleased(_, _, _, _) =>
-        receiveKey(e)
-
+        plot(e)
     }
 
+    import javax.swing.border.EmptyBorder
     contents = new BoxPanel(Orientation.Vertical) {
       val left: BoxPanel = new BoxPanel(Orientation.Vertical) {
+        self: Component =>
+        self.border = new EmptyBorder(10, 10, 10, 10)
         contents ++= Seq(gameScreen)
       }
       val right: BoxPanel = new BoxPanel(Orientation.Horizontal) {
@@ -172,11 +158,9 @@ class C8Terminal(
       }
       contents ++= Seq(left, right)
     }
-
   }
 
   def doRepaint(): Unit = {
-    //    val t = "\n" + screen.map(_.mkString(".")).mkString("\n")
     val t = "\n" + screen.map { x =>
       x.map {
         y => s"$y$y"
@@ -186,7 +170,7 @@ class C8Terminal(
     gameScreen.text = t
   }
 
-  def plot(c: WritePixel): Unit = synchronized {
+  def plot(c: WritePixelEvent): Unit = synchronized {
     val row: mutable.Buffer[Char] = screen(c.y)
 
     if (c.set) {
@@ -223,7 +207,7 @@ class C8Terminal(
 
   def updateView(updState: Chip8Compiler.State): Unit = {
     state = Some(updState)
-    updateData()
+    updateStats()
   }
 
   private var lastInstruction = System.currentTimeMillis()
@@ -238,31 +222,6 @@ class C8Terminal(
       lastInstruction = System.currentTimeMillis()
     }
 
-    updateData()
-  }
-
-}
-
-case class StateUpdated(state: State) extends scala.swing.event.Event
-
-case class InstructionProcessed(inst: Instruction) extends scala.swing.event.Event
-
-case class PlotTimerEvent() extends scala.swing.event.Event
-
-class PlotIntervalTimer(val delay: Int) extends Publisher {
-
-  private val thread = new Thread(new Runnable {
-    override def run(): Unit = {
-      while (true) {
-        publish(PlotTimerEvent())
-        Thread.`yield`()
-        Thread.`yield`()
-      }
-    }
-  })
-
-  def start(): Unit = {
-    thread.setDaemon(true)
-    thread.start()
+    updateStats()
   }
 }
