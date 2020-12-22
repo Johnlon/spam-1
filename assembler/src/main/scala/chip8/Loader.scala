@@ -31,7 +31,7 @@ object Loader extends App {
       if (!eof) {
         val lo = dataIn.read()
         if (lo == -1) {
-          sys.error("odd number of bytes in file")
+//          sys.error("odd number of bytes in file")
         }
 
         val instr: Short = ((hi << 8) + lo).toShort

@@ -50,6 +50,7 @@ object Instructions {
   val DelayTimerGetRegex: Regex = "F([0-9A-F])07" r
   val SkipIfNotKeyRegex: Regex = "E([0-9A-F])A1" r
   val SkipIfKeyRegex: Regex = "E([0-9A-F])9E" r
+  val WaitForKeypressRegex: Regex = "F([0-9A-F])0A" r
   val FontCharacterRegex: Regex = "F([0-9A-F])29" r
   val StoreRegistersRegex: Regex = "F([0-9A-F])55" r
   val LoadRegistersRegex: Regex = "F([0-9A-F])65" r
@@ -426,6 +427,25 @@ case class DelayTimerGet(op: String, xReg: U8) extends Instruction {
   }
 }
 
+// TODO: TEST ME
+case class WaitForKeypress(op: String, xReg: U8) extends Instruction {
+  override def exec(state: State): State = {
+    val maybeKe = keyMap.find {
+      k =>
+        isKeyPressed(state, k._1)
+    }
+
+    maybeKe.map {
+      pressed =>
+        state.copy(
+          register = state.register.set(xReg, pressed._1),
+          pc = state.pc + 2)
+    }.getOrElse(
+      state
+    )
+  }
+}
+
 object KeyMap {
   val keyMap = Map(
     U8(0) -> Key.Key0,
@@ -446,10 +466,10 @@ object KeyMap {
     U8(15) -> Key.F
   )
 
-  def isKeyPressed(state : State, key: U8): Boolean = {
-     keyMap.get(key).exists {
-       c8Key => state.pressedKeys.contains(c8Key)
-     }
+  def isKeyPressed(state: State, key: U8): Boolean = {
+    keyMap.get(key).exists {
+      c8Key => state.pressedKeys.contains(c8Key)
+    }
   }
 }
 

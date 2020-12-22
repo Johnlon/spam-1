@@ -1,12 +1,11 @@
 package chip8
 
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.Flow.Publisher
+import java.io.File
 
 import chip8.Chip8Compiler.{Line, State}
 
 import scala.collection.mutable.ListBuffer
-import scala.swing.event.{Key, KeyEvent, KeyPressed, KeyReleased}
+import scala.swing.event.Key
 import scala.swing.{Frame, SimpleSwingApplication}
 
 object Chip8Emulator extends SimpleSwingApplication {
@@ -16,9 +15,21 @@ object Chip8Emulator extends SimpleSwingApplication {
   private val TETRIS = "TETRIS"
   private val TANK = "TANK"
   private val PONG = "PONG"
+  private val BRIX = "BRIX"
   private val BC_Test = "BC_Test"
+  private val PONG2 = "PONG2"
 
-  val asm: List[Short] = Loader.read(Loader.rom("PONG"))
+  private val PUZZLE = "PUZZLE"
+  private val TICTAC = "TICTAC"
+
+  private val VERS = "VERS"
+  private val WIPEOFF = "WIPEOFF"
+  private val kaleid = "KALEID"
+  private val testProgram = "corax89__test_opcode.ch8" // DOESNT PASS TES YET
+  private val AIRPLANE = "Airplane.ch8"
+
+  private val rom: File = Loader.rom("WormV4.ch8")
+  val asm: List[Short] = Loader.read(rom)
 
   val ast: List[Chip8Compiler.Line] = Chip8Compiler.compile(asm)
   ast.zipWithIndex.foreach(println)
@@ -113,8 +124,6 @@ object Chip8Emulator extends SimpleSwingApplication {
       state = inst.exec(state)
       terminalComponent.updateView(state)
 
-      // TODO FIX TIMING AND DELAYS
-
       state = state.copy(
         delayTimer = decrementDelayToZero(state),
         soundTimer = decrementSoundToZero(state),
@@ -142,37 +151,3 @@ object Chip8Emulator extends SimpleSwingApplication {
   }
 }
 
-
-case class WritePixelEvent(x: Int, y: Int, set: Boolean) extends scala.swing.event.Event
-
-object KeypressAdaptor {
-
-  @volatile
-  private var keys = Set.empty[Key.Value]
-
-  def pressedKeys: Set[Key.Value] = {
-    keys
-  }
-
-  def registerKeypress(ke: KeyEvent): Unit = {
-    ke match {
-      case KeyPressed(_, k, _, _) =>
-        val effK: Key.Value = keyAlternatives(k)
-        keys = keys + effK
-      case KeyReleased(_, k, _, _) =>
-        val effK: Key.Value = keyAlternatives(k)
-        keys = keys - effK
-      case _ => // ignore
-    }
-  }
-
-  // seek http://www.sunrise-ev.com/photos/1802/Chip8interpreter.pdf
-  private def keyAlternatives(k: Key.Value): Key.Value = {
-    if (k == Key.Up || k == Key.I) Key.Key2
-    else if (k == Key.Left || k == Key.J) Key.Key4
-    else if (k == Key.Right || k == Key.K) Key.Key6
-    else if (k == Key.Down || k == Key.M) Key.Key8
-    else if (k == Key.Space) Key.Key5
-    else k
-  }
-}

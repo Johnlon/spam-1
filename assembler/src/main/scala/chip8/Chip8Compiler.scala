@@ -45,6 +45,7 @@ object Chip8Compiler extends EnumParserOps with JavaTokenParsers {
       case XShiftLeftRegex(xReg) => XShiftLeft(op, xReg.hexToByte)
       case SkipIfKeyRegex(xReg) => SkipIfKey(op, xReg.hexToByte)
       case SkipIfNotKeyRegex(xReg) => SkipIfNotKey(op, xReg.hexToByte)
+      case WaitForKeypressRegex(xReg) => WaitForKeypress(op, xReg.hexToByte)
       case FontCharacterRegex(xReg) => FontCharacter(op, xReg.hexToByte)
       case XEqXMinusYRegex(xReg, yReg) => XEqXMinusY(op, xReg.hexToByte, yReg.hexToByte)
       case XEqYMinusXRegex(xReg, yReg) => XEqYMinusX(op, xReg.hexToByte, yReg.hexToByte)
