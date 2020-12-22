@@ -1,7 +1,5 @@
 package chip8
 
-import chip8.Chip8CDecoder.State
-
 object Fonts {
   // http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
   val FontMemAddress = 0x50

@@ -4,7 +4,6 @@ import java.awt.Color
 import java.util.Objects
 
 import chip8.C8Terminal._
-import chip8.Chip8CDecoder.State
 import chip8.Screen.{HEIGHT, WIDTH}
 import javax.swing.BorderFactory
 
@@ -81,7 +80,7 @@ class C8Terminal(
         val soundTimer = s.soundTimer.ubyte.toInt
         val delayTimer = s.delayTimer.ubyte.toInt
         val pc = s.pc
-        val keys = s.pressedKeys.map { k => f"${k}%s" }.mkString(" ")
+        val keys = s.pressedKeys.map { k => f"$k%s" }.mkString(" ")
 
         f"""
            |pc          : $pc%04x
@@ -212,7 +211,7 @@ class C8Terminal(
   @volatile
   private var drawRate = 0L
 
-  def updateView(updState: Chip8CDecoder.State): Unit = {
+  def updateView(updState: State): Unit = {
     state = Some(updState)
     updateStats()
   }

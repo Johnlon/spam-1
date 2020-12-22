@@ -1,8 +1,7 @@
 package chip8
 
-import chip8.Chip8CDecoder.State
-import chip8.Chip8CDecoder.State.{INITIAL_PC, emptyMemory, emptyRegisters}
 import chip8.Screen.PIXEL
+import chip8.State.{INITIAL_PC, emptyMemory, emptyRegisters}
 import org.junit.jupiter.api.MethodOrderer.MethodName
 import org.junit.jupiter.api.{Test, TestMethodOrder}
 
@@ -15,9 +14,11 @@ class InstructionTest {
   val U70 = U8(70)
   val U30 = U8(30)
 
+  private val THE_OP = "MYOP"
+
   @Test
   def tesGoSub(): Unit = {
-    val sut = GoSub("thsOp", 123)
+    val sut = GoSub(THE_OP, 123)
 
     val initialState = State()
     val actual = sut.exec(initialState)
@@ -32,7 +33,7 @@ class InstructionTest {
 
   @Test
   def testJump(): Unit = {
-    val sut = Jump("thsOp", 123)
+    val sut = Jump(THE_OP, 123)
 
     val initialState = State()
     val actual = sut.exec(initialState)
@@ -46,7 +47,7 @@ class InstructionTest {
 
   @Test
   def testReturnSub(): Unit = {
-    val sut = ReturnSub("thsOp")
+    val sut = ReturnSub(THE_OP)
 
     val initialState = State(
       stack = List(100, 200)
@@ -63,7 +64,7 @@ class InstructionTest {
 
   @Test
   def testClearScreen(): Unit = {
-    val sut = ClearScreen("thsOp")
+    val sut = ClearScreen(THE_OP)
 
     val screen = Screen().setPixel(1, 1)
 
@@ -79,7 +80,7 @@ class InstructionTest {
 
   @Test
   def testSkipIfXEqN_Eq(): Unit = {
-    val sut = SkipIfXEqN("op", U8(0), U8(123))
+    val sut = SkipIfXEqN(THE_OP, U8(0), U8(123))
 
     val initialState = State(
       register = emptyRegisters.set(0, U8(123))
@@ -97,7 +98,7 @@ class InstructionTest {
 
   @Test
   def testSkipIfXEqN_Neq(): Unit = {
-    val sut = SkipIfXEqN("op", U8(0), U8(123))
+    val sut = SkipIfXEqN(THE_OP, U8(0), U8(123))
 
     val initialState = State()
 
@@ -112,7 +113,7 @@ class InstructionTest {
 
   @Test
   def testSkipIfXNeN_Eq(): Unit = {
-    val sut = SkipIfXNeN("op", U8(0), U8(123))
+    val sut = SkipIfXNeN(THE_OP, U8(0), U8(123))
 
     val initialState = State(
       register = emptyRegisters.set(0, U8(123))
@@ -130,7 +131,7 @@ class InstructionTest {
 
   @Test
   def testSkipIfXNeN_Neq(): Unit = {
-    val sut = SkipIfXNeN("op", U8(0), U8(123))
+    val sut = SkipIfXNeN(THE_OP, U8(0), U8(123))
 
     val initialState = State()
 
@@ -146,7 +147,7 @@ class InstructionTest {
 
   @Test
   def testSkipIfXEqY_Eq(): Unit = {
-    val sut = SkipIfXEqY("op", U8(0), U8(1))
+    val sut = SkipIfXEqY(THE_OP, U8(0), U8(1))
 
     val initialState = State(
       register = emptyRegisters.set(0, U8(123)).set(1, U8(123))
@@ -164,7 +165,7 @@ class InstructionTest {
 
   @Test
   def testSkipIfXEqY_Neq(): Unit = {
-    val sut = SkipIfXEqY("op", U8(0), U8(1))
+    val sut = SkipIfXEqY(THE_OP, U8(0), U8(1))
 
     val initialState = State(
       register = emptyRegisters.set(0, U8(123))
@@ -183,7 +184,7 @@ class InstructionTest {
 
   @Test
   def testSkipIfXNeY_Eq(): Unit = {
-    val sut = SkipIfXNeY("op", U8(0), U8(1))
+    val sut = SkipIfXNeY(THE_OP, U8(0), U8(1))
 
     val initialState = State(
       register = emptyRegisters.set(0, U8(123)).set(1, U8(123))
@@ -201,7 +202,7 @@ class InstructionTest {
 
   @Test
   def testSkipIfXNeY_Neq(): Unit = {
-    val sut = SkipIfXNeY("op", U8(0), U8(1))
+    val sut = SkipIfXNeY(THE_OP, U8(0), U8(1))
 
     val initialState = State(
       register = emptyRegisters.set(0, U8(123))
@@ -220,7 +221,7 @@ class InstructionTest {
 
   @Test
   def testSetX(): Unit = {
-    val sut = SetX("op", U8(0), U8(1))
+    val sut = SetX(THE_OP, U8(0), U8(1))
 
     val initialState = State()
 
@@ -236,7 +237,7 @@ class InstructionTest {
 
   @Test
   def testAddX(): Unit = {
-    val sut = AddX("op", U8(0), U8(1))
+    val sut = AddX(THE_OP, U8(0), U8(1))
 
     val initialState = State(
       register = emptyRegisters.set(0, U8(100)),
@@ -254,7 +255,7 @@ class InstructionTest {
 
   @Test
   def testSetIndex(): Unit = {
-    val sut = SetIndex("op", 1)
+    val sut = SetIndex(THE_OP, 1)
 
     val initialState = State()
 
@@ -270,7 +271,7 @@ class InstructionTest {
 
   @Test
   def testDisplay(): Unit = {
-    val sut = Display("op", U8(1), U8(2), U8(2))
+    val sut = Display(THE_OP, U8(1), U8(2), U8(2))
 
     val locationOfFont = 100
     val memory = emptyMemory.set(locationOfFont, U8(0xaa)).set(locationOfFont + 1, U8(0xff))
@@ -319,7 +320,7 @@ class InstructionTest {
 
   @Test
   def testSetXEqY(): Unit = {
-    val sut = SetXEqY("op", U8(1), U8(2))
+    val sut = SetXEqY(THE_OP, U8(1), U8(2))
 
     val initialState = State(
       register = emptyRegisters.set(1, U8(3)).set(2, U8(42)),
@@ -337,7 +338,7 @@ class InstructionTest {
 
   @Test
   def testXEqXMinusY_Carry(): Unit = {
-    val sut = XEqXMinusY("op", U8(1), U8(2))
+    val sut = XEqXMinusY(THE_OP, U8(1), U8(2))
 
     val initialState = State(
       register = emptyRegisters.set(1, U8(0)).set(2, U8(1))
@@ -359,7 +360,7 @@ class InstructionTest {
 
   @Test
   def testXEqXMinusY_NoCarryEq(): Unit = {
-    val sut = XEqXMinusY("op", U8(1), U8(2))
+    val sut = XEqXMinusY(THE_OP, U8(1), U8(2))
 
     val initialState = State(
       register = emptyRegisters
@@ -383,7 +384,7 @@ class InstructionTest {
 
   @Test
   def testXEqXMinusY_NoCarry(): Unit = {
-    val sut = XEqXMinusY("op", U8(1), U8(2))
+    val sut = XEqXMinusY(THE_OP, U8(1), U8(2))
 
     val initialState = State(
       register = emptyRegisters.set(1, U8(100))
@@ -406,7 +407,7 @@ class InstructionTest {
 
   @Test
   def testXEqYMinusX_NoCarry(): Unit = {
-    val sut = XEqYMinusX("op", U8(1), U8(2))
+    val sut = XEqYMinusX(THE_OP, U8(1), U8(2))
 
     val initialState = State(
       register = emptyRegisters.
@@ -430,7 +431,7 @@ class InstructionTest {
 
   @Test
   def testXEqYMinusX_NoCarryEq(): Unit = {
-    val sut = XEqYMinusX("op", U8(1), U8(2))
+    val sut = XEqYMinusX(THE_OP, U8(1), U8(2))
 
     val initialState = State(
       register = emptyRegisters.
@@ -454,7 +455,7 @@ class InstructionTest {
 
   @Test
   def testXEqYMinusX_Carry(): Unit = {
-    val sut = XEqYMinusX("op", U8(1), U8(2))
+    val sut = XEqYMinusX(THE_OP, U8(1), U8(2))
 
     val initialState = State(
       register = emptyRegisters.
@@ -478,7 +479,7 @@ class InstructionTest {
 
   @Test
   def testXEqLogicalOr(): Unit = {
-    val sut = XEqLogicalOr("op", U8(1), U8(2))
+    val sut = XEqLogicalOr(THE_OP, U8(1), U8(2))
 
     val initialState = State(
       register = emptyRegisters.
@@ -500,7 +501,7 @@ class InstructionTest {
 
   @Test
   def testXEqLogicalAnd(): Unit = {
-    val sut = XEqLogicalAnd("op", U8(1), U8(2))
+    val sut = XEqLogicalAnd(THE_OP, U8(1), U8(2))
 
     val initialState = State(
       register = emptyRegisters.
@@ -523,7 +524,7 @@ class InstructionTest {
 
   @Test
   def testXEqLogicalXor(): Unit = {
-    val sut = XEqLogicalXor("op", U8(1), U8(2))
+    val sut = XEqLogicalXor(THE_OP, U8(1), U8(2))
 
     val initialState = State(
       register = emptyRegisters.
@@ -545,7 +546,7 @@ class InstructionTest {
 
   @Test
   def testXShiftRight(): Unit = {
-    val sut = XShiftRight("op", U8(1))
+    val sut = XShiftRight(THE_OP, U8(1))
 
     val initialState = State(
       register = emptyRegisters.
@@ -578,7 +579,7 @@ class InstructionTest {
 
   @Test
   def testXShiftLeft(): Unit = {
-    val sut = XShiftLeft("op", U8(1))
+    val sut = XShiftLeft(THE_OP, U8(1))
 
     val initialState = State(
       register = emptyRegisters.
@@ -611,7 +612,7 @@ class InstructionTest {
 
   @Test
   def testStoreRegisters(): Unit = {
-    val sut = StoreRegisters("op", U8(1))
+    val sut = StoreRegisters(THE_OP, U8(1))
 
     val initialState = State(
       register = emptyRegisters.

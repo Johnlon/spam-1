@@ -1,11 +1,9 @@
 package chip8
 
 import java.io.File
-import java.util.Objects
 
-import chip8.Chip8CDecoder.{Line, State}
+import chip8.Instructions.decode
 
-import scala.collection.mutable.ListBuffer
 import scala.swing.event.Key
 import scala.swing.{Frame, SimpleSwingApplication}
 
@@ -31,14 +29,14 @@ object Chip8Emulator extends SimpleSwingApplication {
 
   private val rom: File = Loader.rom(PONG)
   val bytes: List[U8] = Loader.read(rom)
-
-  val ast: List[Chip8CDecoder.Line] = Chip8CDecoder.decode(bytes)
-  ast.zipWithIndex.foreach(println)
+  //
+  //  val ast: List[Chip8CDecoder.Line] = Chip8CDecoder.decode(bytes)
+  //  ast.zipWithIndex.foreach(println)
 
   val emulatorThread = new Thread(new Runnable() {
     override def run(): Unit = {
       while (true) {
-        Chip8Emulator.run(ast)
+        Chip8Emulator.run(bytes)
         System.exit(1)
         System.out.println("exit!")
       }
@@ -58,18 +56,12 @@ object Chip8Emulator extends SimpleSwingApplication {
     terminal
   }
 
-  val maxMem = 4096
-
-  def run(program: List[Line]): Unit = {
+  def run(program: List[U8]): Unit = {
 
     try {
       if (program.isEmpty) sys.error("program is empty")
 
       println("Init rom ...")
-      val rom = ListBuffer.empty[Instruction]
-      (0 until maxMem).foreach { _ =>
-        rom.append(null)
-      }
 
       var state = State()
 
@@ -77,18 +69,14 @@ object Chip8Emulator extends SimpleSwingApplication {
       state = Fonts.installFonts(state)
 
       println("Loading program...")
-      program.foreach {
-        case Chip8CDecoder.Line(i, o) =>
+      program.zipWithIndex.foreach {
+        case (byte, z) =>
 
-          rom(i.location) = o
+          val address = z + 0x200
 
-          val nh = o.op.b32
-          val nl = o.op.b10
-
-          val newMemory = state.memory.set(i.location, nh).set(i.location + 1, nl)
+          val newMemory = state.memory.set(address, byte)
           state = state.copy(memory = newMemory)
       }
-      Objects.requireNonNull(rom(state.pc), "no program loaded")
 
       state = state.copy(state.screen.copy(publishDrawEvent = terminalComponent.publish))
 
@@ -100,15 +88,15 @@ object Chip8Emulator extends SimpleSwingApplication {
       while (true) {
         // busy wait to eat up remaining time slice - to get more accurate timings
         var now = System.nanoTime()
-        var remainingNs = stepTimeNs - ((now - lastTime))
+        var remainingNs = stepTimeNs - (now - lastTime)
         while (remainingNs > 0) {
           now = System.nanoTime()
-          remainingNs = stepTimeNs - ((now - lastTime))
+          remainingNs = stepTimeNs - (now - lastTime)
         }
         lastTime = now
 
         // process instructions
-        val inst = rom(state.pc)
+        val inst: Instruction = decode(state)
         terminalComponent.updateView(inst)
 
         stepMode = debugHandler(stepMode)

@@ -1,6 +1,5 @@
 package chip8
 
-import chip8.Chip8CDecoder.State
 import chip8.Instructions.{Legacy, LoadStoreBehaviour}
 import chip8.KeyMap.{isKeyPressed, keyMap}
 
@@ -23,40 +22,82 @@ object Instructions {
   val Legacy = 0
   val LoadStoreBehaviour = Modern
 
-  val ClearScreenRegex: Regex = "00E0" r
-  val ReturnSubRegex: Regex = "00EE" r
-  val ObsoleteMachineJumpRegex: Regex = "0([0-9A-F][0-9A-F][0-9A-F])" r
-  val JumpRegex: Regex = "1([0-9A-F][0-9A-F][0-9A-F])" r
-  val GoSubRegex: Regex = "2([0-9A-F][0-9A-F][0-9A-F])" r
-  val SkipIfVxEqNRegex: Regex = "3([0-9A-F])([0-9A-F][0-9A-F])" r
-  val SkipIfVxNENRegex: Regex = "4([0-9A-F])([0-9A-F][0-9A-F])" r
-  val SkipIfVxEqVyRegex: Regex = "5([0-9A-F])([0-9A-F])0" r
-  val SetVxRegex: Regex = "6([0-9A-F])([0-9A-F][0-9A-F])" r
-  val AddXPlusYCarryRegex: Regex = "8([0-9A-F])([0-9A-F])4" r
-  val AddVxRegex: Regex = "7([0-9A-F])([0-9A-F][0-9A-F])" r
-  val SetXEqYRegex: Regex = "8([0-9A-F])([0-9A-F])0" r
-  val XEqLogicalOrRegex: Regex = "8([0-9A-F])([0-9A-F])1" r
-  val XEqLogicalAndRegex: Regex = "8([0-9A-F])([0-9A-F])2" r
-  val XEqLogicalXorRegex: Regex = "8([0-9A-F])([0-9A-F])3" r
-  val XEqXMinusYRegex: Regex = "8([0-9A-F])([0-9A-F])5" r
-  val XEqYMinusXRegex: Regex = "8([0-9A-F])([0-9A-F])7" r
-  val XShiftRightRegex: Regex = "8([0-9A-F])06" r // as per https://github.com/mwales/chip8.git ambiguity
-  val XShiftLeftRegex: Regex = "8([0-9A-F])0E" r // as per https://github.com/mwales/chip8.git ambiguity
-  val SkipIfVxNeVyRegex: Regex = "9([0-9A-F])([0-9A-F])0" r
-  val SetIndexRegex: Regex = "A([0-9A-F][0-9A-F][0-9A-F])" r
-  val XEqRandomRegex: Regex = "C([0-9A-F])([0-9A-F][0-9A-F])" r
-  val DisplayRegex: Regex = "D([0-9A-F])([0-9A-F])([0-9A-F])" r
-  val DelayTimerSetRegex: Regex = "F([0-9A-F])15" r
-  val DelayTimerGetRegex: Regex = "F([0-9A-F])07" r
-  val SkipIfNotKeyRegex: Regex = "E([0-9A-F])A1" r
-  val SkipIfKeyRegex: Regex = "E([0-9A-F])9E" r
-  val WaitForKeypressRegex: Regex = "F([0-9A-F])0A" r
-  val FontCharacterRegex: Regex = "F([0-9A-F])29" r
-  val StoreRegistersRegex: Regex = "F([0-9A-F])55" r
-  val LoadRegistersRegex: Regex = "F([0-9A-F])65" r
-  val StoreBCDRegex: Regex = "F([0-9A-F])33" r
-  val SetSoundTimerRegex: Regex = "F([0-9A-F])18" r
-  val IEqIPlusXRegex: Regex = "F([0-9A-F])1E" r
+  def decode(state: State): Instruction = {
+    val u1 = state.memory(state.pc).toInt
+    val u0 = state.memory(state.pc + 1).toInt
+    val op = (u1 << 8) + u0
+
+    decode(op)
+  }
+
+  private def decode(op: Int): Instruction = {
+    def m3 = op & 0xf000
+
+    def _NNN = op & 0xfff
+
+    def _X__ = U8.valueOf((op & 0xf00) >> 8)
+
+    def __Y_ = U8.valueOf((op & 0xf0) >> 4)
+
+    def ___N = U8.valueOf(op & 0x0f)
+
+    def __NN = U8.valueOf(op & 0x0ff)
+
+    val opS = f"$op%04x"
+
+    m3 match {
+      case 0x0000 => op match {
+        case 0x00E0 => ClearScreen(opS)
+        case 0x00EE => ReturnSub(opS)
+        case _ => ObsoleteMachineJump(opS, _NNN)
+      }
+      case 0x1000 => Jump(opS, _NNN)
+      case 0x2000 => GoSub(opS, _NNN)
+      case 0x3000 => SkipIfXEqN(opS, _X__, __NN)
+      case 0x4000 => SkipIfXNeN(opS, _X__, __NN)
+
+      case 0x5000 if ___N == 0 => SkipIfXEqY(opS, _X__, __Y_)
+
+      case 0x6000 => SetX(opS, _X__, __NN)
+      case 0x7000 => AddX(opS, _X__, __NN)
+
+      case 0x8000 if ___N == 0x0 => SetXEqY(opS, _X__, __Y_)
+      case 0x8000 if ___N == 0x1 => XEqLogicalOr(opS, _X__, __Y_)
+      case 0x8000 if ___N == 0x2 => XEqLogicalAnd(opS, _X__, __Y_)
+      case 0x8000 if ___N == 0x3 => XEqLogicalXor(opS, _X__, __Y_)
+      case 0x8000 if ___N == 0x4 => AddXPlusYCarry(opS, _X__, __Y_)
+      case 0x8000 if ___N == 0x5 => XEqXMinusY(opS, _X__, __Y_)
+      case 0x8000 if ___N == 0x7 => XEqYMinusX(opS, _X__, __Y_)
+      case 0x8000 if __NN == 0x06 => XShiftRight(opS, _X__)
+      case 0x8000 if __NN == 0x0E => XShiftLeft(opS, _X__)
+
+      case 0x9000 if ___N == 0 => SkipIfXNeY(opS, _X__, __Y_)
+      case 0xA000 => SetIndex(opS, _NNN)
+      case 0xB000 => ???
+      case 0xC000 => XEqRandom(opS, _X__, __NN)
+      case 0xD000 => Display(opS, _X__, __Y_, ___N)
+      case 0xE000 =>
+        __NN.toInt match {
+          case 0x9E => SkipIfKey(opS, _X__)
+          case 0xA1 => SkipIfNotKey(opS, _X__)
+        }
+
+      case 0xF000 =>
+        __NN.toInt match {
+          case 0x07 => DelayTimerGet(opS, _X__)
+          case 0x0A => WaitForKeypress(opS, _X__)
+          case 0x15 => DelayTimerSet(opS, _X__)
+          case 0x18 => SetSoundTimer(opS, _X__)
+          case 0x1E => IEqIPlusX(opS, _X__)
+          case 0x29 => FontCharacter(opS, _X__)
+          case 0x33 => StoreBCD(opS, _X__)
+          case 0x55 => StoreRegisters(opS, _X__)
+          case 0x65 => LoadRegisters(opS, _X__)
+        }
+      case _ =>
+        NotRecognised(opS)
+    }
+  }
 }
 
 case class GoSub(op: String, nnn: Int) extends Instruction {
