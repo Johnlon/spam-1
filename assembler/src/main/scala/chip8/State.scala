@@ -17,8 +17,6 @@ case class State(
                   soundTimer: U8 = U8(0),
                   fontCharLocation: Int => Int = Fonts.fontCharLocation,
                   pressedKeys: Set[Key.Value] = Set(),
-                  publishDrawScreenEvent: DrawScreenEvent => Unit = NullListener,
-                  publishPixelUpdateEvent: PixelUpdateEvent => Unit = NullListener
                 ) {
 
   if (stack.length > 16) {
@@ -42,26 +40,31 @@ case class State(
   // if flip = False then bit is cleared, otherwise bit is flipped
   def writePixel(x: Int, y: Int, flip: Boolean): State = {
     //x=0,y=0 is at top left of screen and is lowest point in memory
-    val offset = ((y * SCREEN_WIDTH) + x)
+    val xMod = x % SCREEN_WIDTH
+    val yMod = y % SCREEN_HEIGHT
+
+    val offset = ((yMod * SCREEN_WIDTH) + xMod)
     val byteNum = offset / 8
     val bitNum = offset % 8
 
     val memoryLocation = SCREEN_BUF_BOT + byteNum
-    assert(memoryLocation <= SCREEN_BUF_TOP)
+    if (memoryLocation > SCREEN_BUF_TOP) {
+      sys.error(s"memory error : $memoryLocation > $SCREEN_BUF_TOP")
+    }
 
     val bitMask: Int = 1 << bitNum
     val existingByte = memory(memoryLocation)
     val existingBitSet = (existingByte.toInt & bitMask) != 0
     val signalOverwrite = flip && existingBitSet
 
-    val (newByte, newBit) = if (flip) {
+    val newByte = if (flip) {
       val newBit = !existingBitSet
       if (newBit)
-        (existingByte | bitMask, newBit) // set the bit
+        existingByte | bitMask // set the bit
       else
-        (existingByte & (~bitMask), newBit) // clear the bit
+        existingByte & (~bitMask) // clear the bit
     } else {
-      (existingByte & (~bitMask), false) // clear the bit
+      existingByte & (~bitMask) // clear the bit
     }
 
     val newReg = if (signalOverwrite)
@@ -69,7 +72,6 @@ case class State(
     else
       register
 
-    publishPixelUpdateEvent(PixelUpdateEvent(x, y, newBit))
     copy(memory = memory.set(memoryLocation, newByte), register = newReg)
   }
 

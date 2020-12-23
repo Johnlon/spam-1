@@ -39,8 +39,6 @@ class C8Terminal(
                   receiveKey: KeyEvent => Unit) extends SimpleSwingApplication with Publisher {
   term =>
 
-//  var screen: mutable.Seq[mutable.Buffer[Char]] = fill()
-
   private val PaneWidth = 675
   private val PaneHeight = 400
   private val BotHeight = 300
@@ -65,8 +63,6 @@ class C8Terminal(
   instScreen.preferredSize = new Dimension(PaneWidth - statWidth, BotHeight)
   instScreen.editable = false
   instScreen.focusable = false
-
-  //  val timer = new PlotIntervalTimer(1000 / 60)
 
   def updateStats(): Unit = {
     val st = state.map {
@@ -136,19 +132,6 @@ class C8Terminal(
       case e@KeyReleased(_, _, _, _) =>
         receiveKey(e)
 
-//      case e@PixelUpdateEvent(_, _, _) =>
-//        drawCount += 1
-//        val now = System.currentTimeMillis()
-//        val elapsed = now - lastDraw
-//        drawRate = (1000 * drawCount) / (1 + elapsed)
-//
-//        if (drawCount > 100) {
-//          drawCount = 0
-//          lastDraw = now
-//          updateStats()
-//        }
-//        plot(e)
-//
       case e@DrawScreenEvent(bits) =>
         drawCount += 1
         val now = System.currentTimeMillis()
@@ -182,16 +165,7 @@ class C8Terminal(
       contents ++= Seq(left, right)
     }
   }
-//
-//  def doRepaint(): Unit = {
-//    val t = "\n" + screen.map { x =>
-//      x.map {
-//        y => s"$y$y"
-//      }.mkString("")
-//    }.mkString("\n")
-//
-//    gameScreen.text = t
-//  }
+
   def doRepaint(screen: Seq[Seq[Boolean]]): Unit = {
     val t = "\n" + screen.map { row =>
       row.map {
@@ -203,19 +177,6 @@ class C8Terminal(
 
     gameScreen.text = t
   }
-//
-//  def plot(c: PixelUpdateEvent): Unit = synchronized {
-//    val row: mutable.Buffer[Char] = screen(c.y)
-//
-//    if (c.set) {
-//      row(c.x) = BLOCK
-//    }
-//    else {
-//      row(c.x) = BLANK
-//    }
-//
-//    doRepaint()
-//  }
 
   def fill(): mutable.Seq[mutable.Buffer[Char]] = {
     (0 until height).map {

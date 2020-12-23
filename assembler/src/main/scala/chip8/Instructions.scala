@@ -120,16 +120,9 @@ case class ReturnSub(op: String) extends Instruction {
 
 case class ClearScreen(op: String) extends Instruction {
   def exec(state: State): State = {
-//    var sc = state.screen
-//
-//    (0 until SCREEN_WIDTH).foreach { x =>
-//      (0 until SCREEN_HEIGHT).foreach { y =>
-//        state.screen.setPixel(x,y)
-//          sc.publishDrawEvent(WritePixelEvent(x,y, false))
-//      }
-//    }
-
-    state.clearScreen().copy(
+    state.
+      clearScreen().
+      copy(
         pc = state.pc + 2
     )
   }

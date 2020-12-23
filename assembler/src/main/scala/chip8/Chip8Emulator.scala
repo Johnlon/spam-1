@@ -27,7 +27,9 @@ object Chip8Emulator extends SimpleSwingApplication {
   private val testProgram = "corax89__test_opcode.ch8" // DOESNT PASS TES YET
   private val AIRPLANE = "Airplane.ch8"
 
-  private val rom: File = Loader.rom("INVADERS")
+  private val VBRIX = "VBRIX"
+  private val ASTRO = "AstroDodge.ch8"
+  private val rom: File = Loader.rom(UFO)
   val bytes: List[U8] = Loader.read(rom)
   //
   //  val ast: List[Chip8CDecoder.Line] = Chip8CDecoder.decode(bytes)
@@ -63,10 +65,7 @@ object Chip8Emulator extends SimpleSwingApplication {
 
       println("Init rom ...")
 
-      var state = State(
-        publishDrawScreenEvent = terminalComponent.publish,
-        publishPixelUpdateEvent = terminalComponent.publish
-      )
+      var state = State()
 
       println("Init fonts ...")
       state = Fonts.installFonts(state)
@@ -84,18 +83,20 @@ object Chip8Emulator extends SimpleSwingApplication {
       println("Run ...")
       var stepMode = false
 
-      var lastTime = System.nanoTime()
-//      val stepTimeNs = (1000.0 * 1000000) / 60
-      val stepTimeNs = 1 // TODO - speed knob //(1000.0 * 1000000) / 60
+      var lastCountDownTime = System.nanoTime()
+      val countDownIntervalNs60Hz = (1000 * 1000000) / 60
+
+      var lastStepTime = System.nanoTime()
+      val stepIntervalNs = 1 // TODO - speed knob //(1000.0 * 1000000) / 60
       while (true) {
         // busy wait to eat up remaining time slice - to get more accurate timings
         var now = System.nanoTime()
-        var remainingNs = stepTimeNs - (now - lastTime)
+        var remainingNs = stepIntervalNs - (now - lastStepTime)
         while (remainingNs > 0) {
           now = System.nanoTime()
-          remainingNs = stepTimeNs - (now - lastTime)
+          remainingNs = stepIntervalNs - (now - lastStepTime)
         }
-        lastTime = now
+        lastStepTime = now
 
         // process instructions
         val inst: Instruction = decode(state)
@@ -103,21 +104,29 @@ object Chip8Emulator extends SimpleSwingApplication {
 
         stepMode = debugHandler(stepMode)
 
+        // load keyboard state
+        state = state.copy(
+          pressedKeys = KeypressAdaptor.pressedKeys
+        )
+
+        // do exec
         state = inst.exec(state)
 
         drawScreen(state)
+
         terminalComponent.updateView(state)
 
-        state = state.copy(
-            delayTimer = decrementDelayToZero(state),
-            soundTimer = decrementSoundToZero(state),
-            pressedKeys = KeypressAdaptor.pressedKeys
-        )
+        // only update counters at 60hz
+        now = System.nanoTime()
+        remainingNs = countDownIntervalNs60Hz - (now - lastCountDownTime)
+        if (remainingNs <= 0) {
+          state = state.copy(
+              delayTimer = decrementDelayToZero(state),
+              soundTimer = decrementSoundToZero(state),
+          )
+          lastCountDownTime = now
+        }
 
-
-        //      if (lastState.screen != state.screen) {
-        //        paintScreen(state.screen)
-        //      }
       }
     } catch {
       case ex =>
