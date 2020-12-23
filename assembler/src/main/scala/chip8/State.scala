@@ -2,10 +2,10 @@ package chip8
 
 import chip8.State.NullListener
 
-import scala.swing.event.Key
+import scala.swing.event.{Event, Key}
 
 object State {
-  def NullListener(writePixelEvent: WritePixelEvent): Unit = {}
+  def NullListener(event: Event): Unit = {}
 }
 case class State(
                   pc: Int = INITIAL_PC,
@@ -17,7 +17,8 @@ case class State(
                   soundTimer: U8 = U8(0),
                   fontCharLocation: Int => Int = Fonts.fontCharLocation,
                   pressedKeys: Set[Key.Value] = Set(),
-                  publishDrawEvent: WritePixelEvent => Unit = NullListener
+                  publishDrawScreenEvent: DrawScreenEvent => Unit = NullListener,
+                  publishPixelUpdateEvent: PixelUpdateEvent => Unit = NullListener
                 ) {
 
   if (stack.length > 16) {
@@ -68,7 +69,7 @@ case class State(
     else
       register
 
-    publishDrawEvent(WritePixelEvent(x, y, newBit))
+    publishPixelUpdateEvent(PixelUpdateEvent(x, y, newBit))
     copy(memory = memory.set(memoryLocation, newByte), register = newReg)
   }
 

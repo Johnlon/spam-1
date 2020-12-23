@@ -225,7 +225,7 @@ case class Display(op: String, xReg: U8, yReg: U8, nHeight: U8) extends Instruct
       val spriteRow = rowOfSprite.ubyte
 
       // convert to a list of bits
-      val rowBits = f"${spriteRow.toBinaryString}%8s".replace(' ', '0').map(x => x == '1')
+      val rowBits = intTo8Bits(spriteRow)
 
       // scan across sprite bits in this row and paint as cells on screen
       rowBits.zipWithIndex.foreach {
@@ -238,6 +238,7 @@ case class Display(op: String, xReg: U8, yReg: U8, nHeight: U8) extends Instruct
     }
     st
   }
+
 }
 
 

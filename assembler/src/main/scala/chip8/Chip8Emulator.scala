@@ -63,7 +63,10 @@ object Chip8Emulator extends SimpleSwingApplication {
 
       println("Init rom ...")
 
-      var state = State()
+      var state = State(
+        publishDrawScreenEvent = terminalComponent.publish,
+        publishPixelUpdateEvent = terminalComponent.publish
+      )
 
       println("Init fonts ...")
       state = Fonts.installFonts(state)
@@ -77,8 +80,6 @@ object Chip8Emulator extends SimpleSwingApplication {
           val newMemory = state.memory.set(address, byte)
           state = state.copy(memory = newMemory)
       }
-
-      state = state.copy(publishDrawEvent = terminalComponent.publish)
 
       println("Run ...")
       var stepMode = false
@@ -103,13 +104,16 @@ object Chip8Emulator extends SimpleSwingApplication {
         stepMode = debugHandler(stepMode)
 
         state = inst.exec(state)
+
+        drawScreen(state)
         terminalComponent.updateView(state)
 
         state = state.copy(
-          delayTimer = decrementDelayToZero(state),
-          soundTimer = decrementSoundToZero(state),
-          pressedKeys = KeypressAdaptor.pressedKeys
+            delayTimer = decrementDelayToZero(state),
+            soundTimer = decrementSoundToZero(state),
+            pressedKeys = KeypressAdaptor.pressedKeys
         )
+
 
         //      if (lastState.screen != state.screen) {
         //        paintScreen(state.screen)
@@ -122,6 +126,11 @@ object Chip8Emulator extends SimpleSwingApplication {
     }
   }
 
+  def drawScreen(state:State) : Unit = {
+    val pixels: Seq[Boolean] = state.screenBuffer.flatMap(x => intTo8Bits(x.ubyte).reverse)
+    val data: Seq[Seq[Boolean]] = pixels.grouped(SCREEN_WIDTH).toSeq
+    terminalComponent.publish(DrawScreenEvent(data))
+  }
 
   def debugHandler(stepModeIn: Boolean): Boolean = {
     var stepMode = stepModeIn

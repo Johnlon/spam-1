@@ -16,7 +16,7 @@ object C8Terminal {
 
   def BLANK: PixelType = ' '
 
-  def PIXEL: PixelType = 0x2588.toChar
+  def BLOCK: PixelType = 0x2588.toChar
 
   val NO_CHAR: Char = 0
 
@@ -39,7 +39,7 @@ class C8Terminal(
                   receiveKey: KeyEvent => Unit) extends SimpleSwingApplication with Publisher {
   term =>
 
-  var screen: mutable.Seq[mutable.Buffer[Char]] = fill()
+//  var screen: mutable.Seq[mutable.Buffer[Char]] = fill()
 
   private val PaneWidth = 675
   private val PaneHeight = 400
@@ -136,7 +136,20 @@ class C8Terminal(
       case e@KeyReleased(_, _, _, _) =>
         receiveKey(e)
 
-      case e@WritePixelEvent(_, _, _) =>
+//      case e@PixelUpdateEvent(_, _, _) =>
+//        drawCount += 1
+//        val now = System.currentTimeMillis()
+//        val elapsed = now - lastDraw
+//        drawRate = (1000 * drawCount) / (1 + elapsed)
+//
+//        if (drawCount > 100) {
+//          drawCount = 0
+//          lastDraw = now
+//          updateStats()
+//        }
+//        plot(e)
+//
+      case e@DrawScreenEvent(bits) =>
         drawCount += 1
         val now = System.currentTimeMillis()
         val elapsed = now - lastDraw
@@ -147,7 +160,12 @@ class C8Terminal(
           lastDraw = now
           updateStats()
         }
-        plot(e)
+
+        draw(e)
+    }
+
+    def draw(c: DrawScreenEvent): Unit = synchronized {
+      doRepaint(c.buf)
     }
 
     import javax.swing.border.EmptyBorder
@@ -164,29 +182,40 @@ class C8Terminal(
       contents ++= Seq(left, right)
     }
   }
-
-  def doRepaint(): Unit = {
-    val t = "\n" + screen.map { x =>
-      x.map {
-        y => s"$y$y"
+//
+//  def doRepaint(): Unit = {
+//    val t = "\n" + screen.map { x =>
+//      x.map {
+//        y => s"$y$y"
+//      }.mkString("")
+//    }.mkString("\n")
+//
+//    gameScreen.text = t
+//  }
+  def doRepaint(screen: Seq[Seq[Boolean]]): Unit = {
+    val t = "\n" + screen.map { row =>
+      row.map {
+        cell =>
+          val c = if(cell) BLOCK else BLANK
+          s"$c$c"
       }.mkString("")
     }.mkString("\n")
 
     gameScreen.text = t
   }
-
-  def plot(c: WritePixelEvent): Unit = synchronized {
-    val row: mutable.Buffer[Char] = screen(c.y)
-
-    if (c.set) {
-      row(c.x) = PIXEL
-    }
-    else {
-      row(c.x) = BLANK
-    }
-
-    doRepaint()
-  }
+//
+//  def plot(c: PixelUpdateEvent): Unit = synchronized {
+//    val row: mutable.Buffer[Char] = screen(c.y)
+//
+//    if (c.set) {
+//      row(c.x) = BLOCK
+//    }
+//    else {
+//      row(c.x) = BLANK
+//    }
+//
+//    doRepaint()
+//  }
 
   def fill(): mutable.Seq[mutable.Buffer[Char]] = {
     (0 until height).map {

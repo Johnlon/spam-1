@@ -142,4 +142,8 @@ package object chip8 {
 //  }
 
 
+  def intTo8Bits(spriteRow: Char): Seq[Boolean] = {
+    f"${spriteRow.toBinaryString}%8s".replace(' ', '0').map(x => x == '1')
+  }
+
 }
