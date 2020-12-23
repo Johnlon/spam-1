@@ -1,3 +1,7 @@
+
+![SPAM-1](spam1.png)
+
+
 # SPAM-1 CPU - Simple Programmable and Massive
 
 An 8 bit home brew CPU built using 1970's logic chips.
