@@ -21,8 +21,8 @@ object Instructions {
   val LoadStoreBehaviour = Modern
 
   def decode(state: State): Instruction = {
-    val u1 = state.memory(state.pc).toInt
-    val u0 = state.memory(state.pc + 1).toInt
+    val u1 = state.memory(state.pc.toInt).toInt
+    val u0 = state.memory(state.pc.toInt + 1).toInt
     val op = (u1 << 8) + u0
 
     decode(op)
@@ -31,7 +31,7 @@ object Instructions {
   private def decode(op: Int): Instruction = {
     def m3 = op & 0xf000
 
-    def _NNN = op & 0xfff
+    def _NNN = U12(op & 0xfff)
 
     def _X__ = U8.valueOf((op & 0xf00) >> 8)
 
@@ -65,9 +65,9 @@ object Instructions {
       case 0x8000 if ___N == 0x3 => XEqLogicalXor(opS, _X__, __Y_)
       case 0x8000 if ___N == 0x4 => AddXPlusYCarry(opS, _X__, __Y_)
       case 0x8000 if ___N == 0x5 => XEqXMinusY(opS, _X__, __Y_)
+      case 0x8000 if ___N == 0x6 => XShiftRight(opS, _X__)  //  __N_ not used
       case 0x8000 if ___N == 0x7 => XEqYMinusX(opS, _X__, __Y_)
-      case 0x8000 if __NN == 0x06 => XShiftRight(opS, _X__)
-      case 0x8000 if __NN == 0x0E => XShiftLeft(opS, _X__)
+      case 0x8000 if ___N == 0xE => XShiftLeft(opS, _X__)   //  __N_ not used
 
       case 0x9000 if ___N == 0 => SkipIfXNeY(opS, _X__, __Y_)
       case 0xA000 => SetIndex(opS, _NNN)
@@ -98,14 +98,14 @@ object Instructions {
   }
 }
 
-case class GoSub(op: String, nnn: Int) extends Instruction {
+case class GoSub(op: String, nnn: U12) extends Instruction {
   override def exec(state: State): State = {
     state.push(state.pc)
       .copy(pc = nnn)
   }
 }
 
-case class Jump(op: String, nnn: Int) extends Instruction {
+case class Jump(op: String, nnn: U12) extends Instruction {
   override def exec(state: State): State = {
     state.copy(pc = nnn)
   }
@@ -191,7 +191,7 @@ case class AddX(op: String, xReg: U8, nn: U8) extends Instruction { // Does not 
   }
 }
 
-case class SetIndex(op: String, nnn: Int) extends Instruction {
+case class SetIndex(op: String, nnn: U12) extends Instruction {
   override def exec(state: State): State = {
     state.copy(index = nnn,
       pc = state.pc + 2)
@@ -214,7 +214,7 @@ case class Display(op: String, xReg: U8, yReg: U8, nHeight: U8) extends Instruct
     (0 until height).foreach { y =>
       val location = state.index + y
       val memory = st.memory
-      val rowOfSprite: U8 = memory.apply(location)
+      val rowOfSprite: U8 = memory.apply(location.toInt)
       val spriteRow = rowOfSprite.ubyte
 
       // convert to a list of bits
@@ -358,7 +358,7 @@ case class StoreRegisters(op: String, xReg: U8) extends Instruction {
 
     registerValuesToSave.zipWithIndex.foreach {
       case (v: U8, i) =>
-        st = st.copy(memory = st.memory.set(st.index + i, v))
+        st = st.copy(memory = st.memory.set(st.index.toInt + i, v))
     }
 
     st.copy(
@@ -370,7 +370,7 @@ case class StoreRegisters(op: String, xReg: U8) extends Instruction {
 
 case class LoadRegisters(op: String, xReg: U8) extends Instruction {
   override def exec(state: State): State = {
-    val data = state.memory.slice(state.index, state.index + xReg.ubyte + 1)
+    val data = state.memory.slice(state.index.toInt, state.index.toInt + xReg.ubyte + 1)
 
     var st = state
 
@@ -395,9 +395,9 @@ case class StoreBCD(op: String, xReg: U8) extends Instruction {
 
     state.copy(
       memory = state.memory.
-        set(state.index, U8.valueOf(i100)).
-        set(state.index + 1, U8.valueOf(i10)).
-        set(state.index + 2, U8.valueOf(i1)),
+        set(state.index.toInt, U8.valueOf(i100)).
+        set(state.index.toInt + 1, U8.valueOf(i10)).
+        set(state.index.toInt + 2, U8.valueOf(i1)),
       pc = state.pc + 2,
     )
   }
@@ -411,7 +411,7 @@ case class IEqIPlusX(op: String, xReg: U8) extends Instruction {
 
     // https://tobiasvl.github.io/blog/write-a-chip-8-emulator/#fx55-and-fx65-store-and-load-memory
     // later atari update V15
-    val carry = if (newAddress > MEM_SIZE-1) U8(1) else U8(0)
+    val carry = if (newAddress.toInt > MEM_SIZE-1) U8(1) else U8(0)
 
     state.copy(
       index = newAddress,
@@ -534,7 +534,7 @@ case class SetSoundTimer(op: String, xReg: U8) extends Instruction { // Does not
 }
 
 
-case class ObsoleteMachineJump(op: String, value: Int) extends Instruction {
+case class ObsoleteMachineJump(op: String, value: U12) extends Instruction {
   override def exec(state: State): State =
     state.copy(
       pc = state.pc + 2

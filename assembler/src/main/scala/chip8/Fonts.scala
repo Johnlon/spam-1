@@ -2,7 +2,7 @@ package chip8
 
 object Fonts {
   // http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
-  val FontMemAddress = 0x50
+  val FontMemAddress = U12(0x50)
 
   val FontCharWidth = 5
 
@@ -10,12 +10,13 @@ object Fonts {
     var memory = state.memory
     hexFonts.zipWithIndex.foreach {
       case (f, i) =>
-        memory = memory.set(FontMemAddress + i,  f)
+        val fontLocn = FontMemAddress + i
+        memory = memory.set(fontLocn.toInt,  f)
     }
     state.copy(memory = memory)
   }
 
-  def fontCharLocation(n: Int): Int = {
+  def fontCharLocation(n: Int): U12 = {
     FontMemAddress + (n * FontCharWidth)
   }
 

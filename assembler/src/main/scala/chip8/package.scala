@@ -19,17 +19,30 @@ package object chip8 {
   val SCREEN_BUF_BOT = 0xF00
   val SCREEN_BUF_TOP = 0xFFF
 
-  val INITIAL_PC = 0x200
+  val INITIAL_PC = U12(0x200)
 
   val emptyRegisters: List[U8] = List.fill(16)(U8(0))
   val emptyMemory: List[U8] = List.fill(MEM_SIZE)(U8(0))
 
   assert((SCREEN_HEIGHT*SCREEN_WIDTH)/8 == (1 + SCREEN_BUF_TOP - SCREEN_BUF_BOT))
 
-  case class U8(ubyte: Char) {
-    override def toString() =  s"${ubyte.toHexString}(${ubyte.toInt & 0xff})"
+  case class U12(x: Int) {
+    if (x < 0 || x > 4085)
+      sys.error("out of range " + x)
 
-    def toInt = ubyte.toInt
+    override def toString =  s"x${x.toHexString}(${x & 0xfff})"
+
+    def toInt: Int = x.toInt
+
+    def +(x: Int): U12 = {
+      U12(this.toInt + x)
+    }
+  }
+
+  case class U8(ubyte: Char) {
+    override def toString =  s"${ubyte.toHexString}(${ubyte.toInt & 0xff})"
+
+    def toInt: Int = ubyte.toInt
 
     def isZero: Boolean = ubyte == 0
     def isNotZero: Boolean = ubyte != 0

@@ -1,8 +1,9 @@
 package chip8
 
-import java.io.File
+import java.io.{File, InputStream}
 
 import chip8.Instructions.decode
+import javax.sound.sampled.{AudioSystem, Clip}
 
 import scala.swing.event.Key
 import scala.swing.{Frame, SimpleSwingApplication}
@@ -29,8 +30,12 @@ object Chip8Emulator extends SimpleSwingApplication {
 
   private val VBRIX = "VBRIX"
   private val ASTRO = "AstroDodge.ch8"
-  private val rom: File = Loader.rom(UFO)
-  val bytes: List[U8] = Loader.read(rom)
+  private val SPACE_FLIGHT = "Space Flight.ch8"
+
+  private val PARTICLE  = "Particle Demo [zeroZshadow, 2008].ch8"
+  private val romData: File = Loader.rom(PONG)
+
+  val bytes: List[U8] = Loader.read(romData)
   //
   //  val ast: List[Chip8CDecoder.Line] = Chip8CDecoder.decode(bytes)
   //  ast.zipWithIndex.foreach(println)
@@ -56,6 +61,26 @@ object Chip8Emulator extends SimpleSwingApplication {
   override def top: Frame = {
     emulatorThread.start()
     terminal
+  }
+
+  def soundStatus(play: Boolean): Unit = {
+    if (play) {
+      if (!beep.isRunning) {
+        beep.setFramePosition(0)
+        beep.start()
+      }
+    } else {
+      beep.stop()
+    }
+  }
+
+
+  val beep = {
+    val sound = this.getClass.getResourceAsStream("./ping_pong_8bit_beeep.aiff")
+    val audioInputStream = AudioSystem.getAudioInputStream(sound)
+    val clip = AudioSystem.getClip
+    clip.open(audioInputStream)
+    clip
   }
 
   def run(program: List[U8]): Unit = {
@@ -116,13 +141,17 @@ object Chip8Emulator extends SimpleSwingApplication {
 
         terminalComponent.updateView(state)
 
+        soundStatus(state.soundTimer.ubyte > 0)
+        //soundStatus(true)
+
+
         // only update counters at 60hz
         now = System.nanoTime()
         remainingNs = countDownIntervalNs60Hz - (now - lastCountDownTime)
         if (remainingNs <= 0) {
           state = state.copy(
-              delayTimer = decrementDelayToZero(state),
-              soundTimer = decrementSoundToZero(state),
+            delayTimer = decrementDelay(state),
+            soundTimer = decrementSound(state),
           )
           lastCountDownTime = now
         }
@@ -130,12 +159,14 @@ object Chip8Emulator extends SimpleSwingApplication {
       }
     } catch {
       case ex =>
+        terminalComponent.displayError(ex)
         ex.printStackTrace(System.err)
+        System.in.read()
         this.shutdown()
     }
   }
 
-  def drawScreen(state:State) : Unit = {
+  def drawScreen(state: State): Unit = {
     val pixels: Seq[Boolean] = state.screenBuffer.flatMap(x => intTo8Bits(x.ubyte).reverse)
     val data: Seq[Seq[Boolean]] = pixels.grouped(SCREEN_WIDTH).toSeq
     terminalComponent.publish(DrawScreenEvent(data))
@@ -168,14 +199,14 @@ object Chip8Emulator extends SimpleSwingApplication {
     stepMode
   }
 
-  private def decrementDelayToZero(state: State) = {
+  private def decrementDelay(state: State) = {
     if (state.delayTimer > U8(0)) {
       state.delayTimer - 1
     } else
       U8(0)
   }
 
-  private def decrementSoundToZero(state: State) = {
+  private def decrementSound(state: State) = {
     if (state.soundTimer > U8(0)) {
       state.soundTimer - 1
     } else

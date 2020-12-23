@@ -39,6 +39,10 @@ class C8Terminal(
                   receiveKey: KeyEvent => Unit) extends SimpleSwingApplication with Publisher {
   term =>
 
+  def displayError(ex: Throwable): Unit = {
+    gameScreen.text = ex.toString
+   }
+
   private val PaneWidth = 675
   private val PaneHeight = 400
   private val BotHeight = 300
@@ -70,7 +74,7 @@ class C8Terminal(
         val regIdx = s.register.zipWithIndex
         val registers1 = printReg(regIdx.take(8))
         val registers2 = printReg(regIdx.drop(8))
-        val stack = s.stack.map { d => f"$d%02x" }.mkString(" ")
+        val stack = s.stack.map { d => f"${d.toInt}%03x" }.mkString(" ")
         val index = s.index
         val soundTimer = s.soundTimer.ubyte.toInt
         val delayTimer = s.delayTimer.ubyte.toInt
@@ -78,10 +82,10 @@ class C8Terminal(
         val keys = s.pressedKeys.map { k => f"$k%s" }.mkString(" ")
 
         f"""
-           |pc          : $pc%04x
+           |pc          : ${pc.toInt}%03x
            |reg         : $registers1
            |              $registers2
-           |idx         : $index%04x
+           |idx         : ${index.toInt}%03x
            |stack       : $stack
            |keys        : $keys
            |sound timer : $soundTimer%-3d
@@ -111,7 +115,7 @@ class C8Terminal(
   private def printReg(regIdx: Seq[(chip8.U8, Int)]): String = {
     regIdx.map { case (z, i) =>
       val ubyte = z.ubyte.toInt
-      f"R$i%02d=$ubyte%02x"
+      f"V$i%1X=$ubyte%02x"
     }.mkString(" ")
   }
 

@@ -1,24 +1,26 @@
 package chip8
 
-import chip8.State.NullListener
-
 import scala.swing.event.{Event, Key}
 
 object State {
   def NullListener(event: Event): Unit = {}
 }
+
 case class State(
-                  pc: Int = INITIAL_PC,
-                  index: Int = 0,
-                  stack: Seq[Int] = Nil,
+                  pc: U12 = INITIAL_PC,
+                  index: U12 = U12(0),
+                  stack: Seq[U12] = Nil,
                   register: Seq[U8] = emptyRegisters,
                   memory: Seq[U8] = emptyMemory,
                   delayTimer: U8 = U8(0),
                   soundTimer: U8 = U8(0),
-                  fontCharLocation: Int => Int = Fonts.fontCharLocation,
+                  fontCharLocation: Int => U12 = Fonts.fontCharLocation,
                   pressedKeys: Set[Key.Value] = Set(),
                 ) {
 
+  if (pc.toInt % 2 != 0) {
+//    sys.error("odd pc " + pc)
+  }
   if (stack.length > 16) {
     sys.error("Stack may not exceed 16 levels but got " + stack.length)
   }
@@ -27,7 +29,7 @@ case class State(
     var st = this
     (0 until SCREEN_HEIGHT) foreach { y =>
       (0 until SCREEN_WIDTH) foreach { x =>
-        st = st.writePixel(x,y,false)
+        st = st.writePixel(x,y,flip = false)
       }
     }
     st
@@ -43,7 +45,7 @@ case class State(
     val xMod = x % SCREEN_WIDTH
     val yMod = y % SCREEN_HEIGHT
 
-    val offset = ((yMod * SCREEN_WIDTH) + xMod)
+    val offset = (yMod * SCREEN_WIDTH) + xMod
     val byteNum = offset / 8
     val bitNum = offset % 8
 
@@ -75,11 +77,12 @@ case class State(
     copy(memory = memory.set(memoryLocation, newByte), register = newReg)
   }
 
-  def push(i: Int): State = copy(stack = i +: stack)
+  def push(i: U12): State = copy(stack = i +: stack)
 
-  def pop: (State, Int) = {
-    if (stack.size == 0)
+  def pop: (State, U12) = {
+    if (stack.isEmpty)
       sys.error("attempt to pop empty stack ")
+
     val popped :: tail = stack
     (copy(stack = tail), popped)
   }
