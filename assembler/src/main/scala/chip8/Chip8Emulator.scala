@@ -78,12 +78,13 @@ object Chip8Emulator extends SimpleSwingApplication {
           state = state.copy(memory = newMemory)
       }
 
-      state = state.copy(state.screen.copy(publishDrawEvent = terminalComponent.publish))
+      state = state.copy(publishDrawEvent = terminalComponent.publish)
 
       println("Run ...")
       var stepMode = false
 
       var lastTime = System.nanoTime()
+//      val stepTimeNs = (1000.0 * 1000000) / 60
       val stepTimeNs = 1 // TODO - speed knob //(1000.0 * 1000000) / 60
       while (true) {
         // busy wait to eat up remaining time slice - to get more accurate timings

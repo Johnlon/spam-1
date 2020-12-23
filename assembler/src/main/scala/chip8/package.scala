@@ -45,6 +45,7 @@ package object chip8 {
     def &(yVal: U8): chip8.U8 = U8.valueOf(ubyte & yVal.ubyte)
     def ^(yVal: U8): chip8.U8 = U8.valueOf(ubyte ^ yVal.ubyte)
 
+    def |(yVal: Int): chip8.U8 = U8.valueOf(ubyte | yVal)
     def &(yVal: Int): chip8.U8 = U8.valueOf(ubyte & yVal)
     def >>(yVal: Int): chip8.U8 = U8.valueOf(ubyte >> yVal )
     def <<(yVal: Int): chip8.U8 = U8.valueOf((ubyte << yVal) & 0xff)

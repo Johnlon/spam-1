@@ -1,9 +1,13 @@
 package chip8
 
+import chip8.State.NullListener
+
 import scala.swing.event.Key
 
+object State {
+  def NullListener(writePixelEvent: WritePixelEvent): Unit = {}
+}
 case class State(
-                  screen: Screen = Screen(),
                   pc: Int = INITIAL_PC,
                   index: Int = 0,
                   stack: Seq[Int] = Nil,
@@ -12,7 +16,8 @@ case class State(
                   delayTimer: U8 = U8(0),
                   soundTimer: U8 = U8(0),
                   fontCharLocation: Int => Int = Fonts.fontCharLocation,
-                  pressedKeys: Set[Key.Value] = Set()
+                  pressedKeys: Set[Key.Value] = Set(),
+                  publishDrawEvent: WritePixelEvent => Unit = NullListener
                 ) {
 
   if (stack.length > 16) {
@@ -20,21 +25,51 @@ case class State(
   }
 
   def clearScreen(): State = {
-    ???
+    var st = this
+    (0 until SCREEN_HEIGHT) foreach { y =>
+      (0 until SCREEN_WIDTH) foreach { x =>
+        st = st.writePixel(x,y,false)
+      }
+    }
+    st
   }
 
-  def writeScreen(x: Int, y: Int, set: Boolean): State = {
+  def screenBuffer: Seq[U8] = {
+    memory.slice(SCREEN_BUF_BOT, SCREEN_BUF_TOP+1)
+  }
+
+  // if flip = False then bit is cleared, otherwise bit is flipped
+  def writePixel(x: Int, y: Int, flip: Boolean): State = {
     //x=0,y=0 is at top left of screen and is lowest point in memory
-    val offset = ((y * SCREEN_WIDTH) + x) / 8
+    val offset = ((y * SCREEN_WIDTH) + x)
     val byteNum = offset / 8
     val bitNum = offset % 8
 
-    val bitMask : Int = 1 << bitNum
-    val existingByte = memory(byteNum)
+    val memoryLocation = SCREEN_BUF_BOT + byteNum
+    assert(memoryLocation <= SCREEN_BUF_TOP)
 
-    val existingBit = (existingByte & bitMask) != 0
-    //val newMem = memory.set(offset,)
-    this
+    val bitMask: Int = 1 << bitNum
+    val existingByte = memory(memoryLocation)
+    val existingBitSet = (existingByte.toInt & bitMask) != 0
+    val signalOverwrite = flip && existingBitSet
+
+    val (newByte, newBit) = if (flip) {
+      val newBit = !existingBitSet
+      if (newBit)
+        (existingByte | bitMask, newBit) // set the bit
+      else
+        (existingByte & (~bitMask), newBit) // clear the bit
+    } else {
+      (existingByte & (~bitMask), false) // clear the bit
+    }
+
+    val newReg = if (signalOverwrite)
+      register.set(STATUS_REGISTER_ID, U8(1))
+    else
+      register
+
+    publishDrawEvent(WritePixelEvent(x, y, newBit))
+    copy(memory = memory.set(memoryLocation, newByte), register = newReg)
   }
 
   def push(i: Int): State = copy(stack = i +: stack)

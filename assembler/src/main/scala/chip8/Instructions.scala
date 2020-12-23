@@ -120,17 +120,16 @@ case class ReturnSub(op: String) extends Instruction {
 
 case class ClearScreen(op: String) extends Instruction {
   def exec(state: State): State = {
-    var sc = state.screen
+//    var sc = state.screen
+//
+//    (0 until SCREEN_WIDTH).foreach { x =>
+//      (0 until SCREEN_HEIGHT).foreach { y =>
+//        state.screen.setPixel(x,y)
+//          sc.publishDrawEvent(WritePixelEvent(x,y, false))
+//      }
+//    }
 
-    (0 until SCREEN_WIDTH).foreach { x =>
-      (0 until SCREEN_HEIGHT).foreach { y =>
-        state.screen.setPixel(x,y)
-          sc.publishDrawEvent(WritePixelEvent(x,y, false))
-      }
-    }
-
-    state.copy(
-      screen = state.screen.clear(),
+    state.clearScreen().copy(
         pc = state.pc + 2
     )
   }
@@ -233,11 +232,7 @@ case class Display(op: String, xReg: U8, yReg: U8, nHeight: U8) extends Instruct
         case (bit, x) =>
           // draw bit if true
           if (bit) {
-            val (newScreen, erasedExistingPixel) = st.screen.setPixel(xPos + x, yPos + y)
-            st = st.copy(screen = newScreen)
-            if (erasedExistingPixel) {
-              st = st.copy(register = st.register.set(STATUS_REGISTER_ID, U8(1)))
-            }
+            st = st.writePixel(xPos + x, yPos + y, true)
           }
       }
     }
