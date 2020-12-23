@@ -1,7 +1,6 @@
 package chip8
 
-import chip8.Screen.PIXEL
-import chip8.State.{INITIAL_PC, emptyMemory, emptyRegisters}
+import chip8.Screen.BLOCK_CHAR
 import org.junit.jupiter.api.MethodOrderer.MethodName
 import org.junit.jupiter.api.{Test, TestMethodOrder}
 
@@ -288,8 +287,8 @@ class InstructionTest {
     val actual = sut.exec(initialState)
 
     var screenData = Screen().buffer
-    val row0 = screenData(0).set(3, PIXEL).set(5, PIXEL).set(7, PIXEL).set(9, PIXEL).mkString("")
-    val row1 = screenData(1).set(3, PIXEL).set(4, PIXEL).set(5, PIXEL).set(6, PIXEL).set(7, PIXEL).set(8, PIXEL).set(9, PIXEL).set(10, PIXEL).mkString("")
+    val row0 = screenData(0).set(3, BLOCK_CHAR).set(5, BLOCK_CHAR).set(7, BLOCK_CHAR).set(9, BLOCK_CHAR).mkString("")
+    val row1 = screenData(1).set(3, BLOCK_CHAR).set(4, BLOCK_CHAR).set(5, BLOCK_CHAR).set(6, BLOCK_CHAR).set(7, BLOCK_CHAR).set(8, BLOCK_CHAR).set(9, BLOCK_CHAR).set(10, BLOCK_CHAR).mkString("")
 
     screenData = screenData.set(0, row0)
     screenData = screenData.set(1, row1)
@@ -309,7 +308,7 @@ class InstructionTest {
 
     val expectedState2 = State(
       memory = memory,
-      register = emptyRegisters.set(1, U8(3)).set(2, U8(0)).set(STATUS_REGISTER_VF, U8(1)),
+      register = emptyRegisters.set(1, U8(3)).set(2, U8(0)).set(STATUS_REGISTER_ID, U8(1)),
       screen = Screen(),
       index = locationOfFont,
       pc = INITIAL_PC + 4
@@ -342,7 +341,7 @@ class InstructionTest {
 
     val initialState = State(
       register = emptyRegisters.set(1, U8(0)).set(2, U8(1))
-        .set(STATUS_REGISTER_VF, U8(1)), // this unsets the carry bit
+        .set(STATUS_REGISTER_ID, U8(1)), // this unsets the carry bit
     )
 
     val actual = sut.exec(initialState)
@@ -351,7 +350,7 @@ class InstructionTest {
       register = emptyRegisters.
         set(1, U8.valueOf(255 /*== -1*/)).
         set(2, U8(1)).
-        set(STATUS_REGISTER_VF, U8(0)), // expect carry
+        set(STATUS_REGISTER_ID, U8(0)), // expect carry
       pc = INITIAL_PC + 2
     )
 
@@ -366,7 +365,7 @@ class InstructionTest {
       register = emptyRegisters
         .set(1, U8(1))
         .set(2, U8(1))
-        .set(STATUS_REGISTER_VF, U8(0)), // this sets the carry bit
+        .set(STATUS_REGISTER_ID, U8(0)), // this sets the carry bit
     )
 
     val actual = sut.exec(initialState)
@@ -375,7 +374,7 @@ class InstructionTest {
       register = emptyRegisters.
         set(1, U8(0)).
         set(2, U8(1)).
-        set(STATUS_REGISTER_VF, U8(1)), // should be unset
+        set(STATUS_REGISTER_ID, U8(1)), // should be unset
       pc = INITIAL_PC + 2
     )
 
@@ -389,7 +388,7 @@ class InstructionTest {
     val initialState = State(
       register = emptyRegisters.set(1, U8(100))
         .set(2, U8(30))
-        .set(STATUS_REGISTER_VF, U8(0)), // this sets the carry bit
+        .set(STATUS_REGISTER_ID, U8(0)), // this sets the carry bit
     )
 
     val actual = sut.exec(initialState)
@@ -398,7 +397,7 @@ class InstructionTest {
       register = emptyRegisters.
         set(1, U8(70)).
         set(2, U8(30)).
-        set(STATUS_REGISTER_VF, U8(1)), // should be unset
+        set(STATUS_REGISTER_ID, U8(1)), // should be unset
       pc = INITIAL_PC + 2
     )
 
@@ -413,7 +412,7 @@ class InstructionTest {
       register = emptyRegisters.
         set(1, U8(1)).
         set(2, U8(4)).
-        set(STATUS_REGISTER_VF, U8(0)), // this sets the carry bit
+        set(STATUS_REGISTER_ID, U8(0)), // this sets the carry bit
     )
 
     val actual = sut.exec(initialState)
@@ -422,7 +421,7 @@ class InstructionTest {
       register = emptyRegisters.
         set(1, U8(3)).
         set(2, U8(4)).
-        set(STATUS_REGISTER_VF, U8(1)), // should clear the bit
+        set(STATUS_REGISTER_ID, U8(1)), // should clear the bit
       pc = INITIAL_PC + 2
     )
 
@@ -437,7 +436,7 @@ class InstructionTest {
       register = emptyRegisters.
         set(1, U8(1)).
         set(2, U8(1)).
-        set(STATUS_REGISTER_VF, U8(0)), // this sets the carry bit
+        set(STATUS_REGISTER_ID, U8(0)), // this sets the carry bit
     )
 
     val actual = sut.exec(initialState)
@@ -446,7 +445,7 @@ class InstructionTest {
       register = emptyRegisters.
         set(1, U8(0)).
         set(2, U8(1)).
-        set(STATUS_REGISTER_VF, U8(1)), // should clear the bit
+        set(STATUS_REGISTER_ID, U8(1)), // should clear the bit
       pc = INITIAL_PC + 2
     )
 
@@ -461,7 +460,7 @@ class InstructionTest {
       register = emptyRegisters.
         set(1, U8(4)).
         set(2, U8(1)).
-        set(STATUS_REGISTER_VF, U8(1)), // this clears the carry bit
+        set(STATUS_REGISTER_ID, U8(1)), // this clears the carry bit
     )
 
     val actual = sut.exec(initialState)
@@ -470,7 +469,7 @@ class InstructionTest {
       register = emptyRegisters.
         set(1, U8(253)).
         set(2, U8(1))
-        set(STATUS_REGISTER_VF, U8(0)), // this sets the carry bit
+        set(STATUS_REGISTER_ID, U8(0)), // this sets the carry bit
       pc = INITIAL_PC + 2
     )
 
@@ -551,7 +550,7 @@ class InstructionTest {
     val initialState = State(
       register = emptyRegisters.
         set(1, U8.valueOf("01010101", 2)).
-        set(STATUS_REGISTER_VF, U8(0)),
+        set(STATUS_REGISTER_ID, U8(0)),
     )
 
     val actual = sut.exec(initialState)
@@ -559,7 +558,7 @@ class InstructionTest {
     val expectedState = State(
       register = emptyRegisters.
         set(1, U8.valueOf("00101010", 2)).
-        set(STATUS_REGISTER_VF, U8(1)),
+        set(STATUS_REGISTER_ID, U8(1)),
       pc = INITIAL_PC + 2
     )
 
@@ -570,7 +569,7 @@ class InstructionTest {
     val expectedState2 = State(
       register = emptyRegisters.
         set(1, U8.valueOf("00010101", 2)).
-        set(STATUS_REGISTER_VF, U8(0)),
+        set(STATUS_REGISTER_ID, U8(0)),
       pc = INITIAL_PC + 4
     )
 
@@ -584,7 +583,7 @@ class InstructionTest {
     val initialState = State(
       register = emptyRegisters.
         set(1, U8.valueOf("01010101", 2)).
-        set(STATUS_REGISTER_VF, U8(1)),
+        set(STATUS_REGISTER_ID, U8(1)),
     )
 
     val actual = sut.exec(initialState)
@@ -592,7 +591,7 @@ class InstructionTest {
     val expectedState = State(
       register = emptyRegisters.
         set(1, U8.valueOf("10101010", 2)).
-        set(STATUS_REGISTER_VF, U8(0)),
+        set(STATUS_REGISTER_ID, U8(0)),
       pc = INITIAL_PC + 2
     )
 
@@ -603,7 +602,7 @@ class InstructionTest {
     val expectedState2 = State(
       register = emptyRegisters.
         set(1, U8.valueOf("01010100", 2)).
-        set(STATUS_REGISTER_VF, U8(1)),
+        set(STATUS_REGISTER_ID, U8(1)),
       pc = INITIAL_PC + 4
     )
 
@@ -617,7 +616,7 @@ class InstructionTest {
     val initialState = State(
       register = emptyRegisters.
         set(1, U8.valueOf("01010101", 2)).
-        set(STATUS_REGISTER_VF, U8(1)),
+        set(STATUS_REGISTER_ID, U8(1)),
     )
 
     val actual = sut.exec(initialState)
@@ -625,7 +624,7 @@ class InstructionTest {
     val expectedState = State(
       register = emptyRegisters.
         set(1, U8.valueOf("10101010", 2)).
-        set(STATUS_REGISTER_VF, U8(0)),
+        set(STATUS_REGISTER_ID, U8(0)),
       pc = INITIAL_PC + 2
     )
 
@@ -636,7 +635,7 @@ class InstructionTest {
     val expectedState2 = State(
       register = emptyRegisters.
         set(1, U8.valueOf("01010100", 2)).
-        set(STATUS_REGISTER_VF, U8(1)),
+        set(STATUS_REGISTER_ID, U8(1)),
       pc = INITIAL_PC + 4
     )
 

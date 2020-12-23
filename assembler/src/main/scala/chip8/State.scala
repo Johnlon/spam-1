@@ -1,16 +1,6 @@
 package chip8
 
-import chip8.State.{INITIAL_PC, emptyMemory, emptyRegisters}
-
 import scala.swing.event.Key
-
-object State {
-  val MAX_MEM = 4096
-
-  val INITIAL_PC = 0x200
-  val emptyRegisters: List[U8] = List.fill(16)(U8(0))
-  val emptyMemory: List[U8] = List.fill(MAX_MEM)(U8(0))
-}
 
 case class State(
                   screen: Screen = Screen(),
@@ -29,10 +19,28 @@ case class State(
     sys.error("Stack may not exceed 16 levels but got " + stack.length)
   }
 
+  def clearScreen(): State = {
+    ???
+  }
+
+  def writeScreen(x: Int, y: Int, set: Boolean): State = {
+    //x=0,y=0 is at top left of screen and is lowest point in memory
+    val offset = ((y * SCREEN_WIDTH) + x) / 8
+    val byteNum = offset / 8
+    val bitNum = offset % 8
+
+    val bitMask : Int = 1 << bitNum
+    val existingByte = memory(byteNum)
+
+    val existingBit = (existingByte & bitMask) != 0
+    //val newMem = memory.set(offset,)
+    this
+  }
+
   def push(i: Int): State = copy(stack = i +: stack)
 
   def pop: (State, Int) = {
-    if (stack.size==0)
+    if (stack.size == 0)
       sys.error("attempt to pop empty stack ")
     val popped :: tail = stack
     (copy(stack = tail), popped)

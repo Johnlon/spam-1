@@ -44,8 +44,8 @@ object Chip8Emulator extends SimpleSwingApplication {
   })
 
   private val terminalComponent = new C8Terminal(
-    width = Screen.WIDTH,
-    height = Screen.HEIGHT,
+    width = SCREEN_WIDTH,
+    height = SCREEN_HEIGHT,
     receiveKey = KeypressAdaptor.registerKeypress
   )
 

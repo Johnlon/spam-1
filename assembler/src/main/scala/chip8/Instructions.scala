@@ -122,8 +122,8 @@ case class ClearScreen(op: String) extends Instruction {
   def exec(state: State): State = {
     var sc = state.screen
 
-    (0 until Screen.WIDTH).foreach { x =>
-      (0 until Screen.HEIGHT).foreach { y =>
+    (0 until SCREEN_WIDTH).foreach { x =>
+      (0 until SCREEN_HEIGHT).foreach { y =>
         state.screen.setPixel(x,y)
           sc.publishDrawEvent(WritePixelEvent(x,y, false))
       }
@@ -217,7 +217,7 @@ case class Display(op: String, xReg: U8, yReg: U8, nHeight: U8) extends Instruct
 
   private def drawSprite(state: State, height: Int, xPos: Int, yPos: Int): State = {
 
-    var st = state.copy(register = state.register.set(STATUS_REGISTER_VF, U8(0))) // no collision yet
+    var st = state.copy(register = state.register.set(STATUS_REGISTER_ID, U8(0))) // no collision yet
 
     (0 until height).foreach { y =>
       val location = state.index + y
@@ -236,7 +236,7 @@ case class Display(op: String, xReg: U8, yReg: U8, nHeight: U8) extends Instruct
             val (newScreen, erasedExistingPixel) = st.screen.setPixel(xPos + x, yPos + y)
             st = st.copy(screen = newScreen)
             if (erasedExistingPixel) {
-              st = st.copy(register = st.register.set(STATUS_REGISTER_VF, U8(1)))
+              st = st.copy(register = st.register.set(STATUS_REGISTER_ID, U8(1)))
             }
           }
       }
@@ -262,7 +262,7 @@ case class XEqXMinusY(op: String, xReg: U8, yReg: U8) extends Instruction {
     val yVal: U8 = state.register(yReg)
     val updatedRegs = state.register.
       set(xReg, xVal - yVal).
-      set(STATUS_REGISTER_VF, if (xVal < yVal) U8(0) else U8(1)) // active low carry flag
+      set(STATUS_REGISTER_ID, if (xVal < yVal) U8(0) else U8(1)) // active low carry flag
 
     state.copy(
       register = updatedRegs,
@@ -276,7 +276,7 @@ case class XEqYMinusX(op: String, xReg: U8, yReg: U8) extends Instruction {
     val yVal: U8 = state.register(yReg)
     val updatedRegs = state.register.
       set(xReg, yVal - xVal).
-      set(STATUS_REGISTER_VF, if (yVal < xVal) U8(0) else U8(1)) // active low carry flag
+      set(STATUS_REGISTER_ID, if (yVal < xVal) U8(0) else U8(1)) // active low carry flag
 
     state.copy(
       register = updatedRegs,
@@ -337,7 +337,7 @@ case class XShiftRight(op: String, xReg: U8) extends Instruction {
 
     val updatedRegs = state.register.
       set(xReg, shifted).
-      set(STATUS_REGISTER_VF, shiftOut)
+      set(STATUS_REGISTER_ID, shiftOut)
 
     state.copy(
       register = updatedRegs,
@@ -353,7 +353,7 @@ case class XShiftLeft(op: String, xReg: U8) extends Instruction {
 
     val updatedRegs = state.register.
       set(xReg, shifted).
-      set(STATUS_REGISTER_VF, shiftOut)
+      set(STATUS_REGISTER_ID, shiftOut)
 
     state.copy(
       register = updatedRegs,
@@ -422,11 +422,11 @@ case class IEqIPlusX(op: String, xReg: U8) extends Instruction {
 
     // https://tobiasvl.github.io/blog/write-a-chip-8-emulator/#fx55-and-fx65-store-and-load-memory
     // later atari update V15
-    val carry = if (newAddress > MAX_ADDRESS) U8(1) else U8(0)
+    val carry = if (newAddress > MEM_SIZE-1) U8(1) else U8(0)
 
     state.copy(
       index = newAddress,
-      register = state.register.set(STATUS_REGISTER_VF, carry),
+      register = state.register.set(STATUS_REGISTER_ID, carry),
       pc = state.pc + 2,
     )
   }
@@ -527,7 +527,7 @@ case class AddXPlusYCarry(op: String, xReg: U8, yReg: U8) extends Instruction { 
     val result: Int = x.ubyte + y.ubyte
 
     state.copy(
-      register = state.register.set(xReg, U8.valueOf(result & 0xff)).set(STATUS_REGISTER_VF, U8.valueOf(result > U8.MAX_INT)),
+      register = state.register.set(xReg, U8.valueOf(result & 0xff)).set(STATUS_REGISTER_ID, U8.valueOf(result > U8.MAX_INT)),
       pc = state.pc + 2
     )
   }

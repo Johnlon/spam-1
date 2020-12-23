@@ -4,7 +4,6 @@ import java.awt.Color
 import java.util.Objects
 
 import chip8.C8Terminal._
-import chip8.Screen.{HEIGHT, WIDTH}
 import javax.swing.BorderFactory
 
 import scala.collection.mutable
@@ -15,9 +14,9 @@ object C8Terminal {
 
   val FONT = "Courier New"
 
-  def BLANK: Pixel = ' '
+  def BLANK: PixelType = ' '
 
-  def PIXEL: Pixel = 0x2588.toChar
+  def PIXEL: PixelType = 0x2588.toChar
 
   val NO_CHAR: Char = 0
 
@@ -35,8 +34,8 @@ object C8Terminal {
 }
 
 class C8Terminal(
-                  width: Int = WIDTH,
-                  height: Int = HEIGHT,
+                  width: Int = SCREEN_WIDTH,
+                  height: Int = SCREEN_HEIGHT,
                   receiveKey: KeyEvent => Unit) extends SimpleSwingApplication with Publisher {
   term =>
 

@@ -1,10 +1,30 @@
 import java.lang.Integer.parseInt
 
 package object chip8 {
-  type Pixel = Char
+  type PixelType = Char
 
-  val MAX_ADDRESS = 0xfff
-  val STATUS_REGISTER_VF: Int = 0xF
+  val STATUS_REGISTER_ID: Int = 0xF
+
+  val SCREEN_HEIGHT = 32
+  val SCREEN_WIDTH = 64
+
+  val MEM_SIZE = 4096
+
+  val OLD_INTERPRETER_BOT = 0x000
+  val OLD_INTERPRETER_TOP = 0x1FF
+
+  val INTERNAL_BOT = 0xEA0
+  val INTERNAL_TOP = 0xEFF
+
+  val SCREEN_BUF_BOT = 0xF00
+  val SCREEN_BUF_TOP = 0xFFF
+
+  val INITIAL_PC = 0x200
+
+  val emptyRegisters: List[U8] = List.fill(16)(U8(0))
+  val emptyMemory: List[U8] = List.fill(MEM_SIZE)(U8(0))
+
+  assert((SCREEN_HEIGHT*SCREEN_WIDTH)/8 == (1 + SCREEN_BUF_TOP - SCREEN_BUF_BOT))
 
   case class U8(ubyte: Char) {
     override def toString() =  s"${ubyte.toHexString}(${ubyte.toInt & 0xff})"

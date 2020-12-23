@@ -1,25 +1,25 @@
 package chip8
 
-import chip8.Screen.{BLANK, NullListener, PIXEL}
+import chip8.Screen.{BLANK_CHAR, NullListener, BLOCK_CHAR}
 
 
 case class Screen(
-                   width: Int = Screen.WIDTH,
-                   height: Int = Screen.HEIGHT,
-                   buffer: List[String] = Screen.makeEmptyScreenBuffer(Screen.WIDTH, Screen.HEIGHT),
+                   buffer: List[String] = Screen.makeEmptyScreenbuffer1(SCREEN_WIDTH,SCREEN_HEIGHT),
                    publishDrawEvent: WritePixelEvent => Unit = NullListener
                  ) {
   def clear(): Screen = {
     this.copy(
-      buffer = Screen.makeEmptyScreenBuffer(width, height)
+      buffer = Screen.makeEmptyScreenbuffer1(SCREEN_WIDTH, SCREEN_HEIGHT)
     )
   }
 
-  def setPixel(x: Int, y: Int): (Screen, Boolean) = {
-    val xMod = x % width
-    val yMod = y % height
+//  def buffer : List[String] = buffer1
 
-    val wasSet = buffer(yMod)(xMod) != BLANK
+  def setPixel(x: Int, y: Int): (Screen, Boolean) = {
+    val xMod = x % SCREEN_WIDTH
+    val yMod = y % SCREEN_HEIGHT
+
+    val wasSet = buffer(yMod)(xMod) != BLANK_CHAR
 
     val row = buffer(yMod)
 
@@ -31,10 +31,10 @@ case class Screen(
     val erased = wasSet
     val updatedRow = if (wasSet) {
       publishDrawEvent(WritePixelEvent(xMod, yMod, false))
-      row.set(xMod, BLANK)
+      row.set(xMod, BLANK_CHAR)
     } else {
       publishDrawEvent(WritePixelEvent(xMod, yMod, true))
-      row.set(xMod, PIXEL)
+      row.set(xMod, BLOCK_CHAR)
     }
 
     // convert to string so it prints nicer in debugger
@@ -46,11 +46,8 @@ case class Screen(
 }
 
 object Screen {
-  private val BLANK: Pixel = ' '
-  val PIXEL: Pixel = 0x2588.toChar
-
-  val HEIGHT = 32
-  val WIDTH = 64
+  val BLANK_CHAR: PixelType = 32.toChar
+  val BLOCK_CHAR: PixelType = 0x2588.toChar
 
   def GAP = ""
 
@@ -58,7 +55,7 @@ object Screen {
 
   def paintScreen(screen: Screen): Unit = {
     println("--------\n")
-    (0 until screen.height).foreach { y =>
+    (0 until SCREEN_HEIGHT).foreach { y =>
 
       val str = screen.buffer(y).mkString(GAP)
       val lStr = f"$y%02d| $str |"
@@ -68,11 +65,11 @@ object Screen {
     }
   }
 
-  private def makeEmptyScreenBuffer(width: Int, height: Int): List[String] = {
-    fillScreenBuffer(BLANK, width, height)
+  private def makeEmptyScreenbuffer1(width: Int, height: Int): List[String] = {
+    fillScreenbuffer1(BLANK_CHAR, width, height)
   }
 
-  def fillScreenBuffer(c: Pixel, width: Int, height: Int): List[String] = {
+  def fillScreenbuffer1(c: PixelType, width: Int, height: Int): List[String] = {
     val value = (0 until height).map {
       _ =>
         c.toChar.toString * width
