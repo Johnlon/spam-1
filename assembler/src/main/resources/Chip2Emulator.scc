@@ -1,0 +1,35 @@
+program {
+    def main() {
+        uint8 PC_INIT=0x200;
+        uint8 STATE_NONE=0;
+        uint8 DO_NONE=0;
+        uint8 DO_CLEAR=1;
+
+        prog: BYTES [
+            00E0 // clear screen
+            6100 // V1 = 00
+            6100 // V2 = 01
+
+            A500 // I = 0500 = 0 = base of font
+            D125 // Draw '0' at X=0, y=1 (n=5 bytes hugh)
+            7101 // V1 = V1 + 1
+
+            A501 // I = 0501 = 1
+            D125 // Draw '1' at X=1, y=1
+            7101 // V1 = V1 + 1
+
+            A502 // I = 0502 = 2
+            D125 // Draw '2' at X=2, y=1
+            7101 // V1 = V1 + 1
+
+            1214 // jump to current location
+        ]
+
+        uint16 pc_lo=>:PC_INIT
+
+        uint8 pc_hi=<:PC_INIT
+
+        uint inst_hi = prog[:
+
+    }
+}
