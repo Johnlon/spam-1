@@ -2,7 +2,7 @@ package scc
 
 import scala.language.postfixOps
 
-trait ConstExpr {
+trait ConstExprParser {
   self: SpamCC =>
 
   def SEMICOLON = ";"

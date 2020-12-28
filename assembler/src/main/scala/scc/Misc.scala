@@ -6,11 +6,12 @@ sealed trait VarType extends E
 
 object IsData extends VarType
 
-object IsVar extends VarType
+object IsVar8 extends VarType
+object IsVar16 extends VarType
 
 object IsRef extends VarType
 
-case class Variable(name: String, fqn: String, pos: Int, bytes: List[Byte], typ: VarType)
+case class Variable(name: String, fqn: String, address: Int, bytes: List[Byte], typ: VarType)
 
 case class FunctionArg(name: String, isOutput: Boolean) {
   def dump(depth: Int): List[(Int, String)] = {

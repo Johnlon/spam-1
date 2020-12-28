@@ -93,6 +93,14 @@ object Verification {
   }
 
   def writeFile(roms: List[List[String]], tmpFileRom: File): Unit = {
+    if (tmpFileRom.getParentFile.exists()) {
+      if (!tmpFileRom.getParentFile.isDirectory) {
+        sys.error("expected a directory : " + tmpFileRom.getParentFile.getAbsolutePath)
+      }
+    } else {
+      tmpFileRom.getParentFile.mkdirs()
+    }
+
     val pw = new PrintWriter(tmpFileRom)
 
     roms.foreach { line =>

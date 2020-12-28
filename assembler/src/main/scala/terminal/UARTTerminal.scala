@@ -10,35 +10,41 @@ import org.apache.commons.io.input.{Tailer, TailerListener}
 import scala.swing.event._
 import scala.swing.{Rectangle, _}
 
-object UARTTerminal extends SimpleSwingApplication   {
+
+object UARTTerminal extends SimpleSwingApplication {
   val uartOut = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.out"
   val uartControl = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.control"
 
   val width = 50
-
   val height = 40
-  val BLANK = "."
 
-  var last: Char = 0
+  val BLANKCHAR = '.'
+  val BLANK = BLANKCHAR.toString
+
   var x = new AtomicInteger(0)
-
   var y = new AtomicInteger(0)
-
-  val UP: Char = 2
-  val DOWN: Char = 3
-  val LEFT: Char = 4
-  val RIGHT: Char = 5
 
   val K_UP: Char = 'U'
   val K_DOWN: Char = 'D'
   val K_LEFT: Char = 'L'
   val K_RIGHT: Char = 'R'
 
-  val ORIGIN: Char = 6
-  val CENTRE: Char = 7
-  val SETX: Char = 8
+  val DO_NONE: Char = 0
+  val DO_CLEAR: Char = 1
+  val DO_UP: Char = 2
+  val DO_DOWN: Char = 3
+  val DO_LEFT: Char = 4
+  val DO_RIGHT: Char = 5
+  val DO_ORIGIN: Char = 6
+  val DO_CENTRE: Char = 7
+  val DO_SETX: Char = 8
+  val DO_SETY: Char = 9
 
-  val SETY: Char = 9
+  val STATE_NONE: Char = 100  // next is a direct op like "RIGHT", or a signal to start a two byte binary value op like DRAW
+  val STATE_SETX: Char = 101
+  val STATE_SETY: Char = 102
+  val STATE_DRAW: Char = 103  // TODO THIS COULD BE START_DRAW & LENGTH TO AVOID COST OF "DRAW/CHAR","DRAW/DHAR" pairs
+  var state: Char = STATE_NONE
 
   var data = fill()
 
@@ -47,7 +53,7 @@ object UARTTerminal extends SimpleSwingApplication   {
 
   private def run(): Unit = {
     val listener = new FileListener
-    Tailer.create(  new File(uartOut), listener, 0, true, false, 1000)
+    Tailer.create(new File(uartOut), listener, 0, true, false, 1000)
   }
 
   class FileListener extends TailerListener {
@@ -64,7 +70,7 @@ object UARTTerminal extends SimpleSwingApplication   {
     override def init(tailer: Tailer): Unit = {}
 
     override def fileNotFound(): Unit = {
-//      println("file not found")
+      //      println("file not found")
       Thread.sleep(1000)
     }
 
@@ -86,7 +92,7 @@ object UARTTerminal extends SimpleSwingApplication   {
     text.preferredSize = new Dimension(650, 600)
     text.font = new Font(Font.Monospaced, scala.swing.Font.Plain.id, 10)
 
-    plot(CENTRE)
+    plot(DO_CENTRE)
 
     listenTo(text.keys, brefresh, bpaint)
 
@@ -110,16 +116,16 @@ object UARTTerminal extends SimpleSwingApplication   {
         doRepaint()
 
       case KeyPressed(_, c, _, _) if c == Key.Left =>
-        send(LEFT)
+        send(DO_LEFT)
         send('#')
       case KeyPressed(_, c, _, _) if c == Key.Right =>
-        send(RIGHT)
+        send(DO_RIGHT)
         send('#')
       case KeyPressed(_, c, _, _) if c == Key.Up =>
-        send(UP)
+        send(DO_UP)
         send('#')
       case KeyPressed(_, c, _, _) if c == Key.Down =>
-        send(DOWN)
+        send(DO_DOWN)
         send('#')
       case _ =>
     }
@@ -134,51 +140,68 @@ object UARTTerminal extends SimpleSwingApplication   {
   }
 
 
-  def doRepaint(): Unit ={
-    val t = "\n" + data.map("   " + _.mkString(" ")).mkString("\n")
+  def doRepaint(): Unit = {
+    val LEFT_MARGIN = "   "
+    val GAP = " "
+
+    val t = "\n" + data.map(LEFT_MARGIN + _.mkString(GAP)).mkString("\n")
     text.text = t
-//    text.repaint()
+    //    text.repaint()
+  }
+
+  def clearScreen(): Unit = {
+    (0 to height) foreach {
+      h =>
+        (0 to width) foreach {
+          w =>
+            data(h)(w) = BLANKCHAR
+        }
+    }
   }
 
   def plot(c: Char): Unit = synchronized {
-    last match {
-      case SETX =>
+    state match {
+      case STATE_SETX =>
+        state = STATE_NONE
         x.set(c)
-        last = 0
-      case SETY =>
+      case STATE_SETY =>
+        state = STATE_NONE
         y.set(c)
-        last = 0
-      case _ =>
+      case STATE_DRAW =>
+        state = STATE_NONE
+        val yi = y.get()
+        val xi = x.get()
+        data(yi)(xi) = c
+      case STATE_NONE =>
         c match {
-          case SETX =>
-            last = SETX
-          case SETY =>
-            last = SETY
-          case ORIGIN =>
+          case DO_NONE => // useful for resynchronisation - emit two 00 bytes in sequence
+          case DO_CLEAR =>
+            clearScreen()
+          case DO_SETX =>
+            state = STATE_SETX
+          case DO_SETY =>
+            state = STATE_SETY
+          case DO_ORIGIN =>
             y.set(0)
             x.set(0)
-          case CENTRE =>
+          case DO_CENTRE =>
             y.set(height / 2)
             x.set(width / 2)
-          case UP =>
+          case DO_UP =>
             y.decrementAndGet()
             y.set(Math.max(0, y.get()))
-          case DOWN =>
+          case DO_DOWN =>
             y.incrementAndGet()
-            y.set(Math.min(height-1, y.get()))
-          case LEFT =>
+            y.set(Math.min(height - 1, y.get()))
+          case DO_LEFT =>
             x.decrementAndGet()
             x.set(Math.max(0, x.get()))
-          case RIGHT =>
+          case DO_RIGHT =>
             x.incrementAndGet()
             if (x.get() >= width) {
               x.set(0)
-              plot(DOWN)
+              plot(DO_DOWN)
             }
-          case c =>
-            val yi = y.get()
-            val xi = x.get()
-            data(yi)(xi) = c
         }
     }
 
@@ -191,7 +214,6 @@ object UARTTerminal extends SimpleSwingApplication   {
         (BLANK * width).toBuffer
     }.toBuffer
   }
-
 
 
 }
