@@ -13,9 +13,9 @@ object IsRef extends VarType
 
 case class Variable(name: String, fqn: String, address: Int, bytes: List[Byte], typ: VarType)
 
-case class FunctionArg(name: String, isOutput: Boolean) {
+case class FunctionArg(argName: String, isOutput: Boolean) {
   def dump(depth: Int): List[(Int, String)] = {
-    val o = name + " " + (if (isOutput) "out" else "")
+    val o = argName + " " + (if (isOutput) "out" else "")
     List((depth + 1, o))
   }
 }

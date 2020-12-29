@@ -5,10 +5,6 @@ import scc.SpamCC.split
 
 import scala.language.postfixOps
 
-sealed trait IsCompoundExpressionBlock {
-  def variableName: Option[String]
-}
-
 trait IsStandaloneVarExpr {
   def variableName: String
 }
@@ -33,7 +29,7 @@ trait ExprParser {
       BlkConst(konst)
   }
 
-  def blkCompoundAluExpr: Parser[Block] = blkExpr ~ ((aluOp ~ blkExpr) *) ^^ {
+  def blkCompoundAluExpr: Parser[BlkCompoundAluExpr] = blkExpr ~ ((aluOp ~ blkExpr) *) ^^ {
     case leftExpr ~ otherExpr =>
       val o = otherExpr map {
         case a ~ e => AluExpr(a, e)
@@ -111,7 +107,7 @@ case class BlkConst(konst: Int) extends Block {
 
 case class AluExpr(aluop: String, rhs: Block)
 
-case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends Block with IsCompoundExpressionBlock {
+case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends Block with BlockWith16BitValue {
   val description: String = otherExpr.foldLeft(leftExpr.toString) {
     case (acc, b) =>
       s"$acc ${b.aluop} (${b.rhs})"
@@ -163,8 +159,8 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
     leftStatement ++ optionalExtraForRight
   }
 
-  /* populated only if this block evaluates to a standalone variable reference*/
-  override def variableName: Option[String] = {
+  /* populated only if this block evaluates to a standalone variable reference */
+  def standaloneVariableName: Option[String] = {
     // return a variable name ONLY if this expression is simply a standalone variable name
     if (otherExpr.isEmpty) {
       // is a single clause

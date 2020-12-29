@@ -1,6 +1,7 @@
 package scc
 
 import scc.Scope.LABEL_NAME_SEPARATOR
+import scc.SpamCC.ONE_BYTE_STORAGE
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -62,7 +63,7 @@ case class Scope private(parent: Scope,
     functions.append(newReg)
   }
 
-  def assignVarLabel(name: String, typ: VarType, data: List[Byte] = List(0)): Variable = {
+  def assignVarLabel(name: String, typ: VarType, data: List[Byte] = ONE_BYTE_STORAGE): Variable = {
     val label = lookupVarLabel(name)
 
     label.map { existing =>

@@ -27,7 +27,7 @@ package scc
 import java.io.{File, PrintWriter}
 
 import asm.{AluOp, EnumParserOps}
-import scc.SpamCC.{MAIN_LABEL, intTo2xBytes, split}
+import scc.SpamCC.{MAIN_LABEL, TWO_BYTE_STORAGE, intTo2xBytes, split}
 
 import scala.collection.mutable
 import scala.io.Source
@@ -39,6 +39,8 @@ import scala.util.parsing.input.Positional
 object SpamCC {
   val ZERO = 0.toByte
   val MAIN_LABEL = "ROOT________main_start"
+  val ONE_BYTE_STORAGE = List(0.toByte)
+  val TWO_BYTE_STORAGE = List(0.toByte, 0.toByte)
 
   def main(args: Array[String]): Unit = {
     if (args.length == 1) {
@@ -92,7 +94,7 @@ object SpamCC {
   }
 }
 
-class SpamCC extends  ExprParser with ConstExprParser with ConditionParser with EnumParserOps with JavaTokenParsers {
+class SpamCC extends ExprParser with ConstExprParser with ConditionParser with EnumParserOps with JavaTokenParsers {
 
   val SPACE = " "
 
@@ -116,11 +118,12 @@ class SpamCC extends  ExprParser with ConstExprParser with ConditionParser with 
   def statement: Parser[Block] = positioned {
     comment |
       statementUInt8Eq |
-//      statementVarEqVarOpVar |
-//      statementVarEqVar |
-//      statementVarEqVarOpConst |
-//      statementVarEqConstOpVar |
-//      statementVarEqConst |
+      statementUInt16Eq |
+      //      statementVarEqVarOpVar |
+      //      statementVarEqVar |
+      //      statementVarEqVarOpConst |
+      //      statementVarEqConstOpVar |
+      //      statementVarEqConst |
       statementVarEqOp |
       statementRef |
       statementLetVarEqConst |
@@ -142,7 +145,7 @@ class SpamCC extends  ExprParser with ConstExprParser with ConditionParser with 
   }
 
   // optimisation of "var VARIABLE=CONST"
-  def statementVarEqConst: Parser[Block] = positioned {
+  def statementVarEqConst: Parser[DefVarEqConst] = positioned {
     "var" ~> name ~ "=" ~ constExpression <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ konst =>
         DefVarEqConst(targetVar, konst)
@@ -150,7 +153,7 @@ class SpamCC extends  ExprParser with ConstExprParser with ConditionParser with 
   }
 
   // optimisation of "var VARIABLE=CONST op VARIABLE"
-  def statementVarEqConstOpVar: Parser[Block] = positioned {
+  def statementVarEqConstOpVar: Parser[DefVarEqConstOpVar] = positioned {
     "var" ~> name ~ "=" ~ constExpression ~ aluOp ~ name <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ konst ~ oper ~ srcVar =>
         DefVarEqConstOpVar(targetVar, konst, oper, srcVar)
@@ -158,7 +161,7 @@ class SpamCC extends  ExprParser with ConstExprParser with ConditionParser with 
   }
 
   // optimisation of "var VARIABLE=VARIABLE op CONST"
-  def statementVarEqVarOpConst: Parser[Block] = positioned {
+  def statementVarEqVarOpConst: Parser[DefVarEqVarOpConst] = positioned {
     "var" ~> name ~ "=" ~ name ~ aluOp ~ constExpression <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ srcVar ~ op ~ konst =>
         DefVarEqVarOpConst(targetVar, srcVar, op, konst)
@@ -166,7 +169,7 @@ class SpamCC extends  ExprParser with ConstExprParser with ConditionParser with 
   }
 
   // optimisation of "var VARIABLE=VARIABLE"
-  def statementVarEqVar: Parser[Block] = positioned {
+  def statementVarEqVar: Parser[DefVarEqVar] = positioned {
     "var" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ srcVar =>
         DefVarEqVar(targetVar, srcVar)
@@ -174,7 +177,7 @@ class SpamCC extends  ExprParser with ConstExprParser with ConditionParser with 
   }
 
   // optimisation of "var VARIABLE=VARIABLE op VARIABLE"
-  def statementVarEqVarOpVar: Parser[Block] = positioned {
+  def statementVarEqVarOpVar: Parser[DefVarEqVarOpVar] = positioned {
     "var" ~> name ~ "=" ~ name ~ aluOp ~ name <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ srcVar1 ~ op ~ srcVar2 =>
         DefVarEqVarOpVar(targetVar, srcVar1, op, srcVar2)
@@ -182,28 +185,28 @@ class SpamCC extends  ExprParser with ConstExprParser with ConditionParser with 
   }
 
   // general purpose
-  def statementVarEqOp: Parser[Block] = positioned {
+  def statementVarEqOp: Parser[DefUint8EqExpr] = positioned {
     "var" ~> name ~ "=" ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ block => DefUint8EqExpr(targetVar, block)
     }
   }
 
   // general purpose
-  def statementUInt8Eq: Parser[Block] = positioned {
+  def statementUInt8Eq: Parser[DefUint8EqExpr] = positioned {
     "uint8" ~> name ~ "=" ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ block => DefUint8EqExpr(targetVar, block)
     }
   }
 
   // general purpose
-  def statementUInt16Eq: Parser[Block] = positioned {
+  def statementUInt16Eq: Parser[DefUint16EqExpr] = positioned {
     "uint16" ~> name ~ "=" ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ block => DefUint16EqExpr(targetVar, block)
     }
   }
 
   // optimisation of "let VARIABLE=CONST"
-  def statementLetVarEqConst: Parser[Block] = positioned {
+  def statementLetVarEqConst: Parser[LetVarEqConst] = positioned {
     name ~ "=" ~ constExpression <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ konst =>
         LetVarEqConst(targetVar, konst)
@@ -211,14 +214,14 @@ class SpamCC extends  ExprParser with ConstExprParser with ConditionParser with 
   }
 
   // general purpose
-  def statementLetVarEqExpr: Parser[Block] = positioned {
+  def statementLetVarEqExpr: Parser[LetVarEqExpr] = positioned {
     name ~ "=" ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
       case target ~ _ ~ expr =>
         LetVarEqExpr(target, expr)
     }
   }
 
-  def statementLetVarEqVar: Parser[Block] = positioned {
+  def statementLetVarEqVar: Parser[LetVarEqVar] = positioned {
     name ~ "=" ~ name <~ SEMICOLON ^^ {
       case targetVarName ~ _ ~ srcVarName =>
         LetVarEqVar(targetVarName, srcVarName)
@@ -229,13 +232,13 @@ class SpamCC extends  ExprParser with ConstExprParser with ConditionParser with 
   STRING:     STR     "ABC\n\0\u0000"
   BYTE_ARR:   BYTES   [ 'A', 65 ,$41, %10101010 ] ; parse as hex bytes and then treat as per STR
   */
-  def statementVarString: Parser[Block] = positioned {
+  def statementVarString: Parser[DefVarEqString] = positioned {
     "var" ~> name ~ "=" ~ quotedString <~ SEMICOLON ^^ {
       case target ~ _ ~ str => DefVarEqString(target, str)
     }
   }
 
-  def statementRef: Parser[Block] = positioned {
+  def statementRef: Parser[DefRefEqVar] = positioned {
     "ref" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
       case refName ~ _ ~ target => DefRefEqVar(refName, target)
     }
@@ -274,7 +277,8 @@ class SpamCC extends  ExprParser with ConstExprParser with ConditionParser with 
   }
 
   def argumentDefTerm: Parser[FunctionArg] = name ~ opt("out") ^^ {
-    case name ~ isOutput => FunctionArg(name, isOutput.isDefined)
+    case name ~ isOutput =>
+      FunctionArg(name, isOutput.isDefined)
   }
 
   def functionDef: Parser[Block] = positioned {
@@ -292,7 +296,7 @@ class SpamCC extends  ExprParser with ConstExprParser with ConditionParser with 
 
   def whileTrue: Parser[Block] = positioned {
     ("while" ~ "(" ~ "true" ~ ")" ~ "{") ~> statements <~ "}" ^^ {
-      case content => WhileTrue(content)
+      content => WhileTrue(content)
     }
   }
 
@@ -418,11 +422,11 @@ case class DefUint8EqExpr(targetVar: String, block: Block) extends Block {
       List((depth, ")"))
 }
 
-case class DefUint16EqExpr(targetVar: String, block: Block) extends Block {
+case class DefUint16EqExpr(targetVar: String, block: Block with BlockWith16BitValue) extends Block {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val stmts: List[String] = block.expr(depth + 1, parent)
 
-    val labelTarget = parent.assignVarLabel(targetVar, IsVar16).fqn
+    val labelTarget = parent.assignVarLabel(targetVar, IsVar16, data = TWO_BYTE_STORAGE).fqn
 
     val assign = List(
       s"[:$labelTarget] = REGA",
@@ -889,7 +893,7 @@ case class Break() extends Block {
   }
 }
 
-case class CallFunction(fnName: String, argExpr: List[Block]) extends Block {
+case class CallFunction(fnName: String, argExpr: List[BlkCompoundAluExpr]) extends Block {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val fns = parent.lookupFunction(fnName)
     val (functionScope: Scope, fn: Block with IsFunction) = fns.getOrElse(sys.error(s"no such function '$fnName''"))
@@ -899,7 +903,7 @@ case class CallFunction(fnName: String, argExpr: List[Block]) extends Block {
     val argNamesAndDir: List[FunctionArg] = fn.functionArgs
 
     if (argExpr.length != argNamesAndDir.size) {
-      val argsNames = argNamesAndDir.map(_.name)
+      val argsNames = argNamesAndDir.map(_.argName)
       sys.error(
         s"""call to function "$fnName" has wrong number of arguments for ; expected $fnName(${
           argsNames.mkString(",")
@@ -921,35 +925,23 @@ case class CallFunction(fnName: String, argExpr: List[Block]) extends Block {
 
     // instructions needed to capture the output of the function into local vars within the caller's scope
     val setupOutParams: List[String] = argDefinitionVsExpression.flatMap {
-      case (FunctionArgNameAndLabel(argLabel, nameAndOutput), argBlk) =>
-        if (nameAndOutput.isOutput) {
-          // if this arg is defined as an output then ...
-          argBlk match {
-            case v: IsCompoundExpressionBlock =>
-              // is this expression a standalone variable name reference?
-              val vn = v.variableName
-              vn match {
-                case Some(name) =>
-                  val localVarLabel = parent.lookupVarLabel(name).getOrElse {
-                    sys.error(s"""output parameter variable '$name' in call to function "$fnName" is not defined""")
-                  }.fqn
+      case (FunctionArgNameAndLabel(argLabel, functionArg), argBlk) =>
+        if (functionArg.isOutput) {
+          val argName = functionArg.argName
+          argBlk.standaloneVariableName match {
+            case Some(name) =>
+              val localVarLabel = parent.lookupVarLabel(name).getOrElse {
+                sys.error(s"""output parameter variable '$name' in call to function "$fnName" is not defined""")
+              }.fqn
 
-                  // recover ourput value from the function and assign back to the local variable
-                  List(
-                    s"REGA = [:$argLabel]",
-                    s"[:$localVarLabel] = REGA"
-                  )
-                case _ =>
-                  sys.error(
-                    s"""output parameter '${
-                      nameAndOutput.name
-                    }' in call to function "$fnName" is not a pure variable reference, but is '$v'""")
-              }
-            case somethingElse =>
+              // recover ourput value from the function and assign back to the local variable
+              List(
+                s"REGA = [:$argLabel]",
+                s"[:$localVarLabel] = REGA"
+              )
+            case _ =>
               sys.error(
-                s"""output parameter '${
-                  nameAndOutput.name
-                }' in call to function "$fnName" is not a pure variable reference, but is '$somethingElse'""")
+                s"""value of output parameter '$argName' in call to function "$fnName" is not a pure variable reference, but is '$argBlk'""")
           }
         }
         else // not an output param
@@ -1049,7 +1041,7 @@ trait IsFunction {
     // Also, read from these locations to fetch "out" values.
     val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.map {
       argName =>
-        FunctionArgNameAndLabel(scope.assignVarLabel(argName.name, IsVar8).fqn, FunctionArg(argName.name, argName.isOutput))
+        FunctionArgNameAndLabel(scope.assignVarLabel(argName.argName, IsVar8).fqn, FunctionArg(argName.argName, argName.isOutput))
     }
     val fnStart = scope.toFqLabelPath("START")
 
@@ -1063,7 +1055,7 @@ trait IsFunction {
     // Also, read from these locations to fetch "out" values.
     val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.map {
       argName =>
-        FunctionArgNameAndLabel(scope.getVarLabel(argName.name, IsVar8).fqn, FunctionArg(argName.name, argName.isOutput))
+        FunctionArgNameAndLabel(scope.getVarLabel(argName.argName, IsVar8).fqn, FunctionArg(argName.argName, argName.isOutput))
     }
     val fnStart = scope.toFqLabelPath("START")
 
@@ -1127,6 +1119,6 @@ abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) exte
 }
 
 // TODO : Use me to mark blocks that have a value and len of value
-trait BlockWithValue {
+trait BlockWith16BitValue {
   self: Block =>
 }
