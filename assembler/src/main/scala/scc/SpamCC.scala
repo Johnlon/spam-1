@@ -21,6 +21,7 @@ todo:
    maybe restrict signs to the ops??
 
  */
+// TODO: Add some traps for stupid errors like putchar("...") which I wasted loads of time on
 
 package scc
 
@@ -117,14 +118,14 @@ class SpamCC extends ExprParser with ConstExprParser with ConditionParser with E
 
   def statement: Parser[Block] = positioned {
     comment |
-      statementUInt8Eq |
+      //statementUInt8Eq |
       statementUInt16Eq |
       //      statementVarEqVarOpVar |
       //      statementVarEqVar |
       //      statementVarEqVarOpConst |
       //      statementVarEqConstOpVar |
       //      statementVarEqConst |
-      statementVarEqOp |
+      //      statementVarEqOp |
       statementRef |
       statementLetVarEqConst |
       statementLetVarEqVar |
@@ -144,59 +145,60 @@ class SpamCC extends ExprParser with ConstExprParser with ConditionParser with E
       a +: b
   }
 
-  // optimisation of "var VARIABLE=CONST"
-  def statementVarEqConst: Parser[DefVarEqConst] = positioned {
-    "var" ~> name ~ "=" ~ constExpression <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ konst =>
-        DefVarEqConst(targetVar, konst)
-    }
-  }
-
-  // optimisation of "var VARIABLE=CONST op VARIABLE"
-  def statementVarEqConstOpVar: Parser[DefVarEqConstOpVar] = positioned {
-    "var" ~> name ~ "=" ~ constExpression ~ aluOp ~ name <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ konst ~ oper ~ srcVar =>
-        DefVarEqConstOpVar(targetVar, konst, oper, srcVar)
-    }
-  }
-
-  // optimisation of "var VARIABLE=VARIABLE op CONST"
-  def statementVarEqVarOpConst: Parser[DefVarEqVarOpConst] = positioned {
-    "var" ~> name ~ "=" ~ name ~ aluOp ~ constExpression <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ srcVar ~ op ~ konst =>
-        DefVarEqVarOpConst(targetVar, srcVar, op, konst)
-    }
-  }
-
-  // optimisation of "var VARIABLE=VARIABLE"
-  def statementVarEqVar: Parser[DefVarEqVar] = positioned {
-    "var" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ srcVar =>
-        DefVarEqVar(targetVar, srcVar)
-    }
-  }
-
-  // optimisation of "var VARIABLE=VARIABLE op VARIABLE"
-  def statementVarEqVarOpVar: Parser[DefVarEqVarOpVar] = positioned {
-    "var" ~> name ~ "=" ~ name ~ aluOp ~ name <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ srcVar1 ~ op ~ srcVar2 =>
-        DefVarEqVarOpVar(targetVar, srcVar1, op, srcVar2)
-    }
-  }
-
-  // general purpose
-  def statementVarEqOp: Parser[DefUint8EqExpr] = positioned {
-    "var" ~> name ~ "=" ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ block => DefUint8EqExpr(targetVar, block)
-    }
-  }
+  //
+  //  // optimisation of "var VARIABLE=CONST"
+  //  def statementVarEqConst: Parser[DefVarEqConst] = positioned {
+  //    "var" ~> name ~ "=" ~ constExpression <~ SEMICOLON ^^ {
+  //      case targetVar ~ _ ~ konst =>
+  //        Def`VarEqConst(targetVar, konst)
+  //    }
+  //  }
+  //
+  //  // optimisation of "var VARIABLE=CONST op VARIABLE"
+  //  def statementVarEqConstOpVar: Parser[DefVarEqConstOpVar] = positioned {
+  //    "var" ~> name ~ "=" ~ constExpression ~ aluOp ~ name <~ SEMICOLON ^^ {
+  //      case targetVar ~ _ ~ konst ~ oper ~ srcVar =>
+  //        DefVarEqConstOpVar(targetVar, konst, oper, srcVar)
+  //    }
+  //  }
+  //
+  //  // optimisation of "var VARIABLE=VARIABLE op CONST"
+  //  def statementVarEqVarOpConst: Parser[DefVarEqVarOpConst] = positioned {
+  //    "var" ~> name ~ "=" ~ name ~ aluOp ~ constExpression <~ SEMICOLON ^^ {
+  //      case targetVar ~ _ ~ srcVar ~ op ~ konst =>
+  //        DefVarEqVarOpConst(targetVar, srcVar, op, konst)
+  //    }
+  //  }
+  //
+  //  // optimisation of "var VARIABLE=VARIABLE"
+  //  def statementVarEqVar: Parser[DefVarEqVar] = positioned {
+  //    "var" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
+  //      case targetVar ~ _ ~ srcVar =>
+  //        DefVarEqVar(targetVar, srcVar)
+  //    }
+  //  }
+  //
+  //  // optimisation of "var VARIABLE=VARIABLE op VARIABLE"
+  //  def statementVarEqVarOpVar: Parser[DefVarEqVarOpVar] = positioned {
+  //    "var" ~> name ~ "=" ~ name ~ aluOp ~ name <~ SEMICOLON ^^ {
+  //      case targetVar ~ _ ~ srcVar1 ~ op ~ srcVar2 =>
+  //        DefVarEqVarOpVar(targetVar, srcVar1, op, srcVar2)
+  //    }
+  //  }
 
   // general purpose
-  def statementUInt8Eq: Parser[DefUint8EqExpr] = positioned {
-    "uint8" ~> name ~ "=" ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ block => DefUint8EqExpr(targetVar, block)
-    }
-  }
+  //  def statementVarEqOp: Parser[DefUint8EqExpr] = positioned {
+  //    "var" ~> name ~ "=" ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
+  //      case targetVar ~ _ ~ block => DefUint8EqExpr(targetVar, block)
+  //    }
+  //  }
+  //
+  //  // general purpose
+  //  def statementUInt8Eq: Parser[DefUint8EqExpr] = positioned {
+  //    "uint8" ~> name ~ "=" ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
+  //      case targetVar ~ _ ~ block => DefUint8EqExpr(targetVar, block)
+  //    }
+  //  }
 
   // general purpose
   def statementUInt16Eq: Parser[DefUint16EqExpr] = positioned {
@@ -269,7 +271,6 @@ class SpamCC extends ExprParser with ConstExprParser with ConditionParser with E
     }
   }
 
-
   def stmtPutcharGeneral: Parser[Block] = positioned {
     "putchar" ~ "(" ~> blkCompoundAluExpr <~ ")" ^^ {
       block => PutChar(block)
@@ -283,7 +284,8 @@ class SpamCC extends ExprParser with ConstExprParser with ConditionParser with E
 
   def functionDef: Parser[Block] = positioned {
     "fun " ~> name ~ "(" ~ repsep(argumentDefTerm, ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
-      case fnName ~ _ ~ args ~ _ ~ content => DefFunction(fnName, args, content)
+      case fnName ~ _ ~ args ~ _ ~ content =>
+        DefFunction(fnName, args, content)
     }
   }
 
@@ -345,91 +347,93 @@ class SpamCC extends ExprParser with ConstExprParser with ConditionParser with E
   }
 }
 
-case class DefVarEqConst(targetVar: String, konst: Int) extends Block {
-  override def gen(depth: Int, parent: Scope): List[String] = {
-    val label = parent.assignVarLabel(targetVar, IsVar8).fqn
-    List(
-      s"[:$label] = $konst",
-    )
-  }
-}
+//
+//case class DefVarEqConst(targetVar: String, konst: Int) extends Block {
+//  override def gen(depth: Int, parent: Scope): List[String] = {
+//    val label = parent.assignVarLabel(targetVar, IsVar8).fqn
+//    List(
+//      s"[:$label] = $konst",
+//    )
+//  }
+//}
+//
+//case class DefVarEqConstOpVar(targetVar: String, konst: Int, oper: String, srcVar: String) extends Block {
+//  override def gen(depth: Int, parent: Scope): List[String] = {
+//    val sLabel = parent.getVarLabel(srcVar).fqn
+//    val tLabel = parent.assignVarLabel(targetVar, IsVar8).fqn
+//    List(
+//      s"$WORKLO = $konst",
+//      s"$WORKLO = $WORKLO $oper [:$sLabel]",
+//      s"[:$tLabel] = $WORKLO",
+//    )
+//  }
+//}
+//
+//case class DefVarEqVarOpConst(targetVar: String, srcVar: String, op: String, konst: Int) extends Block {
+//  override def gen(depth: Int, parent: Scope): List[String] = {
+//    val sLabel = parent.getVarLabel(srcVar).fqn
+//    val tLabel = parent.assignVarLabel(targetVar, IsVar8).fqn
+//    List(
+//      s"$WORKLO = [:$sLabel]",
+//      s"$WORKLO = $WORKLO $op $konst",
+//      s"[:$tLabel] = $WORKLO",
+//    )
+//  }
+//}
+//
+//
+//case class DefVarEqVar(targetVar: String, srcVar: String) extends Block {
+//  override def gen(depth: Int, parent: Scope): List[String] = {
+//    val sLabel = parent.getVarLabel(srcVar).fqn
+//    val tLabel = parent.assignVarLabel(targetVar, IsVar8).fqn
+//    List(
+//      s"$WORKLO = [:$sLabel]",
+//      s"[:$tLabel] = $WORKLO",
+//    )
+//  }
+//}
+//
+//case class DefVarEqVarOpVar(targetVar: String, srcVar1: String, op: String, srcVar2: String) extends Block {
+//  override def gen(depth: Int, parent: Scope): List[String] = {
+//    val s1Label = parent.getVarLabel(srcVar1).fqn
+//    val s2Label = parent.getVarLabel(srcVar2).fqn
+//    val tLabel = parent.assignVarLabel(targetVar, IsVar8).fqn
+//    List(
+//      s"$WORKLO = [:$s1Label]",
+//      s"$V2 = [:$s2Label]",
+//      s"[:$tLabel] = $WORKLO $op $V2",
+//    )
+//  }
+//}
+//
+//case class DefUint8EqExpr(targetVar: String, block: Block) extends Block {
+//  override def gen(depth: Int, parent: Scope): List[String] = {
+//
+//    val stmts: List[String] = block.expr(depth + 1, parent)
+//
+//    val labelTarget = parent.assignVarLabel(targetVar, IsVar8).fqn
+//
+//    val assign = List(
+//      s"[:$labelTarget] = $WORKLO",
+//    )
+//    stmts ++ assign
+//  }
+//
+//  override def dump(depth: Int): List[(Int, String)] =
+//    List((depth, this.getClass.getSimpleName + "("), (depth + 1, targetVar)) ++
+//      block.dump(depth + 1) ++
+//      List((depth, ")"))
+//}
 
-case class DefVarEqConstOpVar(targetVar: String, konst: Int, oper: String, srcVar: String) extends Block {
-  override def gen(depth: Int, parent: Scope): List[String] = {
-    val sLabel = parent.getVarLabel(srcVar).fqn
-    val tLabel = parent.assignVarLabel(targetVar, IsVar8).fqn
-    List(
-      s"REGA = $konst",
-      s"REGA = REGA $oper [:$sLabel]",
-      s"[:$tLabel] = REGA",
-    )
-  }
-}
-
-case class DefVarEqVarOpConst(targetVar: String, srcVar: String, op: String, konst: Int) extends Block {
-  override def gen(depth: Int, parent: Scope): List[String] = {
-    val sLabel = parent.getVarLabel(srcVar).fqn
-    val tLabel = parent.assignVarLabel(targetVar, IsVar8).fqn
-    List(
-      s"REGA = [:$sLabel]",
-      s"REGA = REGA $op $konst",
-      s"[:$tLabel] = REGA",
-    )
-  }
-}
-
-
-case class DefVarEqVar(targetVar: String, srcVar: String) extends Block {
-  override def gen(depth: Int, parent: Scope): List[String] = {
-    val sLabel = parent.getVarLabel(srcVar).fqn
-    val tLabel = parent.assignVarLabel(targetVar, IsVar8).fqn
-    List(
-      s"REGA = [:$sLabel]",
-      s"[:$tLabel] = REGA",
-    )
-  }
-}
-
-case class DefVarEqVarOpVar(targetVar: String, srcVar1: String, op: String, srcVar2: String) extends Block {
-  override def gen(depth: Int, parent: Scope): List[String] = {
-    val s1Label = parent.getVarLabel(srcVar1).fqn
-    val s2Label = parent.getVarLabel(srcVar2).fqn
-    val tLabel = parent.assignVarLabel(targetVar, IsVar8).fqn
-    List(
-      s"REGA = [:$s1Label]",
-      s"REGB = [:$s2Label]",
-      s"[:$tLabel] = REGA $op REGB",
-    )
-  }
-}
-
-case class DefUint8EqExpr(targetVar: String, block: Block) extends Block {
-  override def gen(depth: Int, parent: Scope): List[String] = {
-
-    val stmts: List[String] = block.expr(depth + 1, parent)
-
-    val labelTarget = parent.assignVarLabel(targetVar, IsVar8).fqn
-
-    val assign = List(
-      s"[:$labelTarget] = REGA",
-    )
-    stmts ++ assign
-  }
-
-  override def dump(depth: Int): List[(Int, String)] =
-    List((depth, this.getClass.getSimpleName + "("), (depth + 1, targetVar)) ++
-      block.dump(depth + 1) ++
-      List((depth, ")"))
-}
-
-case class DefUint16EqExpr(targetVar: String, block: Block with BlockWith16BitValue) extends Block {
+case class DefUint16EqExpr(targetVar: String, block: Block) extends Block {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val stmts: List[String] = block.expr(depth + 1, parent)
 
     val labelTarget = parent.assignVarLabel(targetVar, IsVar16, data = TWO_BYTE_STORAGE).fqn
 
     val assign = List(
-      s"[:$labelTarget] = REGA",
+      s"[:$labelTarget] = $WORKLO",
+      s"[:$labelTarget+1] = $WORKHI",
     )
     stmts ++ assign
   }
@@ -440,6 +444,7 @@ case class DefUint16EqExpr(targetVar: String, block: Block with BlockWith16BitVa
       List((depth, ")"))
 }
 
+// optimisation
 case class LetVarEqConst(targetVar: String, konst: Int) extends Block {
 
   override def gen(depth: Int, parent: Scope): List[String] = {
@@ -447,29 +452,33 @@ case class LetVarEqConst(targetVar: String, konst: Int) extends Block {
     val fqn = variable.fqn
 
     variable.typ match {
-      case IsVar8 | IsData =>
+      //      case IsVar8 | IsData =>
+      case IsVar16 | IsData =>
         List(
           s"; let var $targetVar = $konst",
-          s"[:$fqn] = $konst",
+          s"[:$fqn] = > $konst",
+          s"[:$fqn + 1] = < $konst",
         )
       case IsRef =>
         List(
           s"; let ref $targetVar = $konst",
           s"[:$fqn] = <$konst",
-          s"[:$fqn+1] = >$konst "
+          s"[:$fqn + 1] = >$konst "
         )
     }
   }
 }
 
+// general purpose
 case class LetVarEqExpr(targetVar: String, block: Block) extends Block {
   override def gen(depth: Int, parent: Scope): List[String] = {
 
     val stmts: List[String] = block.expr(depth + 1, parent)
-    val labelTarget = parent.getVarLabel(targetVar, IsVar8).fqn
+    val labelTarget = parent.getVarLabel(targetVar, IsVar16).fqn
 
     val assign = List(
-      s"[:$labelTarget] = REGA",
+      s"[:$labelTarget] = $WORKLO",
+      s"[:$labelTarget + 1] = $WORKHI",
     )
     stmts ++ assign
   }
@@ -482,24 +491,31 @@ case class LetVarEqExpr(targetVar: String, block: Block) extends Block {
       List((depth, ")"))
 }
 
+// optimisation
 case class LetVarEqVar(targetVarName: String, srcVarName: String) extends Block {
   override def gen(depth: Int, parent: Scope): List[String] = {
 
-    val srcVar = parent.getVarLabel(srcVarName)
-    val targVar = parent.getVarLabel(targetVarName)
+    val src = parent.getVarLabel(srcVarName)
+    val targ = parent.getVarLabel(targetVarName)
 
-    targVar.typ match {
-      case IsVar8 | IsData =>
+    val srcFqn = parent.getVarLabel(srcVarName)
+    val targFqn = parent.getVarLabel(targetVarName)
+
+    targ.typ match {
+      //      case IsVar8 | IsData =>
+      case IsVar16 | IsData =>
         List(
-          s"REGA = [:${srcVar.fqn}]",
-          s"[:${targVar.fqn}] = REGA",
+          s"$WORKLO = [:$srcFqn]",
+          s"[:$targFqn] = $WORKLO",
+          s"$WORKLO = [:$srcFqn + 1]",
+          s"[:$targFqn + 1] = $WORKLO",
         )
       case IsRef =>
         List(
-          s"REGA = <:${srcVar.fqn} ",
-          s"[:${targVar.fqn}] = REGA",
-          s"REGA = >:${srcVar.fqn} ",
-          s"[:${targVar.fqn} + 1] = REGA"
+          s"$WORKLO = <:$srcFqn ",
+          s"[:$targFqn] = $WORKLO",
+          s"$WORKLO = >:$srcFqn ",
+          s"[:$targFqn + 1] = $WORKLO"
         )
     }
   }
@@ -522,10 +538,9 @@ case class DefRefEqVar(refName: String, target: String) extends Block {
     val storage = intTo2xBytes(targetLabelAddress)
     val refLabel = parent.assignVarLabel(refName, IsRef, storage).fqn
 
+    val str = storage.mkString("[Hi:", ",LO:", "]")
     List(
-      s"""; ref $refName = "$target"     ($refLabel = ${
-        storage.mkString("[Hi:", ",LO:", "]")
-      })"""
+      s"""; ref $refName = "$target"     ($refLabel = $str)"""
     )
   }
 }
@@ -543,7 +558,8 @@ case class Puts(varName: String)
     val variable = parent.getVarLabel(varName)
 
     val marSetup = variable.typ match {
-      case IsVar8 | IsData =>
+      case IsVar16 | IsData =>
+        //      case IsVar8 | IsData =>
         val varLabel = variable.fqn
         List(
           s"MARLO = >:$varLabel",
@@ -590,7 +606,7 @@ case class PutChar(block: Block) extends Block(nestedName = "putcharGeneral") {
     val labelWait = parent.fqnLabelPathUnique("wait")
     val labelTransmit = parent.fqnLabelPathUnique("transmit")
 
-    // leaves result in REGA
+    // leaves result in $V1
     val stmts: List[String] = block.expr(depth + 1, parent)
 
     stmts ++ split(
@@ -601,7 +617,7 @@ case class PutChar(block: Block) extends Block(nestedName = "putcharGeneral") {
          |PCHITMP = <:$labelWait
          |PC = >:$labelWait
          |$labelTransmit:
-         |UART = REGA
+         |UART = $WORKLO
          |""")
   }
 
@@ -620,7 +636,7 @@ case class PutChar(block: Block) extends Block(nestedName = "putcharGeneral") {
 //          val labelWait = parent.fqnLabelPathUnique("wait")
 //          val labelTransmit = parent.fqnLabelPathUnique("transmit")
 //
-//          // leaves result in REGA
+//          // leaves result in $V1
 //          val stmts: List[String] = bex.expr(depth + 1, parent)
 //
 //          stmts ++ split(
@@ -631,7 +647,7 @@ case class PutChar(block: Block) extends Block(nestedName = "putcharGeneral") {
 //               |PCHITMP = <:$labelWait
 //               |PC = >:$labelWait
 //               |$labelTransmit:
-//               |UART = REGA
+//               |UART = $V1
 //               |""")
 //        }
 //      }
@@ -667,7 +683,8 @@ case class Getchar() extends Block(nestedName = s"getchar_") {
          |PCHITMP = <:$labelWait
          |PC = >:$labelWait
          |$labelReceive:
-         |REGA = UART
+         |$WORKLO = UART
+         |$WORKHI = 0
          |""")
   }
 }
@@ -687,58 +704,6 @@ case class PutcharConst(konst: Int) extends Block(nestedName = s"putcharConst_${
          |UART = $konst
          |""")
   }
-}
-
-
-case class DefFunction(fnName: String, functionArgs: List[FunctionArg], content: List[Block])
-  extends Block(nestedName = s"function_$fnName") with IsFunction {
-
-  override def functionName: String = fnName
-
-  override def gen(depth: Int, scope: Scope): List[String] = {
-
-    // side affect of defining the function args as vars
-    val FunctionDef(startLabel, returnHi, returnLo, argsLabels) = defScopedArgLabels(scope)
-
-    val prefix = if (fnName == "main") {
-      List(
-        s"$MAIN_LABEL:",
-        s"$startLabel:"
-      )
-    } else
-      List(s"$startLabel:")
-
-
-    // eval the code that uses these vars
-    val stmts = content.flatMap {
-      b => {
-        b.expr(depth + 1, scope)
-      }
-    }
-
-    val suffix = if (fnName == "main") {
-      List(
-        "PCHITMP = <:root_end",
-        "PC = >:root_end"
-      )
-    } else {
-      List(
-        s"PCHITMP = [:$returnHi]",
-        s"PC = [:$returnLo]"
-      )
-    }
-
-    prefix ++ stmts ++ suffix
-  }
-
-  override def dump(depth: Int): List[(Int, String)] =
-    List(
-      (depth, this.getClass.getSimpleName + s" $fnName ("),
-    ) ++
-      functionArgs.flatMap {
-        a => a.dump(depth + 1)
-      } ++
-      content.flatMap(_.dump(depth + 1))
 }
 
 case class WhileTrue(content: List[Block])
@@ -893,10 +858,95 @@ case class Break() extends Block {
   }
 }
 
+case class DefFunction(functionName: String, functionArgs: List[FunctionArg], content: List[Block])
+  extends Block(nestedName = s"function_$functionName") {
+
+  def gen(depth: Int, scope: Scope): List[String] = {
+
+    // side affect of defining the function args as vars
+    val FunctionDef(startLabel, returnHi, returnLo, argsLabels) = defScopedArgLabels(scope)
+
+    val prefix = if (functionName == "main") {
+      List(
+        s"$MAIN_LABEL:",
+        s"$startLabel:"
+      )
+    } else
+      List(s"$startLabel:")
+
+    // eval the code that uses these vars
+    val stmts = content.flatMap {
+      b => {
+        b.expr(depth + 1, scope)
+      }
+    }
+
+    val suffix = if (functionName == "main") {
+      List(
+        "PCHITMP = <:root_end",
+        "PC = >:root_end"
+      )
+    } else {
+      List(
+        s"PCHITMP = [:$returnHi]",
+        s"PC = [:$returnLo]"
+      )
+    }
+
+    prefix ++ stmts ++ suffix
+  }
+
+  override def dump(depth: Int): List[(Int, String)] = {
+    List(
+      (depth, this.getClass.getSimpleName + s" $functionName ("),
+    ) ++
+      functionArgs.flatMap {
+        a => a.dump(depth + 1)
+      } ++
+      content.flatMap(_.dump(depth + 1))
+  }
+
+  // DEF
+  def defScopedArgLabels(scope: Scope): FunctionDef = {
+    val returnHiLabel = scope.assignVarLabel("RETURN_HI", IsVar8But).fqn
+    val returnLoLabel = scope.assignVarLabel("RETURN_LO", IsVar8But).fqn
+    // These locations where we write the input parameters into the function.
+    // Also, read from these locations to fetch "out" values.
+    val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.
+      map {
+        argName =>
+          val fnArgLabel = scope.assignVarLabel(argName.argName, IsVar16, TWO_BYTE_STORAGE).fqn
+          val arg = FunctionArg(argName.argName, argName.isOutput)
+          FunctionArgNameAndLabel(fnArgLabel, arg)
+      }
+    val fnStart = scope.toFqLabelPath("START")
+
+    FunctionDef(fnStart, returnHiLabel, returnLoLabel, argNamesLabelsDirection)
+  }
+
+  // GET - TODO remove dupe code with defXXX above
+  def getScopedArgLabels(scope: Scope): FunctionDef = {
+    val returnHiLabel = scope.getVarLabel("RETURN_HI", IsVar8But).fqn
+    val returnLoLabel = scope.getVarLabel("RETURN_LO", IsVar8But).fqn
+    // These locations where we write the input parameters into the function.
+    // Also, read from these locations to fetch "out" values.
+    val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.map {
+      argName =>
+        val fnArgLabel = scope.getVarLabel(argName.argName, IsVar16).fqn
+        val arg = FunctionArg(argName.argName, argName.isOutput)
+        FunctionArgNameAndLabel(fnArgLabel, arg)
+    }
+    val fnStart = scope.toFqLabelPath("START")
+
+    FunctionDef(fnStart, returnHiLabel, returnLoLabel, argNamesLabelsDirection)
+  }
+
+}
+
 case class CallFunction(fnName: String, argExpr: List[BlkCompoundAluExpr]) extends Block {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val fns = parent.lookupFunction(fnName)
-    val (functionScope: Scope, fn: Block with IsFunction) = fns.getOrElse(sys.error(s"no such function '$fnName''"))
+    val (functionScope: Scope, fn: DefFunction) = fns.getOrElse(sys.error(s"no such function '$fnName''"))
 
     val FunctionDef(startLabel, returnHiLabel, returnLoLabel, argsLabelsAndDir) = fn.getScopedArgLabels(functionScope)
 
@@ -904,12 +954,9 @@ case class CallFunction(fnName: String, argExpr: List[BlkCompoundAluExpr]) exten
 
     if (argExpr.length != argNamesAndDir.size) {
       val argsNames = argNamesAndDir.map(_.argName)
-      sys.error(
-        s"""call to function "$fnName" has wrong number of arguments for ; expected $fnName(${
-          argsNames.mkString(",")
-        }) but got $fnName(${
-          argExpr.mkString(",")
-        })""")
+      val argNameCommas = argsNames.mkString(",")
+      val argExprCommas = argExpr.mkString(",")
+      sys.error(s"""call to function "$fnName" has wrong number of arguments for ; expected $fnName($argNameCommas) but got $fnName($argExprCommas)""")
     }
 
     val argDefinitionVsExpression = argsLabelsAndDir.zip(argExpr)
@@ -918,12 +965,16 @@ case class CallFunction(fnName: String, argExpr: List[BlkCompoundAluExpr]) exten
     val setupCallParams: List[String] = argDefinitionVsExpression.flatMap {
       case (FunctionArgNameAndLabel(argLabel, _), argBlk) =>
         // evaluate the arg expression
-        val stmts: List[String] = argBlk.expr(depth + 1, parent)
+        val argValueStatements: List[String] = argBlk.expr(depth + 1, parent)
+
         // put the result into the input var locations
-        stmts :+ s"[:$argLabel] = REGA"
+        argValueStatements ++ Seq(
+          s"[:$argLabel] = $WORKLO",
+          s"[:$argLabel+1] = $WORKHI"
+        )
     }
 
-    // instructions needed to capture the output of the function into local vars within the caller's scope
+    // instructions needed to capture the output args of the function into local vars within the caller's scope
     val setupOutParams: List[String] = argDefinitionVsExpression.flatMap {
       case (FunctionArgNameAndLabel(argLabel, functionArg), argBlk) =>
         if (functionArg.isOutput) {
@@ -934,10 +985,12 @@ case class CallFunction(fnName: String, argExpr: List[BlkCompoundAluExpr]) exten
                 sys.error(s"""output parameter variable '$name' in call to function "$fnName" is not defined""")
               }.fqn
 
-              // recover ourput value from the function and assign back to the local variable
+              // recover output value from the function and assign back to the local variable
               List(
-                s"REGA = [:$argLabel]",
-                s"[:$localVarLabel] = REGA"
+                s"$WORKLO = [:$argLabel]",
+                s"[:$localVarLabel] = $WORKLO",
+                s"$WORKHI = [:$argLabel+1]",
+                s"[:$localVarLabel+1] = $WORKHI"
               )
             case _ =>
               sys.error(
@@ -1027,42 +1080,6 @@ case class Program(fns: List[Block]) {
   }
 }
 
-trait IsFunction {
-  self: Block =>
-
-  def functionName: String
-
-  def functionArgs: List[FunctionArg]
-
-  def defScopedArgLabels(scope: Scope): FunctionDef = {
-    val returnHiLabel = scope.assignVarLabel("RETURN_HI", IsVar8).fqn
-    val returnLoLabel = scope.assignVarLabel("RETURN_LO", IsVar8).fqn
-    // These locations where we write the input parameters into the function.
-    // Also, read from these locations to fetch "out" values.
-    val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.map {
-      argName =>
-        FunctionArgNameAndLabel(scope.assignVarLabel(argName.argName, IsVar8).fqn, FunctionArg(argName.argName, argName.isOutput))
-    }
-    val fnStart = scope.toFqLabelPath("START")
-
-    FunctionDef(fnStart, returnHiLabel, returnLoLabel, argNamesLabelsDirection)
-  }
-
-  def getScopedArgLabels(scope: Scope): FunctionDef = {
-    val returnHiLabel = scope.getVarLabel("RETURN_HI", IsVar8).fqn
-    val returnLoLabel = scope.getVarLabel("RETURN_LO", IsVar8).fqn
-    // These locations where we write the input parameters into the function.
-    // Also, read from these locations to fetch "out" values.
-    val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.map {
-      argName =>
-        FunctionArgNameAndLabel(scope.getVarLabel(argName.argName, IsVar8).fqn, FunctionArg(argName.argName, argName.isOutput))
-    }
-    val fnStart = scope.toFqLabelPath("START")
-
-    FunctionDef(fnStart, returnHiLabel, returnLoLabel, argNamesLabelsDirection)
-  }
-}
-
 abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) extends Positional {
 
   if (!nestedName.matches("^[a-zA-Z0-9_]*$")) {
@@ -1081,7 +1098,10 @@ abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) exte
 
     try {
       val value: List[String] = this match {
-        case bf: Block with IsFunction =>
+        case bf: DefFunction =>
+          val fns = parentScope.lookupFunction(bf.functionName)
+          fns.foreach(found => sys.error(s"function already defined '${bf.functionName}' at scope ${found._1.blockName} as ${found._2}"))
+
           parentScope.addFunction(thisScope, bf)
 
           gen(depth, thisScope).map(l => {
@@ -1118,7 +1138,3 @@ abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) exte
   protected[this] def gen(depth: Int, parent: Scope): List[String]
 }
 
-// TODO : Use me to mark blocks that have a value and len of value
-trait BlockWith16BitValue {
-  self: Block =>
-}

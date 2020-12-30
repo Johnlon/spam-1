@@ -9,7 +9,7 @@ import scala.collection.mutable.ListBuffer
 case class Scope private(parent: Scope,
                          name: String,
                          endLabel: Option[String] = None,
-                         functions: ListBuffer[(Scope, Block with IsFunction)] = ListBuffer.empty,
+                         functions: ListBuffer[(Scope, DefFunction)] = ListBuffer.empty,
                          variables: mutable.ListBuffer[Variable]
                        ) {
 
@@ -17,7 +17,7 @@ case class Scope private(parent: Scope,
     sys.error(s"invalid name ;'$name'")
   }
 
-  def lookupFunction(name: String): Option[(Scope, Block with IsFunction)] = {
+  def lookupFunction(name: String): Option[(Scope, DefFunction)] = {
     val maybeBlock = functions.find(f => f._2.functionName == name)
     maybeBlock.orElse {
       Option(parent).flatMap(_.lookupFunction(name))
@@ -58,12 +58,15 @@ case class Scope private(parent: Scope,
     else this
   }
 
-  def addFunction(functionScope: Scope, newFunction: Block with IsFunction): Unit = {
+  def addFunction(functionScope: Scope, newFunction: DefFunction): Unit = {
     val newReg = (functionScope, newFunction)
     functions.append(newReg)
   }
 
   def assignVarLabel(name: String, typ: VarType, data: List[Byte] = ONE_BYTE_STORAGE): Variable = {
+    assert(typ != IsVar16 || data.length==2)
+    assert(typ != IsVar8But || data.length==1)
+
     val label = lookupVarLabel(name)
 
     label.map { existing =>
@@ -72,8 +75,8 @@ case class Scope private(parent: Scope,
     }
 
     val fqn = toFqVarPath(name)
-    val pos = variables.lastOption.map(v => v.address + v.bytes.length).getOrElse(0)
-    val v = Variable(name, fqn, pos, data, typ)
+    val address = variables.lastOption.map(v => v.address + v.bytes.length).getOrElse(0)
+    val v = Variable(name, fqn, address, data, typ)
     variables.append(v)
     v
   }
@@ -103,13 +106,19 @@ case class Scope private(parent: Scope,
 
   def getVarLabel(name: String, typ: VarType): Variable = {
     val label = lookupVarLabel(name)
+
     val v = label.getOrElse {
       val str = s"scc error: $name has not been defined yet @ $this"
       sys.error(str)
     }
+
     if (v.typ != typ) {
       sys.error(s"cannot locate '$name' as $typ; but found it defined as a ${v.typ}' with label ${v.fqn}")
     }
+
+    assert(typ != IsVar16 || v.bytes.length==2)
+    assert(typ != IsVar8But || v.bytes.length==1)
+
     v
   }
 }

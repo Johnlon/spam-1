@@ -33,7 +33,7 @@ class SpamCCTest {
 
     val lines =
       """fun main() {
-        | var a=1;
+        | uint16 a=1;
         |}
         |""".stripMargin
 
@@ -46,12 +46,15 @@ class SpamCCTest {
         |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
         |root_function_main___VAR_a: EQU   2
-        |root_function_main___VAR_a: BYTES [0]
+        |root_function_main___VAR_a: BYTES [0, 0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
         |root_function_main___LABEL_START:
-        |[:root_function_main___VAR_a] = 1
+        |REGA = > 1
+        |REGD = < 1
+        |[:root_function_main___VAR_a] = REGA
+        |[:root_function_main___VAR_a+1] = REGD
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
@@ -59,13 +62,45 @@ class SpamCCTest {
 
     assertSame(expected, actual)
   }
+
+  @Test
+  def varEqHex4142(): Unit = {
+
+    val lines =
+      """
+        |
+        |fun main(x) {
+        | uint16 a = $4142;
+        |
+        | if (a>$4142) {
+        |   putchar('>')
+        | }
+        | if (a<$4142) {
+        |   putchar('<')
+        | }
+        | if (a==$4142) {
+        |   putchar('=')
+        |  // TODO IMPLEMENT ....
+        |   putchar(a & $ff)
+        | }
+        |}
+        |
+        |""".stripMargin
+//    putchar(a >> 8)
+//    putchar(a & $ff )
+
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+        checkTransmittedL('c', str, List("="))
+    })
+  }
   @Test
   def varEqVar(): Unit = {
 
     val lines =
       """fun main() {
-        | var a=1;
-        | var b=a;
+        | uint16 a=1;
+        | uint16 b=a;
         |}
         |""".stripMargin
 
@@ -102,8 +137,8 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | var a=1;
-        | var b=64+1;
+        | uint16 a=1;
+        | uint16 b=64+1;
         |}
         |""".stripMargin
 
@@ -116,15 +151,21 @@ class SpamCCTest {
         |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
         |root_function_main___VAR_a: EQU   2
-        |root_function_main___VAR_a: BYTES [0]
-        |root_function_main___VAR_b: EQU   3
-        |root_function_main___VAR_b: BYTES [0]
+        |root_function_main___VAR_a: BYTES [0, 0]
+        |root_function_main___VAR_b: EQU   4
+        |root_function_main___VAR_b: BYTES [0, 0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
         |root_function_main___LABEL_START:
-        |[:root_function_main___VAR_a] = 1
-        |[:root_function_main___VAR_b] = 65
+        |REGA = > 1
+        |REGD = < 1
+        |[:root_function_main___VAR_a] = REGA
+        |[:root_function_main___VAR_a+1] = REGD
+        |REGA = > 65
+        |REGD = < 65
+        |[:root_function_main___VAR_b] = REGA
+        |[:root_function_main___VAR_b+1] = REGD
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
@@ -135,57 +176,30 @@ class SpamCCTest {
 
 
   @Test
-  def twoFunctions(): Unit = {
+  def twoFunctionsSameVarNames(): Unit = {
 
     val lines =
       """
-        |fun main() {
-        | var a=1;
-        | var b=2;
-        |}
         |fun other() {
-        | var a=1;
-        | var b=2;
+        | uint16 a=100;
+        | uint16 b=200;
+        | putchar(a)
+        | putchar(b)
+        |}
+        |fun main() {
+        | uint16 a=1;
+        | uint16 b=2;
+        | other()
+        | putchar(a)
+        | putchar(b)
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines)
 
-    val expected = split(
-      """root_function_main___VAR_RETURN_HI: EQU   0
-        |root_function_main___VAR_RETURN_HI: BYTES [0]
-        |root_function_main___VAR_RETURN_LO: EQU   1
-        |root_function_main___VAR_RETURN_LO: BYTES [0]
-        |root_function_main___VAR_a: EQU   2
-        |root_function_main___VAR_a: BYTES [0]
-        |root_function_main___VAR_b: EQU   3
-        |root_function_main___VAR_b: BYTES [0]
-        |root_function_other___VAR_RETURN_HI: EQU   4
-        |root_function_other___VAR_RETURN_HI: BYTES [0]
-        |root_function_other___VAR_RETURN_LO: EQU   5
-        |root_function_other___VAR_RETURN_LO: BYTES [0]
-        |root_function_other___VAR_a: EQU   6
-        |root_function_other___VAR_a: BYTES [0]
-        |root_function_other___VAR_b: EQU   7
-        |root_function_other___VAR_b: BYTES [0]
-        |PCHITMP = < :ROOT________main_start
-        |PC = > :ROOT________main_start
-        |ROOT________main_start:
-        |root_function_main___LABEL_START:
-        |[:root_function_main___VAR_a] = 1
-        |[:root_function_main___VAR_b] = 2
-        |PCHITMP = <:root_end
-        |PC = >:root_end
-        |root_function_other___LABEL_START:
-        |[:root_function_other___VAR_a] = 1
-        |[:root_function_other___VAR_b] = 2
-        |PCHITMP = [:root_function_other___VAR_RETURN_HI]
-        |PC = [:root_function_other___VAR_RETURN_LO]
-        |root_end:
-        |END""".stripMargin)
-
-    // not using Ex function as it assumes main is last function
-    assertSame(expected, actual)
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+        checkTransmittedL('d', str, List("100", "200", "1", "2"))
+    })
   }
 
   @Test
@@ -195,20 +209,20 @@ class SpamCCTest {
       """
         |fun main() {
         |  // a = 63 + 2 = 'A'
-        |  var a = 63 + 2;
+        |  uint16 a = 63 + 2;
         |
         |  // b = a + 1 = 'B'
-        |  var b = a + 1;
+        |  uint16 b = a + 1;
         |
         |  // c = 1 + b = 'C'
-        |  var c = 1 + b;
+        |  uint16 c = 1 + b;
         |
         |  // d = c the d++
-        |  var d = c;
+        |  uint16 d = c;
         |  d = d + 1;
         |
         |  // e = a + (b/2) = 'b'
-        |  var e = a + (b/2);
+        |  uint16 e = a + (b/2);
         |
         |  // should print 'A'
         |  putchar(a)
@@ -224,7 +238,7 @@ class SpamCCTest {
         |  // should shift left twice to become the '@' char
         |  a = %00010000;
         |  b = 2;
-        |  var at = a A_LSL_B b;
+        |  uint16 at = a A_LSL_B b;
         |  // should print '@'
         |  putchar(at)
         |}
@@ -249,8 +263,8 @@ class SpamCCTest {
 
     val lines =
       """fun main() {
-        |  var a = 64;
-        |  var b = 1 + (a + 3);
+        |  uint16 a = 64;
+        |  uint16 b = 1 + (a + 3);
         |  putchar(b)
         |}
         |""".stripMargin
@@ -272,7 +286,7 @@ class SpamCCTest {
         |fun main() {
         |  putchar(65)
         |  putchar('B')
-        |  var c=67;
+        |  uint16 c=67;
         |  putchar(c)
         |  putchar(c+1)
         |}
@@ -296,7 +310,7 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        |  var g = getchar();
+        |  uint16 g = getchar();
         |  putchar(g)
         |}
         |""".stripMargin
@@ -308,12 +322,45 @@ class SpamCCTest {
   }
 
   @Test
-  def valEqLogical(): Unit = {
+  def valEqVarLogical(): Unit = {
+
+    // NOT IMPLEMENTED YET
+    val lines =
+      """
+        |fun main() {
+        | uint16 a=1>0;
+        | putchar(a)
+        |
+        | uint16 b=1024;
+        |
+        | a= b>1;
+        | putchar(a) // true
+        |
+        | a= b==0;
+        | putchar(a) // false
+        |
+        | a= b==1;
+        | putchar(a) // false
+        |
+        | a= b==1024;
+        | putchar(a) // true
+        |
+        |}
+        |""".stripMargin
+
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+        checkTransmittedL('h', str, List("01", "00", "00", "01"))
+    })
+  }
+
+  @Test
+  def valEqConstLogical(): Unit = {
 
     val lines =
       """
         |fun main() {
-        | var a=1>0;
+        | uint16 a=1>0;
         | putchar(a)
         |
         | a=0>1;
@@ -345,16 +392,17 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | var a=10;
-        | while(a>0) {
+        | uint16 a=1260;
+        | while(a>1250) {
         |   a=a-1;
-        |   putchar(a)
+        |   putchar(a-1250)
         | }
         |}
         |""".stripMargin
 
     val actual: List[String] = compile(lines, verbose = true, outputCheck = {
       lines =>
+//        checkTransmittedL('h', lines, List("01", "00", "00", "01", "08", "0e"))
         checkTransmittedDecs(lines, List(9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
     })
 
@@ -370,7 +418,7 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | var a = 1;
+        | uint16 a = 1;
         | while(true) {
         |   a = a + 1;
         |
@@ -402,7 +450,7 @@ class SpamCCTest {
         |
         |fun print(a1 out, a2, a3, a4) {
         | // FN COMMENT
-        | var d = a1;
+        | uint16 d = a1;
         | //d = a2;
         | putchar(d)
         | putchar(a2)
@@ -415,8 +463,8 @@ class SpamCCTest {
         |}
         |
         |fun main() {
-        | var arg1 = 'A';
-        | var arg2 = 1;
+        | uint16 arg1 = 'A';
+        | uint16 arg2 = 1;
         |
         | // CALLING PRINT - 63 is '?'
         | print(arg1, arg2+arg1, 63, arg1+4)
@@ -456,7 +504,7 @@ class SpamCCTest {
         |}
         |
         |fun main() {
-        | var arg1 = 'A';
+        | uint16 arg1 = 'A';
         | depth1(arg1)
         | putchar(arg1)
         |}
@@ -488,10 +536,10 @@ class SpamCCTest {
         | // value at 16 bit var ptr becomes address of array odd
         | ref ptr = odd;
         |
-        | var i = 10;
+        | uint16 i = 10;
         | while (i>0) {
         |   i = i - 1;
-        |   var c = i % 2;
+        |   uint16 c = i % 2;
         |   if (c == 0) {
         |       // set pointer to point at even
         |       ptr = even;
@@ -531,14 +579,14 @@ class SpamCCTest {
         | // value at 16 bit var ptr becomes address of array odd
         | uint16 addr16 = string;
         | uint16 idx = 0;
-        | uint8 c = string[idx];
+        | uint16 c = string[idx];
         | ref ptr = string;
         |
-        | var i = 255;
+        | uint16 i = 255;
         | while (i>0) {
-        |   var lo = ptr;
+        |   uint16 lo = ptr;
         |   ptr  = ptr + 1;
-        |   var hi = ptr;
+        |   uint16 hi = ptr;
         |   ptr  = ptr + 1;
         |
         |   i = i - 1;
@@ -567,14 +615,14 @@ class SpamCCTest {
         | var string = "ABCD\0";
         |
         | // index by literal
-        | var ac = string[0];
+        | uint16 ac = string[0];
         |
         | // index by variable
-        | var b = 1;
-        | var bc = string[b];
+        | uint16 b = 1;
+        | uint16 bc = string[b];
         |
         | // print values so we can test correct values selected
-        | var d = 3;
+        | uint16 d = 3;
         | putchar(ac)
         | putchar(bc)
         | putchar(string[2])
@@ -603,8 +651,8 @@ class SpamCCTest {
         | // define string
         | var string = "ABCD\0";
         |
-        | var idx = 0;
-        | var c = string[idx];
+        | uint16 idx = 0;
+        | uint16 c = string[idx];
         | while (c != 0) {
         |   putchar(c)
         |   idx = idx + 1;
@@ -631,11 +679,11 @@ class SpamCCTest {
 
     val lines =
       s"""fun main() {
-         | uint8 loop = 0;
+         | uint16 loop = 0;
          | while ( loop <= 2) {
-         |  uint8 a = 33 + loop;
+         |  uint16 a = 33 + loop;
          |
-         |  uint8 b = 2;
+         |  uint16 b = 2;
          |  while ( b > 0 ) {
          |   putchar(${DO_RIGHT.toInt})
          |   putchar( a )

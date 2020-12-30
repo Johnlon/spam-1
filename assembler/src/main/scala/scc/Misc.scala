@@ -6,8 +6,9 @@ sealed trait VarType extends E
 
 object IsData extends VarType
 
-object IsVar8 extends VarType
+//object IsVar8 extends VarType
 object IsVar16 extends VarType
+object IsVar8But extends VarType
 
 object IsRef extends VarType
 

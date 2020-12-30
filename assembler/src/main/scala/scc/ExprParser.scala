@@ -1,7 +1,7 @@
 package scc
 
 import scc.Scope.LABEL_NAME_SEPARATOR
-import scc.SpamCC.split
+import scc.SpamCC.{TWO_BYTE_STORAGE, split}
 
 import scala.language.postfixOps
 
@@ -48,7 +48,8 @@ case class BlkName(variableName: String) extends Block with IsStandaloneVarExpr 
   override def gen(depth: Int, parent: Scope): List[String] = {
     val labelSrcVar = parent.getVarLabel(variableName).fqn
     List(
-      s"REGA = [:$labelSrcVar]",
+      s"$WORKLO = [:$labelSrcVar]",
+      s"$WORKHI = [:$labelSrcVar + 1]",
     )
   }
 
@@ -65,16 +66,21 @@ case class BlkArrayElement(arrayName: String, indexExpr: Block) extends Block wi
 
   override def gen(depth: Int, parent: Scope): List[String] = {
 
-    // drops result into A
+    // drops result into WORKHI/LO
     val stmts: List[String] = indexExpr.expr(depth + 1, parent)
 
     val labelSrcVar = parent.getVarLabel(arrayName).fqn
 
     stmts ++ List(
-      s"MARLO = REGA + (>:$labelSrcVar) _S",
-      s"MARHI = <:$labelSrcVar",
-      s"MARHI = NU B_PLUS_1 <:$labelSrcVar _C",
-      s"REGA = RAM",
+      s"; add the low byte of the index to the low byte of the array address + set flags",
+      s"MARLO = $WORKLO + (>:$labelSrcVar) _S",
+      s"; add the hi byte of the index to the hi byte of the array address - do not set flags",
+      s"MARHI = $WORKHI + (<:$labelSrcVar)",
+      s"; if the low byte carried then add one to MARHI",
+      s"MARHI = NU B_PLUS_1 MARHI _C",
+      s"; pull from RAM into WORK registers",
+      s"$WORKLO = RAM",
+      s"$WORKHI = 0",
     )
   }
 
@@ -94,7 +100,8 @@ case class BlkConst(konst: Int) extends Block {
 
   override def gen(depth: Int, parent: Scope): List[String] = {
     List(
-      s"REGA = $konst",
+      s"$WORKLO = > $konst",
+      s"$WORKHI = < $konst",
     )
   }
 
@@ -105,9 +112,11 @@ case class BlkConst(konst: Int) extends Block {
 
 }
 
+
 case class AluExpr(aluop: String, rhs: Block)
 
-case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends Block with BlockWith16BitValue {
+
+case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends Block {
   val description: String = otherExpr.foldLeft(leftExpr.toString) {
     case (acc, b) =>
       s"$acc ${b.aluop} (${b.rhs})"
@@ -121,36 +130,52 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
 
     // if there is no right side then no need for temporary variables or merge logic
     val optionalExtraForRight = if (otherExpr.nonEmpty) {
-      val temporaryVarLabel = parent.assignVarLabel("compoundBlkExpr" + depth + LABEL_NAME_SEPARATOR + Scope.nextInt, IsVar8).fqn
+      val temporaryVarLabel = parent.assignVarLabel("compoundBlkExpr" + depth + LABEL_NAME_SEPARATOR + Scope.nextInt, IsVar16, TWO_BYTE_STORAGE).fqn
 
       val assignLeftToTemp =
         List(
-          s"; assign clause 1 result to [:$temporaryVarLabel] = $leftExpr ",
-          s"[:$temporaryVarLabel] = REGA"
+          s"; backup the clause 0 result to ram : [:$temporaryVarLabel] = $leftExpr ",
+          s"[:$temporaryVarLabel] = $WORKLO",
+          s"[:$temporaryVarLabel+1] = $WORKHI"
         )
 
       // In an expression the result of the previous step is accumulated in the assigned temporaryVarLabel.
       // It is somewhat inefficient that I has to shove the value into RAM and back out on each step.
-      var x = 1
+      val otherStatements: List[String] = otherExpr.reverse.zipWithIndex.flatMap {
+        case (AluExpr(op, b), idx) =>
+          // clause must drop it's result into $V3
+          val expressionValueClause = b.expr(depth + 1, parent)
 
-      val otherStatements: List[String] = otherExpr.reverse.flatMap {
-        case AluExpr(op , b) =>
-        // clause must drop it's result into REGC
-        val expressionClause = b.expr(depth + 1, parent)
+          val label = s"; concatenate clause ${idx + 1} to ram [:$temporaryVarLabel] <= $op $b"
 
-        x += 1
-        expressionClause ++
-          List(
-            s"; concatenate clause $x to [:$temporaryVarLabel] <= $op $b",
-            s"REGC = [:$temporaryVarLabel]",
-            s"[:$temporaryVarLabel] = REGC $op REGA"
-          )
+          val thisClause = op match {
+            case "+" =>
+              List(
+              label,
+              s"$TMPREG = [:$temporaryVarLabel]",
+              s"[:$temporaryVarLabel] = $TMPREG A_PLUS_B $WORKLO _S",
+              s"$TMPREG = [:$temporaryVarLabel+1]",
+              s"[:$temporaryVarLabel+1] = $TMPREG A_PLUS_B_PLUS_C $WORKHI"
+              )
+            case "-" =>
+              List(
+                label,
+                s"$TMPREG = [:$temporaryVarLabel]",
+                s"[:$temporaryVarLabel] = $TMPREG A_MINUS_B $WORKLO _S",
+                s"$TMPREG = [:$temporaryVarLabel+1]",
+                s"[:$temporaryVarLabel+1] = $TMPREG A_MINUS_B_MINUS_C $WORKHI"
+              )
+            case x =>
+              sys.error("NOT IMPL " + x)
+          }
+          expressionValueClause ++ (label +: thisClause)
       }
 
       val suffix = split(
         s"""
-           |; assigning result back to REGA
-           |REGA = [:$temporaryVarLabel]
+           |; assigning lo result back to $WORKLO and hi to $WORKHI
+           |$WORKLO = [:$temporaryVarLabel]
+           |$WORKHI = [:$temporaryVarLabel+1]
            |""")
 
       assignLeftToTemp ++ otherStatements ++ suffix
