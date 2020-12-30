@@ -1,10 +1,12 @@
 package scc
 
 import asm.AluOp
-import scc.Scope.LABEL_NAME_SEPARATOR
-import scc.SpamCC.TWO_BYTE_STORAGE
 
-case class Condition(varName: String, compOp: String, konst: Int) extends Block {
+case class ConditionComplex(exprL: BlkCompoundAluExpr, compOp: String, exprR: BlkCompoundAluExpr) extends Block {
+  override protected[this] def gen(depth: Int, parent: Scope): List[String] = ???
+}
+
+case class ConsitionSimple(varName: String, compOp: String, konst: Int) extends Block {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val label = parent.getVarLabel(varName).fqn
 

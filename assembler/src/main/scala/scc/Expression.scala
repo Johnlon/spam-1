@@ -3,45 +3,6 @@ package scc
 import scc.Scope.LABEL_NAME_SEPARATOR
 import scc.SpamCC.{TWO_BYTE_STORAGE, split}
 
-import scala.language.postfixOps
-
-trait IsStandaloneVarExpr {
-  def variableName: String
-}
-
-
-trait ExprParser {
-  self: SpamCC =>
-
-  def blkName: Parser[Block] = name ^^ {
-    n =>
-      BlkName(n)
-  }
-
-  def blkArrayElement: Parser[Block] = name ~ "[" ~ blkCompoundAluExpr ~ "]" ^^ {
-    case arrayName ~ _ ~ blkExpr ~ _ =>
-      BlkArrayElement(arrayName, blkExpr)
-  }
-
-
-  def blkConst: Parser[Block] = constExpression ^^ {
-    konst =>
-      BlkConst(konst)
-  }
-
-  def blkCompoundAluExpr: Parser[BlkCompoundAluExpr] = blkExpr ~ ((aluOp ~ blkExpr) *) ^^ {
-    case leftExpr ~ otherExpr =>
-      val o = otherExpr map {
-        case a ~ e => AluExpr(a, e)
-      }
-      BlkCompoundAluExpr(leftExpr, o)
-  }
-
-  def factor: Parser[Block] = statementGetchar | blkArrayElement | blkConst | blkName
-
-  def blkExpr: Parser[Block] = factor | "(" ~> blkCompoundAluExpr <~ ")"
-}
-
 case class BlkName(variableName: String) extends Block with IsStandaloneVarExpr {
   override def toString = s"$variableName"
 
@@ -151,11 +112,11 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
           val thisClause = op match {
             case "+" =>
               List(
-              label,
-              s"$TMPREG = [:$temporaryVarLabel]",
-              s"[:$temporaryVarLabel] = $TMPREG A_PLUS_B $WORKLO _S",
-              s"$TMPREG = [:$temporaryVarLabel+1]",
-              s"[:$temporaryVarLabel+1] = $TMPREG A_PLUS_B_PLUS_C $WORKHI"
+                label,
+                s"$TMPREG = [:$temporaryVarLabel]",
+                s"[:$temporaryVarLabel] = $TMPREG A_PLUS_B $WORKLO _S",
+                s"$TMPREG = [:$temporaryVarLabel+1]",
+                s"[:$temporaryVarLabel+1] = $TMPREG A_PLUS_B_PLUS_C $WORKHI"
               )
             case "-" =>
               List(

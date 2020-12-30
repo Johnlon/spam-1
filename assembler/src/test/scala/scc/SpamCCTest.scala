@@ -70,18 +70,60 @@ class SpamCCTest {
       """
         |
         |fun main(x) {
-        | uint16 a = $4142;
         |
-        | if (a>$4142) {
-        |   putchar('>')
+        | // = 1110
+        | uint16 a = $0100;
+        | a = a + $1010;
+        |
+        | if (a>$1110) {
+        |   putchar(1)
         | }
-        | if (a<$4142) {
-        |   putchar('<')
+        | if (a<$1110) {
+        |   putchar(2)
         | }
-        | if (a==$4142) {
-        |   putchar('=')
-        |  // TODO IMPLEMENT ....
-        |   putchar(a & $ff)
+        | if (a==$1110) {
+        |   putchar(3)
+        | }
+
+        | if (a>$1010) {
+        |   putchar(11)
+        | }
+        | if (a<$1010) {
+        |   putchar(12)
+        | }
+        | if (a==$1010) {
+        |   putchar(13)
+        | }
+        |
+        | if (a>$1210) {
+        |   putchar(21)
+        | }
+        | if (a<$1210) {
+        |   putchar(22)
+        | }
+        | if (a==$1210) {
+        |   putchar(23)
+        | }
+        |
+        | // comparing lower byte
+        | if (a>$1101) {
+        |   putchar(31)
+        | }
+        | if (a<$1101) {
+        |   putchar(32)
+        | }
+        | if (a==$1101) {
+        |   putchar(33)
+        | }
+        |
+        | if (a>$1120) {
+        |   putchar(41)
+        | }
+        | if (a<$1120) {
+        |   putchar(42)
+        | }
+        | if (a==$1120) {
+        |   putchar(43)
         | }
         |}
         |
@@ -91,7 +133,7 @@ class SpamCCTest {
 
     compile(lines, verbose = true, outputCheck = {
       str =>
-        checkTransmittedL('c', str, List("="))
+        checkTransmittedL('d', str, List("3", "11", "22", "31", "42"))
     })
   }
   @Test
@@ -113,20 +155,26 @@ class SpamCCTest {
         |root_function_main___VAR_RETURN_LO: EQU   1
         |root_function_main___VAR_RETURN_LO: BYTES [0]
         |root_function_main___VAR_a: EQU   2
-        |root_function_main___VAR_a: BYTES [0]
-        |root_function_main___VAR_b: EQU   3
-        |root_function_main___VAR_b: BYTES [0]
+        |root_function_main___VAR_a: BYTES [0, 0]
+        |root_function_main___VAR_b: EQU   4
+        |root_function_main___VAR_b: BYTES [0, 0]
         |PCHITMP = < :ROOT________main_start
         |PC = > :ROOT________main_start
         |ROOT________main_start:
         |root_function_main___LABEL_START:
-        |[:root_function_main___VAR_a] = 1
+        |REGA = > 1
+        |REGD = < 1
+        |[:root_function_main___VAR_a] = REGA
+        |[:root_function_main___VAR_a+1] = REGD
         |REGA = [:root_function_main___VAR_a]
+        |REGD = [:root_function_main___VAR_a + 1]
         |[:root_function_main___VAR_b] = REGA
+        |[:root_function_main___VAR_b+1] = REGD
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
-        |END""".stripMargin)
+        |END
+        |""".stripMargin)
 
     assertSame(expected, actual)
   }
@@ -203,7 +251,7 @@ class SpamCCTest {
   }
 
   @Test
-  def varEqSimpleTwoArgExpr(): Unit = {
+  def varEqSimpleTwoArgExprNOTIMPL(): Unit = {
 
     val lines =
       """
@@ -244,7 +292,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose = true, outputCheck = str => {
+    compile(lines, verbose = true, outputCheck = str => {
       checkTransmittedChar(str, 'A')
       checkTransmittedChar(str, 'B')
       checkTransmittedChar(str, 'C')
@@ -252,10 +300,6 @@ class SpamCCTest {
       checkTransmittedChar(str, 'b')
       checkTransmittedChar(str, '@')
     })
-
-    val expected = split("")
-
-    //assertSame(expected, actual)
   }
 
   @Test
@@ -269,13 +313,10 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, outputCheck = str => {
+    compile(lines, outputCheck = str => {
       checkTransmittedChar(str, 'D')
     })
 
-    val expected = split("")
-
-    // assertSame(expected, actual)
   }
 
   @Test
@@ -292,16 +333,13 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose = true, outputCheck = str => {
+    compile(lines, verbose = true, outputCheck = str => {
       checkTransmittedChar(str, 'A')
       checkTransmittedChar(str, 'B')
       checkTransmittedChar(str, 'C')
       checkTransmittedChar(str, 'D')
     })
 
-    val expected = split("")
-
-    // assertSame(expected, actual)
   }
 
   @Test
@@ -322,7 +360,7 @@ class SpamCCTest {
   }
 
   @Test
-  def valEqVarLogical(): Unit = {
+  def valEqVarLogicalNOTIMPL(): Unit = {
 
     // NOT IMPLEMENTED YET
     val lines =
@@ -400,15 +438,11 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose = true, outputCheck = {
+    compile(lines, verbose = true, outputCheck = {
       lines =>
 //        checkTransmittedL('h', lines, List("01", "00", "00", "01", "08", "0e"))
         checkTransmittedDecs(lines, List(9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
     })
-
-    val expected = split("")
-
-    //assertSame(expected, actual)
   }
 
 
@@ -431,15 +465,11 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, outputCheck = {
+    compile(lines, outputCheck = {
       lines =>
         checkTransmittedDecs(lines, List(2, 3, 4, 5, 6, 7, 8, 9, 10))
     })
-
-    val expected = split("")
-
-    //assertSame(expected, actual)
-  }
+}
 
   @Test
   def functionCalls(): Unit = {
@@ -477,7 +507,7 @@ class SpamCCTest {
         |// END  COMMAND
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    compile(lines, verbose = true, quiet = true, outputCheck = str => {
       checkTransmittedChar(str, 'A')
       checkTransmittedChar(str, 'B')
       checkTransmittedChar(str, '?')
@@ -485,9 +515,6 @@ class SpamCCTest {
       checkTransmittedChar(str, '!')
     })
 
-    val expected = split("")
-
-    //assertSame(expected, actual)
   }
 
   @Test
@@ -512,18 +539,14 @@ class SpamCCTest {
         |// END  COMMAND
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, quiet = true, outputCheck = {
+    compile(lines, quiet = true, outputCheck = {
       lines =>
         checkTransmittedChars(lines, List("B"))
     })
-
-    val expected = split("")
-
-    //assertSame(expected, actual)
   }
 
   @Test
-  def references(): Unit = {
+  def referencesNOTIMPL(): Unit = {
 
     val lines =
       """
@@ -552,18 +575,14 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    compile(lines, verbose = true, quiet = true, outputCheck = str => {
       val value: List[String] = "OddEvenOddEvenOddEvenOddEvenOddEven".toList.map(_.toString)
       checkTransmittedL('c', str, value)
     })
-
-    val expected = split("")
-
-    //assertSame(expected, actual)
   }
 
   @Test
-  def referenceLong(): Unit = {
+  def referenceLongNOTIMPL(): Unit = {
 
     val data = (0 to 255) map {x =>
       f"$x%02x"
@@ -594,15 +613,10 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    println(lines)
-    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    compile(lines, verbose = true, quiet = true, outputCheck = str => {
       val value: List[String] = "OddEvenOddEvenOddEvenOddEvenOddEven".toList.map(_.toString)
       checkTransmittedL('c', str, value)
     })
-
-    val expected = split("")
-
-    //assertSame(expected, actual)
   }
 
   @Test
@@ -630,16 +644,12 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose = false, quiet = true, outputCheck = str => {
+    compile(lines, verbose = false, quiet = true, outputCheck = str => {
       checkTransmittedChar(str, 'A')
       checkTransmittedChar(str, 'B')
       checkTransmittedChar(str, 'C')
       checkTransmittedChar(str, 'D')
     })
-
-    val expected = split("")
-
-    //assertSame(expected, actual)
   }
 
   @Test
@@ -661,16 +671,12 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    compile(lines, verbose = true, quiet = true, outputCheck = str => {
       checkTransmittedChar(str, 'A')
       checkTransmittedChar(str, 'B')
       checkTransmittedChar(str, 'C')
       checkTransmittedChar(str, 'D')
     })
-
-    val expected = split("")
-
-    // assertSame(expected, actual)
   }
 
   @Test
@@ -739,14 +745,11 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual: List[String] = compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    compile(lines, verbose = true, quiet = true, outputCheck = str => {
       checkTransmittedChar(str, 'A')
       checkTransmittedChar(str, 'B')
       checkTransmittedChar(str, 'C')
       checkTransmittedChar(str, 'D')
     })
-
-    val expected = split("")
-    //  assertSame(expected, actual)
-  }
+ }
 }
