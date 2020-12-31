@@ -38,8 +38,8 @@ object AluOp  {
     object A_AND_B extends AluOp(25, "&")
     object A_OR_B extends AluOp(26, "|")
     object A_XOR_B extends AluOp(27, "^")
-    object A_NAND_B extends AluOp(28, "!&")
-    object NOT_B extends AluOp(29)
+    object A_NAND_B extends AluOp(28, "~&")
+    object NOT_B extends AluOp(29, "~")
     object A_PLUS_B_BCD extends AluOp(20)
     object A_MINUS_B_BCD extends AluOp(31)
 

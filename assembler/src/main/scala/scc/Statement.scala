@@ -112,14 +112,35 @@ import scala.util.parsing.input.Positional
 //}
 
 case class DefUint16EqExpr(targetVar: String, block: Block) extends Block {
-  override def gen(depth: Int, parent: Scope): List[String] = {
-    val stmts: List[String] = block.expr(depth + 1, parent)
+  override def gen(depth: Int, parent: Scope): Seq[String] = {
+    val stmts: Seq[String] = block.expr(depth + 1, parent)
 
     val labelTarget = parent.assignVarLabel(targetVar, IsVar16, data = TWO_BYTE_STORAGE).fqn
 
     val assign = List(
       s"[:$labelTarget] = $WORKLO",
       s"[:$labelTarget+1] = $WORKHI",
+    )
+    stmts ++ assign
+  }
+
+  override def dump(depth: Int): List[(Int, String)] =
+    List((depth, this.getClass.getSimpleName + "("), (depth + 1, targetVar)) ++
+      block.dump(depth + 1) ++
+      List((depth, ")"))
+}
+
+/** evaluates to 1 if condition is true otherwise 0 */
+case class DefUint16EqCondition(targetVar: String, flagToCheck: String, block: ConditionComplex) extends Block {
+  override def gen(depth: Int, parent: Scope): Seq[String] = {
+    val stmts: Seq[String] = block.expr(depth + 1, parent)
+
+    val labelTarget = parent.assignVarLabel(targetVar, IsVar16, data = TWO_BYTE_STORAGE).fqn
+
+    val assign = List(
+      s"[:$labelTarget] = 0",
+      s"[:$labelTarget+1] = 0",
+      s"[:$labelTarget] = 1 $flagToCheck",
     )
     stmts ++ assign
   }
@@ -157,9 +178,9 @@ case class LetVarEqConst(targetVar: String, konst: Int) extends Block {
 
 // general purpose
 case class LetVarEqExpr(targetVar: String, block: Block) extends Block {
-  override def gen(depth: Int, parent: Scope): List[String] = {
+  override def gen(depth: Int, parent: Scope): Seq[String] = {
 
-    val stmts: List[String] = block.expr(depth + 1, parent)
+    val stmts: Seq[String] = block.expr(depth + 1, parent)
     val labelTarget = parent.getVarLabel(targetVar, IsVar16).fqn
 
     val assign = List(
@@ -288,12 +309,12 @@ case class Puts(varName: String)
 }
 
 case class PutChar(block: Block) extends Block(nestedName = "putcharGeneral") {
-  override def gen(depth: Int, parent: Scope): List[String] = {
+  override def gen(depth: Int, parent: Scope): Seq[String] = {
     val labelWait = parent.fqnLabelPathUnique("wait")
     val labelTransmit = parent.fqnLabelPathUnique("transmit")
 
     // leaves result in $V1
-    val stmts: List[String] = block.expr(depth + 1, parent)
+    val stmts: Seq[String] = block.expr(depth + 1, parent)
 
     stmts ++ split(
       s"""
@@ -651,7 +672,7 @@ case class CallFunction(fnName: String, argExpr: List[BlkCompoundAluExpr]) exten
     val setupCallParams: List[String] = argDefinitionVsExpression.flatMap {
       case (FunctionArgNameAndLabel(argLabel, _), argBlk) =>
         // evaluate the arg expression
-        val argValueStatements: List[String] = argBlk.expr(depth + 1, parent)
+        val argValueStatements: Seq[String] = argBlk.expr(depth + 1, parent)
 
         // put the result into the input var locations
         argValueStatements ++ Seq(
@@ -775,7 +796,7 @@ abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) exte
   // for logging
   def dump(depth: Int): List[(Int, String)] = List((depth, this.toString))
 
-  final def expr(depth: Int, parentScope: Scope): List[String] = {
+  final def expr(depth: Int, parentScope: Scope): Seq[String] = {
 
     val thisScope = localize(parentScope)
 
@@ -783,7 +804,7 @@ abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) exte
     val exit = s"${prefixComment(depth)}EXIT  ${thisScope.blockName} @ $this"
 
     try {
-      val value: List[String] = this match {
+      val value: Seq[String] = this match {
         case bf: DefFunction =>
           val fns = parentScope.lookupFunction(bf.functionName)
           fns.foreach(found => sys.error(s"function already defined '${bf.functionName}' at scope ${found._1.blockName} as ${found._2}"))
@@ -821,6 +842,6 @@ abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) exte
 
   private def prefixOp(depth: Int) = prefixComment(depth).replaceAll(".", " ")
 
-  protected[this] def gen(depth: Int, parent: Scope): List[String]
+  protected[this] def gen(depth: Int, parent: Scope): Seq[String]
 }
 

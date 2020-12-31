@@ -15,7 +15,7 @@ trait ConditionParser {
   }
 
   // return the block of code and the name of the flag to add to the jump operation
-  def conditionExpr: Parser[(String, Block)] = blkCompoundAluExpr ~ comparison ~ blkCompoundAluExpr ^^ {
+  def conditionExpr: Parser[(String, ConditionComplex)] = blkCompoundAluExpr ~ comparison ~ blkCompoundAluExpr ^^ {
     case exprL ~ compOp ~ exprR =>
       val b = ConditionComplex(exprL, compOp, exprR)
 

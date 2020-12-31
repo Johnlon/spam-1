@@ -40,7 +40,8 @@ class StatementParser {
   def statement: Parser[Block] = positioned {
     comment |
       //statementUInt8Eq |
-      statementUInt16Eq |
+      statementUInt16EqExpr |
+      statementUInt16EqCondition |
       //      statementVarEqVarOpVar |
       //      statementVarEqVar |
       //      statementVarEqVarOpConst |
@@ -122,9 +123,18 @@ class StatementParser {
   //  }
 
   // general purpose
-  def statementUInt16Eq: Parser[DefUint16EqExpr] = positioned {
+  def statementUInt16EqExpr: Parser[DefUint16EqExpr] = positioned {
     "uint16" ~> name ~ "=" ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ block => DefUint16EqExpr(targetVar, block)
+      case targetVar ~ _ ~ block =>
+        DefUint16EqExpr(targetVar, block)
+    }
+  }
+
+  // special purpose
+  def statementUInt16EqCondition: Parser[DefUint16EqCondition] = positioned {
+    "uint16" ~> name ~ "=" ~ conditionExpr <~ SEMICOLON ^^ {
+      case targetVar ~ _ ~ block =>
+        DefUint16EqCondition(targetVar, block._1, block._2)
     }
   }
 
@@ -237,10 +247,16 @@ class StatementParser {
   }
 
   def ifCond: Parser[Block] = positioned {
-    "if" ~ "(" ~> conditionWithConst ~ ")" ~ "{" ~ statements <~ "}" ^^ {
-      case cond ~ _ ~ _ ~ content => IfCond(cond._1, cond._2, content)
+    "if" ~ "(" ~> conditionExpr ~ ")" ~ "{" ~ statements <~ "}" ^^ {
+      case cond ~ _ ~ _ ~ content =>
+        IfCond(cond._1, cond._2, content)
     }
   }
+//  def ifCond: Parser[Block] = positioned {
+//    "if" ~ "(" ~> conditionWithConst ~ ")" ~ "{" ~ statements <~ "}" ^^ {
+//      case cond ~ _ ~ _ ~ content => IfCond(cond._1, cond._2, content)
+//    }
+//  }
 
 
   def comment: Parser[Block] = positioned {

@@ -71,6 +71,40 @@ class SpamCCTest {
         |
         |fun main(x) {
         |
+        | // $42 = 66 dev
+        | // $41 = 65 dec
+        | uint16 a = $4142;
+        |
+        | // $4142 >> 1 => 20A1
+        | // $A1 = 161 dec
+        | putchar(a >> 1)
+        |
+        | uint16 b = a >> 1;
+        | putchar(b) // 161
+        |
+        | // $4142 & $ff => 42 => 66 dec
+        | putchar(a) // should be 66
+        | putchar(a & $ff )
+        |
+        |}
+        |
+        |""".stripMargin
+
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+
+        checkTransmittedL('d', str, List("161", "161", "66", "66"))
+    })
+  }
+
+  @Test
+  def varEqIfCondition(): Unit = {
+
+    val lines =
+      """
+        |
+        |fun main(x) {
+        |
         | // = 1110
         | uint16 a = $0100;
         | a = a + $1010;
@@ -125,17 +159,32 @@ class SpamCCTest {
         | if (a==$1120) {
         |   putchar(43)
         | }
+        |
+        | // compare
+        | uint16 b=$1000;
+        |
+        | if ( a == (b+$110) ) {
+        |  putchar('=')
+        | }
+        |
+        | if ( a != (b+$110) ) {
+        |  putchar('~')
+        | }
+        |
+        | if ( a != b ) {
+        |  putchar('!')
+        | }
+        |
         |}
         |
         |""".stripMargin
-//    putchar(a >> 8)
-//    putchar(a & $ff )
 
     compile(lines, verbose = true, outputCheck = {
       str =>
-        checkTransmittedL('d', str, List("3", "11", "22", "31", "42"))
+        checkTransmittedL('d', str, List("3", "11", "22", "31", "42" , '='.toInt.toString, '!'.toInt.toString))
     })
   }
+
   @Test
   def varEqVar(): Unit = {
 
@@ -366,29 +415,31 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 a=1>0;
-        | putchar(a)
-        |
         | uint16 b=1024;
         |
-        | a= b>1;
-        | putchar(a) // true
+        | uint16 a1 = b>1;
+        | putchar(a1) // true
         |
-        | a= b==0;
-        | putchar(a) // false
+        | uint16 a2= b==0;
+        | putchar(a2) // false
         |
-        | a= b==1;
-        | putchar(a) // false
+        | uint16 a3= b==1;
+        | putchar(a3) // false
         |
-        | a= b==1024;
-        | putchar(a) // true
+        | uint16 a4= b==1024;
+        | putchar(a4) // true
+        |
+        | // compare b==(a+24)
+        | uint16 a5=1000;
+        | uint16 a6= b==(a5+24);
+        | putchar(a6) // true
         |
         |}
         |""".stripMargin
 
     compile(lines, verbose = true, outputCheck = {
       str =>
-        checkTransmittedL('h', str, List("01", "00", "00", "01"))
+        checkTransmittedL('h', str, List("01", "00", "00", "01", "01"))
     })
   }
 

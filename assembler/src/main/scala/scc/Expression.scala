@@ -25,14 +25,14 @@ case class BlkName(variableName: String) extends Block with IsStandaloneVarExpr 
 case class BlkArrayElement(arrayName: String, indexExpr: Block) extends Block with IsStandaloneVarExpr {
   override def toString = s"$arrayName"
 
-  override def gen(depth: Int, parent: Scope): List[String] = {
+  override def gen(depth: Int, parent: Scope): Seq[String] = {
 
     // drops result into WORKHI/LO
-    val stmts: List[String] = indexExpr.expr(depth + 1, parent)
+    val stmts: Seq[String] = indexExpr.expr(depth + 1, parent)
 
     val labelSrcVar = parent.getVarLabel(arrayName).fqn
 
-    stmts ++ List(
+    stmts ++ Seq(
       s"; add the low byte of the index to the low byte of the array address + set flags",
       s"MARLO = $WORKLO + (>:$labelSrcVar) _S",
       s"; add the hi byte of the index to the hi byte of the array address - do not set flags",
@@ -85,9 +85,9 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
 
   override def toString = s"$description"
 
-  override def gen(depth: Int, parent: Scope): List[String] = {
+  override def gen(depth: Int, parent: Scope): Seq[String] = {
 
-    val leftStatement: List[String] = leftExpr.expr(depth + 1, parent)
+    val leftStatement: Seq[String] = leftExpr.expr(depth + 1, parent)
 
     // if there is no right side then no need for temporary variables or merge logic
     val optionalExtraForRight = if (otherExpr.nonEmpty) {
@@ -112,20 +112,41 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
           val thisClause = op match {
             case "+" =>
               List(
-                label,
                 s"$TMPREG = [:$temporaryVarLabel]",
                 s"[:$temporaryVarLabel] = $TMPREG A_PLUS_B $WORKLO _S",
-                s"$TMPREG = [:$temporaryVarLabel+1]",
+                s"$TMPREG = [:$temporaryVarLabel + 1]",
                 s"[:$temporaryVarLabel+1] = $TMPREG A_PLUS_B_PLUS_C $WORKHI"
               )
             case "-" =>
               List(
-                label,
                 s"$TMPREG = [:$temporaryVarLabel]",
                 s"[:$temporaryVarLabel] = $TMPREG A_MINUS_B $WORKLO _S",
-                s"$TMPREG = [:$temporaryVarLabel+1]",
+                s"$TMPREG = [:$temporaryVarLabel + 1]",
                 s"[:$temporaryVarLabel+1] = $TMPREG A_MINUS_B_MINUS_C $WORKHI"
               )
+            case op @ ("&" | "|" | "^" | "~&" | "~") =>
+              List(
+                s"$TMPREG = [:$temporaryVarLabel]",
+                s"[:$temporaryVarLabel] = $TMPREG $op $WORKLO _S",
+                s"$TMPREG = [:$temporaryVarLabel + 1]",
+                s"[:$temporaryVarLabel + 1] = $TMPREG $op $WORKHI"
+              )
+            case ">>" =>
+              // sadly my alu doesn't allow carry-in to the shift operations
+              List(
+                s"; LSR load hi byte",
+                s"$TMPREG = [:$temporaryVarLabel + 1]",
+                s"$V2 = $TMPREG",
+                s"$V2 = $V2 & 1",
+                s"$V2 = $V2 << 7",
+                s"[:$temporaryVarLabel + 1] = $TMPREG A_LSR_B 1 _S",
+
+                s"; LSR load lo byte",
+                s"$TMPREG = [:$temporaryVarLabel]",
+                s"$TMPREG = $TMPREG A_LSR_B 1",
+                s"[:$temporaryVarLabel] = $TMPREG  | $V2",
+
+          )
             case x =>
               sys.error("NOT IMPL " + x)
           }
