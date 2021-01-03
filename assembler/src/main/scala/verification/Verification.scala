@@ -131,7 +131,7 @@ object Verification {
     println("RUNNING :\n" + romFileUnix)
 
     //    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix  +uart_control_file=`pwd`/$controlFileUnix"""))
-    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh '$timeout' ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix"""))
+    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh '$timeout' ../verilog/cpu/demo_assembler_roms.v `pwd`/$romFileUnix"""))
 
     val success = new AtomicBoolean()
     val lines = ListBuffer.empty[String]

@@ -296,9 +296,11 @@ class AssemblerTest {
 
   @Test
   def `compile_bytes_to_RAM`(): Unit =  {
+    // 255 == -1
+    //  == -1
     val code = Seq(
       "FIRST:       BYTES     [ 1,2,3 ]",
-      "SECOND:      BYTES     [ 'A', 65, $41, %01000001, 255 , -1, 127, 128 ]",
+      "SECOND:      BYTES     [ 'A', 65, $41, %01000001, 255 , -1, -127, 0, 127, 128 ]",
       "FIRST_LEN:   EQU       len(:FIRST)",
       "SECOND_LEN:  EQU       len(:SECOND)",
       "FIRST_POS:   EQU       :FIRST",
@@ -313,9 +315,9 @@ class AssemblerTest {
     val B_65 = 65.toByte
 
     assertEquals(Some(KnownByteArray(0, List(1, 2, 3))), asm.labels("FIRST").getVal)
-    assertEquals(Some(KnownByteArray(3, List(B_65, B_65, B_65, B_65, 255.toByte, -1, 127, 128.toByte))), asm.labels("SECOND").getVal)
+    assertEquals(Some(KnownByteArray(3, List(B_65, B_65, B_65, B_65, 255.toByte, 255.toByte, -127.toByte, 0.toByte, 127.toByte, 128.toByte))), asm.labels("SECOND").getVal)
     assertEquals(Some(KnownInt(3)), asm.labels("FIRST_LEN").getVal)
-    assertEquals(Some(KnownInt(8)), asm.labels("SECOND_LEN").getVal)
+    assertEquals(Some(KnownInt(10)), asm.labels("SECOND_LEN").getVal)
     assertEquals(Some(KnownInt(0)), asm.labels("FIRST_POS").getVal)
     assertEquals(Some(KnownInt(3)), asm.labels("SECOND_POS").getVal)
 
@@ -335,7 +337,9 @@ class AssemblerTest {
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, (-1).toByte), // 255 unsigned has same bit pattern as -1 signed
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, (-127).toByte), // 255 unsigned has same bit pattern as -1 signed
+      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 0.toByte), // 255 unsigned has same bit pattern as -1 signed
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 127.toByte),
       i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, -128) // unsigned 128 has sae bit pattern as -128 twos compl
     ), compiled)

@@ -181,16 +181,20 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       val exprs: List[Know[KnownInt]] = b +: c
 
       val ints: List[Int] = exprs.map(_.getVal.get.value)
+
       ints.filter { x =>
-        x.toByte < Byte.MinValue || x.toByte > Byte.MaxValue
-      }.foreach(x => sys.error(s"asm error: $x evaluates as out of range ${Byte.MinValue} to ${Byte.MaxValue}"))
-      val bytes: List[Byte] = ints.map(_.toByte)
+        x < Byte.MinValue || x > 255
+      }.foreach(x => sys.error(s"asm error: $x evaluates as out of range ${Byte.MinValue} to 255"))
 
-      rememberKnown(a, Known(a, KnownByteArray(pc, bytes)))
+      rememberKnown(a, Known(a, KnownByteArray(pc, ints.map(_.toByte))))
 
-      Label(a) +: bytes.map {
+      Label(a) +: ints.map {
         c => {
-          val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Control._A), Known("", c))
+          // c.toByte will render between -128 and  +127
+          // then name "c" will render as whatever int value was actually presented in the code (eg when c=255 then toByte = -1 )
+          val immed = Known(f"${c.toByte}%02X", c.toByte)
+
+          val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Control._A), immed)
           dataAddress += 1
           ni
         }

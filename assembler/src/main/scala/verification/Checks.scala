@@ -15,10 +15,11 @@ object Checks {
     assertEquals(expected, matches)
   }
 
- def checkTransmittedDecs(actual: List[String], expected: List[Int]): Unit = {
+  def checkTransmittedDecs(actual: List[String], expected: List[Int]): Unit = {
     val matches = extractTransmitted('d', actual)
     assertEquals(expected.map(_.toString), matches)
   }
+
   def checkTransmittedDec(actual: List[String], expected: Int): Unit = {
     checkTransmittedCN('d', actual, expected.toString)
   }
@@ -36,6 +37,12 @@ object Checks {
   }
 
   def checkTransmittedL(selector: Char, str: List[String], expected: List[String]): Unit = {
+    val actual = extractTransmitted(selector, str)
+    assertEquals(expected, actual)
+  }
+
+  def checkTransmittedChars(selector: Char, str: List[String], expectedChar: List[Char]): Unit = {
+    val expected = expectedChar.map(_.toInt.toString)
     val actual = extractTransmitted(selector, str)
     assertEquals(expected, actual)
   }

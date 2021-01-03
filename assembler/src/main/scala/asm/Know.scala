@@ -28,7 +28,7 @@ trait Knowing {
 
     def |(knownInt: KnownInt) = KnownInt(value | knownInt.value)
 
-    override def toString = s"${value.toString}"
+    override def toString = s"$value"
   }
 
   case class KnownByteArray(value: Int, data: List[Byte]) extends KnownValue {
@@ -119,7 +119,7 @@ trait Knowing {
 
     def getVal = Some(knownVal)
 
-    override def toString(): String = s"""${knownVal}${if (name.length > 0) "{" + name + "}" else ""}"""
+    override def toString(): String = s"""$knownVal${if (name.length > 0) "{" + name + "}" else ""}"""
   }
 
   /* something who's value is definitely unknown */
