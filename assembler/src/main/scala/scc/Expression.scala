@@ -177,6 +177,50 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
                 s"$endLoop:",
 
               )
+            case "<<" =>
+              val shiftLoop = parent.fqnLabelPathUnique("shiftLoop")
+              val doShift = parent.fqnLabelPathUnique("doShift")
+              val endLoop = parent.fqnLabelPathUnique("endShiftLoop")
+
+              // sadly my alu doesn't allow carry-in to the shift operations
+              List(
+                s"$shiftLoop:",
+
+                s"; is loop done?",
+                s"NOOP = $WORKHI A_MINUS_B 0 _S",
+                s"PCHITMP = < :$doShift",
+                s"PC = > :$doShift _NE",
+                s"NOOP = $WORKLO A_MINUS_B 0 _S",
+                s"PC = > :$doShift _NE",
+
+                s"PCHITMP = < :$endLoop",
+                s"PC = > :$endLoop",
+
+                s"$doShift:",
+
+                s"; count down loop",
+                s"$WORKLO = $WORKLO A_MINUS_B 1 _S",
+                s"$WORKHI = $WORKHI A_MINUS_B_MINUS_C 0",
+
+                s"; do one shift",
+                s"$TMPREG = [:$temporaryVarLabel]",
+                s"$V2 = $TMPREG",
+                s"$V2 = $V2 & %10000000",
+                s"$V2 = $V2 >> 7",
+
+                s"[:$temporaryVarLabel] = $TMPREG A_LSL_B 1 _S",
+
+                s"; LSR load lo byte and or in the carry",
+                s"$TMPREG = [:$temporaryVarLabel+1]",
+                s"$TMPREG = $TMPREG A_LSL_B 1",
+                s"[:$temporaryVarLabel+1] = $TMPREG  | $V2",
+
+                s"; loop again",
+                s"PCHITMP = < :$shiftLoop",
+                s"PC = > :$shiftLoop",
+                s"$endLoop:",
+
+              )
             case "/" =>
               List(
                 s"; only allow div by 0-255 for now so abort if RHS > 255",

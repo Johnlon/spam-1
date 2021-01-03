@@ -431,8 +431,8 @@ case class WhileTrue(content: List[Block])
 
     val stmts = content.flatMap {
       b => {
-        val nameName = parent.copy(endLabel = Some(labelAfter))
-        b.expr(depth + 1, nameName) //JL1.pushName(newName = label))
+        val breakName = parent.copy(endLabel = Some(labelAfter))
+        b.expr(depth + 1, breakName)
       }
     }
 
@@ -461,7 +461,7 @@ case class WhileCond(flagToCheck: String, conditionBlock: Block, content: List[B
 
     val labelCheck = parent.toFqLabelPath("CHECK")
     val labelBody = parent.toFqLabelPath("BODY")
-    val labelBot = parent.toFqLabelPath("AFTER")
+    val labelAfter = parent.toFqLabelPath("AFTER")
 
     val condStatements = conditionBlock.expr(depth + 1, parent) // IMPORTANT TO USE THE PARENT DIRECTLY HERE AS THE CONDITION VAR IS DEFINED IN THE SURROUNDING CONTEXT
 
@@ -472,15 +472,17 @@ case class WhileCond(flagToCheck: String, conditionBlock: Block, content: List[B
           s"""
              |PCHITMP = <:$labelBody
              |PC = >:$labelBody $flagToCheck
-             |PCHITMP = <:$labelBot
-             |PC = >:$labelBot
+             |PCHITMP = <:$labelAfter
+             |PC = >:$labelAfter
              |$labelBody:
                """)
     }
 
     val stmts = content.flatMap {
       b => {
-        b.expr(depth + 1, parent) //.pushName(newName = labelBase))
+        val breakName = parent.copy(endLabel = Some(labelAfter))
+
+        b.expr(depth + 1, breakName)
       }
     }
 
@@ -488,7 +490,7 @@ case class WhileCond(flagToCheck: String, conditionBlock: Block, content: List[B
       s"""
          |PCHITMP = <:$labelCheck
          |PC = >:$labelCheck
-         |$labelBot:
+         |$labelAfter:
          |""")
 
     conditionalJump ++ stmts ++ suffix

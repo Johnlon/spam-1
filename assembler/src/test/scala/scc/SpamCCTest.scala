@@ -241,6 +241,52 @@ class SpamCCTest {
   }
 
   @Test
+  def varLSL(): Unit = {
+
+    val lines =
+      """
+        |
+        |fun main(x) {
+        |
+        | uint16 b = %1001;
+
+        | if ( (b<<1) == %00010010 ) {
+        |   putchar('=')
+        | }
+        | if ( (b<<8) == %0000100100000000 ) {
+        |   putchar('=')
+        | }
+        |
+        | putchar( b << 0 )
+        | putchar( b << 1 )
+        | putchar( b << 2 )
+        | putchar( b << 3 )
+        | putchar( b << 4 )
+        | putchar( b << 7 )
+        | putchar( b << 8 )
+        |
+        | uint16 c = b << 12;
+        | if ( (b<<12) == %1001000000000000 ) {
+        |   putchar('=')
+        | }
+        |
+        | // double check value was preserved
+        | putchar( c >> 12 )
+        |
+        |}
+        |
+        |""".stripMargin
+
+    val EqAsBin = "00111101"
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+
+        checkTransmittedL('b', str, List(EqAsBin,EqAsBin,
+          "00001001", "00010010", "00100100", "01001000", "10010000", "10000000", "00000000", EqAsBin, "00001001"))
+    })
+  }
+
+  @Test
   def varLogicalAnd(): Unit = {
 
     val lines =
@@ -683,10 +729,21 @@ class SpamCCTest {
       """
         |fun main() {
         | uint16 a = 1;
+        |
         | while(true) {
         |   a = a + 1;
         |
         |   if (a>10) {
+        |     break
+        |   }
+        |   putchar(a)
+        |
+        | }
+        |
+        | while(a < 100) {
+        |   a = a - 1;
+        |
+        |   if (a==0) {
         |     break
         |   }
         |   putchar(a)
@@ -697,7 +754,7 @@ class SpamCCTest {
 
     compile(lines, outputCheck = {
       lines =>
-        checkTransmittedDecs(lines, List(2, 3, 4, 5, 6, 7, 8, 9, 10))
+        checkTransmittedDecs(lines, List(2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
     })
   }
 
