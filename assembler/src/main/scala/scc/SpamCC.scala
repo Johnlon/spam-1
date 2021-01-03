@@ -22,6 +22,8 @@ todo:
 
  */
 // TODO: Add some traps for stupid errors like putchar("...") which I wasted loads of time on
+// TODO USE "export" to allow sharing a var into static subroutines in call tree (not sure if will work for stack based calls) - could be used for "globals?"
+
 
 package scc
 

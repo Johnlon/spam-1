@@ -1,5 +1,6 @@
 package scc
 
+import scc.Program.{DivByZeroLabel, MathErrorLabel}
 import scc.Scope.LABEL_NAME_SEPARATOR
 import scc.SpamCC.{TWO_BYTE_STORAGE, split}
 
@@ -104,11 +105,13 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
       // It is somewhat inefficient that I has to shove the value into RAM and back out on each step.
       val otherStatements: List[String] = otherExpr.reverse.zipWithIndex.flatMap {
         case (AluExpr(op, b), idx) =>
-          // clause must drop it's result into $V3
+
+          // clause must drop it's result into WORKLO/WORKHI
           val expressionValueClause = b.expr(depth + 1, parent)
 
           val label = s"; concatenate clause ${idx + 1} to ram [:$temporaryVarLabel] <= $op $b"
 
+          // WORKLO/WORKI have already been updated by the next term so apply WORKLO/HI To the currently stashed accumulated value
           val thisClause = op match {
             case "+" =>
               List(
@@ -124,7 +127,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
                 s"$TMPREG = [:$temporaryVarLabel + 1]",
                 s"[:$temporaryVarLabel+1] = $TMPREG A_MINUS_B_MINUS_C $WORKHI"
               )
-            case op @ ("&" | "|" | "^" | "~&" | "~") =>
+            case op@("&" | "|" | "^" | "~&" | "~") =>
               List(
                 s"$TMPREG = [:$temporaryVarLabel]",
                 s"[:$temporaryVarLabel] = $TMPREG $op $WORKLO _S",
@@ -132,21 +135,76 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
                 s"[:$temporaryVarLabel + 1] = $TMPREG $op $WORKHI"
               )
             case ">>" =>
+              val shiftLoop = parent.fqnLabelPathUnique("shiftLoop")
+              val doShift = parent.fqnLabelPathUnique("doShift")
+              val endLoop = parent.fqnLabelPathUnique("endShiftLoop")
+
               // sadly my alu doesn't allow carry-in to the shift operations
               List(
-                s"; LSR load hi byte",
+                s"$shiftLoop:",
+
+                s"; is loop done?",
+                s"NOOP = $WORKHI A_MINUS_B 0 _S",
+                s"PCHITMP = < :$doShift",
+                s"PC = > :$doShift _NE",
+                s"NOOP = $WORKLO A_MINUS_B 0 _S",
+                s"PC = > :$doShift _NE",
+
+                s"PCHITMP = < :$endLoop",
+                s"PC = > :$endLoop",
+
+                s"$doShift:",
+
+                s"; count down loop",
+                s"$WORKLO = $WORKLO A_MINUS_B 1 _S",
+                s"$WORKHI = $WORKHI A_MINUS_B_MINUS_C 0",
+
+                s"; do one shift",
                 s"$TMPREG = [:$temporaryVarLabel + 1]",
                 s"$V2 = $TMPREG",
                 s"$V2 = $V2 & 1",
                 s"$V2 = $V2 << 7",
                 s"[:$temporaryVarLabel + 1] = $TMPREG A_LSR_B 1 _S",
 
-                s"; LSR load lo byte",
+                s"; LSR load lo byte and or in the carry",
                 s"$TMPREG = [:$temporaryVarLabel]",
                 s"$TMPREG = $TMPREG A_LSR_B 1",
                 s"[:$temporaryVarLabel] = $TMPREG  | $V2",
 
-          )
+                s"; loop again",
+                s"PCHITMP = < :$shiftLoop",
+                s"PC = > :$shiftLoop",
+                s"$endLoop:",
+
+              )
+            case "/" =>
+              List(
+                s"; only allow div by 0-255 for now so abort if RHS > 255",
+                s"NOOP = 0 A_MINUS_B [:$temporaryVarLabel + 1] _S",
+                s"PCHITMP = < $MathErrorLabel",
+                s"PC = > $MathErrorLabel _NE",
+
+                s"; check for divide by zero",
+                s"NOOP = 0 A_MINUS_B [:$temporaryVarLabel] _S", // only do op is HI was 0, result is _Z if both are zero
+                s"PCHITMP = < $DivByZeroLabel",
+                s"PC = > $DivByZeroLabel _EQ",
+                ???, // NEEDTO FIGURE OUT OR ALLOW ONLY @ 8 BIT ?
+                s"; run division loop - MARHI is divisor, MARLO is quotient ",
+                s"MARHI = [:$temporaryVarLabel]",
+                s"MARLO = 0",
+
+                // WORK  OUT THE  DIV LOOP
+                s"$V2 = [:$temporaryVarLabel + 1]",
+                s"$TMPREG = [:$temporaryVarLabel]",
+                s"subtract_loop:",
+                s"[:$temporaryVarLabel] = $TMPREG A_MINUS_B $WORKLO _S",
+                s"PCHITMP = < :done_loop",
+                s"PC = > :done_loop _C",
+
+                s"[:$temporaryVarLabel+1] = $TMPREG A_MINUS_B_MINUS_C $WORKHI",
+                s"done_loop:",
+
+              )
             case x =>
               sys.error("NOT IMPL " + x)
           }

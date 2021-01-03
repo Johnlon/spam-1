@@ -25,6 +25,8 @@ todo:
 
 package scc
 
+import java.nio.file.{Files, Paths}
+
 import asm.{AluOp, EnumParserOps}
 
 import scala.language.postfixOps
@@ -33,12 +35,12 @@ import scala.util.parsing.combinator.JavaTokenParsers
 
 class StatementParser {
 
-  self : ExpressionParser with ConstExpressionParser with ConditionParser with EnumParserOps with JavaTokenParsers =>
+  self: ExpressionParser with ConstExpressionParser with ConditionParser with EnumParserOps with JavaTokenParsers =>
 
   val SPACE = " "
 
   def statement: Parser[Block] = positioned {
-    comment |
+    blockComment | lineComment |
       //statementUInt8Eq |
       statementUInt16EqExpr |
       statementUInt16EqCondition |
@@ -56,10 +58,10 @@ class StatementParser {
       stmtPutsName |
       statementGetchar |
       whileCond | whileTrue | ifCond | breakOut | functionCall |
-      statementVarString ^^ {
-        s =>
-          s
-      }
+      statementVarStringFromFile | statementVarString ^^ {
+      s =>
+        s
+    }
   }
 
   def statements: Parser[List[Block]] = statement ~ (statement *) ^^ {
@@ -171,6 +173,22 @@ class StatementParser {
     }
   }
 
+  def statementVarStringFromFile: Parser[DefVarEqString] = positioned {
+    "var" ~> name ~ ("=" ~ "file(") ~ quotedString <~ ")" ~ SEMICOLON ^^ {
+      case target ~ _ ~ fileName =>
+
+        val path = Paths.get(fileName)
+        val data = try {
+          Files.readAllBytes(path)
+        } catch {
+          case _: Throwable =>
+            sys.error("can't read " + path.toFile.getPath + " (" + path.toFile.getAbsolutePath + ")")
+        }
+        val str = new String(data, "ISO8859-1")
+        DefVarEqString(target, str)
+    }
+  }
+
   def statementRef: Parser[DefRefEqVar] = positioned {
     "ref" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
       case refName ~ _ ~ target => DefRefEqVar(refName, target)
@@ -252,20 +270,29 @@ class StatementParser {
         IfCond(cond._1, cond._2, content)
     }
   }
-//  def ifCond: Parser[Block] = positioned {
-//    "if" ~ "(" ~> conditionWithConst ~ ")" ~ "{" ~ statements <~ "}" ^^ {
-//      case cond ~ _ ~ _ ~ content => IfCond(cond._1, cond._2, content)
-//    }
-//  }
+
+  //  def ifCond: Parser[Block] = positioned {
+  //    "if" ~ "(" ~> conditionWithConst ~ ")" ~ "{" ~ statements <~ "}" ^^ {
+  //      case cond ~ _ ~ _ ~ content => IfCond(cond._1, cond._2, content)
+  //    }
+  //  }
 
 
-  def comment: Parser[Block] = positioned {
+  def lineComment: Parser[Block] = positioned {
     "//.*".r ^^ {
-      c => Comment(c)
+      c =>
+        LineComment(c)
     }
   }
 
-  def program: Parser[Program] = "program" ~ "{" ~> ((comment | functionDef) +) <~ "}" ^^ {
+  def blockComment: Parser[BlockComment] = positioned {
+    "(?s)/\\*(.*?)(?=\\*/)".r <~ "*/" ^^ {
+      c =>
+        BlockComment(c)
+    }
+  }
+
+  def program: Parser[Program] = "program" ~ "{" ~> ((statementUInt16EqExpr | lineComment | blockComment | functionDef) +) <~ "}" ^^ {
     fns => Program(fns)
   }
 

@@ -1,0 +1,50 @@
+program{
+fun main() {
+    uint8 loop = 0;
+    uint8 NONE = 0;
+    uint8 UP = 2;
+    uint8 DOWN = 3;
+    uint8 RIGHT = 5;
+    uint8 LEFT = 4;
+    uint8 DRAW = 10;
+
+    putchar(NONE)
+    putchar(NONE)
+
+    while ( loop <= 26) {
+
+        uint8 b = 10;
+        while ( b > 0 ) {
+            putchar(RIGHT)
+            b = b - 1;
+        }
+        b = 10;
+        while ( b > 0 ) {
+            putchar(DOWN)
+            b = b - 1;
+        }
+        b = 10;
+        while ( b > 0 ) {
+            putchar(LEFT)
+            b = b - 1;
+        }
+
+        b = 10;
+        while ( b > 0 ) {
+            putchar(UP)
+            b = b - 1;
+        }
+
+        uint8 a = 33 + loop;
+        putchar(DRAW)
+        putchar( a )
+
+        // offset next cycle
+        putchar(RIGHT)
+        putchar(DOWN)
+
+        loop = loop + 1;
+    }
+}
+
+}

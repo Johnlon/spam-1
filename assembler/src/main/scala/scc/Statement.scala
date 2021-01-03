@@ -25,6 +25,8 @@ todo:
 
 package scc
 
+import org.apache.commons.text.StringEscapeUtils
+import scc.Program.RootEndLabel
 import scc.SpamCC.{MAIN_LABEL, TWO_BYTE_STORAGE, intTo2xBytes, split}
 
 import scala.collection.mutable
@@ -230,11 +232,15 @@ case class LetVarEqVar(targetVarName: String, srcVarName: String) extends Block 
 
 
 case class DefVarEqString(target: String, str: String) extends Block {
+  val escaped = StringEscapeUtils.escapeJava(str)
+
+  override def toString = "DefVarEqString(" + target + ", \"" + escaped + "\")"
+
   override def gen(depth: Int, parent: Scope): List[String] = {
     // nothing to do but record the data with current scope - data will be laid out later
-    parent.assignVarLabel(target, IsData, str.getBytes("UTF-8").toList).fqn
+    parent.assignVarLabel(target, IsData, str.getBytes("ISO8859-1").toList).fqn
     List(
-      s"""; var $target = "$str""""
+      s"""; var $target = "$escaped""""
     )
   }
 }
@@ -736,10 +742,23 @@ case class CallFunction(fnName: String, argExpr: List[BlkCompoundAluExpr]) exten
       List((depth, " ) "))
 }
 
-case class Comment(comment: String) extends Block(logEntryExit = false) {
-  override def gen(depth: Int, parent: Scope): List[String] = {
+case class LineComment(comment: String) extends Block(logEntryExit = false) {
+  override def gen(depth: Int, parent: Scope): Seq[String] = {
     val withoutLeading = comment.replace("//", "")
     List(s"; $withoutLeading")
+  }
+}
+case class BlockComment(comment: String) extends Block(logEntryExit = false) {
+  override def toString: String =
+    "BlockComment(" + comment.replaceAll("[\n\r]","\\\\n") + ")"
+
+  override def gen(depth: Int, parent: Scope): Seq[String] = {
+    val patched = comment.
+      replaceAll("^/\\*","").
+      replaceAll("\\*/$","").
+      split("[\n\r]+").
+      map( ";" + _ ).toSeq
+    patched
   }
 }
 
@@ -782,9 +801,26 @@ case class Program(fns: List[Block]) {
          |PC = > :$MAIN_LABEL
          |""")
 
-    varlist ++ jumpToMain ++ asm :+
-      "root_end:" :+ "END"
+    varlist ++ jumpToMain ++ asm ++
+      Seq(
+      /*
+       // jump over whatever is next to end or program
+        s"PCHITMP = < :$RootEndLabel",
+        s"PC = > :$RootEndLabel",
+        // other std functions can sit here
+        " ; nothing extra at moment",
+
+        // end of program has no code at this location and sim can detect this
+       */
+        s"$RootEndLabel:"
+    ) :+ "END"
   }
+}
+
+object Program {
+  val RootEndLabel = "root_end"
+  val DivByZeroLabel = s"(:$RootEndLabel+2)"
+  val MathErrorLabel = s"(:$RootEndLabel+4)"
 }
 
 abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) extends Positional {
