@@ -7,7 +7,7 @@ trait ConstExpressionParser {
 
   def SEMICOLON = ";"
 
-  def name: Parser[String] = "[a-zA-Z][a-zA-Z0-9_]*".r ^^ (a => a)
+  def name: Parser[String] = "[a-zA-Z_][a-zA-Z0-9_]*".r ^^ (a => a)
 
   // permits \0 null char
   def quotedString: Parser[String] = ("\"" + """([^"\x01-\x1F\x7F\\]|\\[\\'"0bfnrt]|\\u[a-fA-F0-9]{4})*""" + "\"").r ^^ {

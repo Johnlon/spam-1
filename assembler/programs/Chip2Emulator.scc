@@ -1,7 +1,6 @@
 program {
     fun main() {
-        //`uint16 PC_INIT=$200;
-        uint16 PC_INIT=0;
+        uint16 PC_INIT=$200;
         uint16 STATE_NONE=0;
         uint16 DO_NONE=0;
         uint16 DO_CLEAR='C';
@@ -15,33 +14,59 @@ program {
             uint16 opcodehi = prog[pc];
             uint16 opcodelo = prog[pc+1];
 
-            putchar(pc)
+            //putchar(pc)
 
             uint16 opcode = (opcodehi << 8) + opcodelo;
-            putchar(opcodehi)
-            putchar(opcodelo)
+
+            uint16 N___ = opcode & $f000;
+            uint16 _NNN = opcode & $0fff;
+            uint16 _X__ = opcodehi & $0f;
+            uint16 __Y_ = opcodelo >> 4;
+            uint16 __NN = opcodelo;
+            uint16 ___N = opcodelo & $0f;
+
 
             if (opcode == $00e0) {
                 // draw
                 putchar('C')
+            } else if (opcode == $00ee) {
+               // return
+               putchar('R')
+            } else if (opcodehi == $00) {
+               // obsolete machine jump
+               putchar('O')
+            } else if (N___ == $1000) {
+               // jump to nnn
+               putchar('J')
+               pc = (_NNN - 2) - PC_INIT;
+            } else if (N___ == $6000) {
+               // set x = nn
+               putchar('S')
+               putchar(_X__)
+               putchar(__NN)
+            } else if (N___ == $7000) {
+               // add x = x + nn
+               putchar('A')
+               putchar(_X__)
+               putchar(__NN)
+            } else if (N___ == $A000) {
+               // set index
+               putchar('I')
+            } else if (N___ == $D000) {
+               // set x = nn
+               putchar('D')
+               putchar(_X__)
+               putchar(__Y_)
+               putchar(___N)
             } else {
-                if (opcode == $00ee) {
-                    // return
-                    putchar('R')
-                } else {
-                    if (opcodehi == $00) {
-                        // obsolete machine jump
-                        putchar('O')
-                    } else {
-                        putchar('X')
-                    }
-                }
+               putchar('X')
+               putchar(opcodehi)
+               putchar(opcodelo)
             }
             
 
 
             pc = pc + 2;
-            putchar(pc)
         }
         
 
