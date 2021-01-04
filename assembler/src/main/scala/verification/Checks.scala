@@ -10,7 +10,7 @@ object Checks {
     assertEquals(List(expected), matches)
   }
 
-  def checkTransmittedChars(actual: List[String], expected: List[String]): Unit = {
+  def checkTransmittedChars(actual: Seq[String], expected: Seq[String]): Unit = {
     val matches = extractTransmitted('c', actual)
     assertEquals(expected, matches)
   }
@@ -47,7 +47,7 @@ object Checks {
     assertEquals(expected, actual)
   }
 
-  private def extractTransmitted(selector: Char, str: List[String]): List[String] = {
+  private def extractTransmitted(selector: Char, str: Seq[String]): Seq[String] = {
     str.filter(_.contains(s"TRANSMITTING")).map(s => s.replaceAll(s".*\\[$selector:", "").replaceAll("].*", ""))
   }
 

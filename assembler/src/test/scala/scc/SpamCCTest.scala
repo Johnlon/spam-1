@@ -982,7 +982,7 @@ class SpamCCTest {
   }
 
   @Test
-  def stringIndexing(): Unit = {
+  def stringIndexingRead(): Unit = {
 
     val lines =
       """
@@ -1011,6 +1011,26 @@ class SpamCCTest {
       checkTransmittedChar(str, 'B')
       checkTransmittedChar(str, 'C')
       checkTransmittedChar(str, 'D')
+    })
+  }
+
+  @Test
+  def stringIndexingWrite(): Unit = {
+
+    val lines =
+      """
+        |fun main() {
+        | // define string
+        | var string = "ABCD\0";
+        | string[1] = '!';
+        | putchar(string[0])
+        | putchar(string[1])
+        | putchar(string[2])
+        |}
+        |""".stripMargin
+
+    compile(lines, verbose = true, quiet = true, outputCheck = str => {
+      checkTransmittedChars(str, Seq("A", '!'.toString, "C"))
     })
   }
 

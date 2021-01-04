@@ -230,6 +230,47 @@ case class LetVarEqVar(targetVarName: String, srcVarName: String) extends Block 
 }
 
 
+// general purpose
+case class LetStringIndexEqExpr(targetVar: String, indexBlock: BlkCompoundAluExpr, valueBlock: BlkCompoundAluExpr) extends Block {
+  override def gen(depth: Int, parent: Scope): Seq[String] = {
+    val indexStatements: Seq[String] = indexBlock.expr(depth + 1, parent)
+    val valueStatements: Seq[String] = valueBlock.expr(depth + 1, parent)
+
+    val indexLabelLo = parent.assignVarLabel("INDEX_LO", IsVar8But).fqn
+    val indexLabelHi = parent.assignVarLabel("INDEX_HI", IsVar8But).fqn
+
+    val targLabel = parent.getVarLabel(targetVar).fqn
+
+    // TODO - POINT MAR USING labelTarget + value of indexStatements
+    // then write 8 bit value into it
+    // indexStatements leave results in WORKLO/WORKHI
+    val idxSaveStatements = Seq(
+      s"[:$indexLabelLo] = $WORKLO A_PLUS_B        (> :$targLabel) _S",
+      s"[:$indexLabelHi] = $WORKHI A_PLUS_B_PLUS_C (< :$targLabel)",
+    )
+
+    val marLocnStatements = Seq(
+      s"MARLO = [:$indexLabelLo]",
+      s"MARHI = [:$indexLabelHi]",
+    )
+
+    val assign = List(
+      s"RAM = $WORKLO",
+    )
+    indexStatements ++ idxSaveStatements ++
+      valueStatements ++
+      marLocnStatements ++ assign
+  }
+
+  override def dump(depth: Int): List[(Int, String)] =
+    List(
+      (depth, this.getClass.getSimpleName + "("),
+      (depth + 1, targetVar)
+    ) ++ valueBlock.dump(depth + 1) ++
+      List((depth, ")"))
+}
+
+
 case class DefVarEqString(target: String, str: String) extends Block {
   val escaped = StringEscapeUtils.escapeJava(str)
 

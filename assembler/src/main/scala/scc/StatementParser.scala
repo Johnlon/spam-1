@@ -54,6 +54,7 @@ class StatementParser {
       statementLetVarEqConst |
       statementLetVarEqVar |
       statementLetVarEqExpr |
+      statementLetStringIndexEqExpr |
       statementPutcharVarOptimisation | statementPutcharConstOptimisation | stmtPutcharGeneral |
       stmtPutsName |
       statementGetchar |
@@ -153,6 +154,14 @@ class StatementParser {
     name ~ "=" ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
       case target ~ _ ~ expr =>
         LetVarEqExpr(target, expr)
+    }
+  }
+
+  // general purpose
+  def statementLetStringIndexEqExpr: Parser[LetStringIndexEqExpr] = positioned {
+    name ~ "[" ~ blkCompoundAluExpr ~ ("]" ~ "=") ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
+      case varName ~ _ ~ idxExpr ~ _ ~ valExpr =>
+        LetStringIndexEqExpr(varName, idxExpr, valExpr)
     }
   }
 
