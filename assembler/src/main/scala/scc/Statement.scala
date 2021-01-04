@@ -567,7 +567,18 @@ case class IfCond(flagToCheck: String, conditionBlock: Block,
       List(
         (depth, ")")
       ) ++
-      content.flatMap(_.dump(depth + 1))
+      List(
+        (depth, "Body ( ")
+      ) ++
+      content.flatMap(_.dump(depth + 1)) ++
+      List(
+        (depth, ")"),
+        (depth, "Else (")
+      ) ++
+      elseContent.flatMap(_.dump(depth + 1)) ++
+      List(
+        (depth, ")"),
+      )
 
 }
 

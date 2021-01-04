@@ -264,7 +264,17 @@ class StatementParser {
     }
   }
 
-  def elseBlock: Parser[List[Block]] = "else" ~ "{" ~> statements <~ "}"
+  def elseCurlyBlock: Parser[List[Block]] = "else" ~ "{" ~> statements <~ "}"
+
+  def elseNonCurlyBlock: Parser[List[Block]] = "else" ~> statement ^^ {
+    b =>
+      List(b)
+  }
+
+  def elseBlock: Parser[List[Block]] = elseCurlyBlock | elseNonCurlyBlock ^^ {
+    blk =>
+      blk
+  }
 
   def ifCond: Parser[Block] = positioned {
     "if" ~ "(" ~> conditionExpr ~ ")" ~ "{" ~ statements ~ "}" ~ opt(elseBlock) ^^ {

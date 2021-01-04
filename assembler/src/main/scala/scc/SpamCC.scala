@@ -103,6 +103,7 @@ class SpamCC extends StatementParser with ExpressionParser with ConstExpressionP
         println("SpamCC parsed : ")
         println(matched.dump(1))
 
+        println("Compiling : ")
         matched.compile()
       case msg: Failure =>
         sys.error(s"FAILURE: $msg ")

@@ -323,6 +323,44 @@ class SpamCCTest {
   }
 
   @Test
+  def varEqIfElse(): Unit = {
+
+    val lines =
+      """
+        |
+        |fun main(x) {
+        | uint16 a = 2;
+        |
+        | if (a>2) {
+        |   putchar(1)
+        | } else {
+        |   if (a<2) {
+        |     putchar(2)
+        |   }
+        |   else { // ==
+        |     putchar(3)
+        |   }
+        | }
+        |
+        | if (a>2) {
+        |   putchar(1)
+        | } else if (a<2) {
+        |     putchar(2)
+        | }
+        | else { // ==
+        |     putchar(3)
+        | }
+        |}
+        |
+        |""".stripMargin
+
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+        checkTransmittedL('d', str, List("3", "3"))
+    })
+  }
+
+  @Test
   def varEqIfCondition(): Unit = {
 
     val lines =
@@ -336,34 +374,33 @@ class SpamCCTest {
         |
         | if (a>$1110) {
         |   putchar(1)
-        | } else {
+        | } else
         |   if (a<$1110) {
         |     putchar(2)
         |   }
         |   else { // ==
         |     putchar(3)
         |   }
-        | }
-
+        |
+        |
         | if (a>$1010) {
         |   putchar(11)
-        | } else {
+        | } else
         |   if (a<$1010) {
         |     putchar(12)
         |   } else { // ==
         |     putchar(13)
         |   }
-        | }
+        |
         |
         | if (a>$1210) {
         |   putchar(21)
-        | } else {
-        |   if (a<$1210) {
-        |     putchar(22)
-        |   } else { // ==
-        |     putchar(23)
-        |   }
+        | } else if (a<$1210) {
+        |   putchar(22)
+        | } else { // ==
+        |   putchar(23)
         | }
+        |
         |
         | // comparing lower byte
         | if (a>$1101) {

@@ -4,25 +4,44 @@ program {
         uint16 PC_INIT=0;
         uint16 STATE_NONE=0;
         uint16 DO_NONE=0;
-        uint16 DO_CLEAR=1;
+        uint16 DO_CLEAR='C';
 
         var prog = file("/home/john/OneDrive/github/johnlon/chip-8/src/main/resources/chip8/roms/IBM_Logo.ch8");
 
-        uint16 pc = PC_INIT;
+        uint16 pc = 0;
 
         while (pc < 200)  {
+            
             uint16 opcodehi = prog[pc];
             uint16 opcodelo = prog[pc+1];
 
+            putchar(pc)
+
             uint16 opcode = (opcodehi << 8) + opcodelo;
+            putchar(opcodehi)
+            putchar(opcodelo)
+
             if (opcode == $00e0) {
-                putchar('D')
-            } 
-            if (opcode != $00e0) {
-                break
+                // draw
+                putchar('C')
+            } else {
+                if (opcode == $00ee) {
+                    // return
+                    putchar('R')
+                } else {
+                    if (opcodehi == $00) {
+                        // obsolete machine jump
+                        putchar('O')
+                    } else {
+                        putchar('X')
+                    }
+                }
             }
+            
+
 
             pc = pc + 2;
+            putchar(pc)
         }
         
 
