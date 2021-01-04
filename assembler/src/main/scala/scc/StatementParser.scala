@@ -264,10 +264,12 @@ class StatementParser {
     }
   }
 
+  def elseBlock: Parser[List[Block]] = "else" ~ "{" ~> statements <~ "}"
+
   def ifCond: Parser[Block] = positioned {
-    "if" ~ "(" ~> conditionExpr ~ ")" ~ "{" ~ statements <~ "}" ^^ {
-      case cond ~ _ ~ _ ~ content =>
-        IfCond(cond._1, cond._2, content)
+    "if" ~ "(" ~> conditionExpr ~ ")" ~ "{" ~ statements ~ "}" ~ opt(elseBlock) ^^ {
+      case cond ~ _ ~ _ ~ content ~ _ ~ elseContent =>
+        IfCond(cond._1, cond._2, content, elseContent.getOrElse(Nil))
     }
   }
 

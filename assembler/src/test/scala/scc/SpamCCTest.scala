@@ -336,53 +336,54 @@ class SpamCCTest {
         |
         | if (a>$1110) {
         |   putchar(1)
-        | }
-        | if (a<$1110) {
-        |   putchar(2)
-        | }
-        | if (a==$1110) {
-        |   putchar(3)
+        | } else {
+        |   if (a<$1110) {
+        |     putchar(2)
+        |   }
+        |   else { // ==
+        |     putchar(3)
+        |   }
         | }
 
         | if (a>$1010) {
         |   putchar(11)
-        | }
-        | if (a<$1010) {
-        |   putchar(12)
-        | }
-        | if (a==$1010) {
-        |   putchar(13)
+        | } else {
+        |   if (a<$1010) {
+        |     putchar(12)
+        |   } else { // ==
+        |     putchar(13)
+        |   }
         | }
         |
         | if (a>$1210) {
         |   putchar(21)
-        | }
-        | if (a<$1210) {
-        |   putchar(22)
-        | }
-        | if (a==$1210) {
-        |   putchar(23)
+        | } else {
+        |   if (a<$1210) {
+        |     putchar(22)
+        |   } else { // ==
+        |     putchar(23)
+        |   }
         | }
         |
         | // comparing lower byte
         | if (a>$1101) {
         |   putchar(31)
-        | }
-        | if (a<$1101) {
-        |   putchar(32)
-        | }
-        | if (a==$1101) {
-        |   putchar(33)
+        | } else {
+        |   if (a<$1101) {
+        |     putchar(32)
+        |   } else { // ==
+        |     putchar(33)
+        |   }
         | }
         |
         | if (a>$1120) {
         |   putchar(41)
-        | }
-        | if (a<$1120) {
-        |   putchar(42)
-        | }
-        | if (a==$1120) {
-        |   putchar(43)
+        | } else {
+        |   if (a<$1120) {
+        |     putchar(42)
+        |   } else { // ==
+        |     putchar(43)
+        |   }
         | }
         |
         | // compare

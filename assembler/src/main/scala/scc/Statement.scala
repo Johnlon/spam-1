@@ -34,7 +34,6 @@ import scala.language.postfixOps
 import scala.util.parsing.input.Positional
 
 
-
 //
 //case class DefVarEqConst(targetVar: String, konst: Int) extends Block {
 //  override def gen(depth: Int, parent: Scope): List[String] = {
@@ -508,14 +507,17 @@ case class WhileCond(flagToCheck: String, conditionBlock: Block, content: List[B
 
 }
 
-case class IfCond(flagToCheck: String, conditionBlock: Block, content: List[Block])
+case class IfCond(flagToCheck: String, conditionBlock: Block,
+                  content: List[Block],
+                  elseContent: List[Block]
+                 )
   extends Block(nestedName = s"ifCond${Scope.nextInt}") {
 
   override def gen(depth: Int, parent: Scope): List[String] = {
     val labelCheck = parent.toFqLabelPath("CHECK")
     val labelBody = parent.toFqLabelPath("BODY")
+    val labelElse = parent.toFqLabelPath("ELSE")
     val labelBot = parent.toFqLabelPath("AFTER")
-
 
     val condStatements = conditionBlock.expr(depth + 1, parent) // IMPORTANT TO USE THE PARENT DIRECTLY HERE AS THE CONDITION VAR IS DEFINED IN THE SURROUNDING CONTEXT
 
@@ -526,10 +528,9 @@ case class IfCond(flagToCheck: String, conditionBlock: Block, content: List[Bloc
           s"""
              |PCHITMP = <:$labelBody
              |PC = >:$labelBody $flagToCheck
-             |PCHITMP = <:$labelBot
-             |PC = >:$labelBot
-             |$labelBody:
-                 """)
+             |PCHITMP = <:$labelElse
+             |PC = >:$labelElse
+              """)
     }
 
     val stmts = content.flatMap {
@@ -538,12 +539,24 @@ case class IfCond(flagToCheck: String, conditionBlock: Block, content: List[Bloc
       }
     }
 
-    val suffix = split(
-      s"""
-         |$labelBot:
-         |""")
+    val elseStmts = elseContent.flatMap {
+      b => {
+        b.expr(depth + 1, parent) //.pushName(newName = labelBase))
+      }
+    }
 
-    conditionalJump ++ stmts ++ suffix
+    conditionalJump ++
+      Seq(s"$labelBody:") ++
+      stmts ++
+      Seq(
+        s"PCHITMP = <:$labelBot",
+        s"PC = >:$labelBot",
+        s"$labelElse:"
+      ) ++
+      elseStmts ++
+      Seq(
+        s"$labelBot:"
+      )
   }
 
   override def dump(depth: Int): List[(Int, String)] =
@@ -750,16 +763,17 @@ case class LineComment(comment: String) extends Block(logEntryExit = false) {
     List(s"; $withoutLeading")
   }
 }
+
 case class BlockComment(comment: String) extends Block(logEntryExit = false) {
   override def toString: String =
-    "BlockComment(" + comment.replaceAll("[\n\r]","\\\\n") + ")"
+    "BlockComment(" + comment.replaceAll("[\n\r]", "\\\\n") + ")"
 
   override def gen(depth: Int, parent: Scope): Seq[String] = {
     val patched = comment.
-      replaceAll("^/\\*","").
-      replaceAll("\\*/$","").
+      replaceAll("^/\\*", "").
+      replaceAll("\\*/$", "").
       split("[\n\r]+").
-      map( ";" + _ ).toSeq
+      map(";" + _).toSeq
     patched
   }
 }
@@ -805,17 +819,17 @@ case class Program(fns: List[Block]) {
 
     varlist ++ jumpToMain ++ asm ++
       Seq(
-      /*
-       // jump over whatever is next to end or program
-        s"PCHITMP = < :$RootEndLabel",
-        s"PC = > :$RootEndLabel",
-        // other std functions can sit here
-        " ; nothing extra at moment",
+        /*
+         // jump over whatever is next to end or program
+          s"PCHITMP = < :$RootEndLabel",
+          s"PC = > :$RootEndLabel",
+          // other std functions can sit here
+          " ; nothing extra at moment",
 
-        // end of program has no code at this location and sim can detect this
-       */
+          // end of program has no code at this location and sim can detect this
+         */
         s"$RootEndLabel:"
-    ) :+ "END"
+      ) :+ "END"
   }
 }
 

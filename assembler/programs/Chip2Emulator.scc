@@ -14,9 +14,6 @@ program {
             uint16 opcodehi = prog[pc];
             uint16 opcodelo = prog[pc+1];
 
-//            putchar(opcodehi)
-//            putchar(opcodelo)
-
             uint16 opcode = (opcodehi << 8) + opcodelo;
             if (opcode == $00e0) {
                 putchar('D')
