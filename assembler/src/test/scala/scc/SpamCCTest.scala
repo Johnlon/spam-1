@@ -1020,17 +1020,22 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | // define string
         | var string = "ABCD\0";
         | string[1] = '!';
+        |
+        | // define string
         | putchar(string[0])
         | putchar(string[1])
         | putchar(string[2])
+        |
+        | // this expression creates further temp vars in addition to those created on string[1] assign above - code gen is expected to generate unique names (INDEX_LO/HI)
+        | string[1] = string[1] + 2;
+        | putchar(string[1])
         |}
         |""".stripMargin
 
     compile(lines, verbose = true, quiet = true, outputCheck = str => {
-      checkTransmittedChars(str, Seq("A", '!'.toString, "C"))
+      checkTransmittedChars(str, Seq("A", "!", "C", "#"))
     })
   }
 

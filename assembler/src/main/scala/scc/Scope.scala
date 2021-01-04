@@ -48,7 +48,7 @@ case class Scope private(parent: Scope,
     toFqLabelPath(child) + LABEL_NAME_SEPARATOR + Scope.nextInt
   }
 
-  /* returns a globally unique name that is contextual by ibcluding the block name*/
+  /* returns a globally unique name that is contextual by including the block name*/
   def fqnVarPathUnique(child: String): String = {
     toFqVarPath(child) + LABEL_NAME_SEPARATOR + Scope.nextInt
   }

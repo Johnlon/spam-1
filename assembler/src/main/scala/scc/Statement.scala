@@ -236,8 +236,8 @@ case class LetStringIndexEqExpr(targetVar: String, indexBlock: BlkCompoundAluExp
     val indexStatements: Seq[String] = indexBlock.expr(depth + 1, parent)
     val valueStatements: Seq[String] = valueBlock.expr(depth + 1, parent)
 
-    val indexLabelLo = parent.assignVarLabel("INDEX_LO", IsVar8But).fqn
-    val indexLabelHi = parent.assignVarLabel("INDEX_HI", IsVar8But).fqn
+    val indexLabelLo = parent.assignVarLabel("INDEX_LO"+Scope.nextInt, IsVar8But).fqn
+    val indexLabelHi = parent.assignVarLabel("INDEX_HI"+Scope.nextInt, IsVar8But).fqn
 
     val targLabel = parent.getVarLabel(targetVar).fqn
 
