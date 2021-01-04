@@ -236,26 +236,26 @@ case class LetStringIndexEqExpr(targetVar: String, indexBlock: BlkCompoundAluExp
     val indexStatements: Seq[String] = indexBlock.expr(depth + 1, parent)
     val valueStatements: Seq[String] = valueBlock.expr(depth + 1, parent)
 
-    val indexLabelLo = parent.assignVarLabel("INDEX_LO"+Scope.nextInt, IsVar8But).fqn
-    val indexLabelHi = parent.assignVarLabel("INDEX_HI"+Scope.nextInt, IsVar8But).fqn
+    // string indexing creates needs temp vars and a string indexing can occur multiple times at the same scope eg "a[1] = a[1] + 1" so
+    // we need to make sure these temp vars are local - ie unique.
+    val indexTempVarLo = parent.assignVarLabel("INDEX_TMP_LO"+Scope.nextInt, IsVar8But).fqn
+    val indexTempVarHi = parent.assignVarLabel("INDEX_TMP_HI"+Scope.nextInt, IsVar8But).fqn
 
     val targLabel = parent.getVarLabel(targetVar).fqn
 
-    // TODO - POINT MAR USING labelTarget + value of indexStatements
-    // then write 8 bit value into it
-    // indexStatements leave results in WORKLO/WORKHI
     val idxSaveStatements = Seq(
-      s"[:$indexLabelLo] = $WORKLO A_PLUS_B        (> :$targLabel) _S",
-      s"[:$indexLabelHi] = $WORKHI A_PLUS_B_PLUS_C (< :$targLabel)",
+      s"[:$indexTempVarLo] = $WORKLO A_PLUS_B        (> :$targLabel) _S",
+      s"[:$indexTempVarHi] = $WORKHI A_PLUS_B_PLUS_C (< :$targLabel)",
     )
 
     val marLocnStatements = Seq(
-      s"MARLO = [:$indexLabelLo]",
-      s"MARHI = [:$indexLabelHi]",
+      s"MARLO = [:$indexTempVarLo]",
+      s"MARHI = [:$indexTempVarHi]",
     )
 
     val assign = List(
       s"RAM = $WORKLO",
+      // ignores upper byte of assignment as we only deal in byte arrays not word arrays at the moment
     )
     indexStatements ++ idxSaveStatements ++
       valueStatements ++
