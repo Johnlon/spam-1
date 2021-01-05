@@ -1,19 +1,45 @@
 program {
     fun main() {
+        uint16 FONT_ADDR = $50;
+
         uint16 PC_INIT=$200;
         uint16 STATE_NONE=0;
         uint16 DO_NONE=0;
         uint16 DO_CLEAR='C';
 
-        var prog = file("/home/john/OneDrive/github/johnlon/chip-8/src/main/resources/chip8/roms/IBM_Logo.ch8");
-        var registers = "000000000000000";
+        var registers = [ "000000000000000" ];
 
-        uint16 pc = 0;
+        var memory = [
+            $50 : [
+                $F0 $90 $90 $90 $F0       
+                $20 $60 $20 $20 $70      
+                $F0 $10 $F0 $80 $F0     
+                $F0 $10 $F0 $10 $F0    
+                $90 $90 $F0 $10 $10   
+                $F0 $80 $F0 $10 $F0  
+                $F0 $80 $F0 $90 $F0       
+                $F0 $10 $20 $40 $40      
+                $F0 $90 $F0 $90 $F0     
+                $F0 $90 $F0 $10 $F0    
+                $F0 $90 $F0 $90 $90   
+                $E0 $90 $E0 $90 $E0  
+                $F0 $80 $80 $80 $F0      
+                $E0 $90 $90 $90 $E0     
+                $F0 $80 $F0 $80 $F0    
+                $F0 $80 $F0 $80 $80   
+            ]
+            $200 : [file("/home/john/OneDrive/github/johnlon/chip-8/src/main/resources/chip8/roms/IBM_Logo.ch8")]
+            $4096: []
+        ];
 
-        while (pc < 200)  {
+        uint16 pc = PC_INIT;
+        uint16 index = 0;
+
+
+        while (true)  {
             
-            uint16 opcodehi = prog[pc];
-            uint16 opcodelo = prog[pc+1];
+            uint16 opcodehi = memory[pc];
+            uint16 opcodelo = memory[pc+1];
 
             uint16 opcode = (opcodehi << 8) + opcodelo;
 
@@ -29,42 +55,50 @@ program {
                 // draw
                 putchar('C')
             } else if (opcode == $00ee) {
-               // return
+               // return by pulling address off stack
                putchar('R')
             } else if (opcodehi == $00) {
                // obsolete machine jump
                putchar('!')
-            } else if (N___ == $1000) {
+            } 
+            else if (N___ == $1000) { 
                // jump to nnn
                putchar('J')
-               pc = (_NNN - 2) - PC_INIT;
-            } else if (N___ == $6000) {
+               pc = _NNN - 2;
+            } 
+            else if (N___ == $6000) { // DONE
                // set x = nn
                putchar('S')
                putchar(_X__)
                putchar(__NN)
                registers[_X__] = __NN;
-            } else if (N___ == $7000) {
+            } 
+            else if (N___ == $7000) { // DONE
                // add x = x + nn
                putchar('A')
                putchar(_X__)
                putchar(__NN)
-            } else if (N___ == $A000) {
+               registers[_X__] = registers[_X__] + __NN; 
+            } 
+            else if (N___ == $A000) { // DONE
                // set index
                putchar('I')
-            } else if (N___ == $D000) {
-               // set x = nn
+               index = _NNN;
+            } 
+            if (N___ == $D000) {
+               // draw glyph indentified by Index reg at position X/Y with height N
                putchar('D')
                putchar(_X__)
                putchar(__Y_)
                putchar(___N)
-            } else {
+            } 
+           /* else {
                putchar('X')
                putchar(opcodehi)
                putchar(opcodelo)
             }
+*/
             
-
 
             pc = pc + 2;
         }
@@ -74,7 +108,6 @@ program {
 
         //uint16 pc_hi= <:PC_INIT
 
-       // uint16 inst_hi = prog[:
 
     }
 }

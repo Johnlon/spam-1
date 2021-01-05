@@ -206,8 +206,8 @@ case class LetVarEqVar(targetVarName: String, srcVarName: String) extends Block 
     val src = parent.getVarLabel(srcVarName)
     val targ = parent.getVarLabel(targetVarName)
 
-    val srcFqn = parent.getVarLabel(srcVarName)
-    val targFqn = parent.getVarLabel(targetVarName)
+    val srcFqn = parent.getVarLabel(srcVarName).fqn
+    val targFqn = parent.getVarLabel(targetVarName).fqn
 
     targ.typ match {
       //      case IsVar8 | IsData =>
@@ -238,8 +238,8 @@ case class LetStringIndexEqExpr(targetVar: String, indexBlock: BlkCompoundAluExp
 
     // string indexing creates needs temp vars and a string indexing can occur multiple times at the same scope eg "a[1] = a[1] + 1" so
     // we need to make sure these temp vars are local - ie unique.
-    val indexTempVarLo = parent.assignVarLabel("INDEX_TMP_LO"+Scope.nextInt, IsVar8But).fqn
-    val indexTempVarHi = parent.assignVarLabel("INDEX_TMP_HI"+Scope.nextInt, IsVar8But).fqn
+    val indexTempVarLo = parent.assignVarLabel("INDEX_TMP_LO" + Scope.nextInt, IsVar8But).fqn
+    val indexTempVarHi = parent.assignVarLabel("INDEX_TMP_HI" + Scope.nextInt, IsVar8But).fqn
 
     val targLabel = parent.getVarLabel(targetVar).fqn
 
@@ -272,15 +272,63 @@ case class LetStringIndexEqExpr(targetVar: String, indexBlock: BlkCompoundAluExp
 
 
 case class DefVarEqString(target: String, str: String) extends Block {
-  val escaped = StringEscapeUtils.escapeJava(str)
+  private val escaped = StringEscapeUtils.escapeJava(str)
 
-  override def toString = "DefVarEqString(" + target + ", \"" + escaped + "\")"
+  override def toString = s"""DefVarEqString( $target, "$escaped" )"""
 
   override def gen(depth: Int, parent: Scope): List[String] = {
     // nothing to do but record the data with current scope - data will be laid out later
     parent.assignVarLabel(target, IsData, str.getBytes("ISO8859-1").toList).fqn
     List(
       s"""; var $target = "$escaped""""
+    )
+  }
+}
+
+case class DefVarEqData(target: String, data: Seq[Byte]) extends Block {
+  private val escaped = data.map(b => f"$b%02X").mkString(" ")
+
+  override def toString = s"DefVarEqData( $target, [$escaped] )"
+
+  override def gen(depth: Int, parent: Scope): List[String] = {
+    // nothing to do but record the data with current scope - data will be laid out later
+    parent.assignVarLabel(target, IsData, data).fqn
+    List(
+      s"""; var $target = [$escaped]"""
+    )
+  }
+}
+
+case class DefVarEqLocatedData(target: String, locatedData: Seq[(Int, Seq[Byte])]) extends Block {
+
+  private val data = {
+    val sortedByAddr = locatedData.sortBy(x => x._1)
+    val extent: Int = locatedData.map(c => c._1 + c._2.size).sorted.lastOption.getOrElse(0)
+
+    val data = (0 until extent).map(_ => 0.toByte).toBuffer
+    sortedByAddr.foreach {
+      case (addr, d) =>
+        var pos = addr
+        d.foreach {
+          f =>
+            data(pos) = f
+            pos += 1
+        }
+    }
+    data.toSeq
+  }
+
+  private val escaped = data.map(b => f"$b%02X").mkString(" ")
+
+  override def toString = s"statementVarDataLocated( $target, [$locatedData] )"
+//  override def toString = s"statementVarDataLocated( $target, [$escaped] )"
+
+  override def gen(depth: Int, parent: Scope): List[String] = {
+
+    // nothing to do but record the data with current scope - data will be laid out later
+    parent.assignVarLabel(target, IsData, data).fqn
+    List(
+      s"""; var $target = [$escaped]"""
     )
   }
 }
@@ -836,7 +884,7 @@ case class Program(fns: List[Block]) {
     fns.flatMap {
       _.dump(depth)
     }.map {
-      ds => ("      " * ds._1) + ds._2
+      ds => ("  " * ds._1) + ds._2
     }.mkString("\n")
   }
 
@@ -904,28 +952,32 @@ abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) exte
 
     val thisScope = localize(parentScope)
 
-    val enter = s"${prefixComment(depth)}ENTER ${thisScope.blockName} @ $this $pos"
-    val exit = s"${prefixComment(depth)}EXIT  ${thisScope.blockName} @ $this"
+    val enter = s"${commentPrefix(depth)}ENTER ${thisScope.blockName} @ $this $pos"
+    val exit = s"${commentPrefix(depth)}EXIT  ${thisScope.blockName} @ $this"
+    val indentPrefix = opPrefix(depth)
 
     try {
-      val value: Seq[String] = this match {
+      // register functions ...
+      this match {
         case bf: DefFunction =>
           val fns = parentScope.lookupFunction(bf.functionName)
           fns.foreach(found => sys.error(s"function already defined '${bf.functionName}' at scope ${found._1.blockName} as ${found._2}"))
 
           parentScope.addFunction(thisScope, bf)
-
-          gen(depth, thisScope).map(l => {
-            prefixOp(depth) + l
-          })
         case _ =>
-          gen(depth, thisScope).map(l => {
-            prefixOp(depth) + l
-          })
       }
 
-      if (logEntryExit) enter +: value :+ exit
-      else value
+      // generate code
+      val generatedCode = gen(depth, thisScope)
+      val prettyCode: Seq[String] = generatedCode.map(l => {
+        indentPrefix + l
+      })
+
+      // optionally add more comments
+      if (logEntryExit)
+        enter +: prettyCode :+ exit
+      else
+        prettyCode
 
     } catch {
       case ex: Exception =>
@@ -942,9 +994,14 @@ abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) exte
     parent.pushScope(nestedName)
   }
 
-  private def prefixComment(depth: Int) = s"; ($depth) ${" " * depth}"
+  private def commentPrefix(depth: Int) = s"; ($depth)  "
 
-  private def prefixOp(depth: Int) = prefixComment(depth).replaceAll(".", " ")
+  private def opPrefix(indent: Int) = {
+    // indent ops to the same amount as the first word of the surrounding comment text
+    val prefixOfCommentAtThisDepth = commentPrefix(indent)
+    // convert comment prefix to whitespace
+    prefixOfCommentAtThisDepth.replaceAll(".", " ")
+  }
 
   protected[this] def gen(depth: Int, parent: Scope): Seq[String]
 }

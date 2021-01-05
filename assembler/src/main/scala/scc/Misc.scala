@@ -12,7 +12,7 @@ object IsVar8But extends VarType
 
 object IsRef extends VarType
 
-case class Variable(name: String, fqn: String, address: Int, bytes: List[Byte], typ: VarType)
+case class Variable(name: String, fqn: String, address: Int, bytes: Seq[Byte], typ: VarType)
 
 case class FunctionArg(argName: String, isOutput: Boolean) {
   def dump(depth: Int): List[(Int, String)] = {

@@ -63,7 +63,7 @@ case class Scope private(parent: Scope,
     functions.append(newReg)
   }
 
-  def assignVarLabel(name: String, typ: VarType, data: List[Byte] = ONE_BYTE_STORAGE): Variable = {
+  def assignVarLabel(name: String, typ: VarType, data: Seq[Byte] = ONE_BYTE_STORAGE): Variable = {
     assert(typ != IsVar16 || data.length==2)
     assert(typ != IsVar8But || data.length==1)
 

@@ -44,6 +44,8 @@ class StatementParser {
       //statementUInt8Eq |
       statementUInt16EqExpr |
       statementUInt16EqCondition |
+      statementVarDataLocated |
+      statementVarData |
       //      statementVarEqVarOpVar |
       //      statementVarEqVar |
       //      statementVarEqVarOpConst |
@@ -58,8 +60,7 @@ class StatementParser {
       statementPutcharVarOptimisation | statementPutcharConstOptimisation | stmtPutcharGeneral |
       stmtPutsName |
       statementGetchar |
-      whileCond | whileTrue | ifCond | breakOut | functionCall |
-      statementVarStringFromFile | statementVarString ^^ {
+      whileCond | whileTrue | ifCond | breakOut | functionCall ^^ {
       s =>
         s
     }
@@ -172,31 +173,85 @@ class StatementParser {
     }
   }
 
-  /*
-  STRING:     STR     "ABC\n\0\u0000"
-  BYTE_ARR:   BYTES   [ 'A', 65 ,$41, %10101010 ] ; parse as hex bytes and then treat as per STR
-  */
-  def statementVarString: Parser[DefVarEqString] = positioned {
-    "var" ~> name ~ "=" ~ quotedString <~ SEMICOLON ^^ {
-      case target ~ _ ~ str => DefVarEqString(target, str)
-    }
+  def dataSourceString: Parser[Seq[Byte]] = quotedString ^^ {
+    str =>
+      str.getBytes("ISO8859-1").toSeq
   }
 
-  def statementVarStringFromFile: Parser[DefVarEqString] = positioned {
-    "var" ~> name ~ ("=" ~ "file(") ~ quotedString <~ ")" ~ SEMICOLON ^^ {
-      case target ~ _ ~ fileName =>
+  def dataSourceBytes: Parser[Seq[Byte]] =
+    rep1(constExpression) ^^ {
+      data =>
+        data.map(_.toByte)
+    }
 
+  def dataSourceFile: Parser[Seq[Byte]] =
+    "file(" ~> quotedString <~ ")" ^^ {
+      fileName => {
         val path = Paths.get(fileName)
-        val data = try {
+        try {
           Files.readAllBytes(path)
         } catch {
           case _: Throwable =>
             sys.error("can't read " + path.toFile.getPath + " (" + path.toFile.getAbsolutePath + ")")
         }
-        val str = new String(data, "ISO8859-1")
-        DefVarEqString(target, str)
+      }
+    }
+
+  def dataSource = dataSourceFile | dataSourceString | dataSourceBytes
+
+  /*
+  STRING:     STR     "ABC\n\0\u0000"
+  BYTE_ARR:   BYTES   [ 'A', 65 ,$41, %10101010 ] ; parse as hex bytes and then treat as per STR
+  */
+  def statementVarData: Parser[DefVarEqData] = positioned {
+    "var" ~> name ~ ("=" ~ "[") ~ dataSource <~ ("]" ~ SEMICOLON) ^^ {
+      case target ~ _ ~ str =>
+        DefVarEqData(target, str)
     }
   }
+
+  def locatedData: Parser[(Int, Seq[Byte])] = constExpression ~ (":" ~ "[") ~ opt(dataSource) <~ "]" ^^ {
+    case k ~ _ ~ ds =>
+      (k, ds.getOrElse(Nil))
+  }
+
+  def statementVarDataLocated: Parser[DefVarEqLocatedData] = positioned {
+    "var" ~> name ~ ("=" ~ "[") ~ rep1(locatedData) <~ ("]" ~ SEMICOLON) ^^ {
+      case target ~ _ ~ dataL =>
+        DefVarEqLocatedData(target, dataL)
+    }
+  }
+
+
+  //
+  //  def statementVarDataFromFile: Parser[DefVarEqData] = positioned {
+  //    "var" ~> name ~ ("=" ~ "[" ~ "file(") ~ quotedString <~ (")" ~ "]" ~ SEMICOLON) ^^ {
+  //      case target ~ _ ~ fileName =>
+  //
+  //        val path = Paths.get(fileName)
+  //        val data = try {
+  //          Files.readAllBytes(path)
+  //        } catch {
+  //          case _: Throwable =>
+  //            sys.error("can't read " + path.toFile.getPath + " (" + path.toFile.getAbsolutePath + ")")
+  //        }
+  //        DefVarEqData(target, data)
+  //    }
+  //  }
+  //
+  //  def statementVarDataFromData: Parser[DefVarEqData] = positioned {
+  //    "var" ~> name ~ ("=" ~ "[") ~ rep(constExpression) <~ "]" ~ SEMICOLON ^^ {
+  //      case target ~ _ ~ data =>
+  //        DefVarEqData(target, data.map(_.toByte))
+  //    }
+  //  }
+
+  //  def statementVarData: Parser[DefVarEqData] = positioned {
+  //    "var" ~> name ~ ("=" ~ "[") ~ rep(constExpression) <~ "]" ~ SEMICOLON ^^ {
+  //      case target ~ _ ~ data =>
+  //        DefVarEqData(target, data.map(_.toByte))
+  //    }
+  //  }
 
   def statementRef: Parser[DefRefEqVar] = positioned {
     "ref" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {

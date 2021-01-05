@@ -35,7 +35,7 @@ class SpamCCTest {
 
     val lines =
       """fun main() {
-        | var s = file("src/test/resources/SomeData.txt");
+        | var s = [file("src/test/resources/SomeData.txt")];
         |}
         |""".stripMargin
 
@@ -62,11 +62,42 @@ class SpamCCTest {
   }
 
   @Test
+  def varFromData(): Unit = {
+
+    val lines =
+      """fun main() {
+        | var s = [00 01 $ff];
+        |}
+        |""".stripMargin
+
+
+    val actual = compile(lines, verbose = true)
+
+    val expected = split(
+      """root_function_main___VAR_RETURN_HI: EQU   0
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_s: EQU   2
+        |root_function_main___VAR_s: BYTES [0, 1, -1]
+        |PCHITMP = < :ROOT________main_start
+        |PC = > :ROOT________main_start
+        |ROOT________main_start:
+        |root_function_main___LABEL_START:
+        |PCHITMP = <:root_end
+        |PC = >:root_end
+        |root_end:
+        |END""".stripMargin)
+
+    assertSame(expected, actual)
+  }
+
+  @Test
   def varFromLongFile(): Unit = {
 
     val lines =
       """fun main() {
-        | var s = file("src/test/resources/LotOfData.txt");
+        | var s = [file("src/test/resources/LotOfData.txt")];
         | uint16 a0 = s[0];
         | uint16 a255= s[255];
         | uint16 a256 = s[256];
@@ -79,28 +110,10 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual = compile(lines, verbose = true, outputCheck = {
+    compile(lines, verbose = true, outputCheck = {
       str =>
         checkTransmittedChars('d', str, List('0', '5', '6', 'F'))
     })
-
-    val expected = split(
-      """root_function_main___VAR_RETURN_HI: EQU   0
-        |root_function_main___VAR_RETURN_HI: BYTES [0]
-        |root_function_main___VAR_RETURN_LO: EQU   1
-        |root_function_main___VAR_RETURN_LO: BYTES [0]
-        |root_function_main___VAR_s: EQU   2
-        |root_function_main___VAR_s: BYTES [65, 66, 10, 67]
-        |PCHITMP = < :ROOT________main_start
-        |PC = > :ROOT________main_start
-        |ROOT________main_start:
-        |root_function_main___LABEL_START:
-        |PCHITMP = <:root_end
-        |PC = >:root_end
-        |root_end:
-        |END""".stripMargin)
-
-    assertSame(expected, actual)
   }
 
   @Test
@@ -118,7 +131,7 @@ class SpamCCTest {
 
     val lines =
       s"""fun main() {
-         | var s = file("$fileForwrdSlash");
+         | var s = [file("$fileForwrdSlash")];
          |}
          |""".stripMargin
 
@@ -137,7 +150,51 @@ class SpamCCTest {
         |root_function_main___LABEL_START:
         |PCHITMP = <:root_end
         |PC = >:root_end
-        |PCHITMP = < :root_end
+        |root_end:
+        |END""".stripMargin)
+
+    assertSame(expected, actual)
+  }
+
+  @Test
+  def varFromMixedData(): Unit = {
+
+    val data = File.createTempFile(this.getClass.getName, ".dat")
+    val os = new FileOutputStream(data)
+    ('a' to 'c').foreach {
+      x => os.write(x)
+    }
+    os.close()
+
+    // backslash in names look like escapes
+    val fileForwardSlash = data.getAbsolutePath.replaceAll("\\\\", "/")
+
+    val lines =
+      s"""fun main() {
+         | var s = [
+         |    2: [file("$fileForwardSlash")]
+         |    10: [ 'A' 'B' 'C' ]
+         |    15: [ ]
+         | ];
+         |}
+         |""".stripMargin
+
+    val actual = compile(lines, verbose = true)
+
+    val expected = split(
+      """root_function_main___VAR_RETURN_HI: EQU   0
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_s: EQU   2
+        |root_function_main___VAR_s: BYTES [0, 0, 97, 98, 99, 0, 0, 0, 0, 0, 65, 66, 67, 0, 0]
+        |PCHITMP = < :ROOT________main_start
+        |PC = > :ROOT________main_start
+        |ROOT________main_start:
+        |root_function_main___LABEL_START:
+        |PCHITMP = <:root_end
+        |PC = >:root_end
+        |root_end:
         |END""".stripMargin)
 
     assertSame(expected, actual)
@@ -915,8 +972,8 @@ class SpamCCTest {
         |fun main() {
         |
         | // define string
-        | var even = "Even\0";
-        | var odd = "Odd\0";
+        | var even = ["Even\0"];
+        | var odd = ["Odd\0"];
         |
         | // value at 16 bit var ptr becomes address of array odd
         | ref ptr = odd;
@@ -955,7 +1012,7 @@ class SpamCCTest {
          |fun main() {
          |
          | // define string
-         | var string = "$data\\0";
+         | var string = ["$data\\0"];
          |
          | // value at 16 bit var ptr becomes address of array odd
          | uint16 addr16 = string;
@@ -988,7 +1045,7 @@ class SpamCCTest {
       """
         |fun main() {
         | // define string
-        | var string = "ABCD\0";
+        | var string = ["ABCD\0"];
         |
         | // index by literal
         | uint16 ac = string[0];
@@ -1020,7 +1077,7 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | var string = "ABCD\0";
+        | var string = ["ABCD\0"];
         | string[1] = '!';
         |
         | // define string
@@ -1046,7 +1103,7 @@ class SpamCCTest {
       """
         |fun main() {
         | // define string
-        | var string = "ABCD\0";
+        | var string = ["ABCD\0"];
         |
         | uint16 idx = 0;
         | uint16 c = string[idx];
@@ -1127,7 +1184,7 @@ class SpamCCTest {
       """
         |fun main() {
         | // define string
-        | var string = "ABCD\0";
+        | var string = [ "ABCD\0" ];
         | puts(string)
         |}
         |""".stripMargin
