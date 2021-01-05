@@ -222,37 +222,6 @@ class StatementParser {
     }
   }
 
-
-  //
-  //  def statementVarDataFromFile: Parser[DefVarEqData] = positioned {
-  //    "var" ~> name ~ ("=" ~ "[" ~ "file(") ~ quotedString <~ (")" ~ "]" ~ SEMICOLON) ^^ {
-  //      case target ~ _ ~ fileName =>
-  //
-  //        val path = Paths.get(fileName)
-  //        val data = try {
-  //          Files.readAllBytes(path)
-  //        } catch {
-  //          case _: Throwable =>
-  //            sys.error("can't read " + path.toFile.getPath + " (" + path.toFile.getAbsolutePath + ")")
-  //        }
-  //        DefVarEqData(target, data)
-  //    }
-  //  }
-  //
-  //  def statementVarDataFromData: Parser[DefVarEqData] = positioned {
-  //    "var" ~> name ~ ("=" ~ "[") ~ rep(constExpression) <~ "]" ~ SEMICOLON ^^ {
-  //      case target ~ _ ~ data =>
-  //        DefVarEqData(target, data.map(_.toByte))
-  //    }
-  //  }
-
-  //  def statementVarData: Parser[DefVarEqData] = positioned {
-  //    "var" ~> name ~ ("=" ~ "[") ~ rep(constExpression) <~ "]" ~ SEMICOLON ^^ {
-  //      case target ~ _ ~ data =>
-  //        DefVarEqData(target, data.map(_.toByte))
-  //    }
-  //  }
-
   def statementRef: Parser[DefRefEqVar] = positioned {
     "ref" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
       case refName ~ _ ~ target => DefRefEqVar(refName, target)
@@ -346,13 +315,6 @@ class StatementParser {
         IfCond(cond._1, cond._2, content, elseContent.getOrElse(Nil))
     }
   }
-
-  //  def ifCond: Parser[Block] = positioned {
-  //    "if" ~ "(" ~> conditionWithConst ~ ")" ~ "{" ~ statements <~ "}" ^^ {
-  //      case cond ~ _ ~ _ ~ content => IfCond(cond._1, cond._2, content)
-  //    }
-  //  }
-
 
   def lineComment: Parser[Block] = positioned {
     "//.*".r ^^ {
