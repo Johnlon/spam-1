@@ -210,6 +210,7 @@ class StatementParser {
     }
   }
 
+  // data can be zero length in which case it is merely a means to ensure capacity to that point without specifying data
   def locatedData: Parser[(Int, Seq[Byte])] = constExpression ~ (":" ~ "[") ~ opt(dataSource) <~ "]" ^^ {
     case k ~ _ ~ ds =>
       (k, ds.getOrElse(Nil))
