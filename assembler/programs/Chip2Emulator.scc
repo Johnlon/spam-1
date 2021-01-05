@@ -1,15 +1,20 @@
 program {
     fun main() {
         uint16 FONT_ADDR = $50;
-
         uint16 PC_INIT=$200;
+
         uint16 STATE_NONE=0;
         uint16 DO_NONE=0;
         uint16 DO_CLEAR='C';
 
-        var registers = [ "000000000000000" ];
+        // 16 x 8 bits
+        var registers = [ 16: [] ];
+
+        // 16 x 16 bits
+        var stack = [ 32: [] ];
 
         var memory = [
+            // fonts
             $50 : [
                 $F0 $90 $90 $90 $F0       
                 $20 $60 $20 $20 $70      
@@ -28,8 +33,12 @@ program {
                 $F0 $80 $F0 $80 $F0    
                 $F0 $80 $F0 $80 $80   
             ]
+
+            // program
             $200 : [file("/home/john/OneDrive/github/johnlon/chip-8/src/main/resources/chip8/roms/IBM_Logo.ch8")]
-            $4096: []
+
+            // memory limit - put a zero explicitely at posn - this has same effect as as "$4096=[]"
+            $4095: [0]
         ];
 
         uint16 pc = PC_INIT;
@@ -53,7 +62,7 @@ program {
 
             if (opcode == $00e0) {
                 // draw
-                putchar('C')
+                putchar(DO_CLEAR)
             } else if (opcode == $00ee) {
                // return by pulling address off stack
                putchar('R')

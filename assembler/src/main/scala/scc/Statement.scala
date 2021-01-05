@@ -299,15 +299,17 @@ case class DefVarEqData(target: String, data: Seq[Byte]) extends Block {
   }
 }
 
-case class DefVarEqLocatedData(target: String, locatedData: Seq[(Int, Seq[Byte])]) extends Block {
+case class LocatedData(location: Int, data: Seq[Byte])
+case class DefVarEqLocatedData(target: String, locatedData: Seq[LocatedData]) extends Block {
 
   private val data = {
-    val sortedByAddr = locatedData.sortBy(x => x._1)
-    val extent: Int = locatedData.map(c => c._1 + c._2.size).sorted.lastOption.getOrElse(0)
+    val sortedByAddr = locatedData.sortBy(x => x.location)
+    val extent: Int = locatedData.map(c => c.location + c.data.size).sorted.lastOption.getOrElse(0)
 
     val data = (0 until extent).map(_ => 0.toByte).toBuffer
+
     sortedByAddr.foreach {
-      case (addr, d) =>
+      case LocatedData(addr, d) =>
         var pos = addr
         d.foreach {
           f =>

@@ -211,15 +211,17 @@ class StatementParser {
   }
 
   // data can be zero length in which case it is merely a means to ensure capacity to that point without specifying data
-  def locatedData: Parser[(Int, Seq[Byte])] = constExpression ~ (":" ~ "[") ~ opt(dataSource) <~ "]" ^^ {
+  def locatedData: Parser[LocatedData] = constExpression ~ (":" ~ "[") ~ opt(dataSource) <~ "]" ^^ {
     case k ~ _ ~ ds =>
-      (k, ds.getOrElse(Nil))
+      LocatedData(k, ds.getOrElse(Nil))
   }
 
-  def statementVarDataLocated: Parser[DefVarEqLocatedData] = positioned {
-    "var" ~> name ~ ("=" ~ "[") ~ rep1(locatedData) <~ ("]" ~ SEMICOLON) ^^ {
+  def statementVarDataLocated: Parser[Block] = positioned {
+    "var" ~> name ~ ("=" ~ "[") ~ rep1(locatedData|blockComment|lineComment) <~ ("]" ~ SEMICOLON) ^^ {
+      // doesn't preserve the comments - too much hassle
       case target ~ _ ~ dataL =>
-        DefVarEqLocatedData(target, dataL)
+        val d = dataL.collect { case b: LocatedData => b }
+        DefVarEqLocatedData(target, d)
     }
   }
 
@@ -317,7 +319,7 @@ class StatementParser {
     }
   }
 
-  def lineComment: Parser[Block] = positioned {
+  def lineComment: Parser[LineComment] = positioned {
     "//.*".r ^^ {
       c =>
         LineComment(c)
@@ -339,8 +341,9 @@ class StatementParser {
     val shortAluOps = {
       // reverse sorted to put longer operators ahead of shorter ones otherwise shorter ones gobble
       val reverseSorted = AluOp.values.filter(_.isAbbreviated).sortBy(x => x.abbrev).reverse.toList
-      reverseSorted map { m =>
-        literal(m.abbrev) ^^^ m
+      reverseSorted map {
+        m =>
+          literal(m.abbrev) ^^^ m
       } reduceLeft {
         _ | _
       }
