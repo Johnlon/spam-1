@@ -1,12 +1,12 @@
 
 ![SPAM-1](docs/spam1.png)
 
-
 # SPAM-1 CPU - Simple Programmable and Massive
 
 An 8 bit home brew CPU built using 1970's logic chips.
 
 This project is currently in it's 3rd incarnation. 
+
 ## Version 1a
 
 You can see the first incarnation here on the [OriginalDesign branch](https://github.com/Johnlon/spam-1/tree/OriginalDesign)
@@ -25,7 +25,9 @@ This was a pretty massive increase in complexity and capability however, while t
 
 I'm currently working on what I hope is the final version.
 
-This has a 24 bit instruction word spread across 3 ROM's as I couldn't be bothered with the logic to drive this off a single ROM (plus it's faster that way). The other big change is that I've included a bunch of features that are intended for exploration and learning such as a register file and having basically 5 buses!
+This has a 48 bit instruction word spread across 6 ROM's. It's 48 bit instruction read as a single operation as I couldn't be bothered with the instruction register logic necessary
+ to drive the CPU off a single big ROM (plus it's faster that way). The other big change is that I've included a bunch of features that are intended for exploration and
+  learning such as a register file and having 5 buses!
 
 ![Block Diagram](docs/draft-v3-block-diagram.png)
 
@@ -63,15 +65,18 @@ Leaning verilog and reworking most of the design has taken months, but as of Jun
 
 # Objectives
 
-- I want to build something non-trivial with direct and immediate addressing capabilites for variety
-- I want to use it as a vehicle for learning about lots of stuff including register files and other curiosities as well as instruction set design, some lesser known chips, and so on
-- I originally wanted to be able to run at least the typical demo programs like Fibonacci, but that proved pretty trivial and was done in version 1a as a program on the logisim version - I want more than that now as h/w with out sofware is nothing
-- It will have an assembly language and assembler and hopefully some kind of higher language compilere
-- I want to simulate it first - verilog
-- I want to build it physically, or a more likely a derivative (update 2020: it has turned out to be a distant derivative fo the original design)
-- Attach some output devices - eg a UART / tty that respects VT codes (or Graphics??)
-- I would like to extend it to play some kind of basic game (tbd)
-- I want to finally complete it during 2020 (please!!!)
+- :green_square::white_large_square::white_large_square: I want to build something non-trivial with direct and immediate addressing capabilities for variety
+- :green_square::white_large_square::white_large_square: I want to use it as a vehicle for learning about lots of stuff including register files and other curiosities plus instruction set design, some lesser known chips, and so on
+- [x] I originally wanted to be able to run at least the typical demo programs like Fibonacci, but that proved pretty trivial and was done in version 1a as a program on the Logisim version
+- [x] I want to be able to run some games somehow - hardware without software is nothing (update: 2021 - I have the verilog hardware simulator running a Chip 8 emulator)
+- [x] I will write an assembly language and assembler 
+- [x] I will create some kind of higher level language compiler
+- [x] I want to simulate the hardware entirely first, using verilog
+- [ ] I want to build it physically, or a more likely a derivative (update 2020: it has turned out to be a distant derivative of the original design)
+- [ ] I want to attach some output devices - eg a UART / tty that respects VT codes
+- [ ] I want to hook it up to a basic graphics output using VGA - stretch
+- [ ] I would like to extend it to play some kind of basic game (update 2021: I've got the simulator running a Chip8 emulator over the simulated UART onto a terminal)
+- [ ] I want to finally complete it during 2020 (please!!!  update 2021 : failed on this big time!)
 
 :star: Initially I wanted to do the tool chain a little differently to some of the other efforts on the internet! I want the assembler and any other code I write to to be more readily accessible and instantly usable to others without installing python or perl or whatever first, so I've wrote an assembler in google sheets! 
 
