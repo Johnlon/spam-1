@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.swing.BorderFactory
 import org.apache.commons.io.input.{Tailer, TailerListener}
 
+import scala.collection.mutable
 import scala.swing.event._
 import scala.swing.{Rectangle, _}
 
@@ -15,11 +16,15 @@ object UARTTerminal extends SimpleSwingApplication {
   val uartOut = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.out"
   val uartControl = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.control"
 
-  val width = 50
-  val height = 40
+  val C8_SCREEN_HEIGHT = 32
+  val C8_SCREEN_WIDTH = 64
+
+  val width = C8_SCREEN_WIDTH; //50
+  val height = C8_SCREEN_HEIGHT; // 40
 
   val BLANKCHAR = '.'
   val BLANK = BLANKCHAR.toString
+  val BLOCKCHAR = 0x2588.toChar // '#'
 
   var x = new AtomicInteger(0)
   var y = new AtomicInteger(0)
@@ -29,24 +34,29 @@ object UARTTerminal extends SimpleSwingApplication {
   val K_LEFT: Char = 'L'
   val K_RIGHT: Char = 'R'
 
-  val DO_NONE: Char = 0
-  val DO_CLEAR: Char = 1
-  val DO_UP: Char = 2
-  val DO_DOWN: Char = 3
-  val DO_LEFT: Char = 4
-  val DO_RIGHT: Char = 5
-  val DO_ORIGIN: Char = 6
-  val DO_CENTRE: Char = 7
-  val DO_SETX: Char = 8
-  val DO_SETY: Char = 9
+  // valid in NONE_STATE
+  val GOTO_COMMAND_STATE: Char = 0
+  val GOTO_SETX_STATE: Char = 1  // switch state
+  val GOTO_SETY_STATE: Char = 2  // switch state
+  val GOTO_DRAW_PIXEL_STATE: Char = 3 // switch state
+  val GOTO_DRAW_BYTE_STATE: Char = 4 // switch state
+  val DO_CLEAR: Char = 10
+  val DO_UP: Char = 11
+  val DO_DOWN: Char = 12
+  val DO_LEFT: Char = 13
+  val DO_RIGHT: Char = 14
+  val DO_ORIGIN: Char = 15
+  val DO_CENTRE: Char = 16
 
-  val STATE_NONE: Char = 100  // next is a direct op like "RIGHT", or a signal to start a two byte binary value op like DRAW
-  val STATE_SETX: Char = 101
-  val STATE_SETY: Char = 102
-  val STATE_DRAW: Char = 103  // TODO THIS COULD BE START_DRAW & LENGTH TO AVOID COST OF "DRAW/CHAR","DRAW/DHAR" pairs
-  var state: Char = STATE_NONE
+  sealed trait TerminalIOState
+  object STATE_COMMAND extends TerminalIOState  // next is a direct op like "RIGHT", or a signal to start a two byte binary value op like DRAW
+  object STATE_SETX  extends TerminalIOState
+  object STATE_SETY  extends TerminalIOState
+  object STATE_DRAW_PIXEL  extends TerminalIOState
+  object STATE_DRAW_BYTE  extends TerminalIOState
+  var state: TerminalIOState = STATE_COMMAND
 
-  var data = fill()
+  var data: mutable.Seq[mutable.Buffer[Char]] = fill()
 
   val text = new TextArea("Java Version: " + util.Properties.javaVersion + "\n" + "john")
   text.border = BorderFactory.createLineBorder(Color.BLUE)
@@ -84,13 +94,13 @@ object UARTTerminal extends SimpleSwingApplication {
   }
 
   def top: Frame = new MainFrame {
-    bounds = new Rectangle(50, 100, 200, 30)
+    //bounds = new Rectangle(50, 100, 300, 30)
 
     val brefresh = new Button("Reset")
     val bpaint = new Button("Paint")
 
-    text.preferredSize = new Dimension(650, 600)
-    text.font = new Font(Font.Monospaced, scala.swing.Font.Plain.id, 10)
+    text.preferredSize = new Dimension(900, 600)
+    text.font = new Font("Courier New", scala.swing.Font.Plain.id, 10)
 
     plot(DO_CENTRE)
 
@@ -142,17 +152,22 @@ object UARTTerminal extends SimpleSwingApplication {
 
   def doRepaint(): Unit = {
     val LEFT_MARGIN = "   "
-    val GAP = " "
+    val GAP = ""
 
-    val t = "\n" + data.map(LEFT_MARGIN + _.mkString(GAP)).mkString("\n")
+    val t = "\n" + data.map(line => LEFT_MARGIN + duplicateChar(line).mkString(GAP)).mkString("\n")
     text.text = t
     //    text.repaint()
   }
 
+  // double the width of the chars to make them more blocky
+  private def duplicateChar(line: mutable.Buffer[Char]) = {
+    line.map(x => s"$x$x")
+  }
+
   def clearScreen(): Unit = {
-    (0 to height) foreach {
+    (0 until height) foreach {
       h =>
-        (0 to width) foreach {
+        (0 until width) foreach {
           w =>
             data(h)(w) = BLANKCHAR
         }
@@ -162,25 +177,43 @@ object UARTTerminal extends SimpleSwingApplication {
   def plot(c: Char): Unit = synchronized {
     state match {
       case STATE_SETX =>
-        state = STATE_NONE
         x.set(c)
+        state = STATE_COMMAND
       case STATE_SETY =>
-        state = STATE_NONE
         y.set(c)
-      case STATE_DRAW =>
-        state = STATE_NONE
+        state = STATE_COMMAND
+      case STATE_DRAW_PIXEL =>
         val yi = y.get()
         val xi = x.get()
         data(yi)(xi) = c
-      case STATE_NONE =>
+        state = STATE_COMMAND
+      case STATE_DRAW_BYTE =>
+        val yi = y.get()
+        val xi = x.get()
+        val bits = f"${c.toBinaryString}%8s".replace(' ', '0')
+
+        bits.zipWithIndex foreach {
+          case (bit, i) =>
+            val char = if (bit == '1') BLOCKCHAR else BLANKCHAR
+              data(yi)(xi+i) = char
+        }
+        state = STATE_COMMAND
+      case STATE_COMMAND =>
         c match {
-          case DO_NONE => // useful for resynchronisation - emit two 00 bytes in sequence
+          case GOTO_COMMAND_STATE =>
+            // useful for resynchronisation - emitting two "0" bytes in sequence should push system into NONE_STATE
+            // first byte either completes an existing SET/DRAW or it hits this DO_NONE_STATE noop
+            state = STATE_COMMAND
+          case GOTO_SETX_STATE =>
+            state = STATE_SETX
+          case GOTO_SETY_STATE =>
+            state = STATE_SETY
+          case GOTO_DRAW_PIXEL_STATE =>
+            state = STATE_DRAW_PIXEL
+          case GOTO_DRAW_BYTE_STATE =>
+            state = STATE_DRAW_BYTE
           case DO_CLEAR =>
             clearScreen()
-          case DO_SETX =>
-            state = STATE_SETX
-          case DO_SETY =>
-            state = STATE_SETY
           case DO_ORIGIN =>
             y.set(0)
             x.set(0)
@@ -208,7 +241,7 @@ object UARTTerminal extends SimpleSwingApplication {
     doRepaint()
   }
 
-  def fill() = {
+  def fill(): mutable.Seq[mutable.Buffer[Char]] = {
     (0 until height).map {
       d =>
         (BLANK * width).toBuffer

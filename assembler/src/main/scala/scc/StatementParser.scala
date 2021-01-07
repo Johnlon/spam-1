@@ -22,6 +22,7 @@ todo:
 
  */
 // TODO: Add some traps for stupid errors like putchar("...") which I wasted loads of time on
+// TODO while(some expr) is needed
 
 package scc
 
@@ -66,10 +67,7 @@ class StatementParser {
     }
   }
 
-  def statements: Parser[List[Block]] = statement ~ (statement *) ^^ {
-    case a ~ b =>
-      a +: b
-  }
+  def statements: Parser[List[Block]] = rep(statement) ^^ (a => a)
 
   //
   //  // optimisation of "var VARIABLE=CONST"
@@ -189,7 +187,7 @@ class StatementParser {
       fileName => {
         val path = Paths.get(fileName)
         try {
-          Files.readAllBytes(path)
+          Files.readAllBytes(path).toSeq
         } catch {
           case _: Throwable =>
             sys.error("can't read " + path.toFile.getPath + " (" + path.toFile.getAbsolutePath + ")")
@@ -197,7 +195,7 @@ class StatementParser {
       }
     }
 
-  def dataSource = dataSourceFile | dataSourceString | dataSourceBytes
+  def dataSource: Parser[Seq[Byte]] = dataSourceFile | dataSourceString | dataSourceBytes
 
   /*
   STRING:     STR     "ABC\n\0\u0000"
