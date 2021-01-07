@@ -65,10 +65,10 @@ Leaning verilog and reworking most of the design has taken months, but as of Jun
 
 # Objectives
 
-- :green_square::white_large_square::white_large_square: I want to build something non-trivial with direct and immediate addressing capabilities for variety
-- :green_square::white_large_square::white_large_square: I want to use it as a vehicle for learning about lots of stuff including register files and other curiosities plus instruction set design, some lesser known chips, and so on
+- [X] I want to build something non-trivial with direct and immediate addressing capabilities for variety
+- [x] I want to use it as a vehicle for learning about lots of stuff including register files and other curiosities plus instruction set design, some lesser known chips, and so on
 - [x] I originally wanted to be able to run at least the typical demo programs like Fibonacci, but that proved pretty trivial and was done in version 1a as a program on the Logisim version
-- [x] I want to be able to run some games somehow - hardware without software is nothing (update: 2021 - I have the verilog hardware simulator running a Chip 8 emulator)
+- [ ] I want to be able to run some games somehow - hardware without software is nothing (update: 2021 - I have the verilog hardware simulator running a Chip 8 emulator)
 - [x] I will write an assembly language and assembler 
 - [x] I will create some kind of higher level language compiler
 - [x] I want to simulate the hardware entirely first, using verilog
