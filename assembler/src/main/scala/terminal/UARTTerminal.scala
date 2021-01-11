@@ -69,6 +69,7 @@ object UARTTerminal extends SimpleSwingApplication {
   class FileListener extends TailerListener {
     def handle(line: String): Unit = {
 
+
       if (line.trim.length > 0) {
         println("! " + line)
         val c = Integer.parseInt(line, 16)
