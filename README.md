@@ -7,24 +7,7 @@ An 8 bit home brew CPU built using 1970's logic chips.
 
 This project is currently in it's 3rd incarnation. 
 
-## Version 1a
-
-This was my first attempt at anything like this.
-
-You can see the first incarnation here on the [OriginalDesign branch](https://github.com/Johnlon/spam-1/tree/OriginalDesign)
-
-Version 1a had a very simple arch that was easily implementable and for which I wrote a Logisim simulation and also an assembler in GoogleSheets that could be used to program the simulation.
-:thumbsup: See the [SPAM-1 Assembler](https://docs.google.com/spreadsheets/d/1lYyPqYNF1dGDRP2n3ablaqkgZuxJ9x6T-ylut_nT1p4/edit?usp=sharing) implemented in Google Sheets.  
-
-However, once I got that far I decided it was rather too simple and limited for me to build. I wanted more of a challenge.
-It's now months later and the challence is still brewing, which is a bit of a disappointment.
-
-## Version 1b
-
-The next revision was a pretty massive increase in complexity and capability however while this was definitely more of a challenge I felt the trade off between added complexity and added capability wasn't favourable.
- So I decided what was needed was a little bit more technical complexity for a lot more capability.
-
-## Version 1c 
+## CURRENT Design - Version 1c 
 
 I'm currently working on what I hope is the final version.
 
@@ -32,18 +15,12 @@ This version has a 48 bit instruction word spread across 6 ROM's. It's 48 bit in
 plus it's faster that way. The other big change is that I've included a bunch of features that are intended for exploration and learning such as including different kinds of 
 registers including common 8 bit flipflops plus a 74HCT670 register file, and also by having 5 buses!
 
-![Block Diagram](docs/draft-v3-block-diagram.png)
+![Block Diagram](docs/final-block-diagram.png)
 
-# Documentation Links
+### Previous Versions
 
-The following links take you to documentation covering my research and also design aspects.
+See [Previous Versions](docs/previous_versions.md) of the architecture.
 
- - [ALU Design](docs/alu_with_carry_in.md)
- - [Timing Considerations](docs/timing-considerations.md)
- - [Thoughts on Microcode](docs/thoughts-on-microcode.md)
- - [Research and References](docs/references.md)
- - [Hardware Components](docs/components.md)
- - [Digital Simulators](docs/digital-simulators.md)
 
 # Motivation
 
@@ -137,427 +114,152 @@ Therefore, there is no need for specialised conditional jump instructions, and a
 The Assembler for a jump that is conditional on Carry having been set could be  `PC = REGC + REGD _C` where the '_C' signals which flag must be set for the operation to execute.. 
 
 
-# Progress on the implementation (ie Version 1c)
-
-In this final design I have decided to push everything via the ALU.
-
-The design is shown towards the top of this page.
-
-The initial sketch was this ....
-
-![Initial all via ALU approach](docs/first-cut-all-via-alu.png)
-
-
-# Previous Versions along the way
-
-## Version 1b
-
-This version was a verilog and paper design. 
-
-But as mentioned above it wasn't enough of an functional improvement over version 1a (below) so I let this 
-continue to evolve into version 1c
-
-I had started thinking about how to pass ROM or RAM output via the ALU as well as the registers, but I still had a data bus.
-
-![Initial via ALU approach](docs/design-via-alu-sketch.png)
-
-Prior to that I extended the address space to 16 bits and started thinking about other approaches to memory addressing.
-
-![Intermediate design](docs/initial-adaption-design.png)
-
-## Version 1a
-
-The first incarnation - see the [Original design branch for more info](https://github.com/Johnlon/spam-1/blob/OriginalDesign/README.md)
-
-![Block diagram](docs/blocks-orig.png)
-
-I spent a couple of weeks building the Logism simulator for this CPU. 
-It was 8 bit and based on ideas from various places but kind of grew by itself with a little planning. 
-Its was fairly primitive one in that there was no microcoding or higher level instructions, 
-or to put it another way it used pure horizontal encoding with dedicated bits in the instruction controlling each device. 
-
-:star: The complete set of instruction and argument combinations were [here](docs/instructions.txt)
-
-- The Logism simulator worked
-- The assembler and decoder were written n Googgle Sheets and worked (see below) well 
-and I'm was happy with the way the software turned out
-- My Fib program counted up and down in a loop
-
-So all good !!
-
-This version was merely Logism sim (see more below).
-
-![Logisim-animated](docs/logisim-animation.gif)
-
-I've built the assembler in Google Sheets, which I think might be a pretty unique approach (let me know).
-
-![Assembler](docs/sheets-assembler.png) 
-
 
 # Architecture
 
-####### FIXME THIS DOCUMENTATION IS BEING UPDATED TO THE CURRENT STATE 
- 
+This is a Harvard stye of CPU.
+
+## Not a "_Single Cycle CPU_"
+
+This CPU achieves one instruction per clock cycle. However, this is NOT *"single cycle cpu"* - at least not as I want to define that term. 
+I feel that many home brew *TTP CPU's* , are not truly single cycle; and this would likely include any CPU that uses asynchronous components link RAM or latches.
+You can see my argument against the common use of the term "single cycle cpu" on [stack overflow](https://stackoverflow.com/questions/63693436/is-a-single-cycle-cpu-possible-if-asynchronous-components-are-used) ; also copied to [this local page](docs/single_cycle.md).
+Since there is no formal definition of "single cycle cpu" then I will define it as a CPU that achieves one instruction per clock cycle AND where the CPU uses only a single edge of the clock. Look to [this page](docs/single_cycle.md) where I lay explain that second condition.
+
 ## CPU Phases
 
 The CPU operates on a single clock cycle with _fetch/decode  on one edge and _execute_ on the other.
 
-### This is NOT "single cycle" - at least not as I know it!
-
-I am not going to refer to this as "single cycle" again if I have accidentally done so above because I feel that many CPU's
-I've seen, particularly in the "home brew" camp link mine, are not truly single cycle; this would likely include any CPU that uses
-asynchronous components link RAM or latches.
-
-You can see my argument against the common use of "single cycle" on [stack overflow](https://stackoverflow.com/questions/63693436/is-a-single-cycle-cpu-possible-if-asynchronous-components-are-used) ; also copied to [this page](docs/single_cycle.md)
-
-
-
 ![Timing diagram - phases](docs/timing1.png)
 
-The first phase is to load the PC with the instruction address so that the program bytes made available to the decode logic. The PC is set on the rising edge of the clock. Because there is no instruction register this is the closest we get to a conventional "fetch". 
+The first stage is to load the program counter with the next instruction address, *fetching* the program bytes from ROM and making them available to the decode logic. The PC is updated on the rising edge of the clock. 
 
-The second phase, decoding the program bytes into control lines, occurs during the high level of the clock. These control lines are fed to the various components of the CPU and determine what happens to those components during the execute phase.
+The second stage, *decoding* the program bytes into control lines, occurs during the high phase of the clock. During this phase the control lines settle and enable/disable devices determining what will happens to those components at the execute phase.
 
-The third phase, execute, occurs on the falling edge of the clock and this is where registers latch their value from the data bus.
+The third stage, *execute*, occurs on the falling edge of the clock and this is where new values are clocked into registers or into RAM from the ALU data bus.
 
-Except ... that's not honestly how it works.
+A hugely significant thing that happens during the high phase of the clock. This is the settling of the combinatorial logic which include the ROM's and decoding logic. The propagation delays of these componets must respected if the CPU is to be stable. The page [Timing Considerations](docs/timing-considerations.md) discusses my learning/thinking on this; there are a bunch of references in there to other work and notes on cross domain clocks etc.
 
-It's really more like the illustration below in my mind; when reading the diagram imagine that this diagram starts immediatly following a CPU reset or power on.
+I describe the PC update occuring before the execute but it's up to you which way round you think of it. For example [the instruction cycle described by Oxford University](https://www.robots.ox.ac.uk/~dwm/Courses/2CO_2014/2CO-N2.pdf) states that _"The last part of the fetch is to increment the PC"_. 
 
-![Timing diagram - honest](docs/timing-honest.png)
+## Data Paths
 
-When the CPU is reset then the clock is low, PC is already at address 0 and the control lines are settling. This is phase 1).
+All operations go via the ALU. 
 
-Phase 2) is at the rising edge of the clock where the instruction is executed.
+In the diagram below you can see the ALU has two input busses labelled L and R that provides the two operands to the ALU and additionally a carry-in status flag. The ALU input busses each carry a value from one of the devices in the CPU and the output of the ALU is looped back to the writable devices in the CPU.
 
-Phase 3) is at the falling edge of the clock where the instruction counter is advanced and the cycle begins again at the new address.  
+The instruction must also encode the particular ALU operation that will be used.
 
-(BTW - note that I say in the diagram that nothing much happens on the high or low levels, but a hugely significant thing that happens on the levels is [settling of the combinatorial logic](docs/timing-considerations.md) which must be respected if the CPU is to be stable.)
+<img src="docs/all-via-alu-cropped.png" width="300" height="300"/>
 
-A significant consequence of this setup is that the PC is not advanced until after the complete execution of the instruction. This is significant because it means that if we were to stash the PC onto the stack at this point, in order to make a call to a subroutine, then on return from the subroutine we would end up loading the PC with the same address that it hard before the jump. This might put the CPU into an endless loop.
+## Addressing modes
 
-This might be solved by incrementing the PC before pushing to the stack or after popping from the stack. But I mention it because this is different to many other CPU's. For example [the instruction cycle described by Oxford University](https://www.robots.ox.ac.uk/~dwm/Courses/2CO_2014/2CO-N2.pdf) states that _"The last part of the fetch is to increment the PC"_. 
+### Direct Addressing
 
-But, if we increment the PC before executing the instruction then we definitely need to introduce an Instruction Register to hold the control lines stable while the PC is advanced to the next instruction. 
+The instruction can apply a 16 bit address directly to the RAM so that a given instruction can either read or write and RAM address in each operation. 
 
-I considered this and it occurred to me that except in a few edge cases the assembler ought to be able to statically calculate the correct return address for a call and so in practice we would never push the PC to the stack but instead we would push a constant calculated at compile time by the assembler.
+### Register Addressing
 
-I'm still undecided on this - but moving to an 8 bit instruction will almost certainly require the introduction of instruction registers to latch the multiple 8 bit components of the instruction.      
+Alternatively the pair of MARLO and MARHI registers can be loaded with a 16 bit RAM address which for example is useful for indexing into arrays, allowing a read or write at that location.
 
-See also my research on [timing considerations](docs/timing-considerations.md).
- 
+### Immediate Addressing
+
+The addressing modes also include the ability to apply an 8 but immediate value to the ALU "B" bus on any operation.
+
+<img src="docs/addressing.png" width="500"/>
+
+### Conditional Instructions
+
+Any instruction may be made conditional on the state of one of the processor status flags. This allows for some convenient programming patterns and allows for more symmetry, which appeals to me. The conditions include all of the ALU status flag outputs but also the UART ready for RX and TX flags.
 
 ## Instruction Set Architecture
 
-The earliest design for SPAM1 used Horizonal Microcoding with a separate control line for each  device with no multiplexing. This design had three 8 bit wide ROM's for the program memory, giving 24 potential individual control lines (or 2x8 control lines plus 8 bits immediate, or 8 bits control and 16 bits immediate depending on what I wanted to achieve).
+This is not a microcoded arch. See BTW my [thoughts on microcode](docs/thoughts-on-microcode.md).
 
-At the time I didn't know the name for an architecture where each device had its own control line and any arbitrary selection of devices could be enabled simultaneously, but I have since found this pattern is known as [Horizontal microcoding](http://wiki.c2.com/?MicroCode)
+The earliest design for SPAM1 used Horizonal Microcoding with a distinct control line directly from the program ROM to each device, with no multiplexing or decode logic at all. This design had three 8 bit wide ROM's for the program memory, giving 24 potential individual control lines (or 2x8 control lines plus 8 bits immediate, or 8 bits control and 16 bits immediate depending on what I wanted to achieve). I didn't know the name for such an architecture but I have since found this pattern is known as [Horizontal microcoding](http://wiki.c2.com/?MicroCode)
 
-I felt that using three ROM's for the program memory was excessive and moved to a movel whereby I had two ROM's and that's what I discuss in the next section.
+I felt at the time that using three ROM's for the program memory was excessive and moved to a model whereby I had two ROM's instead. Well that lasted to about 5 minutes.
 
- See also my [thoughts on microcode](docs/thoughts-on-microcode.md).
+The final design has an instruction __that is 48 bits wide__. The program is stored in ROM and is 48 bits, organised over six 8 bit ROMs.
 
-## Program Storage
+Every instruction is of the form `T = A OP B [optional control flag]` . BTW If you are interested in the original design of this instruction set arch then see the [Original Design Branch](https://github.com/Johnlon/spam-1/blob/OriginalDesign/README.md#program-storage).
 
-Program is stored in ROM and is a fixed width 16 bit instruction, organised over a pair of 8 bit ROMs, one each for the high and low bytes of the instruction.
+The instruction encodes the source and target devices, the ALU operation, the addressing mode, the optional immediate value and direct address, plus the condition flags as shown below.
 
-The high byte defines the operation and the low byte is used only for immediate constants (at present) which means this low ROM it often unused and is wasteful.
- 
-### High ROM byte
+![Instruction Encoding](docs/instruction_bits.png)
 
-The high order bytes is organised into three parts, identifying the ALU operation and the input and output devices.
 
-![High Byte](docs/op-hi-byte.png)
-
-- 2 "ALU" bits configure the ALU operation - only add/subtract right now.
-- 3 "OUT" bits select one device (0-7) that will be enabled to output onto the bus.
-- 3 "IN" bits select the device who's input register will be enabled to latch the value on the bus.
-  
-Therefore with this design I can have at most 8 "input" devices and 8 "output" devices (some ideas on improving this are below). Also, a maximum of 4 ALU operations are possible.
-
-### Low ROM byte
-
-This low order ROM is used only for program constants at present; this is rather wasteful (see below). 
-
-### Example Program - Fibonacci
+### Example Fibonacci Assembly
 
 ```
-:start	    LD A,#0
-            DISP A
-            LD B, #1
-            DISP B
+; Fib using registers for arg passing
 
-:loopUp     ADD A
-            BCS :backDown
-            DISP A
-            ADD A
-            BCS :backDown
-            DISP B
-            JMP :loopUp
-	
-:backDown   LD A,#e9
-            LD B,#90
-            LD MAR, #0
-            DISP B
-:loopDown   SUB A
-            BZS :start
-            DISP A
-            LD RAM, A
-            LD A, B
-            LD B, RAM
-            JMP :loopDown                              
+ZERO: EQU 0
+
+start:      REGA    = 1
+            REGB    = 1
+            PCHITMP = >:ZERO
+            REGC    = REGA
+
+            ; set PC to return address and then call the send_uart loop
+            REGD    = >:loop
+            PC      = >:send_uart
+
+loop:       REGA    = REGA+REGB  _S
+            PC      = >:start _C
+            REGC    = REGA
+
+            ; set PC to return address and then call the send_uart loop
+            REGD    = >:ret1
+            PC      = >:send_uart
+
+ret1:       REGB    = REGA+REGB _S
+            PC      = >:start _C
+            REGC    = REGB
+
+            ; set PC to return address and then call the send_uart loop
+            REGD    = >:loop
+            PC      = >:send_uart
+
+send_uart:  PC      = >:transmit _DO
+            PC      = >:send_uart    ;loop wait
+
+transmit:   UART    = REGC   ; write whatever is in REGC to the UART
+            PC      = REGD   ; jump to the location in REGD
+end:
+
+END
+
 ```
 
-## Review of this Instruction Architecture
 
-There are a few problems with this design.
-
-The most serious IMHO is that we are limited to 4 ALU operatons; these are currently ADD/SUB/ADC/SBC, the latter two being add and subtract but taking a previous carry into account. 
-
-Add and subtrace are sufficient to run Fibonacci but to do anything more interesting this CPU will need a much wider range of ALU operations; more likely 16 or 32. 
-
-To achieve this extra control there are really only a few options.
-
-- Use the lower ROM more effectively by using the low byte as an extention of op code, when it's not being used for immediate data. In this case the lower ROM could carry extended ALU control lines.
-- Expand the program ROM to 24 bits width by using three 8 bit ROMS instead of the current 2. This approach is even more wasteful. But it's definitely simple. 
-- Change the design to use variable length instructions to achieve the extra control, eg making the op code 2 consecutive bytes followed optionally by a third immediate byte or word.
-
-However, an addition shortcomings of the current design is that I cannot run a program from RAM even if I wanted to. If I want to be able to run a program from RAM then I would need RAM and ROM to be more symetrical. I would need my ROM and RAM to have the same number of bits. I would probably choose 8 bits to keep the hardware complexity down. 
-
-Of course I could do away with the program ROM entirely (Ben didn't have one) but I want the option of permanently storing the program.
-
-So I guess the best option is to rework the design to be more Von Neumann and unify the RAM and ROM components somehow to 8 bits with and both addressable by the PC. 
-
+# Hardware Components
 
 ## Program Counter
+## ALU
+See the [ALU Design](docs/alu_with_carry_in.md) page
 
-The original program counter Logism simulation was based on a register and an adder. 
+## Register File
+## MAR
+## Status Register
+## RAM
+## ROM
 
-![Original PC](docs/pc_using_latch_and_adder.png)
-
-This approach seemed to work ok, especially in Logism, when I was thinking of just 4 bits, but with 8 bits we end up with more complexity than I was happy with.
-
-I've since switched to a more scalable design using a presetable counter.
-
-![Updated PC](docs/pc_using_counter.png)
-
-One small but important detail of the new design is the inclusion of an SR latch. With the original register+added  approach the reset to address 0x0 was asynchronous, but with the counter in Logism the counter reset is synchronous. Logism's counter has a synchronous reset similar to the [74HCT163](https://www.ti.com/lit/ds/symlink/cd54hc163.pdf), whereas the [74HCT161](https://www.ti.com/lit/ds/symlink/cd54hc163.pdf) allows an asynchronous reset. 
-
-In order for the reset to be reliably transmitted to the PC in Logism (or 74163) we need to latch the reset signal until the clock gets a chance to hit the counter. We use the same clock to reset the latch.
-
-See also the [timing considerations](docs/timing-considerations.md) page where I refer to "newbie" advice that encourages the sort of synchronisation I fould was needed.
-
-    
-# Improvements
-
-This current design is inadequate and not yet ready for a hardware build. I've already disussed some necessary improvements above but more are discussed below...
-
-## Better use of ROM
-
-My use of a fixed 16 bit instruction word is quite wasteful. Unless I'm dealing with a constant then the second ROM is entirely unused.
-
-One solution is a variable width 8 bit instruction where most instructions are 8 bit, but when ROM_out is enabled in the first byte then the control logic looks for the operand in the subsequent byte.
-
-If I do this then I'm going to need to introduce one or more 8 bit latch chips forming an Instruction register component. 
-
-## Immediate arithmetic
-
-At present I can only interact with the ALU via the A/B registers. This means I can't do arithmetic
- on a value from the ROM or RAM without wiping one of those two registers. I can of course mux the data bus into the
- ALU, however, a problem with getting a value from RAM into the ALU 
-  and capturing the result of the arithmetic is that I only have one bus and I can't have both the RAM active out on the BUS
- whilst also having the ALU active out. A solution might be to put a register on the output of the ALU so that I can do the arithmetic in
- one micro-instruction and then emit the result in the next micro-instruction. 
- 
-## CALL and RET
-
-I'd like to demonstrate a call to a subroutine and a return from that call. 
-
-All my instructions are micro-instructions and doing a "CALL" requires at least two micro-instructions, one to push the PC into RAM then another to move the PC to 
-the new location. So I don't think I have the luxury of being able to introduce an "CALL" op code in the hardware. However the assembler could certainly expand a 
-"CALL :label" into something like this (note: typically one places a stack at the end of memory and works backwards through RAM as items are pushed to the stack- I've used that approach below). Notice that both A and B registers get trashed in the Call and Ret so can't be used for passing arguments to the subroutine. Having an auto-incrementing SP (more like PC) and auto-decrementing SP would save a bunch of instructions and also avoid trashing the two registers.
-
-What call convention do I want???? Stack or Register?
-In this design there isn't a SP register just a defined location in RAM.
- 
-
-```
-#### CALL
-#Assembler has to work out where the call will return to, i th address directly after the call code below, and '<PC RETPOINT>' signifies that address.
-
-# store "PC RETPOINT" into the stack
-    MAR=#SP_LOCATION   #set the MAR to point at the location of the SP
-    MAR=RAM            #move the MAR to point at the value of the SP - ie into the stack
-    RAM=<PC RETPOINT>  # stash the return location onto the stack
-
-# advance the stack pointer 
-    MAR=#SP_LOCATION
-    A=RAM              #a=the value of the SP
-    B=1
-    ADD A              #a now SP+1
-    RAM=A              #SP now incremented
-
-# Jump to subroutine
-    PC=#SP_LOCATION
-
-#### RET
-
-# decrement stack pointer
-    MAR=#SP_LOCATION
-    A=RAM              #a=SP
-    B=1
-    SUB A
-    RAM=A              #SP now decremented
-
-# Return from subroutine
-    MAR=#SP_LOCATION
-    MAR=RAM            #move MAR to point at the value of the SP - ie into the stack
-    PC=RAM             # execution continues at new PC
-    
-```
-
-And "RET" could be expanded to.  
-
-
-```
-# increment stack pointer
-    A=RAM[#stackpointer_location]
-    B=1
-    ADD A
-    RAM[#stackpointer_location]=A
-
-# retrieve stack pointer into the PC
-    MAR=RAM[#stackpointer_location]     #set the MAR to point at the current location of the SP
-    PC=RAM
-```
-
-If passing args to the subroutine then they would also need to go into RAM and I could add a "PUSH" instruction to the Assembler to support this.
-
-Where other processors have high level instruction built into the hardware and the control logic decodes this into micro-instructions,
- in my case the high level instructions would be merely a feature of the assembler and the assembler would "compile" these into the 
- micro-instructions that my CPU uses.
- 
-On a more traditional CPU a binary program (eg ".exe" or ELF executable) could work on multiple CPU types with different underlying CPU hardware and micro-instructions
-as long as the CPU's all support the same set of "high level" Opcodes. The CPU's control logic takes care of translating the high level opcodes into the internal 
- micro-instruction language of the CPU. However, in my case that translation is happening in the assembler and if there is a change to the hardware
- then this renders all programs inoperable; there is no abstraction to save me.
- Of course I can just recompile the assembler to resolve the issue, however, this goes to highlight the power of high level op codes and embedded micro-code where no 
- recompilation is necessary (eg Intel vs AMD).  
-
-Using the assembler to compile high level opcodes I can add things like ..
-
-```
-CALL :subroutine
-RET 
-PUSH <some register>
-POP <some register>
-INC <come register>
-DEC <come register>
-```           
-
-## Save a control line 
-
-?Memory map the Display device?
-
-The display register steals a control line. In principal this could just be mapped to a specific memory location which would free up the control line
-for something useful, for instance doubling the number if Input or Output devices on the bus. This might for instance allow me to implement Branch on Equals.
-Though to be fair I have two selector lines going into the ALU and use only one of them at present so I could co-opt that if I wanted.
-
-## Add more ALU operations
-
-- Add logical operations.
-- Add a shift left/right to the ALU (same as multiply by 2, div by 2)
-- Add BCD operations
-
-This is a biggie.
-
-See also the ongoing [design of the ALU](docs/alu_with_carry_in.md).
-
-Having no logical operations at all is far from ideal.
-
-But this would mean feeding at least three selector lines into it, which could give me 8 potential operations rather than the two I have currently implemented. 
-However, I am already short on control lines so this isn't too appealing. If I switched to variable length instructions or added a register to 
-the output of the ALU then perhaps I could get a lot more flexibility. Dunno.
-
-Alternatively I could do something like add an 8 bit register for the ALU config, eg giving me 256 possible ALU operations. Or I could organise the 8 bit register 
- as 4 bits for multiplexing the inputs and output of the ALU, and 4 bits for the selection of the ALU operation. If I multiplex the inputs and outputs 
- of the ALU then I could do something like having a 4x8bit register file rather than just A and B and I could multiplex the RAM or ROM or whatever into the 
-ALU overcoming the register trashing  problem mentioned earlier.
-
-Or perhaps the variable length instruction idea could yield benefits by giving me another 8 bits for control logic.
-
-Obviously, being able to simulate all this before building is fantastic.
-
-I am considering basing the future ALU on a similar set to that used by [CrazySmallCpu](https://minnie.tuhs.org/Programs/CrazySmallCPU/description.html) ...
-
-```
-Currently the ALU can perform sixteen operations based on the A and B inputs:
-A + B decimal
-A - B decimal
-A & B
-A | B
-A ^ B
-A + 1
-Output 0, flags set to B's value
-Output 0
-A + B binary
-A - B binary
-Output A
-Output B
-A * B binary, high nibble
-A * B binary, low nibble
-A / B binary
-A % B binary
-```
-
-Might use a ROM for the ALU. But haven't figured out with a single 8 bit wide ROM how to get a carry bit which would be necessary for chaining arithmetic to achieve arbitrary length additions. 
-Perhaps this will require two 8 bit ROMS operating in 4 bit chained mode, or perhaps revert to using 4 bit arithmetic and chain operations in software? Not sure.
-
-On the other hand I have two reclaimed [74181](http://ee-classes.usc.edu/ee459/library/datasheets/DM74LS181.pdf) ALU's in my desk - I think I should use those for nostalgia reasons.
-I don't get BCD arithmetic with the 74181 but I do get to use the same type of chip that went went to the moon. Hooking it up fully would take 5 control lines plus the carry in. 
-Hmm, I don't think I have the "LS" version which only pulls 20-40mA. The SN74181N that I have pulls a horrible amount of current according to the datasheet; 88-150mA.
-
-  
-## Write a C compiler
-
-Yep - a C compile - others have done it.
-
-Hmm. 
-- Or perhaps [PL/0](https://www.youtube.com/watch?v=hF43WUd8jrg&list=PLgAD2y-6wgwoTnPfZWhMuXID14xnzkz2x)??
-
-- https://github.com/DoctorWkt/smallc
-- http://www.cpm.z80.de/small_c.html
-
-
-
-# Simulation
-
+# Software Components
+## Assembler
+## SPAM-C compiler
+## Simulation
 See also my page on [digital simulators](docs/digital-simulators.md)
+## Emulation
+CHIP-8
 
-## Run the simulator
 
-Works in Window 10 at least. I haven't tried running Logism yet on Linux but it's all Java. 
+# Documentation Links
 
-- Clone the git repository
-- Change directory to _./logism_ subdirectory
-- Run the logism evolution jar in the repo's _logism/_ subdirectory (or download the latest version from [the author's git repo](https://github.com/reds-heig/logisim-evolution)) 
-- Load the circuit from the same directory
-- Start the simulator. Menu -> Simulator -> Ticks Enabled
+The following links take you to documentation covering my research and also design aspects.
 
-## Change the Assembly Program
-
-- Open the [SPAM1 CPU Assembler](https://docs.google.com/spreadsheets/d/1lYyPqYNF1dGDRP2n3ablaqkgZuxJ9x6T-ylut_nT1p4/edit?usp=sharing) implemented in Google Sheets
-
-- Goto, or duplicate, the "Fibonacci Assembler Demo" tab 
-- Make some changes to the Assembler
-- Copy the ROM bytes from the pink cells on the right of that same page into your clipboard
-- Place the data into the files on disk and then load into the ROMS or paste direct into the ROM's in Logism
-    - Unfortunately the clipboard will have quotes in it so edit the clipboard in a test editor to remove the two quote.
-    - If you are not writing the clipboard into a "rom file" the remove the "v2.0 header" from the clipboard contents too
- - Start the Logism simulator as above
-
-## Instruction Decoding
-
-There is also an "instruction decoder" page in google sheets which will decode an assembly program and show you which control lines are enabled for each instruction in the program.
-
-![Decoder](docs/decoder.png)
+ - [Timing Considerations](docs/timing-considerations.md)
+ - [Thoughts on Microcode](docs/thoughts-on-microcode.md)
+ - [Research and References](docs/references.md)
+ - [Hardware Components](docs/components.md)
+ - [Digital Simulators](docs/digital-simulators.md)
