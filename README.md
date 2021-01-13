@@ -240,10 +240,13 @@ END
 See the [ALU Design](docs/alu_with_carry_in.md) page
 
 ## Register File
+See the [ALU Design](docs/register_file.md) page
+
 ## MAR
 ## Status Register
 ## RAM
 ## ROM
+## UART
 
 # Software Components
 ## Assembler
