@@ -6,17 +6,17 @@ The SPAM-1 register file is logically organised as a *4 by 8 bit triple port reg
 
 The design calls for the value of any of the 4 registers to be optionally emitted on either or both of the ALU input busses at any instant. This means that the register file cannot simply be composed of four 8 bit flipflop IC's and some additional or alternative circuitry is required.
 
-Instead of using individual flipflop chips I've chosen to use 74HCT670 4x4 regiser file chips organised as shown below.
+Instead of using individual flipflop chips I've chosen to use 74HCT670 4x4 register file chips organised as shown below.
 
 ![Register file detail diagram](register_file_block_detail.png)
 
 This design provides the functionality with a minimum of effort. 
 
-However, unlike flipflops the 74HCT670 is not edge triggered and this presents a problem for the SPAM-1 implementation. The problem related to uncontrolled feedback loops that would occur if a given address in the register file (ie A/B/C/D) is selected as providing input to the ALU and that same address is selected as the target of the ALU. That situation is ilustrated below.
+However, unlike flipflops the 74HCT670 is not edge triggered and this presents a problem for the SPAM-1 implementation. The problem is uncontrolled feedback loops that would occur if a given address in the register file (ie A/B/C/D) is selected as providing input to the ALU and that same address is also selected as the target of the ALU. That situation is ilustrated below.
 
 ![Register file feedback](register_file_feedback.png)
 
-Where all components are combinatorial as shown above, then the output of the ALU flows into the register file and back to the input of the ALU, and on and on. If the ALU operation was seto to a 'plus' operation then we might expect the value are the output of the ALU to count up at a rate limited only by the propagation delays of the devices in that data path. In truth I have no idea whether this would happen in practice and I suspect that we would actually see various non-deterministic values flowing through the data path. In anycase, a circuit that acted in this manner is no use at all to me so something extra is needed.
+Where all components are combinatorial as shown above, then the output of the ALU flows into the register file and back to the input of the ALU, and on and on. If the ALU operation was set to a 'plus' operation then we might expect the value at the output of the ALU to count up at a rate limited only by the propagation delays of the devices in that data path. In truth I have no idea whether this would happen in practice and I suspect that we would actually see various non-deterministic values flowing through the data path. In anycase, a circuit that acted in this manner is no use at all to me so something extra is needed.
 
 The simple solution to this problem is to add a synchronous aspect to the register file so that this unconstrained value feedback cannot occur. This is the situation illustrated below.
 
@@ -40,7 +40,7 @@ The schematic for the register file is shown below. The logic required to create
 
 ## Alternative Implementations
 
-I mentioned earlier that a register file could of course be created with more primitive components than the 74HCT670; it could be created with some flipflops. Using flipflops would avoid the feedback problem mentioned above but I would still need to contruct a `triple port` module so I need more that just 8 eight bit flip flops.
+I mentioned earlier that a register file could of course be created with more primitive components than the 74HCT670; it could be created with some flipflops or latches. Using flipflops would avoid the feedback problem mentioned above but I would still need to contruct a `triple port` module so I need more that just 8 eight bit flip flops.
 
 Some suitable devices might be ...
 
@@ -52,7 +52,7 @@ Some suitable devices might be ...
 
 See also at my [component page](components.md) that lists lots of different kinds of latches and flipflops for some idea of the various device options available.
 
-However, whilst a flipflop is great for a single standalone register, none of the 74xx flipflop or latch devices alone is a great fit for this triple port register file application. I need an endge triggered device (aka flipflop) that has a write enable input and which has tristate outputs; and I need a binch of address decoding logic on the write and also on each of the reads.
+However, whilst a flipflop is great for a single standalone register, none of the 74xx flipflop or latch devices alone is a great fit for this triple port register file application. I need an edge triggered device (aka flipflop) that has a write enable input and which has tristate outputs; and I need a binch of address decoding logic on the write and also on each of the reads.
 
 Nevertheless it' interesting to see how one can organise dual port devices (ie one input port and one output port) into triple port arrangements
 
