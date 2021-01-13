@@ -1,6 +1,6 @@
-# Hardware 
+# Componets Research
 
-These components may or may mot be useful.
+These components may or may mot be useful. These are notes I took when surveying what's out there.
 
 ## Data sheets, books and papers
 
