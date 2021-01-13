@@ -235,20 +235,16 @@ END
 
 # Hardware Components
 
-## Program Counter
-See the [Program Counter](docs/program_counter.md) page
+Links to individual pages:
 
-## ALU
-See the [ALU Design](docs/alu_with_carry_in.md) page
-
-## Register File
-See the [Register File Design](docs/register_file.md) page
-
-## MAR
-## Status Register
-## RAM
-## ROM
-## UART
+- [Program Counter design](docs/program_counter.md)
+- [ALU Design](docs/alu_with_carry_in.md) 
+- [Register File Design](docs/register_file.md) 
+- MAR design
+- Status Register
+- RAM
+- ROM
+- UART
 
 # Software Components
 ## Assembler
