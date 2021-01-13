@@ -236,6 +236,8 @@ END
 # Hardware Components
 
 ## Program Counter
+See the [Progra Counter](docs/program_counter.md) page
+
 ## ALU
 See the [ALU Design](docs/alu_with_carry_in.md) page
 

@@ -1,4 +1,6 @@
-# Register File
+# Triple Port Register File
+
+![Register file hardware](register_file_hardware.png)
 
 The SPAM-1 register file is logically organised as a *4 by 8 bit triple port register file*.
 
