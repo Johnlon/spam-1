@@ -1,4 +1,4 @@
-# Componets Research
+# Components Research
 
 These components may or may mot be useful. These are notes I took when surveying what's out there.
 
@@ -21,7 +21,7 @@ VHC = HC but faster
 
 http://course.ece.cmu.edu/~ee100/docs/Chapter8.pdf
 
-But see also my page on "Clocks" and "_Don't mess with the clock_".
+But see also my page on [timing considerations](timing-considerations.md) - "Clocks" and "_Don't mess with the clock_".
 
 Also https://youtu.be/lO_9Zz5jzAA?t=3841
 

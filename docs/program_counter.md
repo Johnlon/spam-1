@@ -36,5 +36,5 @@ Eventually I found a data sheet that contained these images and no other info...
 
 Not super helpful, and skimming other projects I could see both variants in use but also variations that I'm not sure were deliberate or the result of years of chinese whispers on how to use these devices.
 
-In any case the SPAM-1 program counter chains the 74HCT163 devices together using the approach 
+In any case the SPAM-1 program counter chains the 74HCT163 devices together wth ENP or CEP or whatever you want to call it tied high as this doesn't affect how I want to use the devices. This work in my verilog simulation and seems to be ok in the hardware.
 
