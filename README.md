@@ -188,8 +188,13 @@ The instruction encodes the source and target devices, the ALU operation, the ad
 
 ![Instruction Encoding](docs/instruction_bits.png)
 
+The devices on the ALU input busees A and B, as well as the devices on the ALU result bus are identified using the id's shown below.
+
+![Devices](docs/device_table.png)
 
 ### Example Fibonacci Assembly
+
+In the code base there are multiple implementations of Fibonacci. The approach below calls subroutines using registers for argument passing and return address.
 
 ```
 ; Fib using registers for arg passing
@@ -198,7 +203,7 @@ ZERO: EQU 0
 
 start:      REGA    = 1
             REGB    = 1
-            PCHITMP = >:ZERO
+            PCHITMP = >:ZERO  ; take low byte of label 'ZERO' and write to PCHITMP
             REGC    = REGA
 
             ; set PC to return address and then call the send_uart loop
@@ -232,7 +237,6 @@ END
 
 ```
 
-
 # Hardware Components
 
 Links to individual pages:
@@ -244,7 +248,7 @@ Links to individual pages:
 - Status Register
 - RAM
 - ROM
-- UART
+- [UART - UM245R](docs/uart.md)
 
 # Software Components
 ## Assembler
