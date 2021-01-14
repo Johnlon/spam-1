@@ -240,7 +240,7 @@ Links to individual pages:
 - [Program Counter design](docs/program_counter.md)
 - [ALU Design](docs/alu_with_carry_in.md) 
 - [Register File Design](docs/register_file.md) 
-- MAR design
+- [MAR design](memory_address_register.md)
 - Status Register
 - RAM
 - ROM
