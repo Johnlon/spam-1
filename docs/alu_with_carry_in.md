@@ -134,6 +134,11 @@ which could be externally combined to produce
 
 However I don't need these lines to be spare so I will use distinct Eq/Ne/Gt/Lt lines to reduce component counts.
 
+## Verilog Models
+
+- [ROM](../verilog/rom/rom.v) ([Tests](../verilog/rom/test.v))
+- [ALU](../verilog/alu/alu_code.v) ([Tests](../verilog/alu/test.v))
+
 # Links
 
 Tools I found useful working things out:
