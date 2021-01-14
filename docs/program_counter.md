@@ -36,5 +36,10 @@ Eventually I found a data sheet that contained these images and no other info...
 
 Not super helpful, and skimming other projects I could see both variants in use but also variations that I'm not sure were deliberate or the result of years of chinese whispers on how to use these devices.
 
-In any case the SPAM-1 program counter chains the 74HCT163 devices together wth ENP or CEP or whatever you want to call it tied high as this doesn't affect how I want to use the devices. This work in my verilog simulation and seems to be ok in the hardware.
+In any case the SPAM-1 program counter chains the 74HCT163 devices together wth ENP or CEP or whatever you want to call it tied high as this doesn't affect how I want to use the devices. This works well in my verilog simulation and seems to be ok in the hardware but doesn't exactly match either of those application notes.
 
+## Verilog Models
+
+- [74HCT163](../verilog/74163/hct74163.v) ([Tests](../verilog/74163/test.v))
+- [74HCT377](../verilog/74377/hct74377.v) ([Tests](../verilog/74377/test.v))
+- [Program Counter](../verilog/pc/pc.v) ([Tests](../verilog/pc/test.v))
