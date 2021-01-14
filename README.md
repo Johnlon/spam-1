@@ -178,9 +178,9 @@ Links to individual pages:
 
 - [Program Counter design](docs/program_counter.md)
 - [ALU Design](docs/alu_with_carry_in.md) 
+- [Status Register](docs/status_register.md)
 - [Register File Design](docs/register_file.md) 
 - [MAR design](docs/memory_address_register.md)
-- Status Register
 - RAM
 - ROM
 - [UART - UM245R](docs/uart.md)

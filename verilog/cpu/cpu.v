@@ -9,7 +9,6 @@
 //#!/usr/bin/iverilog -Ttyp -Wall -g2012 -gspecify -o test.vvp 
 `include "../cpu/controller.v"
 `include "../reset/reset.v"
-`include "../phaser/phaser.v"
 `include "../registerFile/syncRegisterFile.v"
 `include "../pc/pc.v"
 `include "../lib/assertion.v"
@@ -216,7 +215,7 @@ module cpu(
 
     wire [7:0] alu_flags_czonGLEN = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
 
-    hct74574 #(.LOG(LOG)) flags_czonGLEN( .D(alu_flags_czonGLEN),
+    hct74574 #(.LOG(LOG)) status_register_czonGLEN( .D(alu_flags_czonGLEN),
                                        .Q(_registered_flags_czonGLEN),
                                         .CLK(gated_flags_clk), 
                                         ._OE(1'b0)); 
