@@ -2,9 +2,11 @@
 
 SPAM-1 uses a UART development module called [UM245R](../otherdoc/UM245R-UART.pdf) that translates between USB and 8 bit parallel TTL level I/O.
 
-SPAM-1 uses UART to provide keyboard input and console output.
+![UART](uart.png)
 
-This UART can send arbitrary 8 bit data and some of the simulations take advantage of this passing the output of the UART to a GUI terminal I've written that renders the bytes somewhat graphically. 
+SPAM-1 uses UART to provide keyboard input and console or external control output.
+
+This UART can send arbitrary 8 bit data to the outside world and some of the simulations take advantage of this to provide a primitive graphical output on a GUI terminal I've written. 
 This approach has been employed to provide a user interface to the [CHIP-8 emulator](../jvmtools/programs/Chip8Emulator.scc) that I have written for SPAM-1. The emulator is written in a custom high level language SPAM-C that I've created to make development easier. 
 
 See the [UM245R data sheet](../otherdoc/UM245R-UART.pdf) for more info on the UART. Thanks Warren Toomey for suggesting this component.
