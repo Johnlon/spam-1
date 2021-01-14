@@ -1,6 +1,6 @@
 # UART - UM245R
 
-SPAM-1 uses a UART development module called [UM245R](otherdoc/UM245R-UART.pdf) that translates between USB and 8 bit parallel TTL level I/O.
+SPAM-1 uses a UART development module called [UM245R](../otherdoc/UM245R-UART.pdf) that translates between USB and 8 bit parallel TTL level I/O.
 
 SPAM-1 uses UART to provide keyboard input and console output.
 
