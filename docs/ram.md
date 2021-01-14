@@ -4,7 +4,9 @@ SPAM-1's RAM is 64k by 8 bits.
 
 ![Ram](ram.png)
 
-The RAM is updated by data flowing from the ALU result bus. The RAM is connected to the ALU result bus via a tristate buffer (see 'BUFFER IN' above) to avoid interference between the ALU result bus and the ALU B input bus as the RAM's data lines are connected to both the busses. The RAM is also connected to the ALU B input bus via a tristate buffer to the ALU B Input Bus.
+The RAM is written to by data flowing from the ALU result bus. The RAM is connected to the ALU result bus via a tristate buffer (see 'BUFFER IN' above) to avoid interference between the ALU result bus and the ALU B input bus as the RAM's data lines are connected to both the busses. 
+
+When the RAM is read it places a value on the ALU B input bus via a tristate buffer.
 
 The RAM may be addressed in one of two ways:
 - _Register addressing_ via the [memory address registers](memory_address_register.md) or
