@@ -180,10 +180,10 @@ Links to individual pages:
 - [ALU Design](docs/alu_with_carry_in.md) 
 - [Status Register](docs/status_register.md)
 - [Register File Design](docs/register_file.md) 
-- [MAR design](docs/memory_address_register.md)
-- [RAM](docs/ram.md)
-- [ROM](docs/program_rom.md)
 - [UART - UM245R](docs/uart.md)
+- [MAR design](docs/memory_address_register.md)
+- [Program ROM](docs/program_rom.md)
+- [RAM](docs/ram.md)
 
 # Software Components
 ## Assembler
