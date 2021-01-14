@@ -9,7 +9,9 @@ This approach has been employed to provide a user interface to the [CHIP-8 emula
 
 See the [UM245R data sheet](../otherdoc/UM245R-UART.pdf) for more info on the UART. Thanks Warren Toomey for suggesting this component.
 
-As well as the 8 bit parallel IO that the CPU core uses to integrate with the UART, the UART also provides a pair of output lines RXF and TXE that can be used to detect if the UART is ready to receive (data is available) or ready to send. These two control lines are wired into SPAM-1's control logic and are used to allow conditional jumps based on the status of these lines. For example, using the TXE line we can create a _busy wait_ loop that blocks until the UART is ready to send, at which point we woul write a byte at it. Or alternatively, we can use the RXF control line to detect if input is available and the jump to handler code as needed. 
+As well as the 8 bit parallel IO that the CPU core uses to integrate with the UART, the UART also provides a pair of output signal lines RXF and TXE that can be used to detect if the UART is ready to receive (data is available to read by the CPU from the UART) or the UART ready to send (can be written to by the CPU). The CPU should not attempt to read or write the UART unless these signal lines are indicating that it is safe to do so.
+
+These two signal lines are wired into SPAM-1's control logic and are used to allow conditional jumps based on the status of these lines. For example, using the TXE line we can create a _busy wait_ loop that blocks until the UART is ready to send, at which point we would write a byte at it. Or alternatively, we can use the RXF control line to detect if input is available and then jump to handler code as needed to read the byte from the UART. 
 
 The UM245R is actually one of the more novel pieces of the development as I say it provides console IO but also a means to drive primitive graphics by sending control codes to the UI (inspired by VT100 but utterly different impl). 
 
