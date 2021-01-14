@@ -83,3 +83,10 @@ Alternatively, one could use a mix of flipflops and tristate buffer as shown bel
 
 ![Register file using flipflops and buffers](register_file_using_flipflops_and_buffers.png)
 
+
+## Verilog Models
+
+- [74HCT574](../verilog/74574/hct74574.v) ([Tests](../verilog/74574/test.v))
+- [74HCT670](../verilog/74670/hct74670.v) ([Tests](../verilog/74670/test.v))
+- [Register File](../verilog/registerFile/registerFile.v) ([Tests](../verilog/registerFile/testAsync.v))
+- [Synchronous Register File adds the 74HCT574 flipflop to the basic register file above](../verilog/registerFile/syncRegisterFile.v) ([Tests](../verilog/registerFile/testSync.v))
