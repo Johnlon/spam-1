@@ -5,9 +5,9 @@ SPAM-1 uses a UART development module called [UM245R](../otherdoc/UM245R-UART.pd
 SPAM-1 uses UART to provide keyboard input and console output.
 
 This UART can send arbitrary 8 bit data and some of the simulations take advantage of this passing the output of the UART to a GUI terminal I've written that renders the bytes somewhat graphically. 
-This approach has been employed to provide a user interface to the [CHIP-8 emulator](jvmtools/programs/Chip8Emulator.scc) that I have written for SPAM-1. The emulator is written in a custom high level language SPAM-C that I've created to make development easier. 
+This approach has been employed to provide a user interface to the [CHIP-8 emulator](../jvmtools/programs/Chip8Emulator.scc) that I have written for SPAM-1. The emulator is written in a custom high level language SPAM-C that I've created to make development easier. 
 
-See the [UM245R data sheet](otherdoc/UM245R-UART.pdf) for more info on the UART. Thanks Warren Toomey for suggesting this component.
+See the [UM245R data sheet](../otherdoc/UM245R-UART.pdf) for more info on the UART. Thanks Warren Toomey for suggesting this component.
 
 As well as the 8 bit parallel IO that the CPU core uses to integrate with the UART, the UART also provides a pair of output lines RXF and TXE that can be used to detect if the UART is ready to receive (data is available) or ready to send. These two control lines are wired into SPAM-1's control logic and are used to allow conditional jumps based on the status of these lines. For example, using the TXE line we can create a _busy wait_ loop that blocks until the UART is ready to send, at which point we woul write a byte at it. Or alternatively, we can use the RXF control line to detect if input is available and the jump to handler code as needed. 
 
