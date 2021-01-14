@@ -17,5 +17,5 @@ Additionally, the Verilog implmentation of the UART is pretty unique in that it 
 
 ## Verilog Models
 
-- [UM245R Development Module](verilog/uart/um245r.v) ([tests](verilog/uart/test.v))
-- [UART Demo Program (using my _psuedo assembler_ written in Verilog that I used for CPU tests)](verilog/cpu/demo_uart_loop.v)
+- [UM245R Development Module](../verilog/uart/um245r.v) ([tests](../verilog/uart/test.v))
+- [UART Demo Program (using my _psuedo assembler_ written in Verilog that I used for CPU tests)](../verilog/cpu/demo_uart_loop.v)
