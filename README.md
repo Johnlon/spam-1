@@ -172,7 +172,29 @@ The devices on the ALU input busees A and B, as well as the devices on the ALU r
 
 ![Devices](docs/device_table.png)
 
-### Example Fibonacci Assembly
+# Hardware Components
+
+Links to individual pages:
+
+- [Program Counter design](docs/program_counter.md)
+- [ALU Design](docs/alu_with_carry_in.md) 
+- [Register File Design](docs/register_file.md) 
+- [MAR design](docs/memory_address_register.md)
+- Status Register
+- RAM
+- ROM
+- [UART - UM245R](docs/uart.md)
+
+# Software Components
+## Assembler
+## SPAM-C compiler
+## Simulation
+See also my page on [digital simulators](docs/digital-simulators.md)
+## Emulation
+CHIP-8
+
+
+# Example Fibonacci Assembly
 
 In the code base there are multiple implementations of Fibonacci. The approach below calls subroutines using registers for argument passing and return address.
 
@@ -216,28 +238,6 @@ end:
 END
 
 ```
-
-# Hardware Components
-
-Links to individual pages:
-
-- [Program Counter design](docs/program_counter.md)
-- [ALU Design](docs/alu_with_carry_in.md) 
-- [Register File Design](docs/register_file.md) 
-- [MAR design](docs/memory_address_register.md)
-- Status Register
-- RAM
-- ROM
-- [UART - UM245R](docs/uart.md)
-
-# Software Components
-## Assembler
-## SPAM-C compiler
-## Simulation
-See also my page on [digital simulators](docs/digital-simulators.md)
-## Emulation
-CHIP-8
-
 
 # Documentation Links
 
