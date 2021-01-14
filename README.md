@@ -184,6 +184,8 @@ Links to individual pages:
 - [MAR design](docs/memory_address_register.md)
 - [Program ROM](docs/program_rom.md)
 - [RAM](docs/ram.md)
+- [CPU verilog model](verilog/cpu/cpu.v)
+- [Control Logic verilog model](verilog/cpu/controller.v)
 
 # Software Components
 ## Assembler
