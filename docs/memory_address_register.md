@@ -16,5 +16,5 @@ In each case where the MAR flipflops integrate with a bus there is a 74HCT245 tr
 
 ## Verilog Models
 
-- [74HCT377](../verilog/74377/hct74377.v)
-- [74HCT245](../verilog/74245/hct74245.v)
+- [74HCT377](../verilog/74377/hct74377.v) ([Tests](../verilog/74377/test.v)) 
+- [74HCT245](../verilog/74245/hct74245.v) ([Tests](../verilog/74245/test.v))
