@@ -118,17 +118,18 @@ The Assembler for a jump that is conditional on Carry having been set could be  
 
 This is a Harvard stye of CPU.
 
-## CPU Timing
 
-See [CPU timing](docs/cpu_timing.md)
+### Conditional Instructions
+
+Any instruction may be made conditional on the state of one of the processor status flags. This allows for some convenient programming patterns and allows for more symmetry, which appeals to me. The conditions include all of the ALU status flag outputs but also the UART ready for RX and TX flags.
 
 ## Data Paths
 
 All operations go via the ALU. 
 
-In the diagram below you can see the ALU has two input busses labelled L and R that provides the two operands to the ALU and additionally a carry-in status flag. The ALU input busses each carry a value from one of the devices in the CPU and the output of the ALU is looped back to the writable devices in the CPU.
+In the diagram below you can see the ALU has two input busses labelled A and B (but L and R in older docs) that provides the two operands to the ALU and additionally a carry-in status flag. The ALU input busses each carry a value from one of the devices in the CPU and the output of the ALU is looped back to the writable devices in the CPU.
 
-The instruction must also encode the particular ALU operation that will be used.
+The instruction must also encode the particular ALU operation that will be used, the address mode and condition control.
 
 <img src="docs/all-via-alu-cropped.png" width="300" height="300"/>
 
@@ -147,10 +148,6 @@ Alternatively the pair of MARLO and MARHI registers can be loaded with a 16 bit 
 The addressing modes also include the ability to apply an 8 but immediate value to the ALU "B" bus on any operation.
 
 <img src="docs/addressing.png" width="500"/>
-
-### Conditional Instructions
-
-Any instruction may be made conditional on the state of one of the processor status flags. This allows for some convenient programming patterns and allows for more symmetry, which appeals to me. The conditions include all of the ALU status flag outputs but also the UART ready for RX and TX flags.
 
 ## Instruction Set Architecture
 
@@ -176,6 +173,7 @@ The devices on the ALU input busees A and B, as well as the devices on the ALU r
 
 Links to individual pages:
 
+- [CPU timing](docs/cpu_timing.md)
 - [Program Counter design](docs/program_counter.md)
 - [ALU Design](docs/alu_with_carry_in.md) 
 - [Status Register](docs/status_register.md)
