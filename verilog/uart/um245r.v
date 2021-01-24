@@ -18,7 +18,7 @@
 `define PRINTMODE_ASCII 1
 `define PRINTMODE_NOCTRL 2
 
-module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80, PRINTMODE=`PRINTMODE_NOCTRL, LOG=0)  (
+module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80, PRINTMODE=`PRINTMODE_NOCTRL, LOG=0, CONTROL_FILE="uart.control", EXIT_ON_BAD_TIMING=0)  (
     inout [7:0] D,    // Input data
     input WR,        // Writes data on -ve edge
     input _RD,        // When goes from high to low then the FIFO data is placed onto D (equates to _OE)
@@ -43,7 +43,7 @@ endfunction
 string uart_control_file;
 initial begin
     if (! $value$plusargs("uart_control_file=%s", uart_control_file)) begin
-        uart_control_file="uart.control";
+        uart_control_file = CONTROL_FILE;
     end
 end
 
@@ -58,6 +58,10 @@ end
 
 logic _MR=0; // master reset
 
+// Hardware testing demonstrates that if a read starts but no data has been received since the last read ended then the next receive will immediately update the data lines.
+// This is only possible of course if one starts a read before RXF has gone low again to signal that new data is ready.
+logic immedBusUpdateOnNextReceive=1; 
+
 integer fOut=`NULL, fControl, c, r, txLength, tDelta;
 
 localparam MAX_LINE_LENGTH=255;
@@ -71,12 +75,12 @@ integer iInput;
 localparam BUFFER_SIZE=255;
 
 byte rxBuf[BUFFER_SIZE]; // Line of text read from file 
-int absWritePos = 0; // next place to write
-int absReadPos = 0; // next place to read
+int totalBytesReceived = 0; // next place to write
+int totalBytesRead = 0; // next place to read
 
 
-wire #T11 dataAvailable = absReadPos < absWritePos;
-wire spaceAvailable = (absWritePos - absReadPos) < BUFFER_SIZE;
+wire #T11 unreadDataAvailable = totalBytesRead < totalBytesReceived;
+wire spaceIsAvailable = (totalBytesReceived - totalBytesRead) < BUFFER_SIZE;
 
 reg [7:0] Drx = 'x;
 
@@ -87,11 +91,11 @@ if (LOG>1)
         " _RXF=%1b", _RXF, 
         " _TXE=%1b", _TXE, 
         " Drx=%8b", Drx,
-        " ARPOS=%-3d", absReadPos,
-        " AWPOS=%-3d", absWritePos,
-        " RPOS=%-3d", absReadPos % BUFFER_SIZE,
-        " WPOS=%-3d", absWritePos % BUFFER_SIZE,
-        " DAVAIL=%1b", dataAvailable,
+        " BYTES_READ=%-3d", totalBytesRead,
+        " BYTES_RECV=%-3d", totalBytesReceived,
+        " RPOS=%-3d", totalBytesRead % BUFFER_SIZE,
+        " WPOS=%-3d", totalBytesReceived % BUFFER_SIZE,
+        " DAVAIL=%1b", unreadDataAvailable,
         " _TXE_SUPPRESS=%1b", _TXE_SUPPRESS, 
         " _RXF_SUPPRESS=%1b", _RXF_SUPPRESS
         );
@@ -101,9 +105,9 @@ if (LOG>1)
 integer cycle_count=0;
 integer tx_count=0;
 assign _TXE = !(fOut != `NULL && _TXE_SUPPRESS && tx_count > 0 && _MR);
-assign #T6 _RXF = !(dataAvailable && _RXF_SUPPRESS && _MR);
+assign #T6 _RXF = !(unreadDataAvailable && _RXF_SUPPRESS && _MR);
 
-assign #T3 D= _RD? 8'bzzzzzzzz: dataAvailable ? Drx : 8'bxzxzxzxz; // xzxzxzxz is a distinctive signal that we're reading uninitialised data
+assign #T3 D= _RD? 8'bzzzzzzzz: totalBytesReceived > 0 ? Drx : 8'bxzxzxzxz; // xzxzxzxz is a distinctive signal that we're reading uninitialised data
 
 function [7:0] printable([7:0] c);
     if (PRINTMODE==`PRINTMODE_ASCII) begin
@@ -130,7 +134,7 @@ always @(negedge WR) begin
     if (_TXE) begin
             $display("%9t ", $time, "UART: TRANSMITTING %8b", D);
             $error("%9t ", $time, "UART: ERROR WR low while _TXE not ready");
-            `FINISH_AND_RETURN(1);
+            if (EXIT_ON_BAD_TIMING == 1) `FINISH_AND_RETURN(1);
     end
 
     $display("%9t ", $time, "UART: TRANSMITTING [h:%02x] [c:%c] [b:%08b] [d:%1d]", D, printable(D), D, D);
@@ -146,7 +150,7 @@ always @(negedge WR) begin
     tx_count --;
     if (tx_count < 0) begin
             $error("%9t ", $time, "UART: ERROR tx_count went negative");
-            `FINISH_AND_RETURN(1);
+            if (EXIT_ON_BAD_TIMING == 1) `FINISH_AND_RETURN(1);
     end
 
     #T12 // min inactity period
@@ -168,19 +172,19 @@ always @(negedge _RD) begin
     if (_MR) begin
         if (_RXF) begin
                 $display("%9t ", $time, "UART: ERROR _RD low while _RXF not ready");
-                `FINISH_AND_RETURN(1);
+                if (EXIT_ON_BAD_TIMING == 1) `FINISH_AND_RETURN(1);
         end
 
-        if (! dataAvailable) begin
+        if (! unreadDataAvailable) begin
                 $display("%9t ", $time, "UART: ERROR _RD low while data not available");
-                `FINISH_AND_RETURN(1);
+                if (EXIT_ON_BAD_TIMING == 1) `FINISH_AND_RETURN(1);
         end
 
-        if (LOG>1) $display("%9t ", $time, "UART: READING AT %-d", absReadPos);
-        Drx = rxBuf[absReadPos%BUFFER_SIZE];
+        // JL if (LOG>1) $display("%9t ", $time, "UART: READING AT %-d", totalBytesRead);
+        // JL Drx = rxBuf[totalBytesRead%BUFFER_SIZE];
 
-        if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x (%c) from serial at pos %1d", Drx, printable(Drx), absReadPos);
-    //    if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x from serial at pos %-d", Drx, Drx, absReadPos);
+        if (LOG) $display("%9t ", $time, "UART: READING   %02x (%c) from buffer at pos %1d", Drx, printable(Drx), totalBytesRead);
+    //    if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x from serial at pos %-d", Drx, Drx, totalBytesRead);
     end
 end
 
@@ -190,20 +194,31 @@ always @(posedge _RD) begin
     if (_MR && !_RD_prev) begin
         if (_RXF) begin
                 $display("%9t ", $time, "UART: ERROR _RD going high while _RXF not ready");
-                `FINISH_AND_RETURN(1);
+                if (EXIT_ON_BAD_TIMING == 1) `FINISH_AND_RETURN(1);
         end
 
-        // only advance the read position at the END of the read otherwise _RXF goes high too early
-        if (LOG>1) $display("%9t ", $time, "UART: ADVANCING READ POS FROM %3d", absReadPos);
-        absReadPos++;
 
+        // FIXME: OUGHT TO BE T4 or T5 - CHECK OTHER TIMINGS
         #(T11) // -WR to _TXE inactive delay
         if (LOG>1) $display("%9t ", $time, "UART: RX NOT READY");
         _RXF_SUPPRESS=0;
 
+        // only advance the read position at the END of the read otherwise _RXF goes high too early
+        if (totalBytesRead < totalBytesReceived) begin
+            if (LOG>1) $display("%9t ", $time, "UART: ADVANCING READ POS FROM %3d", totalBytesRead);
+            totalBytesRead++;
+        end else begin
+            if (LOG>1) $display("%9t ", $time, "UART: NOT ADVANCING READ POS FROM %3d BECAUSE AT END OF BUFFER", totalBytesRead);
+            immedBusUpdateOnNextReceive=1;
+        end
+
+        Drx = rxBuf[totalBytesRead%BUFFER_SIZE];
+        if (LOG>1) $display("%9t ", $time, "UART: BUFFER BYTE=%8b AT %-d", Drx, totalBytesRead);
+
         #(T12) // min inactity period
         if (LOG>1) $display("%9t ", $time, "UART: RX INACTIVE PERIOD ENDS");
         _RXF_SUPPRESS=1;
+
     end
 end
 
@@ -219,7 +234,7 @@ initial
     // gather inital value of _RD - it might be x
     _RD_prev = _RD;
 
-    // fill buffer with garbage
+    // fill buffer with garbage - rxBuf is type byte so can't be XZ
     for(int i=0; i<BUFFER_SIZE; i++) begin
         rxBuf[i] = 0;
     end
@@ -275,9 +290,10 @@ initial
                         r = $fgets(line, fControl); 
                         strInput = strip(line);
 
-                        $display("%9t ", $time, "UART: /%s", strInput);
+                        $display("%9t ", $time, "UART: CONTROL /%s", strInput);
                     end
 
+                    // x - read a hex value, r read a de value
                     if (c == "x" || c == "r") // pass string back to simulatiom
                     begin
                         line="";
@@ -287,23 +303,30 @@ initial
                         if (c == "x") begin
                             r = $sscanf(strInput, "%02x", iInput);
                             if (r == 0) begin
-                                $display("%9t ", $time, "UART: RX: '%s' can't convert %s from hex", strInput, strInput);
+                                $display("%9t ", $time, "UART: CONTROL RX: '%s' can't convert %s from hex", strInput, strInput);
                             end
                             $sformat(strInput, "%c", iInput);
                         end
 
                         if (LOG>1)
-                        $display("%9t ", $time, "UART: RX: '%s' into ringpos=%3d abs=%3d, spaceAvailable=%1b", strInput, absWritePos%BUFFER_SIZE, absWritePos, spaceAvailable);
+                        $display("%9t ", $time, "UART: CONTROL RX: '%s' into ringpos=%3d totalBytesReceived=%3d, spaceIsAvailable=%1b", 
+                                                                strInput, totalBytesReceived%BUFFER_SIZE, totalBytesReceived, spaceIsAvailable);
 
-                        for (int p=0; p<strInput.len() && spaceAvailable; p++) begin
-                            rxBuf[absWritePos%BUFFER_SIZE] = strInput[p];
-                            absWritePos++;
+                        for (int p=0; p<strInput.len() && spaceIsAvailable; p++) begin
+                            $display("%9t ", $time, "UART: FILL BUFFER[%1d] = %2x",  totalBytesReceived%BUFFER_SIZE, strInput[p]);
+                            rxBuf[totalBytesReceived%BUFFER_SIZE] = strInput[p];
+                            totalBytesReceived++;
                         end
-                        if (! spaceAvailable)
-                            $display("%9t ", $time, "UART: RECEIVE BUFFER NOW FULL");
+                        if (! spaceIsAvailable)
+                            $display("%9t ", $time, "UART: CONTROL RECEIVE BUFFER NOW FULL");
+
+                        if (immedBusUpdateOnNextReceive) begin
+                            if (LOG>1) $display("%9t ", $time, "UART: CONTROL POS FROM %3d BECAUSE AT END OF BUFFER", totalBytesRead);
+                            Drx = rxBuf[totalBytesRead%BUFFER_SIZE];
+                        end
 
                         if (LOG>1) 
-                            $display("%9t ", $time, "UART: RECEIVE absWritePos %3d, absReadPos=%3d", absWritePos, absReadPos);
+                            $display("%9t ", $time, "UART: CONTROL RECEIVE totalBytesReceived %3d, totalBytesRead=%3d", totalBytesReceived, totalBytesRead);
                     end
                     
                     if (c == "t") // wait for simulation to transmit N chars
@@ -314,7 +337,7 @@ initial
                         r = $fgets(line, fControl);  // consumes the line ending and space chars 
                         r = $sscanf(line,"%d\n", txLength); 
 
-                        if (LOG>1) $display("%9t ", $time, "UART: TX: waiting for %1d chars", txLength);
+                        if (LOG>1) $display("%9t ", $time, "UART: CONTROL TX: waiting for %1d chars", txLength);
                         tx_count = txLength;
                     end
                     
@@ -325,16 +348,16 @@ initial
                         r = $fgets(line, fControl);  // consumes the line ending and space chars 
                         r = $sscanf(line,"%d\n", tDelta); 
 
-                        if (LOG>1) $display("%9t ", $time, "UART: #%1d delay begin", tDelta);
+                        if (LOG>1) $display("%9t ", $time, "UART: CONTROL #%1d delay begin", tDelta);
                         #tDelta 
 
-                        if (LOG>1) $display("%9t ", $time, "UART: #%1d delay end", tDelta);
+                        if (LOG>1) $display("%9t ", $time, "UART: CONTROL #%1d delay end", tDelta);
                     end
 
                     if (c == "q") // quit
                     begin
                         r = $fgets(line, fControl);  // consumes the line ending and space chars 
-                        $display("%9t ", $time, "UART: QUIT");
+                        $display("%9t ", $time, "UART: CONTROL QUIT");
                         `FINISH_AND_RETURN(0);
                     end
 
