@@ -257,7 +257,7 @@ module cpu(
 
 
     // UART =============================================================
-    wire #(10) _gated_uart_wr = _uart_in | _phaseExec;   // sync clock data into uart - -ve edge must occur AFTER uart_alubuf_buf has been enabled
+    wire #(10) _gated_uart_wr = _uart_in | _phaseExec;   // sync clock data into uart - must occur AFTER uart_alubuf_buf has been enabled
 
     wire [7:0] uart_d;
 
