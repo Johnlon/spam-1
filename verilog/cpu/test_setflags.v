@@ -112,15 +112,19 @@ module test();
        `Equals(CPU._mr,'1);
        `Equals(CPU._mrPC,'0);
        `Equals(CPU.pc_addr, 0); 
-       `Equals(CPU.flags_czonGLEN.Q[7],'x);
+       `Equals(CPU.status_register_czonGLEN.Q[7],'x);
 
        clk = 0; // low = execute phase
        #TCLK
        `Equals(CPU._mr,'1);
        `Equals(CPU._mrPC,'1);
        `Equals(CPU.pc_addr, 0); 
-       `Equals(CPU.flags_czonGLEN.Q, 8'b00111010); // 255 rolled over to 0
-       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd0,8'bx,8'bx,8'bx});
+       `Equals(CPU.status_register_czonGLEN.Q, 8'b00111010); // 255 rolled over to 0
+       `Equals(CPU.regFile.get(0), 8'd00); // default vals of reg
+       `Equals(CPU.regFile.get(1), 8'h11); // default vals of reg
+       `Equals(CPU.regFile.get(2), 8'h22); // default vals of reg
+       `Equals(CPU.regFile.get(3), 8'h33); // default vals of reg
+
 
        clk = 1; // +ve updates PC
        #TCLK
@@ -129,8 +133,11 @@ module test();
        clk = 0;
        #TCLK
        `Equals(CPU.pc_addr, 1); 
-       `Equals(CPU.flags_czonGLEN.Q, 8'b00111010); // Flags not overwritten
-       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd0,8'd2,8'bx,8'bx});
+       `Equals(CPU.status_register_czonGLEN.Q, 8'b00111010); // Flags not overwritten
+       `Equals(CPU.regFile.get(0), 8'd00); // default vals of reg
+       `Equals(CPU.regFile.get(1), 8'h02); 
+       `Equals(CPU.regFile.get(2), 8'h22); // default vals of reg
+       `Equals(CPU.regFile.get(3), 8'h33); // default vals of reg
 
        clk = 1;
        #TCLK
@@ -139,8 +146,11 @@ module test();
        clk = 0;
        #TCLK
        `Equals(CPU.pc_addr, 2); 
-       `Equals(CPU.flags_czonGLEN.Q, 8'b00111010); // Flags not overwritten
-       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd0,8'd3,8'bx,8'bx});
+       `Equals(CPU.status_register_czonGLEN.Q, 8'b00111010); // Flags not overwritten
+       `Equals(CPU.regFile.get(0), 8'd00); // default vals of reg
+       `Equals(CPU.regFile.get(1), 8'h03); 
+       `Equals(CPU.regFile.get(2), 8'h22); // default vals of reg
+       `Equals(CPU.regFile.get(3), 8'h33); // default vals of reg
 
        clk = 1;
        #TCLK
@@ -148,8 +158,11 @@ module test();
 
        clk = 0;
        #TCLK
-       `Equals(CPU.flags_czonGLEN.Q, 8'b00111010); // Flags not overwritten
-       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd0,8'd4,8'bx,8'bx});
+       `Equals(CPU.status_register_czonGLEN.Q, 8'b00111010); // Flags not overwritten
+       `Equals(CPU.regFile.get(0), 8'd00); // default vals of reg
+       `Equals(CPU.regFile.get(1), 8'h04); 
+       `Equals(CPU.regFile.get(2), 8'h22); // default vals of reg
+       `Equals(CPU.regFile.get(3), 8'h33); // default vals of reg
 
        clk = 1;
        #TCLK
@@ -157,8 +170,11 @@ module test();
 
        clk = 0;
        #TCLK
-       `Equals(CPU.flags_czonGLEN.Q, 8'b11111010); // Flags ARE overwritten
-       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd0,8'd4,8'd3,8'bx});
+       `Equals(CPU.status_register_czonGLEN.Q, 8'b11111010); // Flags ARE overwritten
+       `Equals(CPU.regFile.get(0), 8'd00); // default vals of reg
+       `Equals(CPU.regFile.get(1), 8'h04); 
+       `Equals(CPU.regFile.get(2), 8'h03); // default vals of reg
+       `Equals(CPU.regFile.get(3), 8'h33); // default vals of reg
 
         // pair of ops - second op shouldn't update the flags !!
        clk = 1;
@@ -167,9 +183,11 @@ module test();
 
        clk = 0;
        #TCLK
-       `Equals(CPU.flags_czonGLEN.Q, 8'b11101010); // Flags ARE overwritten
-       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd255,8'd4,8'd3,8'bx});
-
+       `Equals(CPU.status_register_czonGLEN.Q, 8'b11101010); // Flags ARE overwritten
+       `Equals(CPU.regFile.get(0), 8'd255); // default vals of reg
+       `Equals(CPU.regFile.get(1), 8'h04); 
+       `Equals(CPU.regFile.get(2), 8'h03); // default vals of reg
+       `Equals(CPU.regFile.get(3), 8'h33); // default vals of reg
 
        clk = 1;
        #TCLK
@@ -177,8 +195,11 @@ module test();
 
        clk = 0;
        #TCLK
-       `Equals(CPU.flags_czonGLEN.Q, 8'b11101010); // Flags ARE overwritten
-       `Equals({CPU.regFile.get(0), CPU.regFile.get(1), CPU.regFile.get(2), CPU.regFile.get(3)}, {8'd255,8'd4,8'd3,8'bx});
+       `Equals(CPU.status_register_czonGLEN.Q, 8'b11101010); // Flags ARE overwritten
+       `Equals(CPU.regFile.get(0), 8'd255); // default vals of reg
+       `Equals(CPU.regFile.get(1), 8'h04); 
+       `Equals(CPU.regFile.get(2), 8'h03); // default vals of reg
+       `Equals(CPU.regFile.get(3), 8'h33); // default vals of reg
 
 
         $display("DONE - advance to no op");
@@ -209,8 +230,8 @@ module test();
                 " alu_op=%5b(%s)", CPU.alu_op, aluopName(CPU.alu_op)
             );            
             `DD " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
-            `DD " ALUFLAGS czonGLEN=%8b ", CPU.alu_flags);
-            `DD " FLAGSREG czonGLEN=%8b gated_flags_clk=%1b", CPU.flags_czonGLEN.Q, CPU.gated_flags_clk);
+            `DD " ALUFLAGS czonGLEN=%8b ", CPU.alu_flags_czonGLEN);
+            `DD " FLAGSREG czonGLEN=%8b gated_flags_clk=%1b", CPU.status_register_czonGLEN.Q, CPU.gated_flags_clk);
             `DD " FLAGS _flag_do=%b _flag_di=%b", CPU._flag_do, CPU._flag_di);
             `DD " condition=%02d(%1s) _do_exec=%b _set_flags=%b", CPU.ctrl.condition, control::condname(CPU.ctrl.condition), CPU.ctrl._do_exec, CPU._set_flags);
             `DD " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);
@@ -247,8 +268,8 @@ module test();
 
     always @( posedge CPU.phaseExec ) begin
        $display ("%9t ", $time,  "PHASE_EXEC +ve");
-       `DD " ALUFLAGS czonGLEN=%8b ", CPU.alu_flags);
-       `DD " FLAGSREG czonGLEN=%8b gated_flags_clk=%1b", CPU.flags_czonGLEN.Q, CPU.gated_flags_clk);
+       `DD " ALUFLAGS czonGLEN=%8b ", CPU.alu_flags_czonGLEN);
+       `DD " FLAGSREG czonGLEN=%8b gated_flags_clk=%1b", CPU.status_register_czonGLEN.Q, CPU.gated_flags_clk);
        `DD " FLAGS _flag_do=%b _flag_di=%b", CPU._flag_do, CPU._flag_di);
        `DD " condition=%02d(%1s) _do_exec=%b _set_flags=%b", CPU.ctrl.condition, control::condname(CPU.ctrl.condition), CPU.ctrl._do_exec, CPU._set_flags);
         //CPU.ctrl.dump;

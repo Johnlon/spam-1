@@ -325,13 +325,13 @@ DUMP();
         `DUMP_REG
 
         `DISPLAY("instruction 9 to 16 - values set as REGA=1 / B=2 / C=3 / E=4 round trip const to reg to ram");
-        `regEquals(8'bx,8'h22,8'bx,8'bx);
+        `regEquals(8'h00,8'h22,8'h22,8'h33);
         `FULL_CYCLE(1)
-        `regEquals(8'h1,8'h22,8'hx,8'hx);
+        `regEquals(8'h01,8'h22,8'h22,8'h33);
         `FULL_CYCLE(1)
-        `regEquals(8'h1,8'h2,8'hx,8'hx);
+        `regEquals(8'h1,8'h2,8'h22,8'h33);
         `FULL_CYCLE(1)
-        `regEquals(8'h1,8'h2,8'h3,8'hx);
+        `regEquals(8'h1,8'h2,8'h3,8'h33);
         `FULL_CYCLE(1)
         `regEquals(8'h1,8'h2,8'h3,8'h4);
         `FULL_CYCLE(1)
@@ -451,7 +451,7 @@ DUMP();
             );            
             `DD " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
             `DD " condition=%02d(%1s) _do_exec=%b", CPU.ctrl.condition, control::condname(CPU.ctrl.condition), CPU.ctrl._do_exec);
-            `DD " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU.flags_czonGLEN.Q, CPU.gated_flags_clk);
+            `DD " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU.status_register_czonGLEN.Q, CPU.gated_flags_clk);
             `DD " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);
             `DD "  REGA:%08b", CPU.regFile.get(0),
                 "  REGB:%08b", CPU.regFile.get(1),
