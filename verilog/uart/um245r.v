@@ -104,8 +104,10 @@ if (LOG>1)
 
 integer cycle_count=0;
 integer tx_count=0;
+
 assign _TXE = !(fOut != `NULL && _TXE_SUPPRESS && tx_count > 0 && _MR);
-assign #T6 _RXF = !(unreadDataAvailable && _RXF_SUPPRESS && _MR);
+//assign #T6 _RXF = !(unreadDataAvailable && _RXF_SUPPRESS && _MR);
+assign  _RXF = !(unreadDataAvailable && _RXF_SUPPRESS && _MR);
 
 assign #T3 D= _RD? 8'bzzzzzzzz: totalBytesReceived > 0 ? Drx : 8'bxzxzxzxz; // xzxzxzxz is a distinctive signal that we're reading uninitialised data
 
@@ -199,7 +201,7 @@ always @(posedge _RD) begin
 
 
         // FIXME: OUGHT TO BE T4 or T5 - CHECK OTHER TIMINGS
-        #(T11) // -WR to _TXE inactive delay
+        #(T5) // -WR to _TXE inactive delay
         if (LOG>1) $display("%9t ", $time, "UART: RX NOT READY");
         _RXF_SUPPRESS=0;
 
@@ -215,7 +217,7 @@ always @(posedge _RD) begin
         Drx = rxBuf[totalBytesRead%BUFFER_SIZE];
         if (LOG>1) $display("%9t ", $time, "UART: BUFFER BYTE=%8b AT %-d", Drx, totalBytesRead);
 
-        #(T12) // min inactity period
+        #(T6) // min inactity period
         if (LOG>1) $display("%9t ", $time, "UART: RX INACTIVE PERIOD ENDS");
         _RXF_SUPPRESS=1;
 
