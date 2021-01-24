@@ -5,11 +5,13 @@ echo ARGS "$@"
 TEST=$1
 if [ "$TEST" == "" ]
 then
-    TEST='test*.v'
+    #TEST='test*.v'
+    TEST='test.v'
 fi 
 if [ "$TEST" == "" ]
 then
-    TEST='demo*.v'
+    #TEST='demo*.v'
+    TEST='demo.v'
 fi 
 
 shift
