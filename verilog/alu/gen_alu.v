@@ -45,6 +45,14 @@ module gen_alu();
 
     initial begin
         hex_file = $fopen("roms/alu-hex.rom", "wb");
+/*
+        a = 0;
+        b = 0;
+        alu_op = 0;
+*/
+
+        #(10*Alu.PD)
+        $display("settle");
 
         for (block=0; block < 8; block++) begin
 
