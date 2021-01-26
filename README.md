@@ -178,6 +178,7 @@ Breadboard Layout ...
 Links to individual pages:
 
 - [CPU timing](docs/cpu_timing.md)
+
 - [Program Counter design](docs/program_counter.md)
 
   <img src="docs/board-pc.jpg" width="200">
@@ -187,6 +188,9 @@ Links to individual pages:
   <img src="docs/board-alu.jpg" width="200">
 
 - [Status Register](docs/status_register.md)
+
+  <img src="docs/board-statusreg.jpg" width="200">
+
 - [Register File Design](docs/register_file.md)
 
   <img src="docs/board-regfile.jpg" width="200">
@@ -196,13 +200,15 @@ Links to individual pages:
   <img src="docs/board-uart.jpg" width="200">
 
 - [MAR - part of RAM Module](docs/memory_address_register.md)
+
 - [RAM - part of RAM Module](docs/ram.md)
 
   <img src="docs/board-ram.jpg" width="200">
 
-
 - [Program ROM](docs/program_rom.md)
+
 - [CPU verilog model](verilog/cpu/cpu.v)
+
 - [Control Logic verilog model](verilog/cpu/controller.v)
 
 # Software Components
