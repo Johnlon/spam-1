@@ -1,5 +1,7 @@
 # Status Register
 
+![Status reg](board-statusreg.jpg)
+
 The SPAM-1 status register records the ALU output flags so that subsequent operations may be made conditional on the status of those flags. The status register is implemented using a 74HCT574 flpflop and is hooked up with the ALU and control logic as illustrated here.
 
 ![Status register connectivity](status_register_conectivity.png)
