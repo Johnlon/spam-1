@@ -2,7 +2,7 @@
 
 ![Program counter hardware](pc-hardware.png)
 
-The program counter is built around a pair of 74HCT163 presettable counters labelled below as PCHi and PCLO and also an 8 bit flipflop labelled PCHITMP that's needed to enable jumps to happen atomically.
+The program counter is built around four 4-bit 74HCT163 presettable counters organised in two pairs to make two 8 bit presettable counters labelled in the image below as PCHI and PCLO, plus an 8 bit flipflop labelled PCHITMP that's needed to enable jumps to happen atomically.
 
 ![Program counter paths](program_counter_paths.png)
 
