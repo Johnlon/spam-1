@@ -2,6 +2,9 @@
 
 The memory address register in SPAM-1 is a pair of 74HCT377 8 bit flipflops that together comprise a 16 bit memory address register (MAR). The MAR can be used in _register addressing mode_ to reference any RAM location for a read or write operation. 
 
+![RAM module](board-ram.jpg)
+
+
 The MAR registers play a dual and as well as their special purpose for RAM addressing the two 8 bit MAR registers can be used as general purpose registers in ALU operations in the same manner as the [register file](register_file.md). The MAR register can provide an value onto either or both of the ALU input busses.
 
 The MAR operates is constructed as a quadruple port register. Each 8 bit MAR register can be:

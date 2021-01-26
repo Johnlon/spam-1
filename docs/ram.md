@@ -2,6 +2,10 @@
 
 SPAM-1's RAM is 64k by 8 bits.
 
+![RAM module](board-ram.jpg)
+
+It is connected to the ALU output bus and the ALU B-Input bus.
+
 ![Ram](ram.png)
 
 The RAM is written to by data flowing from the ALU result bus. The RAM is connected to the ALU result bus via a tristate buffer (see 'BUFFER IN' above) to avoid interference between the ALU result bus and the ALU B input bus as the RAM's data lines are connected to both the busses. 
