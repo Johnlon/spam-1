@@ -199,9 +199,11 @@ Links to individual pages:
 
   <img src="docs/board-uart.jpg" width="200">
 
-- [MAR - part of RAM Module](docs/memory_address_register.md)
+- [MAR](docs/memory_address_register.md)
 
-- [RAM - part of RAM Module](docs/ram.md)
+  <img src="docs/board-mar.jpg" width="200">
+
+- [RAM](docs/ram.md)
 
   <img src="docs/board-ram.jpg" width="200">
 
