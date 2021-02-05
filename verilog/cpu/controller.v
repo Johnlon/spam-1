@@ -39,7 +39,6 @@ module controller(
     output _set_flags
 );
 
-    logic _do_exec;
      
     rom #(.AWIDTH(16)) rom_6(._CS(1'b0), ._OE(1'b0), .A(pc));
     rom #(.AWIDTH(16)) rom_5(._CS(1'b0), ._OE(1'b0), .A(pc));
@@ -71,13 +70,15 @@ module controller(
     assign direct_address_lo = instruction_2;
     assign immed8 = instruction_1;
 
+    wire _do_exec;
 
-    // only set flags is executing instruction
-    or #(9) (_set_flags, _set_flags_bit, _do_exec);
+    // only set flags if executing instruction 
+    // BASIC LOGIC IS THIS ...
+    or #(9) ic7404(_set_flags, _set_flags_bit, _do_exec);
 
     // addressing mode
     assign _addrmode_register = amode_bit; // low = reg
-    nand #(9) (_addrmode_direct, amode_bit, amode_bit);  // NAND GATE
+    nand #(9) ic7400_a(_addrmode_direct, amode_bit, amode_bit);  // NAND GATE
 
     // device decoders
     hct74138 abus_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(abus_dev[2:0]));
@@ -117,11 +118,13 @@ module controller(
 
     // organise two 8-to-1 multiplexers as a 16-1 multiulexer
     wire conditionTopBit = condition[3];
-    wire #(8) _conditionTopBit = !conditionTopBit; // NAND GATE
+    wire _conditionTopBit;
+    nand #(8) ic7400_b(_conditionTopBit, conditionTopBit); // as inverter
+
     hct74151 #(.LOG(0)) do_exec_lo(._E(conditionTopBit),  .S(condition[2:0]), .I(_flags_lo));
     hct74151 #(.LOG(0)) do_exec_hi(._E(_conditionTopBit), .S(condition[2:0]), .I(_flags_hi));
 
-    nand #(9) (_do_exec, do_exec_lo._Y, do_exec_hi._Y); 
+    nand #(9) ic7400_c(_do_exec, do_exec_lo._Y, do_exec_hi._Y); 
 
 endmodule
 

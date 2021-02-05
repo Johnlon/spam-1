@@ -130,6 +130,14 @@ module cpu(
         ._set_flags
     );
 
+    
+    // ROM =============================================================================================
+    // ROM OUT to BBUS when immed rom addressing is being used
+    hct74245ab rom_bbus_buf(.A(immed8), .B(bbus), .nOE(_bdev_immed)); 
+
+    hct74245ab #(.LOG(0)) rom_addbbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
+    hct74245ab #(.LOG(0)) rom_addbbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
+
     // PROGRAM COUNTER ======================================================================================
     wire #(8) _long_jump = _pc_in; // FIXME - need to include _do_Exec somehow
 
@@ -145,15 +153,6 @@ module cpu(
         .PCLO(PCLO),
         .PCHI(PCHI)
     );
-
-    // ROM =============================================================================================
-
-    
-    // ROM OUT to BBUS when immed rom addressing is being used
-    hct74245ab rom_bbus_buf(.A(immed8), .B(bbus), .nOE(_bdev_immed)); 
-
-    hct74245ab #(.LOG(0)) rom_addbbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
-    hct74245ab #(.LOG(0)) rom_addbbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
 
     // RAM =============================================================================================
 
