@@ -99,8 +99,6 @@ module cpu(
 
     // CONTROL ===========================================================================================
     wire _addrmode_register, _addrmode_direct;
-    wire [7:0] direct_address_hi, direct_address_lo;
-    wire [7:0] immed8;
 
     // selection wires
     `define WIRE_ADEV_SEL(DNAME) wire _adev_``DNAME``
@@ -116,27 +114,22 @@ module cpu(
     wire [7:0] PCHI, PCLO; // output of PC
     wire [15:0] pc_addr = {PCHI, PCLO}; 
 
+    // ROM =============================================================================================
     controller ctrl(
         .pc(pc_addr),
         ._flags_czonGLEN(_registered_flags_czonGLEN),
         ._flag_di, ._flag_do,
 
-        ._addrmode_register, ._addrmode_direct,
+        ._addrmode_register, 
         `CONTROL_WIRES(BIND, `COMMA),
-        .direct_address_hi, .direct_address_lo,
-        .immed8,
+        .address_bus,
+        .bbus,
         .alu_op,
         .bbus_dev, .abus_dev, .targ_dev,
         ._set_flags
     );
 
     
-    // ROM =============================================================================================
-    // ROM OUT to BBUS when immed rom addressing is being used
-    hct74245ab rom_bbus_buf(.A(immed8), .B(bbus), .nOE(_bdev_immed)); 
-
-    hct74245ab #(.LOG(0)) rom_addbbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
-    hct74245ab #(.LOG(0)) rom_addbbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
 
     // PROGRAM COUNTER ======================================================================================
     wire #(8) _long_jump = _pc_in; // FIXME - need to include _do_Exec somehow

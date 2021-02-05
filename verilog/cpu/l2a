@@ -1,0 +1,3 @@
+ARGS test_flag_control.v
+================ test_flag_control.v ===============
+ERROR exit code iverilog

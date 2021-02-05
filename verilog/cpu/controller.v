@@ -23,7 +23,9 @@ module controller(
     input [7:0] _flags_czonGLEN,
     input _flag_di, _flag_do,
 
-    output _addrmode_register, _addrmode_direct,
+    output _addrmode_register,
+    inout tri [15:0] address_bus,
+    inout tri [7:0] bbus,
 
     // selection wires
 `define OUT_ADEV_SEL(DNAME) output _adev_``DNAME``
@@ -39,7 +41,14 @@ module controller(
     output _set_flags
 );
 
+    wire _addrmode_direct;
+
+    // ROM IMMEDIATE TO BBUS AND ROM DIRECT ADDRESSING TO ADDRESSBUS OUTPUT 
+    hct74245ab rom_bbus_buf(.A(immed8), .B(bbus), .nOE(_bdev_immed)); 
+    hct74245ab #(.LOG(0)) rom_addbbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
+    hct74245ab #(.LOG(0)) rom_addbbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct)); // optional - needed for direct addressing
      
+    // ROMS
     rom #(.AWIDTH(16)) rom_6(._CS(1'b0), ._OE(1'b0), .A(pc));
     rom #(.AWIDTH(16)) rom_5(._CS(1'b0), ._OE(1'b0), .A(pc));
     rom #(.AWIDTH(16)) rom_4(._CS(1'b0), ._OE(1'b0), .A(pc)); 
@@ -65,6 +74,7 @@ module controller(
     wire [3:0] condition = {instruction_5[0],instruction_4[7:5]};
     wire _set_flags_bit = instruction_4[4];
     wire amode_bit = instruction_4[0];
+
 
     assign direct_address_hi = instruction_3;
     assign direct_address_lo = instruction_2;
