@@ -8,6 +8,10 @@
 
 `timescale 1ns/1ns
 
+`define hct74245AB( nOE, A, B ) hct74245(dir(1), nOE, A, B)
+`define hct74245BA( nOE, A, B ) hct74245(dir(0), nOE, A, B)
+
+
 module hct74245( 
     input dir,
     input nOE,
@@ -76,7 +80,7 @@ module hct74245ab(
 
     assign Ain = A;
 
-    hct74245 #(.LOG(LOG), .NAME(NAME)) ab( 
+    hct74245 #(.LOG(LOG), .NAME(NAME)) inner( 
         .dir(1'b1),
         .nOE,
         .A(Ain),
@@ -89,6 +93,35 @@ module hct74245ab(
             $display("%9t", $time, "BUF %m (%s)", NAME, " : A=%8b ", A, "B=%8b ", B, " nOE=%1b", nOE);
         
 endmodule: hct74245ab
+
+`timescale 1ns/1ns
+
+module hct74245ba( 
+    input nOE,
+    inout tri [7:0] A,
+    input [7:0] B
+);
+
+    parameter NAME="74245ba";
+    parameter LOG=0;
+
+    wire [7:0] Bin;
+
+    assign Bin = B;
+
+    hct74245 #(.LOG(LOG), .NAME(NAME)) inner( 
+        .dir(1'b0),
+        .nOE,
+        .B(Bin),
+        .A
+    );
+
+    
+    if (0) 
+        always @(*) 
+            $display("%9t", $time, "BUF %m (%s)", NAME, " : A=%8b ", A, "B=%8b ", B, " nOE=%1b", nOE);
+        
+endmodule: hct74245ba
 
 `endif
 
