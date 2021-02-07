@@ -9,6 +9,7 @@
 `include "../74151/hct74151.v"
 `include "../74139/hct74139.v"
 `include "../74138/hct74138.v"
+`include "../74245/hct74245.v"
 `include "../lib/cast.v"
 `include "../rom/rom.v"
 `include "../alu/alu.v"
@@ -16,7 +17,6 @@
 
 `timescale 1ns/1ns
 
-`timescale 1ns/1ns
 
 module controller(
     input [15:0] pc,
@@ -26,6 +26,7 @@ module controller(
     output _addrmode_register,
     inout tri [15:0] address_bus,
     inout tri [7:0] bbus,
+
 
     // selection wires
 `define OUT_ADEV_SEL(DNAME) output _adev_``DNAME``
@@ -44,9 +45,10 @@ module controller(
     wire _addrmode_direct;
 
     // ROM IMMEDIATE TO BBUS AND ROM DIRECT ADDRESSING TO ADDRESSBUS OUTPUT 
-    hct74245ba rom_bbus_buf(.B(immed8), .A(bbus), .nOE(_bdev_immed)); 
-    hct74245ba #(.LOG(0)) rom_addbbuslo_buf(.B(direct_address_lo), .A(address_bus[7:0]), .nOE(_addrmode_direct)); 
-    hct74245ba #(.LOG(0)) rom_addbbushi_buf(.B(direct_address_hi), .A(address_bus[15:8]), .nOE(_addrmode_direct));
+
+    hct74245 rom_bbus_buf(.A(immed8), .B(bbus), .nOE(_bdev_immed), .dir(1'b1));  // DONE
+    hct74245 rom_addbbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]),  .nOE(_addrmode_direct), .dir(1'b1));  // DONE
+    hct74245 rom_addbbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct), .dir(1'b1)); // DONE
      
     // ROMS
     rom #(.AWIDTH(16)) rom_6(._CS(1'b0), ._OE(1'b0), .A(pc));
@@ -67,13 +69,13 @@ module controller(
 
 
     // instruction decompose
-    assign alu_op   = {instruction_6[7:3]};
-    assign targ_dev = {instruction_6[2:0],instruction_5[7]};
-    assign abus_dev = instruction_5[6:4];
-    assign bbus_dev = instruction_5[3:1];
-    wire [3:0] condition = {instruction_5[0],instruction_4[7:5]};
-    wire _set_flags_bit = instruction_4[4];
     wire amode_bit = instruction_4[0];
+    wire _set_flags_bit = instruction_4[4];
+    wire [3:0] condition = {instruction_5[0],instruction_4[7:5]};
+    assign bbus_dev = instruction_5[3:1];
+    assign abus_dev = instruction_5[6:4];
+    assign targ_dev = {instruction_6[2:0],instruction_5[7]};
+    assign alu_op   = {instruction_6[7:3]};
 
 
     assign direct_address_hi = instruction_3;
@@ -83,12 +85,11 @@ module controller(
     wire _do_exec;
 
     // only set flags if executing instruction 
-    // BASIC LOGIC IS THIS ...
-    or #(9) ic7404(_set_flags, _set_flags_bit, _do_exec);
+    or #(9) ic7432_a(_set_flags, _set_flags_bit, _do_exec);
 
     // addressing mode
     assign _addrmode_register = amode_bit; // low = reg
-    nand #(9) ic7400_a(_addrmode_direct, amode_bit, amode_bit);  // NAND GATE
+    nand #(9) ic7400_a(_addrmode_direct, amode_bit, amode_bit);  // NAND GATE - DONE
 
     // device decoders
     hct74138 abus_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(abus_dev[2:0]));
@@ -129,12 +130,12 @@ module controller(
     // organise two 8-to-1 multiplexers as a 16-1 multiulexer
     wire conditionTopBit = condition[3];
     wire _conditionTopBit;
-    nand #(8) ic7400_b(_conditionTopBit, conditionTopBit); // as inverter
+    nand #(8) ic7400_b(_conditionTopBit, conditionTopBit, conditionTopBit); // as inverter - DONE
 
     hct74151 #(.LOG(0)) do_exec_lo(._E(conditionTopBit),  .S(condition[2:0]), .I(_flags_lo));
     hct74151 #(.LOG(0)) do_exec_hi(._E(_conditionTopBit), .S(condition[2:0]), .I(_flags_hi));
 
-    nand #(9) ic7400_c(_do_exec, do_exec_lo._Y, do_exec_hi._Y); 
+    nand #(9) ic7400_c(_do_exec, do_exec_lo._Y, do_exec_hi._Y);  // DONE
 
 endmodule
 

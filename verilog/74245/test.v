@@ -21,6 +21,9 @@ module tb();
     assign B=Vb;
     assign A=Va;
 
+    localparam AB=1;
+    localparam BA=0;
+
     hct74245 #(.LOG(1), .NAME("buf245MuxX")) buf245MuxX(.A(A), .B(B), .dir, .nOE(nOE));
 
     always @*
@@ -33,7 +36,7 @@ module tb();
 
       Va='x;
       Vb='x;
-      dir = 1; // a->b
+      dir = AB; // a->b
       nOE = 1;
       #2 // not enough time to stabilise
       `equals(A, 8'bxxxxxxxx, "OE disable");
@@ -45,7 +48,7 @@ module tb();
 
       #100      
       $display("test output disabled");
-      dir = 1; // a->b
+      dir = AB; // a->b
       nOE = 1;
       #30
       `equals(A, 8'bzzzzzzzz, "OE disable A->B");
@@ -58,7 +61,7 @@ module tb();
       $display("test output enabled a->b but A=Z");
       Va=8'bzzzzzz10;
       Vb=8'bzzzzzzzz;
-      dir = 1; // a->b
+      dir = AB; // a->b
       nOE = 0;
       #30
       `equals(A, 8'bzzzzzz10, "OE disable A->B");
@@ -80,7 +83,7 @@ module tb();
       
       #100      
       $display("check timing for enable output");
-      dir = 1; // a->b
+      dir = AB; // a->b
       nOE = 1;
       Va=8'b11111111;
       Vb=8'bzzzzzzzz; // avoid contention
@@ -95,16 +98,16 @@ module tb();
       #100      
       // necessary to setup A as Z before next timing test
       $display("switch dir and value while enabled");
-      dir = 1; // a->b
+      dir = AB; // a->b
       nOE = 0;
       Va=8'bzzzzzzzz; // avoid contention
       #100
       nOE = 0;
       Vb=8'b10101011;
-      dir = 1; // a-b
+      dir = AB; // a-b
       #100
       Vb=8'b10101010;
-      dir = 0; // b->a
+      dir = BA; // b->a
 
       `ASSERT_TOOK(A === 8'b10101010, buf245MuxX.PD_DIR)
 
@@ -112,7 +115,7 @@ module tb();
       #100      
       $display("switch value while enabled");
       timer=$time;
-      dir = 0; // b->a
+      dir = BA; // b->a
       nOE = 0;
       #100
       Va=8'bzzzzzzzz; // avoid contention
@@ -129,13 +132,13 @@ module tb();
       Vb=8'bzzzzzzzz;
       #100
 
-      dir = 1; // a->b
+      dir = AB; // a->b
 
       `ASSERT_TOOK( B === 8'b00000000, buf245MuxX.PD_DIR)
       
       #100      
       $display("switch to value while enabled");
-      dir = 1; // a->b
+      dir = AB; // a->b
       nOE = 0;
       #100 
       Va=8'b11111111;

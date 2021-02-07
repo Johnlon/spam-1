@@ -8,10 +8,6 @@
 
 `timescale 1ns/1ns
 
-`define hct74245AB( nOE, A, B ) hct74245(dir(1), nOE, A, B)
-`define hct74245BA( nOE, A, B ) hct74245(dir(0), nOE, A, B)
-
-
 module hct74245( 
     input dir,
     input nOE,
@@ -25,7 +21,6 @@ module hct74245(
     parameter PD_DIR=16;
     parameter PD_OE=16;
 
-
     // TRANSMISSION DELAY MODEL
     logic dir_d;
     logic nOE_d;
@@ -33,8 +28,8 @@ module hct74245(
     logic [7:0] A_d;
     logic [7:0] B_d;
 
-    assign A= nOE_d ? 8'bzzzzzzzz :dir_d?8'bzzzzzzzz:B_d;
-    assign B= nOE_d ? 8'bzzzzzzzz :dir_d?A_d:8'bzzzzzzzz;
+    assign A= nOE_d ? 8'bzzzzzzzz :dir_d==1?'bzzzzzzzz:B_d;
+    assign B= nOE_d ? 8'bzzzzzzzz :dir_d==0?'bzzzzzzzz:A_d;
     
     always @* begin
         dir_d <= #(PD_DIR) dir;
@@ -63,65 +58,6 @@ module hct74245(
         end
 
 endmodule: hct74245
-
-
-`timescale 1ns/1ns
-
-module hct74245ab( 
-    input nOE,
-    input [7:0] A,
-    inout tri [7:0] B
-);
-
-    parameter NAME="74245ab";
-    parameter LOG=0;
-
-    wire [7:0] Ain;
-
-    assign Ain = A;
-
-    hct74245 #(.LOG(LOG), .NAME(NAME)) inner( 
-        .dir(1'b1),
-        .nOE,
-        .A(Ain),
-        .B
-    );
-
-    
-    if (0) 
-        always @(*) 
-            $display("%9t", $time, "BUF %m (%s)", NAME, " : A=%8b ", A, "B=%8b ", B, " nOE=%1b", nOE);
-        
-endmodule: hct74245ab
-
-`timescale 1ns/1ns
-
-module hct74245ba( 
-    input nOE,
-    inout tri [7:0] A,
-    input [7:0] B
-);
-
-    parameter NAME="74245ba";
-    parameter LOG=0;
-
-    wire [7:0] Bin;
-
-    assign Bin = B;
-
-    hct74245 #(.LOG(LOG), .NAME(NAME)) inner( 
-        .dir(1'b0),
-        .nOE,
-        .B(Bin),
-        .A
-    );
-
-    
-    if (0) 
-        always @(*) 
-            $display("%9t", $time, "BUF %m (%s)", NAME, " : A=%8b ", A, "B=%8b ", B, " nOE=%1b", nOE);
-        
-endmodule: hct74245ba
 
 `endif
 

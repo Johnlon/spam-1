@@ -156,9 +156,9 @@ module cpu(
     
 `ifndef verilator
     // verilator complains about tristate
-    hct74245ab ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in));
+    hct74245 ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in), .dir(1'b1));
 `endif
-    hct74245ab ram_bbus_buf(.A(ram64.D), .B(bbus), .nOE(_bdev_ram));
+    hct74245 ram_bbus_buf(.A(ram64.D), .B(bbus), .nOE(_bdev_ram), .dir(1'b1));
 
     // MAR =============================================================================================
 // verilator lint_off PINMISSING
@@ -166,14 +166,14 @@ module cpu(
     hct74377 #(.LOG(1)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
 // verilator lint_on PINMISSING
 
-    hct74245ab marlo_abus_buf(.A(MARLO.Q), .B(abus), .nOE(_adev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
-    hct74245ab marlo_bbus_buf(.A(MARLO.Q), .B(bbus), .nOE(_bdev_marlo)); // optional - needed for marlo arith so MAR appears as a GP register
+    hct74245 marlo_abus_buf(.A(MARLO.Q), .B(abus), .nOE(_adev_marlo), .dir(1'b1)); // optional - needed for marlo arith so MAR appears as a GP register
+    hct74245 marlo_bbus_buf(.A(MARLO.Q), .B(bbus), .nOE(_bdev_marlo), .dir(1'b1)); // optional - needed for marlo arith so MAR appears as a GP register
 
-    hct74245ab marhi_abus_buf(.A(MARHI.Q), .B(abus), .nOE(_adev_marhi)); // optional - needed for marlo arith so MAR appears as a GP register
-    hct74245ab marhi_bbus_buf(.A(MARHI.Q), .B(bbus), .nOE(_bdev_marhi)); // optional - needed for marlo arith so MAR appears as a GP register
+    hct74245 marhi_abus_buf(.A(MARHI.Q), .B(abus), .nOE(_adev_marhi), .dir(1'b1)); // optional - needed for marlo arith so MAR appears as a GP register
+    hct74245 marhi_bbus_buf(.A(MARHI.Q), .B(bbus), .nOE(_bdev_marhi), .dir(1'b1)); // optional - needed for marlo arith so MAR appears as a GP register
 
-    hct74245ab #(.LOG(0)) marhi_addbbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .nOE(_addrmode_register));
-    hct74245ab #(.LOG(0)) marlo_addbbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register));
+    hct74245 #(.LOG(0)) marhi_addbbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .nOE(_addrmode_register), .dir(1'b1));
+    hct74245 #(.LOG(0)) marlo_addbbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register), .dir(1'b1));
 
     // ALU ==============================================================================================
     wire _flag_c_out, _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out;
@@ -261,7 +261,7 @@ module cpu(
         ._RXF(_flag_di)		// When high to NOT read from D, when low then data is available to read by strobing RD low
       );
 
-    hct74245ab uart_alubus_buf(.A(alu_result_bus), .B(uart_d), .nOE(_uart_in));
-    hct74245ab uart_abus_buf(.A(uart_d), .B(abus), .nOE(_adev_uart));
+    hct74245 uart_alubus_buf(.A(alu_result_bus), .B(uart_d), .nOE(_uart_in), .dir(1'b1));
+    hct74245 uart_abus_buf(.A(uart_d), .B(abus), .nOE(_adev_uart), .dir(1'b1));
 
 endmodule : cpu
