@@ -51,12 +51,12 @@ module controller(
     hct74245 rom_addbbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct), .dir(1'b1)); // DONE
      
     // ROMS
-    rom #(.AWIDTH(16)) rom_6(._CS(1'b0), ._OE(1'b0), .A(pc));
+    rom #(.AWIDTH(16)) rom_6(._CS(1'b0), ._OE(1'b0), .A(pc)); 
     rom #(.AWIDTH(16)) rom_5(._CS(1'b0), ._OE(1'b0), .A(pc));
     rom #(.AWIDTH(16)) rom_4(._CS(1'b0), ._OE(1'b0), .A(pc)); 
-    rom #(.AWIDTH(16)) rom_3(._CS(1'b0), ._OE(1'b0), .A(pc)); 
-    rom #(.AWIDTH(16)) rom_2(._CS(1'b0), ._OE(1'b0), .A(pc)); 
-    rom #(.AWIDTH(16)) rom_1(._CS(1'b0), ._OE(1'b0), .A(pc));
+    rom #(.AWIDTH(16)) rom_3(._CS(1'b0), ._OE(1'b0), .A(pc)); // DONE
+    rom #(.AWIDTH(16)) rom_2(._CS(1'b0), ._OE(1'b0), .A(pc)); // DONE
+    rom #(.AWIDTH(16)) rom_1(._CS(1'b0), ._OE(1'b0), .A(pc)); // DONE
    
     wire [7:0] instruction_6 = rom_6.D; // aliases
     wire [7:0] instruction_5 = rom_5.D;
@@ -69,34 +69,32 @@ module controller(
 
 
     // instruction decompose
-    wire amode_bit = instruction_4[0];
-    wire _set_flags_bit = instruction_4[4];
-    wire [3:0] condition = {instruction_5[0],instruction_4[7:5]};
-    assign bbus_dev = instruction_5[3:1];
-    assign abus_dev = instruction_5[6:4];
-    assign targ_dev = {instruction_6[2:0],instruction_5[7]};
-    assign alu_op   = {instruction_6[7:3]};
-
-
-    assign direct_address_hi = instruction_3;
-    assign direct_address_lo = instruction_2;
-    assign immed8 = instruction_1;
+    assign immed8            = instruction_1; // DONE
+    assign direct_address_lo = instruction_2; // DONE
+    assign direct_address_hi = instruction_3; // DONR
+    wire amode_bit           = instruction_4[0]; // DONE
+    wire _set_flags_bit      = instruction_4[4]; // DONE
+    wire [3:0] condition     ={instruction_5[0],instruction_4[7:5]}; // DONE
+    assign bbus_dev          = instruction_5[3:1]; // DONE
+    assign abus_dev          = instruction_5[6:4]; // DONE
+    assign targ_dev          ={instruction_6[2:0],instruction_5[7]}; // DONE
+    assign alu_op            ={instruction_6[7:3]}; // DONE 
 
     wire _do_exec;
 
     // only set flags if executing instruction 
-    or #(9) ic7432_a(_set_flags, _set_flags_bit, _do_exec);
+    or #(9) ic7432_a(_set_flags, _set_flags_bit, _do_exec); // DONE
 
     // addressing mode
-    assign _addrmode_register = amode_bit; // low = reg
-    nand #(9) ic7400_a(_addrmode_direct, amode_bit, amode_bit);  // NAND GATE - DONE
+    assign _addrmode_register = amode_bit; // low = reg  // DONE
+    nand #(9) ic7400_a(_addrmode_direct, amode_bit, amode_bit);  // INVERT - DONE
 
     // device decoders
-    hct74138 abus_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(abus_dev[2:0]));
-    hct74138 bbus_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(bbus_dev[2:0]));
+    hct74138 bbus_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(bbus_dev[2:0])); // DONE
+    hct74138 abus_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(abus_dev[2:0])); // DONE
 
-    hct74138 targ_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(_do_exec), .Enable1_bar(targ_dev[3]), .A(targ_dev[2:0]));
-    hct74138 targ_dev_16_demux(.Enable3(targ_dev[3]), .Enable2_bar(_do_exec), .Enable1_bar(1'b0),        .A(targ_dev[2:0]));
+    hct74138 targ_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(_do_exec), .Enable1_bar(targ_dev[3]), .A(targ_dev[2:0])); // DONE
+    hct74138 targ_dev_16_demux(.Enable3(targ_dev[3]), .Enable2_bar(_do_exec), .Enable1_bar(1'b0),        .A(targ_dev[2:0])); // DONE
 
     // control lines for device selection
     wire [7:0] lsel = {abus_dev_08_demux.Y};
@@ -128,12 +126,12 @@ module controller(
             1'b0}; // Always
 
     // organise two 8-to-1 multiplexers as a 16-1 multiulexer
-    wire conditionTopBit = condition[3];
+    wire conditionTopBit = condition[3]; // DONE
     wire _conditionTopBit;
     nand #(8) ic7400_b(_conditionTopBit, conditionTopBit, conditionTopBit); // as inverter - DONE
 
-    hct74151 #(.LOG(0)) do_exec_lo(._E(conditionTopBit),  .S(condition[2:0]), .I(_flags_lo));
-    hct74151 #(.LOG(0)) do_exec_hi(._E(_conditionTopBit), .S(condition[2:0]), .I(_flags_hi));
+    hct74151 #(.LOG(0)) do_exec_lo(._E(conditionTopBit),  .S(condition[2:0]), .I(_flags_lo)); // DONE
+    hct74151 #(.LOG(0)) do_exec_hi(._E(_conditionTopBit), .S(condition[2:0]), .I(_flags_hi)); // DONE
 
     nand #(9) ic7400_c(_do_exec, do_exec_lo._Y, do_exec_hi._Y);  // DONE
 
