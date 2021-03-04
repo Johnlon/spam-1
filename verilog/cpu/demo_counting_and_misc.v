@@ -30,7 +30,6 @@ module test();
     import alu_ops::*;
 
     `include "../lib/display_snippet.sv"
-    `AMODE_TUPLE
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
 
@@ -56,17 +55,20 @@ module test();
     `define DATA(D) {40'bz, D} /* padded to rom width with z */
 
     localparam MAX_PC=2048;
-    string_bits CODE_TEXT [MAX_PC];
-    string_bits CODE [MAX_PC];
+    `DEFINE_CODE_VARS(MAX_PC)
+    //string_bits CODE_TEXT [MAX_PC];
+    //string_bits CODE [MAX_PC];
 
     integer counter =0;
 
     // SETUP ROM
     task INIT_ROM;
     begin
-        `RAM_DIRECT_EQ_IMMED8(counter, 'hffaa, 8'h42); counter++;
+    // JLJL
+        `RAM_DIRECT_EQ_IMMED8(counter, 16'hffaa, 8'h42); counter++;
+    // JLJL
 
-        `DEV_EQ_RAM_DIRECT(counter, marlo, 'hffaa); counter++;
+        `DEV_EQ_RAM_DIRECT(counter, marlo, 16'hffaa); counter++;
 
         `DEV_EQ_IMMED8(counter, marhi, 0); counter++;
 
@@ -74,15 +76,15 @@ module test();
 
         `DEV_EQ_IMMED8(counter, ram, 8'h22); counter++;
 
-        `DEV_EQ_RAM_DIRECT(counter, marlo, 'h0043); counter++;
+        `DEV_EQ_RAM_DIRECT(counter, marlo, 16'h0043); counter++;
 
-        `RAM_DIRECT_EQ_DEV(counter, 'habcd, marlo); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 16'habcd, marlo); counter++;
 
         // write RAM into regb
-        `DEV_EQ_RAM_DIRECT(counter, regb, 'h0043); counter++;
+        `DEV_EQ_RAM_DIRECT(counter, regb, 16'h0043); counter++;
 
         // write regb into RAM
-        `RAM_DIRECT_EQ_DEV(counter, 'hdcba, regb); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 16'hdcba, regb); counter++;
 
         // test all registers read write
         `TEXT(counter, "WRITING TO ALL REGISTERS");
@@ -95,14 +97,15 @@ module test();
         `DEV_EQ_IMMED8(counter, regd, 4); counter++;
 
         `TEXT(counter, "READING FROM ALL REGISTERS");
-        `RAM_DIRECT_EQ_DEV(counter, 'h0001, rega); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 16'h0001, rega); counter++;
         `TEXT(counter, "READING FROM ALL REGISTERS");
-        `RAM_DIRECT_EQ_DEV(counter, 'h0002, regb); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 16'h0002, regb); counter++;
         `TEXT(counter, "READING FROM ALL REGISTERS");
-        `RAM_DIRECT_EQ_DEV(counter, 'h0003, regc); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 16'h0003, regc); counter++;
         `TEXT(counter, "READING FROM ALL REGISTERS");
-        `RAM_DIRECT_EQ_DEV(counter, 'h0004, regd); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 16'h0004, regd); counter++;
 
+/*
         // test all registers on L and R channel into ALU
         `DEV_EQ_XY_ALU(counter, marlo, rega,     not_used, A); counter++;  
         `DEV_EQ_XY_ALU(counter, marhi, not_used, rega,     B)  ; counter++;
@@ -114,18 +117,17 @@ module test();
         `TEXT(counter, "REG D into marhi");
         `DEV_EQ_XY_ALU(counter, marhi, not_used, regd,     B)  ; counter++;
 
-        `INSTRUCTION_S(counter, marlo, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 0); counter++;
-        `INSTRUCTION_S(counter, marhi, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 0); counter++;
-
+        `INSTRUCTION_S(counter, marlo, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 8'b0); counter++;
+        `INSTRUCTION_S(counter, marhi, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 8'b0); counter++;
+*/
 `define ADD_ONE 256
         `JMP_IMMED16(counter, `ADD_ONE); counter+=2;
-
         // implement 16 bit counter
         counter=`ADD_ONE;
         `TEXT(counter, "START OF MAIN LOOP BLOCK - ADD ONE TO MARLO");
-        `INSTRUCTION_S(counter, marlo, not_used, marlo, B_PLUS_1, A, `SET_FLAGS, `NA_AMODE, 1'bz, 'z); counter++;
+        `INSTRUCTION_S(counter, marlo, not_used, marlo, B_PLUS_1, A, `SET_FLAGS, `NA_AMODE, 1'bz, 8'bz); counter++;
         `TEXT(counter, "CONDITIONAL ADD ONE TO MARHI");
-        `INSTRUCTION_S(counter, marhi, not_used, marhi, B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 'z); counter++;
+        `INSTRUCTION_S(counter, marhi, not_used, marhi, B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 8'bz); counter++;
         `TEXT(counter, "GOTO LOOP");
         `JMP_IMMED16(counter, `ADD_ONE); counter+=2;
 
@@ -176,7 +178,6 @@ module test();
         `define FULL_CYCLE(N) for (count =0; count < N; count++) begin CLK_UP; #HALF_CLK; CLK_DN; #HALF_CLK; noop(); end
 
         INIT_ROM();
-
         `DISPLAY("init : _RESET_SWITCH=0")
         _RESET_SWITCH = 0;
         CLK_DN;
@@ -186,7 +187,7 @@ module test();
 
         `Equals(phaseFE, control::PHASE_EXEC)
         `Equals({CPU.PCHI,CPU.PCLO}, 16'bx)
-        `Equals( _addrmode, 2'bxx)
+        `Equals(CPU._addrmode_register, 1'bx)
         `Equals(CPU.address_bus, 16'hxxxx); // because first instruction will be on system and it's using dierct ram addressing
 
         #1000
@@ -218,8 +219,8 @@ module test();
         `Equals(CPU._mrPC, 0);
         `Equals({CPU.PCHI,CPU.PCLO}, 16'b0)
         `Equals(phaseFE, control::PHASE_FETCH)
-        `Equals( _addrmode, control::_AMODE_DIR);
-DUMP();
+        `Equals(CPU._addrmode_register, 1);
+        DUMP();
         `Equals(CPU.address_bus, 16'hffaa);
 
         `DISPLAY("FIRST INSTRUCTION FETCHED");
@@ -244,7 +245,7 @@ DUMP();
         `Equals(phaseFE, control::PHASE_FETCH)
         `Equals(CPU.PCHI, 8'h00) 
         `Equals(CPU.PCLO, 8'h01)
-        `Equals( _addrmode, control::_AMODE_DIR);
+        `Equals(CPU._addrmode_register, 1);
         `Equals(CPU.address_bus, 16'hffaa);
 
         `Equals(CPU.MARLO.Q, CPU.MARLO.UNDEF);
@@ -264,7 +265,7 @@ DUMP();
         `Equals(phaseFE, control::PHASE_FETCH)
         `Equals(CPU.PCHI, 8'h00)
         `Equals(CPU.PCLO, 8'h02)
-        `Equals( _addrmode, control::_AMODE_REG);
+        `Equals(CPU._addrmode_register, 0);
         //`Equals(CPU.address_bus, {CPU.MARHI.UNDEF, 8'h42});
         `Equals(CPU.address_bus, {8'b0xx00xx0, 8'h42});
 
@@ -282,7 +283,7 @@ DUMP();
         `Equals(phaseFE, control::PHASE_FETCH)
         `Equals(CPU.PCHI, 8'h00)
         `Equals(CPU.PCLO, 8'h03)
-        `Equals( _addrmode, control::_AMODE_REG);
+        `Equals(CPU._addrmode_register, 0);
         `Equals(CPU.address_bus, 16'h0042); 
 
         CLK_DN;
@@ -437,12 +438,10 @@ DUMP();
             `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
             `DD " FE=%1b%1b(%1s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
-            `DD " DIRECT=%02x:%02x", CPU.direct_address_hi, CPU.direct_address_lo);
-            `DD " _amode=%2s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
-                " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
-                " address_bus=0x%4x", CPU.address_bus);
+            `DD " DIRECT=%02x:%02x", CPU.ctrl.direct_address_hi, CPU.ctrl.direct_address_lo);
+            `DD " amode=%1s", control::fAddrMode(CPU._addrmode_register), " addbbus=0x%4x", CPU.address_bus);
             `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
-            `DD " immed8=%08b", CPU.immed8);
+            `DD " immed8=%08b", CPU.ctrl.immed8);
             `DD " ram=%08b", CPU.ram64.D);
             `DD " tdev=%b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
                 " adev=%b(%s)", CPU.abus_dev, control::adevname(CPU.abus_dev),
@@ -567,36 +566,11 @@ DUMP();
         // permits a situation where the control lines conflict.
         // this is ok as long as they settle quickly and are settled before exec phase.
         if (CPU._mrPC & CPU.phaseExec) begin
-            if (CPU._addrmode_register === 1'bx |  CPU._addrmode_direct === 1'bx) begin
-                $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _REG=%1b/_IMM=%1b", CPU._addrmode_register , CPU._addrmode_direct );
+            if (CPU._addrmode_register === 1'bx) begin
+                $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _REG=%1b", CPU._addrmode_register );
                 DUMP;
                 $display("\n\n%9t ", $time, " ABORT");
                 $finish();
-                //#SETTLE_TOLERANCE
-                // only one may be low at a time
-                //if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_direct === 1'bx) begin
-                //    DUMP;
-                //    $display("\n\n%9t ", $time, " ABORT");
-                //    $finish();
-                //end
-            end
-            if (CPU._addrmode_register + CPU._addrmode_direct < 1) begin
-
-                #SETTLE_TOLERANCE 
-                if (CPU._addrmode_register + CPU._addrmode_direct < 1) begin
-                    $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _REGISTER=%1b/_DIRECT=%1b sAddrMode=%1s", CPU._addrmode_register , CPU._addrmode_direct,
-                                                control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct));
-
-                    DUMP;
-                    $display("\n\n%9t ", $time, " ABORT");
-                    $finish();
-                    //#SETTLE_TOLERANCE
-                    //if (_addrmode_pc + _addrmode_register + _addrmode_direct < 2) begin
-                    //    DUMP;
-                    //    $display("\n\n%9t ", $time, " ABORT");
-                    //    $finish();
-                    //end
-                end
             end
         end
     end

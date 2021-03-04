@@ -138,17 +138,18 @@ object Verification {
 
     val logger = ProcessLogger.apply(
       fout = output => {
-        lines.append(output)
+        lines.append("OUT:" + output)
         if (output.contains("SUCCESS - AT EXPECTED END OF PROGRAM")) success.set(true)
         if (verbose) println("\t   \t: " + output)
       },
       ferr = output => {
-        lines.append(output)
+        lines.append("ERR:" + output)
         if (verbose) println("\tERR\t: " + output)
       }
     )
 
     // process has builtin timeout
+    println("CMD: "+ pb)
     val process = pb.run(logger)
     val ex = process.exitValue()
 
@@ -158,8 +159,13 @@ object Verification {
 
     if (success.get())
       println("SUCCESSFUL SIMULATION")
-    else
+    else {
+      val lastFewLines = lines.takeRight(10).mkString("\ni//")
+      println("=================================================")
+      println("Last few lines:")
+      println(lastFewLines)
       fail("SIMULATION - DID NOT REACH END")
+    }
 
   }
 }

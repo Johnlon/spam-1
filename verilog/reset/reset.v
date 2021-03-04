@@ -5,12 +5,12 @@
 
 // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
 module reset(
-    input _RESET_SWITCH,
+    input _RESET_SWITCH, // HOLD LO FOR RESET
     input system_clk,
     
     output _mrPos,  // clears on the 1st positive edge after _RESET_SWITH is released
     output _mrNeg, // clears later - on the 1st negative edge after the positive edge that cleared _mr
-    output clk   // gated clock - clock stops in low state during reset
+    output gated_clk   // gated clock - clock stops in low state during reset
 );
     parameter LOG=0;
 
@@ -27,7 +27,7 @@ module reset(
 
 
     // _reset_pc is same as MR however it clears on the neg edge so that the PC can reset on the previous +ve edge
-    wire #(8) _system_clk = !system_clk;
+    wire #(8) _system_clk = !system_clk; // GATE
 
     hct7474 #(.BLOCKS(1), .LOG(0)) pcresetff(
           ._SD(1'b1),
@@ -38,6 +38,6 @@ module reset(
           ._Q()
         );
 
-    assign #(10) clk = system_clk & _mrPos; // AND GATE
+    assign #(10) gated_clk = system_clk & _mrPos; // AND GATE
 
 endmodule 

@@ -62,7 +62,7 @@ module test();
     `define DATA(D) {40'bz, D} /* padded to rom width with z */
 
     localparam MAX_PC=100;
-    string_bits CODE [MAX_PC];
+    `DEFINE_CODE_VARS(MAX_PC)
 
     integer LOOP;
     integer ADD_ONE;

@@ -33,8 +33,7 @@ module test();
     `define DATA(D) {40'bz, D} /* padded to rom width with z */
 
     localparam MAX_PC=100;
-    string_bits CODE [MAX_PC];
-    string_bits CODE_TEXT [MAX_PC];
+    `DEFINE_CODE_VARS(MAX_PC)
 
     integer ADD_ONE;
     `define WRITE_UART 60
@@ -47,16 +46,16 @@ module test();
     task INIT_ROM;
     begin
 
-        `INSTRUCTION_S(counter, marlo, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 254); counter++;
-        `INSTRUCTION_S(counter, marhi, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 0); counter++;
+        `INSTRUCTION_S(counter, marlo, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 'z, 254); counter++;
+        `INSTRUCTION_S(counter, marhi, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 'z, 0); counter++;
 
         start = counter;
 
         `TEXT(counter, "START OF MAIN LOOP BLOCK - ADD ONE TO MARLO");
-        `INSTRUCTION_S(counter, marlo, not_used, marlo, B_PLUS_1, A, `SET_FLAGS, `NA_AMODE, 1'bz, 'z); counter++;
+        `INSTRUCTION_S(counter, marlo, not_used, marlo, B_PLUS_1, A, `SET_FLAGS, `NA_AMODE, 'z, 'z); counter++;
 
         `TEXT(counter, "CONDITIONAL ADD ONE TO MARHI");
-        `INSTRUCTION_S(counter, marhi, not_used, marhi, B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 'z); counter++;
+        `INSTRUCTION_S(counter, marhi, not_used, marhi, B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 'z, 'z); counter++;
 
         `TEXT(counter, "GOTO LOOP");
         `JMP_IMMED16(counter, start); counter+=2;
@@ -232,9 +231,7 @@ module test();
             `DD " PC=%1d (0x%4h) PCHItmp=%d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
             `DD " FDE=%1b%1b(%1s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
-            `DD " _amode=%1s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct),
-                 " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct},
-                 " addbbus=0x%4x", CPU.address_bus);
+            `DD " amode=%1s", control::fAddrMode(CPU._addrmode_register), " addbbus=0x%4x", CPU.address_bus);
             `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
             `DD " immed8=%08b", CPU.ctrl.immed8);
             `DD " ram=%08b", CPU.ram64.D);

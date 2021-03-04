@@ -43,7 +43,6 @@ module test();
     import alu_ops::*;
 
     `include "../lib/display_snippet.sv"
-    `AMODE_TUPLE
 
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
 
@@ -444,36 +443,11 @@ endfunction
         // permits a situation where the control lines conflict.
         // this is ok as long as they settle quickly and are settled before exec phase.
         if (CPU._mrPC & CPU.phaseExec) begin
-            if (CPU._addrmode_register === 1'bx |  CPU._addrmode_direct === 1'bx) begin
-                $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _REG=%1b/_IMM=%1b", CPU._addrmode_register , CPU._addrmode_direct );
+            if (CPU._addrmode_register === 1'bx) begin
+                $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _REG=%1b", CPU._addrmode_register);
                 DUMP;
                 $display("\n\n%9t ", $time, " ABORT");
                 $finish();
-                //#SETTLE_TOLERANCE
-                // only one may be low at a time
-                //if (_addrmode_pc === 1'bx |  _addrmode_register === 1'bx |  _addrmode_direct === 1'bx) begin
-                //    DUMP;
-                //    $display("\n\n%9t ", $time, " ABORT");
-                //    $finish();
-                //end
-            end
-            if (CPU._addrmode_register + CPU._addrmode_direct < 1) begin
-
-                #SETTLE_TOLERANCE 
-                if (CPU._addrmode_register + CPU._addrmode_direct < 1) begin
-                    $display("\n\n%9t ", $time, " ERROR CONFLICTING ADDR MODE _REGISTER=%1b/_DIRECT=%1b sAddrMode=%1s", CPU._addrmode_register , CPU._addrmode_direct,
-                                                control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct));
-
-                    DUMP;
-                    $display("\n\n%9t ", $time, " ABORT");
-                    $finish();
-                    //#SETTLE_TOLERANCE
-                    //if (_addrmode_pc + _addrmode_register + _addrmode_direct < 2) begin
-                    //    DUMP;
-                    //    $display("\n\n%9t ", $time, " ABORT");
-                    //    $finish();
-                    //end
-                end
             end
         end
     end

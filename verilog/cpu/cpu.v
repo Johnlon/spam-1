@@ -30,8 +30,9 @@
 `define SEMICOLON ;
 `define COMMA ,
 
-`define MAX_INST_LEN 100
+`define MAX_INST_LEN 200
 typedef reg[`MAX_INST_LEN:0][7:0] string_bits ;
+typedef reg[15:0] reg16;
 
 // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
 module cpu(
@@ -79,7 +80,7 @@ module cpu(
     reset RESET(
         .system_clk,
         ._RESET_SWITCH,
-        .clk,
+        .gated_clk(clk),
         ._mrPos(_mr),
         ._mrNeg(_mrPC)
     );
@@ -98,7 +99,7 @@ module cpu(
     
 
     // CONTROL ===========================================================================================
-    wire _addrmode_register, _addrmode_direct;
+    wire _addrmode_register;
 
     // selection wires
     `define WIRE_ADEV_SEL(DNAME) wire _adev_``DNAME``

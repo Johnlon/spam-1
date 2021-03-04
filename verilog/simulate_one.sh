@@ -42,7 +42,7 @@ cd $(dirname $(readlink -f $TEST))
 filename=$(basename $TEST)
 rootname=$(basename $filename .v)
 
-$iverilog -Ttyp -Wall -g2012 -gspecify -grelative-include -o $rootname.vvp  $filename 
+$iverilog $VVPEXTRA  -Ttyp -Wall -g2012 -gspecify -grelative-include -o $rootname.vvp  $filename 
 if [ $? != 0 ] ; then
     echo ERROR exit code iverilog
     exit 1

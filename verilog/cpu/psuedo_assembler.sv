@@ -14,25 +14,58 @@
 // PSEUDO ASSEMBLER
 `define ROM(A) { CPU.ctrl.rom_6.Mem[A], CPU.ctrl.rom_5.Mem[A], CPU.ctrl.rom_4.Mem[A], CPU.ctrl.rom_3.Mem[A], CPU.ctrl.rom_2.Mem[A], CPU.ctrl.rom_1.Mem[A] }
 
+`define DEFINE_CODE_VARS(size) \
+    string_bits CODE [size]; \
+    string CODE_NUM [size]; \
+    string TEMP_STRING; \
+    string_bits CODE_TEXT [size];
+
 // Instruction populates the ROM and adds a text version of the instruction to the CODE array
 `define TEXT(LOCN,TXT)    CODE_TEXT[LOCN] = TXT;
 
-`define INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
+`define INSTRUCTION_NN(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
     `ROM(LOCN) = { \
-    `toALUOP(ALUOP), \
-     cast.to4(`toTDEV(TARGET)), \
-     cast.to3(`toADEV(SRCA)), \
-     cast.to3(`toBDEV(SRCB)), \
-     cast.to4(`COND(CONDITION)), \
-     bit'(FLAG_CTL), \
-     3'bz, \
-     1'(AMODE), \
-     cast.to16(ADDRESS), \
-     cast.to8(IMMED) }; \
-    CODE[LOCN] = "TARGET=SRCA(ALUOP)SRCB  cond=CONDITION setf=FLAG_CTL amode=AMODE immed8=IMMED addr=ADDRESS"; 
+         (ALUOP), \
+         (TARGET), \
+         (SRCA), \
+         (SRCB), \
+         (CONDITION), \
+         (FLAG_CTL), \
+         3'bz, \
+         (AMODE), \
+         (ADDRESS), \
+         (IMMED) }; \
+        $sformat(TEMP_STRING, "aluop:%x  target:%x  a:%x  b:%x  cond:%x setf:%x amode:%x immed8:%x addr:%x", \
+                    ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, AMODE, IMMED, ADDRESS); \
+        CODE_NUM[LOCN] = TEMP_STRING;
 
-`define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP, AMODE, ADDRESS, IMMED) \
-     `INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, A, `SET_FLAGS, AMODE, ADDRESS, IMMED) \
+`define INSTRUCTION_N(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
+    `INSTRUCTION_NN(LOCN, \
+         cast.to5(ALUOP), \
+         cast.to4(TARGET), \
+         cast.to3(SRCA), \
+         cast.to3(SRCB), \
+         cast.to4(CONDITION), \
+         cast.to1(FLAG_CTL), \
+         cast.to1(AMODE), \
+         cast.to16(ADDRESS), \
+         cast.to8(IMMED) );
+
+`define INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
+    `INSTRUCTION_N(LOCN, \
+         `toALUOP(ALUOP), \
+         `toTDEV(TARGET), \
+         `toADEV(SRCA), \
+         `toBDEV(SRCB), \
+         `COND(CONDITION), \
+         FLAG_CTL, \
+         AMODE, \
+         ADDRESS, \
+         IMMED ); \
+        CODE[LOCN] = "TARGET=SRCA(ALUOP)SRCB  cond=CONDITION setf=FLAG_CTL amode=AMODE immed8=IMMED addr=ADDRESS";
+
+`define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP,                   AMODE, ADDRESS, IMMED) \
+     `INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, A,    `SET_FLAGS, AMODE, ADDRESS, IMMED);
 
 `define NA 'z
 

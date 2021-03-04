@@ -10,15 +10,13 @@
 `define DECODE_PHASE   logic [6*8-1:0] sPhase; assign sPhase = `DECODE_PHASES;
 
 // unlike an assign this executes instantaneously but not referentially transparent
-`define DECODE_ADDRMODES (!_addrmode_register?  "register" : !_addrmode_direct? "direct": "--") 
+`define DECODE_ADDRMODES (!_addrmode_register?  "register" : "direct") 
 `define DECODE_ADDRMODE  logic [9*8-1:0] sAddrMode; assign sAddrMode = `DECODE_ADDRMODES;
 
 `define toADEV(DEVNAME) control::ADEV_``DEVNAME``
 `define toBDEV(DEVNAME) control::BDEV_``DEVNAME``
 `define toTDEV(DEVNAME) control::TDEV_``DEVNAME``
 `define COND(COND) control::CONDITION_``COND``
-
-`define AMODE_TUPLE    wire [1:0] _addrmode = {CPU._addrmode_register, CPU._addrmode_direct}; 
 
 `timescale 1ns/1ns
 
@@ -29,9 +27,9 @@ package control;
     localparam PHASE_EXEC = 2'b01;
    
     // see _addrmode_tuple
-    localparam _AMODE_NONE=2'b11;
-    localparam _AMODE_REG=2'b01;
-    localparam _AMODE_DIR=2'b10;
+//    localparam _AMODE_NONE=2'b11;
+//    localparam _AMODE_REG=2'b01;
+//    localparam _AMODE_DIR=2'b10;
 
     // A BUS
     localparam [2:0] ADEV_rega = 0; 
@@ -186,10 +184,14 @@ package control;
     end
     endfunction
 
-    function string fAddrMode(_addrmode_register, _addrmode_direct); 
+    function string fAddrMode(_addrmode_register); 
     begin
-            fAddrMode = `DECODE_ADDRMODES;
+            fAddrMode = _addrmode_register == 0? "REG" : "DIR";
     end
+    //function string fAddrMode(_addrmode_register, _addrmode_direct); 
+    //begin
+    //        fAddrMode = `DECODE_ADDRMODES;
+    //end
     endfunction
 
 endpackage: control
