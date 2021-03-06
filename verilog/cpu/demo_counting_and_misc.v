@@ -65,44 +65,51 @@ module test();
     task INIT_ROM;
     begin
     // JLJL
+        // RAM[ffaa] = 42h
         `RAM_DIRECT_EQ_IMMED8(counter, 16'hffaa, 8'h42); counter++;
     // JLJL
 
+        // marlo = 42h
         `DEV_EQ_RAM_DIRECT(counter, marlo, 16'hffaa); counter++;
 
+        // marhi = 0
         `DEV_EQ_IMMED8(counter, marhi, 0); counter++;
 
+        // marlo = 43h
         `DEV_EQ_XI_ALU(counter, marlo, marlo, 1, A_PLUS_B) ; counter++;
 
+        // RAM[00:43] = 22h
         `DEV_EQ_IMMED8(counter, ram, 8'h22); counter++;
 
+        // marlo = 22h
         `DEV_EQ_RAM_DIRECT(counter, marlo, 16'h0043); counter++;
 
+        // RAM[abcd] = 43h
         `RAM_DIRECT_EQ_DEV(counter, 16'habcd, marlo); counter++;
 
-        // write RAM into regb
+        // regb = 22h
         `DEV_EQ_RAM_DIRECT(counter, regb, 16'h0043); counter++;
 
-        // write regb into RAM
+        // RAM[fcba] = 22h
         `RAM_DIRECT_EQ_DEV(counter, 16'hdcba, regb); counter++;
 
         // test all registers read write
-        `TEXT(counter, "WRITING TO ALL REGISTERS");
+        `TEXT(counter, "WRITING TO ALL REGA");
         `DEV_EQ_IMMED8(counter, rega, 1); counter++;
-        `TEXT(counter, "WRITING TO ALL REGISTERS");
+        `TEXT(counter, "WRITING TO ALL REGB");
         `DEV_EQ_IMMED8(counter, regb, 2); counter++;
-        `TEXT(counter, "WRITING TO ALL REGISTERS");
+        `TEXT(counter, "WRITING TO ALL REGC");
         `DEV_EQ_IMMED8(counter, regc, 3); counter++;
-        `TEXT(counter, "WRITING TO ALL REGISTERS");
+        `TEXT(counter, "WRITING TO ALL REGD");
         `DEV_EQ_IMMED8(counter, regd, 4); counter++;
 
-        `TEXT(counter, "READING FROM ALL REGISTERS");
+        `TEXT(counter, "READING FROM ALL REGA");
         `RAM_DIRECT_EQ_DEV(counter, 16'h0001, rega); counter++;
-        `TEXT(counter, "READING FROM ALL REGISTERS");
+        `TEXT(counter, "READING FROM ALL REGB");
         `RAM_DIRECT_EQ_DEV(counter, 16'h0002, regb); counter++;
-        `TEXT(counter, "READING FROM ALL REGISTERS");
+        `TEXT(counter, "READING FROM ALL REGC");
         `RAM_DIRECT_EQ_DEV(counter, 16'h0003, regc); counter++;
-        `TEXT(counter, "READING FROM ALL REGISTERS");
+        `TEXT(counter, "READING FROM ALL REGD");
         `RAM_DIRECT_EQ_DEV(counter, 16'h0004, regd); counter++;
 
 /*
@@ -120,14 +127,20 @@ module test();
         `INSTRUCTION_S(counter, marlo, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 8'b0); counter++;
         `INSTRUCTION_S(counter, marhi, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 8'b0); counter++;
 */
+
+        `DEV_EQ_IMMED8(counter, marlo, 8'd254); counter++;
+
 `define ADD_ONE 256
+        // PC=17
         `JMP_IMMED16(counter, `ADD_ONE); counter+=2;
         // implement 16 bit counter
         counter=`ADD_ONE;
         `TEXT(counter, "START OF MAIN LOOP BLOCK - ADD ONE TO MARLO");
         `INSTRUCTION_S(counter, marlo, not_used, marlo, B_PLUS_1, A, `SET_FLAGS, `NA_AMODE, 1'bz, 8'bz); counter++;
+
         `TEXT(counter, "CONDITIONAL ADD ONE TO MARHI");
         `INSTRUCTION_S(counter, marhi, not_used, marhi, B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 8'bz); counter++;
+
         `TEXT(counter, "GOTO LOOP");
         `JMP_IMMED16(counter, `ADD_ONE); counter+=2;
 
@@ -344,37 +357,45 @@ module test();
         `FULL_CYCLE(1)
         `Equals(`RAM(4), 4);
 
-        `DISPLAY("instruction - REGA ON L and R CHANNELS");
+        // COUNTING UP
+        `Equals(CPU.MARLO.Q, 8'h22)
+        `Equals(CPU.MARHI.Q, 8'd0)
+
         `FULL_CYCLE(1)
-        `Equals(CPU.MARLO.Q, 8'd1)
+        `Equals(CPU.pc_addr, 16'd17)
+        `Equals(CPU.MARLO.Q, 8'd254)
         `Equals(CPU.MARHI.Q, 8'd0)
         `FULL_CYCLE(1)
-        `Equals(CPU.MARLO.Q, 8'd1)
+        `Equals(CPU.MARLO.Q, 8'd254)
+        `Equals(CPU.MARHI.Q, 8'd0)
+
+        `FULL_CYCLE(1)
+        `Equals(CPU.MARLO.Q, 8'd254)
+        `Equals(CPU.MARHI.Q, 8'd0)
+        `FULL_CYCLE(1)
+        `Equals(CPU.MARLO.Q, 8'd255)
+        `Equals(CPU.MARHI.Q, 8'd0)
+
+        `FULL_CYCLE(1)
+        `Equals(CPU.MARLO.Q, 8'd255)
+        `Equals(CPU.MARHI.Q, 8'd0)
+        `FULL_CYCLE(1)
+        `Equals(CPU.MARLO.Q, 8'd255)
+        `Equals(CPU.MARHI.Q, 8'd0)
+
+        `FULL_CYCLE(1)
+        `Equals(CPU.MARLO.Q, 8'd255)
+        `Equals(CPU.MARHI.Q, 8'd0)
+        `FULL_CYCLE(1)
+        `Equals(CPU.MARLO.Q, 8'd0)
+        `Equals(CPU.MARHI.Q, 8'd0)
+
+        `FULL_CYCLE(1)
+        `Equals(CPU.MARLO.Q, 8'd0)
         `Equals(CPU.MARHI.Q, 8'd1)
-
-        `DISPLAY("instruction - REGB ON L and R CHANNELS");
         `FULL_CYCLE(1)
-        `Equals(CPU.MARLO.Q, 8'd2)
+        `Equals(CPU.MARLO.Q, 8'd0)
         `Equals(CPU.MARHI.Q, 8'd1)
-        `FULL_CYCLE(1)
-        `Equals(CPU.MARLO.Q, 8'd2)
-        `Equals(CPU.MARHI.Q, 8'd2)
-
-        `DISPLAY("instruction - REGC ON L and R CHANNELS");
-        `FULL_CYCLE(1)
-        `Equals(CPU.MARLO.Q, 8'd3)
-        `Equals(CPU.MARHI.Q, 8'd2)
-        `FULL_CYCLE(1)
-        `Equals(CPU.MARLO.Q, 8'd3)
-        `Equals(CPU.MARHI.Q, 8'd3)
-
-        `DISPLAY("instruction - REGD ON L and R CHANNELS");
-        `FULL_CYCLE(1)
-        `Equals(CPU.MARLO.Q, 8'd4)
-        `Equals(CPU.MARHI.Q, 8'd3)
-        `FULL_CYCLE(1)
-        `Equals(CPU.MARLO.Q, 8'd4)
-        `Equals(CPU.MARHI.Q, 8'd4)
         #1
 
         $display("END OF TEST CASES ==============================================");

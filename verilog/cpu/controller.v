@@ -135,6 +135,14 @@ module controller(
 
     nand #(9) ic7400_c(_do_exec, do_exec_lo._Y, do_exec_hi._Y);  // DONE
 
+    always @* begin
+        if (_halt_in == 0) begin
+            $display("----------------------------- HALTED %d ---------------------------", immed8);
+            $finish();
+        end
+    end
+
+
 endmodule
 
 
