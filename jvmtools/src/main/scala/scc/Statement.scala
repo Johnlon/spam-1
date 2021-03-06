@@ -300,6 +300,7 @@ case class DefVarEqData(target: String, data: Seq[Byte]) extends Block {
 }
 
 case class LocatedData(location: Int, data: Seq[Byte])
+
 case class DefVarEqLocatedData(target: String, locatedData: Seq[LocatedData]) extends Block {
 
   private val data = {
@@ -323,7 +324,8 @@ case class DefVarEqLocatedData(target: String, locatedData: Seq[LocatedData]) ex
   private val escaped = data.map(b => f"$b%02X").mkString(" ")
 
   override def toString = s"statementVarDataLocated( $target, [$locatedData] )"
-//  override def toString = s"statementVarDataLocated( $target, [$escaped] )"
+
+  //  override def toString = s"statementVarDataLocated( $target, [$escaped] )"
 
   override def gen(depth: Int, parent: Scope): List[String] = {
 
@@ -348,6 +350,15 @@ case class DefRefEqVar(refName: String, target: String) extends Block {
   }
 }
 
+case class Halt(haltCode: Int)
+  extends Block(nestedName = s"halt_${haltCode}") {
+
+  override def gen(depth: Int, parent: Scope): List[String] = {
+    List(
+      s"HALT = $haltCode"
+    )
+  }
+}
 
 case class Puts(varName: String)
   extends Block(nestedName = s"puts_${varName}_") {

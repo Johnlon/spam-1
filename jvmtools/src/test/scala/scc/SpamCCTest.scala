@@ -1,11 +1,11 @@
 package scc
 
 import java.io.{File, FileOutputStream}
-
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.{assertEquals, fail}
 import org.junit.jupiter.api.MethodOrderer.MethodName
 import org.junit.jupiter.api.{Test, TestMethodOrder}
 import verification.Checks._
+import verification.HaltedException
 import verification.Verification._
 
 @TestMethodOrder(classOf[MethodName])
@@ -39,6 +39,38 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
+
+    val actual = compile(lines, verbose = true)
+
+    val expected = split(
+      """root_function_main___VAR_RETURN_HI: EQU   0
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |root_function_main___VAR_s: EQU   2
+        |root_function_main___VAR_s: BYTES [65, 66, 10, 67]
+        |PCHITMP = < :ROOT________main_start
+        |PC = > :ROOT________main_start
+        |ROOT________main_start:
+        |root_function_main___LABEL_START:
+        |PCHITMP = <:root_end
+        |PC = >:root_end
+        |root_end:
+        |END""".stripMargin)
+
+    assertSame(expected, actual)
+  }
+
+  @Test
+  def varFromFileProp(): Unit = {
+
+    val fileName = "src/test/resources/SomeData.txt"
+    System.setProperty("FILENAME", fileName)
+    val lines =
+      """fun main() {
+        | var s = [file(systemProp("FILENAME"))];
+        |}
+        |""".stripMargin
 
     val actual = compile(lines, verbose = true)
 
@@ -1195,5 +1227,28 @@ class SpamCCTest {
       checkTransmittedChar(str, 'C')
       checkTransmittedChar(str, 'D')
     })
+  }
+
+  @Test
+  def halt(): Unit = {
+
+    val lines =
+      """
+        |fun main() {
+        | halt(123)
+        |}
+        |""".stripMargin
+
+    try {
+      compile(lines, timeout=5, quiet = true)
+      fail("should have halted")
+    } catch {
+      case ex: HaltedException if ex.halt == 123 =>
+        println("halted ok")
+      case ex: HaltedException  =>
+        fail("halted with wrong code " + ex.halt)
+      case ex =>
+        fail("unexpected exception ", ex)
+    }
   }
 }

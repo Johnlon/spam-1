@@ -27,9 +27,9 @@ todo:
 package scc
 
 import java.nio.file.{Files, Paths}
-
 import asm.{AluOp, EnumParserOps}
 
+import java.util.Objects
 import scala.language.postfixOps
 import scala.util.parsing.combinator.JavaTokenParsers
 
@@ -60,6 +60,7 @@ class StatementParser {
       statementLetStringIndexEqExpr |
       statementPutcharVarOptimisation | statementPutcharConstOptimisation | stmtPutcharGeneral |
       stmtPutsName |
+      stmtHalt |
       statementGetchar |
       whileCond | whileTrue | ifCond | breakOut | functionCall ^^ {
       s =>
@@ -182,8 +183,17 @@ class StatementParser {
         data.map(_.toByte)
     }
 
+  def systemPropString: Parser[String] =
+    "systemProp(" ~> quotedString <~ ")" ^^ {
+      name => {
+        Objects.requireNonNull(System.getProperty(name), "System Property undefined : '" + name + "'")
+      }
+    }
+
+  def stringValue : Parser[String] = quotedString | systemPropString
+
   def dataSourceFile: Parser[Seq[Byte]] =
-    "file(" ~> quotedString <~ ")" ^^ {
+    "file(" ~> stringValue <~ ")" ^^ {
       fileName => {
         val path = Paths.get(fileName)
         try {
@@ -226,6 +236,12 @@ class StatementParser {
   def statementRef: Parser[DefRefEqVar] = positioned {
     "ref" ~> name ~ "=" ~ name <~ SEMICOLON ^^ {
       case refName ~ _ ~ target => DefRefEqVar(refName, target)
+    }
+  }
+
+  def stmtHalt: Parser[Block] = positioned {
+    "halt" ~ "(" ~> wholeNumber <~ ")" ^^ {
+      haltCode => Halt(haltCode.toInt)
     }
   }
 

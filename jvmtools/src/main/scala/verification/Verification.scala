@@ -1,8 +1,7 @@
 package verification
 
 import java.io.{File, PrintWriter}
-import java.util.concurrent.atomic.AtomicBoolean
-
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicReference}
 import asm.Assembler
 import org.junit.jupiter.api.Assertions.fail
 import scc.SpamCC
@@ -17,7 +16,8 @@ object Verification {
               quiet: Boolean = true,
               dataIn: List[String] = List("t10000000"),
               outputCheck: List[String] => Unit = _ => {},
-              timeout: Int = 20): List[String] = {
+              timeout: Int = 20
+             ): List[String] = {
 
     val scc = new SpamCC
 
@@ -133,6 +133,7 @@ object Verification {
     //    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix  +uart_control_file=`pwd`/$controlFileUnix"""))
     val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh '$timeout' ../verilog/cpu/demo_assembler_roms.v `pwd`/$romFileUnix"""))
 
+    val halted = new AtomicReference[Int]()
     val success = new AtomicBoolean()
     val lines = ListBuffer.empty[String]
 
@@ -140,6 +141,12 @@ object Verification {
       fout = output => {
         lines.append("OUT:" + output)
         if (output.contains("SUCCESS - AT EXPECTED END OF PROGRAM")) success.set(true)
+        if (output.contains("--- HALTED ")) {
+          val haltedRegex = """---* HALTED (\d+) -----*""".r
+          val haltedRegex(haltCode) = output
+
+          halted.set(haltCode.toInt)
+        }
         if (verbose) println("\t   \t: " + output)
       },
       ferr = output => {
@@ -159,6 +166,8 @@ object Verification {
 
     if (success.get())
       println("SUCCESSFUL SIMULATION")
+    else if (halted.get() != null)
+      throw HaltedException(halted.get())
     else {
       val lastFewLines = lines.takeRight(10).mkString("\ni//")
       println("=================================================")
@@ -169,3 +178,5 @@ object Verification {
 
   }
 }
+
+case class HaltedException(halt: Int) extends RuntimeException
