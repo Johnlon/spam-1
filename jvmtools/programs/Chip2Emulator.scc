@@ -4,7 +4,7 @@ program {
         uint16 FONT_ADDR = $50;
         uint16 PC_INIT=$200;
 
-        uint16 GOTO_COMMAND_STATE = 0;
+        uint16 GOTO_INIT_STATE = 0;
         uint16 GOTO_SETX_STATE = 1;  // switch state
         uint16 GOTO_SETY_STATE = 2;  // switch state
         uint16 GOTO_DRAW_PIXEL_STATE = 3; // switch state
@@ -22,6 +22,9 @@ program {
 
         // 16 x 16 bits
         var stack = [ 32: [] ];
+
+        uint16 FontMemAddress = $50;
+        uint16 FontCharWidth = 5;
 
         var memory = [
             // fonts : 10 rows = 10 digits, each row of 5 bytes defines the 5 rows of 8 pixels wide
@@ -57,10 +60,8 @@ program {
         uint16 stackPtr  = 0;
 
         // reset by sending this twice
-        putchar(GOTO_COMMAND_STATE)
-        putchar(GOTO_COMMAND_STATE)
-
-
+        putchar(GOTO_INIT_STATE)
+        putchar(GOTO_INIT_STATE)
 
         while (true)  {
 
@@ -75,6 +76,9 @@ program {
             uint16 __Y_ = opcodelo >> 4;
             uint16 __NN = opcodelo;
             uint16 ___N = opcodelo & $0f;
+
+            uint16 x = registers[_X__];
+            uint16 y = registers[__Y_];
 
             if (opcode == $00e0) {
                 // draw
@@ -96,23 +100,101 @@ program {
             else if (N___ == $1000) {  // DONE
                // jump to nnn
                //putchar('J')
-               putchar(GOTO_COMMAND_STATE)
-               pc = _NNN - 2;
-            } 
+               pc = _NNN - 2; // subtract 2 as there is an auto increment at end of loop
+               putchar(GOTO_INIT_STATE)
+            }
+            else if (N___ == $3000) {  // DONE
+               // skip if X eq N
+
+               if (registers[_X__] == __NN) {
+                pc = pc + 2;
+               }
+
+               putchar(GOTO_INIT_STATE)
+            }
+            else if (N___ == $4000) {  // DONE
+               // skip if X ne N
+
+               if (registers[_X__] != __NN) {
+                pc = pc + 2;
+               }
+
+               putchar(GOTO_INIT_STATE)
+            }
+            else if (N___ == $5000) {  // DONE
+               // skip if X eq Y
+               if (___N != 0) {
+                halt(opcode)
+               }
+               if (registers[_X__] == registers[__Y_]) {
+                pc = pc + 2;
+               }
+
+               putchar(GOTO_INIT_STATE)
+            }
             else if (N___ == $6000) { // DONE
-               // set x = nn
-               //putchar('S')
-               //putchar(_X__)
-               //putchar(__NN)
                registers[_X__] = __NN;
             } 
             else if (N___ == $7000) { // DONE
-               // add x = x + nn
-               //putchar('A')
-               //putchar(_X__)
-               //putchar(__NN)
-               registers[_X__] = registers[_X__] + __NN; 
-            } 
+               registers[_X__] = registers[_X__] + __NN;
+            }
+            else if (N___ == $8000) {
+               if (___N == 1) {
+                    registers[_X__] = x | y;
+               } else {
+                   if (___N == 2) {
+                    registers[_X__] = x & y;
+                   }
+                   else {
+                       if (___N == 3) {
+                           registers[_X__] = x ^ y;
+                       } else {
+                           if (___N == 5) {
+
+                             // XEqXMinusY
+                             if (x < y) {
+                                registers[15] = 0;
+                             } else {
+                                registers[15] = 1;
+                             }
+                             registers[_X__] = x - y;
+
+                           } else {
+                               if (___N == 6) {
+                                    if ((x & 1) != 0) {
+                                        registers[15] = 1;
+                                    } else {
+                                        registers[15] = 0;
+                                    }
+                                    registers[_X__] = x >> 1;
+                               } else {
+                                   if (___N == 7) {
+                                     // XEqYMinusX
+                                     if (y < x) {
+                                        registers[15] = 0;
+                                     } else {
+                                        registers[15] = 1;
+                                     }
+                                     registers[_X__] = y - x;
+
+                                   } else {
+                                     if (___N == $e) {
+                                        if ((x & %10000000) != 0) {
+                                            registers[15] = 1;
+                                        } else {
+                                            registers[15] = 0;
+                                        }
+                                        registers[_X__] = x << 1;
+                                     } else {
+                                        halt(opcode)
+                                     }
+                                   }
+                               }
+                           }
+                       }
+                   }
+               }
+            }
             else if (N___ == $A000) { // DONE
                // set index
                //putchar('I')
@@ -124,11 +206,11 @@ program {
                 uint16 xpos = registers[_X__];
                 uint16 ypos = registers[__Y_];
 
-                uint16 y = 0;
+                uint16 ycount = 0;
 
                 while (true) { // TODO - make while take an expr
 
-                   if (y >= ___N) {
+                   if (ycount >= ___N) {
                      break
                    }
 
@@ -136,14 +218,36 @@ program {
                    putchar(xpos)
 
                    putchar(GOTO_SETY_STATE)
-                   putchar(ypos + y)
+                   putchar(ypos + ycount)
 
-                   uint16 glyphRow = memory[index+y];
+                   uint16 glyphRow = memory[index+ycount];
                    putchar(GOTO_DRAW_BYTE_STATE)
                    putchar(glyphRow)
 
-                   y =  y + 1;
+                   ycount =  ycount + 1;
                 }
+            }
+            else if (N___ == $F000) {
+                if (__NN == $29) {
+                    uint16 ch = registers[_X__];
+                    uint16 offset = 0;
+
+                    // !!!!! NEED TO IMPL MULTIPLY => LOOP FOR NOW
+                    //uint16 offset = ch * FontCharWidth;
+                    while (ch > 0 ) {
+                        offset = offset + FontCharWidth;
+                        ch = ch - 1;
+                    }
+
+                    uint16 locn = FontMemAddress + offset;
+                    index = locn;
+                } else if (__NN == $55) {
+//StoreRegisters(opS, _X__) <<<< TODO
+                } else {
+                    halt(opcode)
+                }
+            } else {
+                halt(opcode)
             }
 
             pc = pc + 2;

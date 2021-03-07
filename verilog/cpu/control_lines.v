@@ -133,6 +133,7 @@ package control;
             TDEV_marhi: tdevname = "MARHI";
             TDEV_uart: tdevname = "UART";
             TDEV_ram: tdevname = "RAM";
+            TDEV_halt: tdevname = "HALT";
 
             TDEV_not_used: tdevname = "NOTUSED";
             TDEV_pchitmp: tdevname = "PCHITMP";

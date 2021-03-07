@@ -36,9 +36,9 @@ trait ConstExpressionParser {
 
   def constFactor: Parser[Int] = (charToken | decToken | hexToken | binToken | octToken | "(" ~> constExpression <~ ")")
 
-  def contOperation: Parser[String] =  "*" | "/" | "%" | "+" | "-" | ">" | "<" | "&" | "|" | "^" | "==" | "!="
+  def constOperation: Parser[String] =  "*" | "/" | "%" | "+" | "-" | ">" | "<" | "&" | "|" | "^" | "==" | "!="
 
-  def constExpression: Parser[Int] = constFactor ~ ((contOperation ~ constFactor) *) ^^ {
+  def constExpression: Parser[Int] = constFactor ~ ((constOperation ~ constFactor) *) ^^ {
     case x ~ list =>
       list.foldLeft(x)({
         case (acc, "*" ~ i) => acc * i

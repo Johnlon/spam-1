@@ -1235,7 +1235,7 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | halt(123)
+        | halt(65432)
         |}
         |""".stripMargin
 
@@ -1243,12 +1243,36 @@ class SpamCCTest {
       compile(lines, timeout=5, quiet = true)
       fail("should have halted")
     } catch {
-      case ex: HaltedException if ex.halt == 123 =>
+      case ex: HaltedException if ex.halt == 65432 =>
         println("halted ok")
       case ex: HaltedException  =>
         fail("halted with wrong code " + ex.halt)
       case ex =>
-        fail("unexpected exception ", ex)
+        fail("unexpected exception : " + ex.getMessage)
+    }
+  }
+
+  @Test
+  def haltVar(): Unit = {
+
+    val lines =
+      """
+        |fun main() {
+        | uint16 a = 65432;
+        | halt(a)
+        |}
+        |""".stripMargin
+
+    try {
+      compile(lines, timeout=5, quiet = true)
+      fail("should have halted")
+    } catch {
+      case ex: HaltedException if ex.halt == 65432 =>
+        println("halted ok")
+      case ex: HaltedException  =>
+        fail("halted with wrong code " + ex.halt)
+      case ex =>
+        fail("unexpected exception : " + ex.getMessage)
     }
   }
 }

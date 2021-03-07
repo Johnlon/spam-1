@@ -59,8 +59,8 @@ class StatementParser {
       statementLetVarEqExpr |
       statementLetStringIndexEqExpr |
       statementPutcharVarOptimisation | statementPutcharConstOptimisation | stmtPutcharGeneral |
-      stmtPutsName |
-      stmtHalt |
+      statementPutsName |
+      statementHalt | statementHaltVar |
       statementGetchar |
       whileCond | whileTrue | ifCond | breakOut | functionCall ^^ {
       s =>
@@ -190,7 +190,7 @@ class StatementParser {
       }
     }
 
-  def stringValue : Parser[String] = quotedString | systemPropString
+  def stringValue: Parser[String] = quotedString | systemPropString
 
   def dataSourceFile: Parser[Seq[Byte]] =
     "file(" ~> stringValue <~ ")" ^^ {
@@ -225,7 +225,7 @@ class StatementParser {
   }
 
   def statementVarDataLocated: Parser[Block] = positioned {
-    "var" ~> name ~ ("=" ~ "[") ~ rep1(locatedData|blockComment|lineComment) <~ ("]" ~ SEMICOLON) ^^ {
+    "var" ~> name ~ ("=" ~ "[") ~ rep1(locatedData | blockComment | lineComment) <~ ("]" ~ SEMICOLON) ^^ {
       // doesn't preserve the comments - too much hassle
       case target ~ _ ~ dataL =>
         val d = dataL.collect { case b: LocatedData => b }
@@ -239,13 +239,23 @@ class StatementParser {
     }
   }
 
-  def stmtHalt: Parser[Block] = positioned {
+  def statementHalt: Parser[Block] = positioned {
     "halt" ~ "(" ~> wholeNumber <~ ")" ^^ {
-      haltCode => Halt(haltCode.toInt)
+      haltCode =>
+        val i = haltCode.toInt
+        if (i > 65535 || i < 0) sys.error("halt const out of range : " + i)
+        Halt(i)
     }
   }
 
-  def stmtPutsName: Parser[Block] = positioned {
+  def statementHaltVar: Parser[Block] = positioned {
+    "halt" ~ "(" ~> name <~ ")" ^^ {
+      varName =>
+        HaltVar(varName)
+    }
+  }
+
+  def statementPutsName: Parser[Block] = positioned {
     "puts" ~ "(" ~> name <~ ")" ^^ {
       varName => Puts(varName)
     }

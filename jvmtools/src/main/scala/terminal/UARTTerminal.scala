@@ -35,7 +35,7 @@ object UARTTerminal extends SimpleSwingApplication {
   val K_RIGHT: Char = 'R'
 
   // valid in NONE_STATE
-  val GOTO_COMMAND_STATE: Char = 0
+  val GOTO_INIT_STATE: Char = 0
   val GOTO_SETX_STATE: Char = 1  // switch state
   val GOTO_SETY_STATE: Char = 2  // switch state
   val GOTO_DRAW_PIXEL_STATE: Char = 3 // switch state
@@ -49,12 +49,12 @@ object UARTTerminal extends SimpleSwingApplication {
   val DO_CENTRE: Char = 16
 
   sealed trait TerminalIOState
-  object STATE_COMMAND extends TerminalIOState  // next is a direct op like "RIGHT", or a signal to start a two byte binary value op like DRAW
+  object STATE_INIT extends TerminalIOState  // next is a direct op like "RIGHT", or a signal to start a two byte binary value op like DRAW
   object STATE_SETX  extends TerminalIOState
   object STATE_SETY  extends TerminalIOState
   object STATE_DRAW_PIXEL  extends TerminalIOState
   object STATE_DRAW_BYTE  extends TerminalIOState
-  var state: TerminalIOState = STATE_COMMAND
+  var state: TerminalIOState = STATE_INIT
 
   var data: mutable.Seq[mutable.Buffer[Char]] = fill()
 
@@ -179,15 +179,15 @@ object UARTTerminal extends SimpleSwingApplication {
     state match {
       case STATE_SETX =>
         x.set(c)
-        state = STATE_COMMAND
+        state = STATE_INIT
       case STATE_SETY =>
         y.set(c)
-        state = STATE_COMMAND
+        state = STATE_INIT
       case STATE_DRAW_PIXEL =>
         val yi = y.get()
         val xi = x.get()
         data(yi)(xi) = c
-        state = STATE_COMMAND
+        state = STATE_INIT
       case STATE_DRAW_BYTE =>
         val yi = y.get()
         val xi = x.get()
@@ -198,13 +198,14 @@ object UARTTerminal extends SimpleSwingApplication {
             val char = if (bit == '1') BLOCKCHAR else BLANKCHAR
               data(yi)(xi+i) = char
         }
-        state = STATE_COMMAND
-      case STATE_COMMAND =>
+        state = STATE_INIT
+      case STATE_INIT =>
         c match {
-          case GOTO_COMMAND_STATE =>
+          // FOLLOWING INIT CODES SIGNAL START OF 2 BYTE SEQ
+          case GOTO_INIT_STATE =>
             // useful for resynchronisation - emitting two "0" bytes in sequence should push system into NONE_STATE
             // first byte either completes an existing SET/DRAW or it hits this DO_NONE_STATE noop
-            state = STATE_COMMAND
+            state = STATE_INIT
           case GOTO_SETX_STATE =>
             state = STATE_SETX
           case GOTO_SETY_STATE =>
@@ -213,6 +214,8 @@ object UARTTerminal extends SimpleSwingApplication {
             state = STATE_DRAW_PIXEL
           case GOTO_DRAW_BYTE_STATE =>
             state = STATE_DRAW_BYTE
+
+          // FOLLOWING COMMANDS ARE ONE BYTE SEQ
           case DO_CLEAR =>
             clearScreen()
           case DO_ORIGIN =>

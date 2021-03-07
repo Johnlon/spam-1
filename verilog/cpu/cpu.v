@@ -77,6 +77,19 @@ module cpu(
     end
 
 
+    int halt_code;
+    always @(negedge system_clk) begin
+        if (_halt_in == 0) begin
+            halt_code = (CPU.MARHI.Q  << 8) + CPU.MARLO.Q;
+
+            // leave space around the code as Verification.scala looks for them to extract the value
+            $display("----------------------------- HALTED %1d h:%04x ---------------------------", halt_code, 16'(halt_code));
+            $finish();
+        end
+    end
+
+
+
     reset RESET(
         .system_clk,
         ._RESET_SWITCH,

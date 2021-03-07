@@ -133,7 +133,7 @@ object Verification {
     //    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix  +uart_control_file=`pwd`/$controlFileUnix"""))
     val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh '$timeout' ../verilog/cpu/demo_assembler_roms.v `pwd`/$romFileUnix"""))
 
-    val halted = new AtomicReference[Int]()
+    val halted = new AtomicReference[Integer]()
     val success = new AtomicBoolean()
     val lines = ListBuffer.empty[String]
 
@@ -142,7 +142,7 @@ object Verification {
         lines.append("OUT:" + output)
         if (output.contains("SUCCESS - AT EXPECTED END OF PROGRAM")) success.set(true)
         if (output.contains("--- HALTED ")) {
-          val haltedRegex = """---* HALTED (\d+) -----*""".r
+          val haltedRegex = "--* HALTED (\\d+) .*".r
           val haltedRegex(haltCode) = output
 
           halted.set(haltCode.toInt)
@@ -169,7 +169,7 @@ object Verification {
     else if (halted.get() != null)
       throw HaltedException(halted.get())
     else {
-      val lastFewLines = lines.takeRight(10).mkString("\ni//")
+      val lastFewLines = lines.takeRight(50).mkString("\ni//")
       println("=================================================")
       println("Last few lines:")
       println(lastFewLines)

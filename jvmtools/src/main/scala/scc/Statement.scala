@@ -203,7 +203,6 @@ case class LetVarEqExpr(targetVar: String, block: Block) extends Block {
 case class LetVarEqVar(targetVarName: String, srcVarName: String) extends Block {
   override def gen(depth: Int, parent: Scope): List[String] = {
 
-    val src = parent.getVarLabel(srcVarName)
     val targ = parent.getVarLabel(targetVarName)
 
     val srcFqn = parent.getVarLabel(srcVarName).fqn
@@ -355,7 +354,25 @@ case class Halt(haltCode: Int)
 
   override def gen(depth: Int, parent: Scope): List[String] = {
     List(
-      s"HALT = $haltCode"
+      s"MARHI = <: $haltCode",
+      s"MARLO = >: $haltCode",
+      s"HALT = 1"
+    )
+  }
+}
+
+case class HaltVar(srcVarName: String)
+
+  extends Block(nestedName = s"haltVar_${srcVarName}_") {
+
+  override def gen(depth: Int, parent: Scope): List[String] = {
+
+    val srcFqn = parent.getVarLabel(srcVarName).fqn
+
+    List(
+      s"MARHI = [:$srcFqn + 1]",
+      s"MARLO = [:$srcFqn]",
+      s"HALT = 2"
     )
   }
 }
@@ -609,7 +626,8 @@ case class WhileCond(flagToCheck: String, conditionBlock: Block, content: List[B
 
 }
 
-case class IfCond(flagToCheck: String, conditionBlock: Block,
+case class IfCond(flagToCheck: String,
+                  conditionBlock: Block,
                   content: List[Block],
                   elseContent: List[Block]
                  )
