@@ -55,6 +55,7 @@ module test();
     logic _RESET_SWITCH;
 
     logic clk;
+    int opcount = 0;
 
     //always begin
     //   #CLOCK_INTERVAL clk = !clk;
@@ -156,22 +157,23 @@ endfunction
     begin
         if (_RESET_SWITCH) icount++; else icount=0;
 
-        $display("\n%9t", $time, " END OF EXECUTE VALUES"); 
+        if (LOG) $display("\n%9t", $time, " END OF EXECUTE VALUES"); 
         if (LOG > 0) DUMP; 
 
-        $display("\n%9t", $time, " CLK GOING HIGH  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ INSTRUCTION %1d\n", icount); 
+        if (LOG) $display("\n%9t", $time, " CLK GOING HIGH  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ INSTRUCTION %1d\n", icount); 
         clk = 1;
     end
     endtask
 
     task CLK_DN; 
     begin
-        $display("\n%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
-        $display("\n%9t", $time, " EXECUTING ..."); 
+        opcount ++;
+        if (LOG) $display("\n%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
+        if (LOG) $display("\n%9t", $time, " EXECUTING ..."); 
         //$display("\n%9t", $time, " DECOMPILE %s", CPU.ctrl.decode(1).display()); 
         //DUMP; 
         
-        $display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
+        if (LOG) $display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
 /*
         $display("%9t", $time, " DECOMPILE ",
             " PC=%-5d  ", pc,
@@ -200,7 +202,7 @@ endfunction
             " i:%02x (dec %d) ", CPU.ctrl.instruction[7:0], CPU.ctrl.instruction[7:0]
         );
 */
-        $display("%9t", $time, " DECOMPILE ",
+        if (LOG) $display("%9t", $time, " DECOMPILE ",
             " PC=%-5d : ", pc,
             " %-1s = ", control::tdevname(CPU.ctrl.instruction[42:39]),
             " %1s", control::adevname(CPU.ctrl.instruction[38:36]),
@@ -213,7 +215,7 @@ endfunction
             " imm:%02x (dec %d) ", CPU.ctrl.instruction[7:0], CPU.ctrl.instruction[7:0]
         );
 
-        $display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
+        if (LOG) $display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
         clk = 0;
     end
     endtask
@@ -252,8 +254,8 @@ endfunction
             #HALF_CLK_HI
             CLK_DN;
             #HALF_CLK_LO
-            $display("%9t", $time, " DUMPREG:", "  PC=%1d ", pcval, "ALU:%03d", CPU.alu_result_bus, " REGA:%03d", CPU.regFile.get(0), "  REGB:%03d", CPU.regFile.get(1), "  REGC:%03d", CPU.regFile.get(2), "  REGD:%03d", CPU.regFile.get(3));
-            $display("%9t", $time, " FLAGS czonGLEN=%8b" , CPU._registered_flags_czonGLEN);
+            if (LOG) $display("%9t", $time, " DUMPREG:", "  PC=%1d ", pcval, "ALU:%03d", CPU.alu_result_bus, " REGA:%03d", CPU.regFile.get(0), "  REGB:%03d", CPU.regFile.get(1), "  REGC:%03d", CPU.regFile.get(2), "  REGD:%03d", CPU.regFile.get(3));
+            if (LOG) $display("%9t", $time, " FLAGS czonGLEN=%8b" , CPU._registered_flags_czonGLEN);
             CLK_UP;
         end
 
@@ -274,7 +276,7 @@ endfunction
     always @(CPU.PCHI or CPU.PCLO) begin
         currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
         currentCodeText = string_bits'(CODE_TEXT[pcval]);
-        $display("%9t ", $time, "INCREMENTED PC=%1d    INSTRUCTION: %1s", {CPU.PCHI, CPU.PCLO}, currentCode);
+        $display("%9t ", $time, "CYCLES %d : INCREMENTED PC=%1d    INSTRUCTION: %1s", opcount, {CPU.PCHI, CPU.PCLO}, currentCode);
 
         //if (currentCodeText != "") $display("%9t ", $time, "COMMENT: %1s", currentCodeText);
 
@@ -365,10 +367,10 @@ endfunction
             $display("\n%9t RESET SWITCH SET       _RESET_SWITCH=%1b  ======================================================================\n", $time, _RESET_SWITCH); 
 
     always @* 
-        if (CPU._mr)  
-            $display("\n%9t PC RESET RELEASE   _mr=%1b  ======================================================================\n", $time, CPU._mr); 
+        if (CPU._mrPC)  
+            $display("\n%9t PC RESET RELEASE   _mr=%1b  ======================================================================\n", $time, CPU._mrPC); 
         else      
-            $display("\n%9t PC RESET SET       _mr=%1b  ======================================================================\n", $time, CPU._mr); 
+            $display("\n%9t PC RESET SET       _mr=%1b  ======================================================================\n", $time, CPU._mrPC); 
 
 
     

@@ -189,6 +189,11 @@ module test();
 
         `define CYCLE begin CLK_UP; #HALF_CLK CLK_DN; #HALF_CLK; noop(); end
         `define FULL_CYCLE(N) for (count =0; count < N; count++) begin CLK_UP; #HALF_CLK; CLK_DN; #HALF_CLK; noop(); end
+        CPU.PC.PCHI_7_4.count = 15;
+        CPU.PC.PCHI_3_0.count = 15;
+        CPU.PC.PCLO_7_4.count = 15;
+        CPU.PC.PCLO_3_0.count = 15;
+        #1000
 
         INIT_ROM();
         `DISPLAY("init : _RESET_SWITCH=0")
@@ -199,36 +204,34 @@ module test();
         #1000
 
         `Equals(phaseFE, control::PHASE_EXEC)
-        `Equals({CPU.PCHI,CPU.PCLO}, 16'bx)
-        `Equals(CPU._addrmode_register, 1'bx)
-        `Equals(CPU.address_bus, 16'hxxxx); // because first instruction will be on system and it's using dierct ram addressing
+        `Equals({CPU.PCHI,CPU.PCLO}, 16'b0)
+        `Equals(CPU._addrmode_register, 1'b1)
+        `Equals(CPU.address_bus, 16'hffaa); // because first instruction will be on system and it's using direct ram addressing
 
         #1000
-        `DISPLAY("_mr=0  - so clocking is ineffective");
-        `Equals(CPU._mr, 0);
+        `DISPLAY("_mrPC=0  - so clocking is ineffective");
+        `Equals(CPU._mrPC, 0);
 
         `FULL_CYCLE(1)
         #1000
-        `Equals({CPU.PCHI,CPU.PCLO}, 16'bx)
+        `DISPLAY("_mrPC=0  - so clocking resets the PC");
+        `Equals({CPU.PCHI,CPU.PCLO}, 16'b0)
         
 
         `DISPLAY("_RESET_SWITCH releasing");
         _RESET_SWITCH = 1;
-        `Equals(CPU._mr, 0);
         `Equals(CPU._mrPC, 0);
         `Equals(phaseFE, control::PHASE_EXEC)
 
         `DISPLAY("CLOCK DOWN - NOTHING SHOULD HAPPEN");
         CLK_DN;
         #1000
-        `Equals(CPU._mr, 0);
         `Equals(CPU._mrPC, 0);
-        `Equals({CPU.PCHI,CPU.PCLO}, 16'bx)
+        `Equals({CPU.PCHI,CPU.PCLO}, 16'b0)
 
         `DISPLAY("CLOCK UP - PC SHOULD RESET");
         CLK_UP;
         #1000
-        `Equals(CPU._mr, 1);
         `Equals(CPU._mrPC, 0);
         `Equals({CPU.PCHI,CPU.PCLO}, 16'b0)
         `Equals(phaseFE, control::PHASE_FETCH)
@@ -241,7 +244,6 @@ module test();
         `DISPLAY("phase - advancing to exec")
         CLK_DN;
         #HALF_CLK
-        `Equals(CPU._mr, 1);
         `Equals(CPU._mrPC, 1);
 
         `Equals(phaseFE, control::PHASE_EXEC)
@@ -509,10 +511,10 @@ module test();
             $display("\n%9t RESET SWITCH SET       _RESET_SWITCH=%1b  ======================================================================\n", $time, _RESET_SWITCH); 
 
     always @* 
-        if (CPU._mr)  
-            $display("\n%9t PC RESET RELEASE   _mr=%1b  ======================================================================\n", $time, CPU._mr); 
+        if (CPU._mrPC)  
+            $display("\n%9t PC RESET RELEASE   _mrPC=%1b  ======================================================================\n", $time, CPU._mrPC); 
         else      
-            $display("\n%9t PC RESET SET       _mr=%1b  ======================================================================\n", $time, CPU._mr); 
+            $display("\n%9t PC RESET SET       _mrPC=%1b  ======================================================================\n", $time, CPU._mrPC); 
 
 
     

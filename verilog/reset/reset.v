@@ -8,19 +8,20 @@ module reset(
     input _RESET_SWITCH, // HOLD LO FOR RESET
     input system_clk,
     
-    output _mrPos,  // clears on the 1st positive edge after _RESET_SWITH is released
-    output _mrNeg, // clears later - on the 1st negative edge after the positive edge that cleared _mr
-    output gated_clk   // gated clock - clock stops in low state during reset
+//    output _mrPos,  // clears on the 1st positive edge after _RESET_SWITH is released
+    output _mrNeg,    // stays low for two cycles - clears later - goes high on the 1st negative edge after the positive edge that cleared _mrPos
+    output gated_clk  // gated clock - clock stops in low state during reset - but is this useful??
 );
     parameter LOG=0;
 
     wire _Qnotused;
+    wire _mrPos;
 
     hct7474 #(.BLOCKS(1), .LOG(0)) resetff(
           ._SD(1'b1),
           ._RD(_RESET_SWITCH),
           .D(1'b1),
-          .CP(system_clk),
+          .CP(system_clk), 
           .Q(_mrPos),
           ._Q(_Qnotused)
         );
@@ -41,3 +42,4 @@ module reset(
     assign #(10) gated_clk = system_clk & _mrPos; // AND GATE
 
 endmodule 
+ 

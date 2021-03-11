@@ -31,7 +31,7 @@
 `define COMMA ,
 
 `define MAX_INST_LEN 200
-typedef reg[`MAX_INST_LEN:0][7:0] string_bits ;
+typedef reg[`MAX_INST_LEN:0][7:0] string_bits;
 typedef reg[15:0] reg16;
 
 // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
@@ -54,7 +54,7 @@ module cpu(
     wire _flag_do;
     wire _set_flags;
 
-    wire _mr, _mrPC, clk;
+    wire _mrPC, gated_clk;
 
     always @(pc_addr) begin
         if ($isunknown(pc_addr)) begin // just check leftmost but as this is part of the op and is mandatory
@@ -65,7 +65,7 @@ module cpu(
         if ($isunknown(ctrl.rom_6.Mem[pc_addr][7])) begin // just check leftmost but as this is part of the op and is mandatory
             $display ("%9t ", $time,  "CPU HALT");
             $error("CPU : END OF PROGRAM - NO CODE FOUND AT PC %4h = %8b", pc_addr, ctrl.rom_6.Mem[pc_addr][7]); 
-            `FINISH_AND_RETURN(1);
+//            `FINISH_AND_RETURN(1);
         end
     end
     always @(negedge system_clk) begin
@@ -93,8 +93,8 @@ module cpu(
     reset RESET(
         .system_clk,
         ._RESET_SWITCH,
-        .gated_clk(clk),
-        ._mrPos(_mr),
+        .gated_clk(gated_clk),
+        //._mrPos(_mr),
         ._mrNeg(_mrPC)
     );
 
@@ -102,11 +102,11 @@ module cpu(
     // CLOCK ===================================================================================
     //localparam T=1000;
 
-    wire #8 _clk = ! clk; // GATE + PD
+    wire #8 _clk = ! gated_clk; // GATE + PD
 
 
-    wire  phaseFetch = clk; // FETCH ON HIGH
-    wire _phaseExec = clk;  // EXEC ON LOW
+    wire  phaseFetch = gated_clk; // FETCH ON HIGH
+    wire _phaseExec = gated_clk;  // EXEC ON LOW
     wire  #(10) _phaseFetch = !phaseFetch;
     wire  #(10) phaseExec = !_phaseExec;
     
@@ -150,7 +150,8 @@ module cpu(
 
     // PC reset is sync with +ve edge of clock
     pc #(.LOG(0))  PC (
-        .clk(clk),
+        //.clk(clk),
+        .clk(system_clk),
         ._MR(_mrPC),
         ._long_jump(_long_jump),  // load both
         ._local_jump(_pclo_in), // load lo
@@ -165,7 +166,7 @@ module cpu(
 
 // verilator lint_off PINMISSING
     wire #(8) _gated_ram_in = _phaseExec | _ram_in;
-    ram #(.AWIDTH(16), .LOG(1)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
+    ram #(.AWIDTH(16), .LOG(0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
 // verilator lint_on PINMISSING
     
 `ifndef verilator
@@ -176,8 +177,8 @@ module cpu(
 
     // MAR =============================================================================================
 // verilator lint_off PINMISSING
-    hct74377 #(.LOG(1)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
-    hct74377 #(.LOG(1)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
+    hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
+    hct74377 #(.LOG(0)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
 // verilator lint_on PINMISSING
 
     hct74245 marlo_abus_buf(.A(MARLO.Q), .B(abus), .nOE(_adev_marlo), .dir(1'b1)); // optional - needed for marlo arith so MAR appears as a GP register
@@ -238,7 +239,7 @@ module cpu(
     wire [1:0] regfile_rdR_addr = bbus_dev[1:0];
     wire [1:0] regfile_wr_addr = targ_dev[1:0];
 
-    if (0) begin
+    if (LOG) begin
         always @* $display("regfile _gated_regfile_in = ", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
         always @* $display("regfile _regfile_rdL_en   = ", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
         always @* $display("regfile _regfile_rdR_en   = ", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);

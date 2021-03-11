@@ -18,13 +18,13 @@ module test(
     logic _RESET_SWITCH;
     logic system_clk;
     
-    wire _mrPos, _mrNeg, clk;
+    wire _mrPos, _mrNeg, gated_clk;
 
     reset RESET(
         ._RESET_SWITCH,
         .system_clk,
-        .clk,
-        ._mrPos,
+        .gated_clk(gated_clk),
+//        ._mrPos,
         ._mrNeg
     );
 
@@ -40,7 +40,8 @@ module test(
     
     // PC reset is sync with +ve edge of clock
     pc #(.LOG(0))  PC (
-        .clk(clk),
+        //.clk(gated_clk),
+        .clk(system_clk),
         ._MR(_mrNeg),
         ._long_jump(_do_jmp),  // load both
         ._local_jump(_pclo_in), // load lo
@@ -58,164 +59,127 @@ module test(
         $dumpfile("dumpfile.vcd");
         $dumpvars(0, test);
 
-        system_clk=1;
-        #GAP
-        `Equals(_mrPos, 'x);
-
         _RESET_SWITCH = 1;
-        `Equals(pc, 'x);
-
-        $display("if reset is NOT pressed then a +ve clock unsets resetff");
         system_clk=1;
         #GAP
-        `Equals(_mrPos, 'x);
-        `Equals(pc, 'x);
 
+        PC.PCHI_7_4.count = 15;
+        PC.PCHI_3_0.count = 15;
+        PC.PCLO_7_4.count = 15;
+        PC.PCLO_3_0.count = 15;
+        #GAP
+        `Equals(pc, 16'hffff);
+
+        system_clk=1;
+        #GAP
+        `Equals(_mrNeg, 'x);
+        `Equals(gated_clk, 1);
+        `Equals(pc, 16'hffff);
+    
+        $display("RESET HIGH");
+        _RESET_SWITCH = 1;
+        #GAP
+
+        // cycle and count
+        system_clk=1'b0;
+        #GAP
+        `Equals(gated_clk, 1'b0);
+        `Equals(_mrNeg, 1'b1);
+        `Equals(pc, 16'hffff);
+
+        system_clk=1;
+        #GAP
+        `Equals(gated_clk, 1'b1);
+        `Equals(_mrNeg, 1'b1);
+        `Equals(pc, 16'h0000);
+
+
+        // cycle and count
         system_clk=0;
         #GAP
-        `Equals(_mrPos, 'x);
-        `Equals(pc, 'x);
+        `Equals(gated_clk, 1'b0);
+        `Equals(_mrNeg, 1'b1);
+        `Equals(pc, 16'h0000);
 
         system_clk=1;
         #GAP
-        `Equals(_mrPos, 1'b1);    // flip to 1 because of +ve edge
-        `Equals(pc, 'x);
+        `Equals(gated_clk, 1'b1);
+        `Equals(_mrNeg, 1'b1);
+        `Equals(pc, 16'h0001);
 
-        $display("while resetff clear then phase tracks clock");
+        $display("SET RESET LOW => instant _mrNeg=0 without clock");
+        _RESET_SWITCH = 0;
+        #GAP
+        `Equals(gated_clk, 1'b0); // pulled low by reset
+        `Equals(_mrNeg, 1'b0); // pulled low by reset
+        `Equals(pc, 16'h0001);
+
+
+        // cycle and count
+        $display("RESET STILL LOW => pc reset on system clock +ve");
         system_clk=0;
         #GAP
-        `Equals(_mrPos, 1'b1);
-        `Equals(pc, 'x);
-        
+        `Equals(gated_clk, 1'b0);
+        `Equals(_mrNeg, 1'b0);
+        `Equals(pc, 16'h0001);
+
         system_clk=1;
         #GAP
-        `Equals(_mrPos, 1'b1);
-        `Equals(pc, 'x);
-        
+        `Equals(gated_clk, 1'b0);
+        `Equals(_mrNeg, 1'b0);
+        `Equals(pc, 16'h0000);
+
+
+        // cycle and count
+        $display("RESET STILL LOW => no counting");
         system_clk=0;
         #GAP
-        `Equals(_mrPos, 1'b1);
-        `Equals(pc, 'x);
-        
-        
-        $display("reset button asynchronously sets  _mrPos=0 ");
-        // during high phase
+        `Equals(gated_clk, 1'b0);
+        `Equals(_mrNeg, 1'b0);
+        `Equals(pc, 16'h0000);
+
         system_clk=1;
-        #(GAP/2)
-        `Equals(_mrPos, 1'b1);
-        `Equals(pc, 'x);
+        #GAP
+        `Equals(gated_clk, 1'b0);
+        `Equals(_mrNeg, 1'b0);
+        `Equals(pc, 16'h0000);
 
-        // _mrPos async reset
-        _RESET_SWITCH=0;
-        #(GAP/2) // async PD
-        `Equals(_mrPos, 1'b0);
-        `Equals(pc, 'x);
 
-        $display("_mrPos stays 0 while _RESET held, but PC resets to 0 on first +ve clock");
+        // cycle and count
+        $display("RESET RELEASE => _mrNeg stays low and no counting yet");
+        _RESET_SWITCH = 1;
         system_clk=0;
         #GAP
-        `Equals(_mrPos, 1'b0);
-        `Equals(pc, 'x);
+        `Equals(gated_clk, 1'b0);
+        `Equals(_mrNeg, 1'b0);
+        `Equals(pc, 16'h0000);
 
         system_clk=1;
         #GAP
-        `Equals(_mrPos, 1'b0);
-        `Equals(pc, 'x);
+        `Equals(gated_clk, 1'b1);
+        `Equals(_mrNeg, 1'b0);
+        `Equals(pc, 16'h0000);
 
-        $display("PC stays 0 while _mrPos=0");
+
+        // cycle and count
+        $display("_mrNeg goes high and Counting starts");
         system_clk=0;
         #GAP
-        `Equals(_mrPos, 1'b0);
-        `Equals(pc, 'x);
-
-        system_clk=1; 
-        #(GAP/2)
-        `Equals(_mrPos, 1'b0);
-        `Equals(pc, 'x);
-
-        $display("release RESET - mid cycle clock high");
-        _RESET_SWITCH=1;
-        #(GAP/2)
-        `Equals(_mrPos, 1'b0);
-        `Equals(pc, 'x);
-
-        $display("released RESET - _mrPos remains held during low cycle");
-        system_clk=0;
-        #GAP
-        `Equals(_mrPos, 1'b0);
-        `Equals(pc, 'x);
-
-        $display("released RESET - _mrPos released on +ve clk, PC remains 0");
-        system_clk=1;
-        #GAP
-        `Equals(_mrPos, 1'b1);
-        `Equals(pc, '0);
-
-        $display("clk -ve edge , PC stays as 0");
-        system_clk=0;
-        #GAP
-        `Equals(_mrPos, 1'b1);
-        `Equals(pc, 16'd0);
-
-        $display("clk +ve edge , PC increments");
-        system_clk=1;
-        #GAP
-        `Equals(_mrPos, 1'b1);
-        `Equals(pc, 16'd1);
-        
-        system_clk=0;
-        #GAP
-        `Equals(_mrPos, 1'b1);
-        `Equals(pc, 16'd1);
-
-        $display("clk +ve edge , PC increments");
-        system_clk=1;
-        #GAP
-        `Equals(_mrPos, 1'b1);
-        `Equals(pc, 16'd2);
-        
-        system_clk=0;
-        #GAP
-        `Equals(_mrPos, 1'b1);
-        `Equals(pc, 16'd2);
-        
-        $display("clk +ve edge , PC increments");
-        system_clk=1;
-        #GAP
-        `Equals(_mrPos, 1'b1);
-        `Equals(pc, 16'd3);
-        
-
-        $display("reset again");
-        _RESET_SWITCH=0;
-        system_clk=0;
-        #(GAP/2)
-        $display("release RESET mid cycle clock low");
-        _RESET_SWITCH=1;
-        #(GAP/2)
+        `Equals(gated_clk, 1'b0);
+        `Equals(_mrNeg, 1'b1);
+        `Equals(pc, 16'h0000);
 
         system_clk=1;
         #GAP
+        `Equals(gated_clk, 1'b1);
+        `Equals(_mrNeg, 1'b1);
+        `Equals(pc, 16'h0001);
 
-        $display("free run clock");
-        for (count=4; count>0; count--) begin
-            system_clk=0;
-            #GAP
-            system_clk=1;
-            #GAP
-            system_clk=1;
-        end
-
-        system_clk=0;
         #GAP
-        system_clk=1;
-        #GAP
-        system_clk=1;
-       
-        `Equals(pc, 16'd5);
+        $display("DONE");
     end
 
-    always @* $display("%9t ", $time, "      _mrPos %1b  ", _mrPos);
+    always @* $display("%9t ", $time, "      _mrNeg %1b  ", _mrNeg);
     always @* $display("%9t ", $time, "       pc %04h ", pc);
 
 endmodule 

@@ -48,7 +48,7 @@ package control;
     localparam [2:0] BDEV_regd = 3; 
     localparam [2:0] BDEV_marlo = 4;
     localparam [2:0] BDEV_marhi = 5;
-    localparam [2:0] BDEV_immed = 6; // READ FROM THE INSTRUCTION
+    localparam [2:0] BDEV_immed = 6; // IMMER READ FROM THE INSTRUCTION
     localparam [2:0] BDEV_ram = 7;
     localparam [2:0] BDEV_not_used = BDEV_rega;
 

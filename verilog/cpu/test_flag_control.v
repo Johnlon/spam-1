@@ -25,6 +25,12 @@ module test();
     logic clk=0;
 
     cpu CPU(_RESET_SWITCH, clk);
+  
+    initial begin
+        $dumpfile("dumpfile.vcd");
+        //$dumpvars(0, test, clk, _RESET_SWITCH, CPU);
+        $dumpvars(0, test);
+    end
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     // TESTS ===========================================================================================
@@ -70,15 +76,25 @@ module test();
     end 
 
     initial begin
+        CPU.PC.PCHI_7_4.count = 1;
+        CPU.PC.PCHI_3_0.count = 4'ha;
+        CPU.PC.PCLO_7_4.count = 4'hf;
+        CPU.PC.PCLO_3_0.count = 0;
+        #1000
+        
         //$timeformat(-3, 0, "ms", 10);
 
-        INIT_ROM();
 
-        _RESET_SWITCH = 0;
-        clk=0;
+        INIT_ROM();
         #1000
 
+        _RESET_SWITCH = 0;
+        #1000
+        clk=0;
+        #10000
+
         _RESET_SWITCH = 1;
+        #1000
         clk=1;
         #1000
        `Equals(CPU.pc_addr, 0); 

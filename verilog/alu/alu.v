@@ -117,6 +117,7 @@ if (1) begin
 
     always @* begin
         if ($isunknown(A)) begin
+            // not a problem unless happening near the exec edge
             $display("GLITCHING ADDRESS Z or X for OP A B = %5b %8b %8b", alu_op_effective, a, b);
         end
     end

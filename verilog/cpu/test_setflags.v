@@ -103,22 +103,19 @@ module test();
         _RESET_SWITCH = 0;
         clk=0;
         #1000
-       `Equals(CPU._mr,'0);
        `Equals(CPU._mrPC,'0);
        `Equals(CPU.pc_addr, 'x); 
        
         _RESET_SWITCH = 1;
        clk = 1; // high fetch phase - +ve clk reset _mr
        #TCLK;
-       `Equals(CPU._mr,'1);
        `Equals(CPU._mrPC,'0);
        `Equals(CPU.pc_addr, 0); 
        `Equals(CPU.status_register_czonGLEN.Q[7],'x);
 
        clk = 0; // low = execute phase
        #TCLK
-       `Equals(CPU._mr,'1);
-       `Equals(CPU._mrPC,'1);
+       `Equals(CPU._mrPC,1);
        `Equals(CPU.pc_addr, 0); 
        `Equals(CPU.status_register_czonGLEN.Q, 8'b00111010); // 255 rolled over to 0
        `Equals(CPU.regFile.get(0), 8'd00); // default vals of reg
