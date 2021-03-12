@@ -17,7 +17,7 @@ module reset(
     wire _Qnotused;
     wire _mrPos;
 
-    hct7474 #(.BLOCKS(1), .LOG(0)) resetff(
+    hct7474 #(.BLOCKS(1), .LOG(0)) resetff1(
           ._SD(1'b1),
           ._RD(_RESET_SWITCH),
           .D(1'b1),
@@ -28,11 +28,10 @@ module reset(
 
 
     // _reset_pc is same as MR however it clears on the neg edge so that the PC can reset on the previous +ve edge
-    //wire #(8) _system_clk = !system_clk; // GATE
     wire _system_clk;
-    nand #(8) nand1(_system_clk, system_clk); // GATE
+    nand #(8) nand1(_system_clk, system_clk); 
 
-    hct7474 #(.BLOCKS(1), .LOG(0)) pcresetff(
+    hct7474 #(.BLOCKS(1), .LOG(0)) resetff2(
           ._SD(1'b1),
           ._RD(_mrPos), // wont set back to H until after _mrPos clears
           .D(1'd1),
@@ -41,8 +40,9 @@ module reset(
           ._Q()
         );
 
-    assign #(10) _phase_clk = system_clk & _mrPos; // AND GATE
-    assign #(10) phase_clk = ! _phase_clk;
+    wire _phase_clk, phase_clk;
+    nand #(10) nand2(phase_clk , system_clk , _mrPos); 
+    nand #(10) nand3(_phase_clk , phase_clk); 
 
 endmodule 
  
