@@ -41,10 +41,8 @@ module reset(
           ._Q()
         );
 
-    assign #(10) phase_clk = system_clk & _mrPos; // AND GATE
-    assign #(10) _phase_clk = ! phase_clk;
-//    nand #(8) nand2(_phase_clk, system_clk , _mrPos); // AND GATE
-//    nand #(8) nand3(phase_clk, phase_clk);
+    assign #(10) _phase_clk = system_clk & _mrPos; // AND GATE
+    assign #(10) phase_clk = ! _phase_clk;
 
 endmodule 
  
