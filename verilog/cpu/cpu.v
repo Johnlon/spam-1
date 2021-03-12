@@ -62,8 +62,8 @@ module cpu(
     reset RESET(
         .system_clk,
         ._RESET_SWITCH,
-        ._phase_clk(_phaseExec),
-        .phase_clk(phaseExec),
+        ._phase_exec(_phaseExec),
+        .phase_exec(phaseExec),
         ._mrNeg(_mrPC)
     );
 

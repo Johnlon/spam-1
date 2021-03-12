@@ -9,8 +9,8 @@ module reset(
     input system_clk,
     
     output _mrNeg,    // stays low for two cycles - clears later - goes high on the 1st negative edge after the positive edge that cleared _mrPos
-    output phase_clk,  // phase clock - stops in low state during reset - so stops in the fetch phase which is the required initial phase
-    output _phase_clk  // phase clock - stops in high state during reset - so stops in the fetch phase which is the required initial phase
+    output phase_exec,  // phase clock - stops in low state during reset - so stops in the fetch phase which is the required initial phase
+    output _phase_exec  // phase clock - stops in high state during reset - so stops in the fetch phase which is the required initial phase
 );
     parameter LOG=0;
 
@@ -40,9 +40,8 @@ module reset(
           ._Q()
         );
 
-    wire _phase_clk, phase_clk;
-    nand #(10) nand2(phase_clk , system_clk , _mrPos); 
-    nand #(10) nand3(_phase_clk , phase_clk); 
+    nand #(10) nand2(phase_exec , system_clk , _mrPos); 
+    nand #(10) nand3(_phase_exec , phase_exec); 
 
 endmodule 
  
