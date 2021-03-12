@@ -230,8 +230,6 @@ endfunction
 
     `define DUMP_REG $display("%9t", $time, " REGISTERS:", "  REGA:%08b", CPU.regFile.get(0), "  REGB:%08b", CPU.regFile.get(1), "  REGC:%08b", CPU.regFile.get(2), "  REGD:%08b", CPU.regFile.get(3)); 
 
-    wire [1:0] phaseFE = {CPU.phaseFetch, CPU.phaseExec};
-
     initial begin
         $dumpfile("dumpfile.vcd");
         $dumpvars(0, test);
@@ -310,7 +308,7 @@ endfunction
 
     task DUMP;
             DUMP_OP;
-            `DD " phase=%1s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
+            `DD " phase=%1b", CPU.phaseExec);
             `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
     //        `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
    //         `DD " FE=%1b%1b(%1s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));

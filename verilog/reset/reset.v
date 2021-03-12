@@ -9,7 +9,8 @@ module reset(
     input system_clk,
     
     output _mrNeg,    // stays low for two cycles - clears later - goes high on the 1st negative edge after the positive edge that cleared _mrPos
-    output phase_clk  // phase clock - stops in low state during reset - so stops in the fetch phase which is the required initial phase
+    output phase_clk,  // phase clock - stops in low state during reset - so stops in the fetch phase which is the required initial phase
+    output _phase_clk  // phase clock - stops in high state during reset - so stops in the fetch phase which is the required initial phase
 );
     parameter LOG=0;
 
@@ -27,7 +28,9 @@ module reset(
 
 
     // _reset_pc is same as MR however it clears on the neg edge so that the PC can reset on the previous +ve edge
-    wire #(8) _system_clk = !system_clk; // GATE
+    //wire #(8) _system_clk = !system_clk; // GATE
+    wire _system_clk;
+    nand #(8) nand1(_system_clk, system_clk); // GATE
 
     hct7474 #(.BLOCKS(1), .LOG(0)) pcresetff(
           ._SD(1'b1),
@@ -39,6 +42,9 @@ module reset(
         );
 
     assign #(10) phase_clk = system_clk & _mrPos; // AND GATE
+    assign #(10) _phase_clk = ! phase_clk;
+//    nand #(8) nand2(_phase_clk, system_clk , _mrPos); // AND GATE
+//    nand #(8) nand3(phase_clk, phase_clk);
 
 endmodule 
  

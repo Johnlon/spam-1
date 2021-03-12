@@ -22,10 +22,6 @@
 
 package control;
  
-    localparam PHASE_NONE = 2'b00;
-    localparam PHASE_FETCH = 2'b10;
-    localparam PHASE_EXEC = 2'b01;
-   
     // see _addrmode_tuple
 //    localparam _AMODE_NONE=2'b11;
 //    localparam _AMODE_REG=2'b01;

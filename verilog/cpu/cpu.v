@@ -54,22 +54,20 @@ module cpu(
     wire _flag_do;
     wire _set_flags;
 
-    wire _mrPC, phase_clk;
+    wire _mrPC;
+
+    wire _phaseExec;
+    wire phaseExec;
 
     reset RESET(
         .system_clk,
         ._RESET_SWITCH,
-        .phase_clk(phase_clk),
-        //._mrPos(_mr),
+        .phase_clk(_phaseExec),
+        ._phase_clk(phaseExec),
         ._mrNeg(_mrPC)
     );
 
 
-    // CLOCK ===================================================================================
-
-    wire _phaseExec = phase_clk;  // EXEC ON LOW
-    wire  #(10) phaseExec = !_phaseExec;
-    
 
     // CONTROL ===========================================================================================
     wire _addrmode_register;

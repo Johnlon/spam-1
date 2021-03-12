@@ -181,8 +181,6 @@ module test();
 
     `define DUMP_REG $display("%9t", $time, " REGISTERS:", "  REGA:%08b", CPU.regFile.get(0), "  REGB:%08b", CPU.regFile.get(1), "  REGC:%08b", CPU.regFile.get(2), "  REGD:%08b", CPU.regFile.get(3));
 
-    wire [1:0] phaseFE = {CPU.phaseFetch, CPU.phaseExec};
-
     initial begin
         $dumpfile("dumpfile.vcd");
         $dumpvars(0, test);
@@ -203,7 +201,7 @@ module test();
         CLK_UP;
         #1000
 
-        `Equals(phaseFE, control::PHASE_EXEC)
+        `Equals(CPU.phaseExec, 1)
         `Equals({CPU.PCHI,CPU.PCLO}, 16'b0)
         `Equals(CPU._addrmode_register, 1'b1)
         `Equals(CPU.address_bus, 16'hffaa); // because first instruction will be on system and it's using direct ram addressing
@@ -221,7 +219,7 @@ module test();
         `DISPLAY("_RESET_SWITCH releasing");
         _RESET_SWITCH = 1;
         `Equals(CPU._mrPC, 0);
-        `Equals(phaseFE, control::PHASE_EXEC)
+        `Equals(CPU.phaseExec, 1)
 
         `DISPLAY("CLOCK DOWN - NOTHING SHOULD HAPPEN");
         CLK_DN;
@@ -234,7 +232,7 @@ module test();
         #1000
         `Equals(CPU._mrPC, 0);
         `Equals({CPU.PCHI,CPU.PCLO}, 16'b0)
-        `Equals(phaseFE, control::PHASE_FETCH)
+        `Equals(CPU.phaseExec, 0)
         `Equals(CPU._addrmode_register, 1);
         DUMP();
         `Equals(CPU.address_bus, 16'hffaa);
@@ -246,7 +244,7 @@ module test();
         #HALF_CLK
         `Equals(CPU._mrPC, 1);
 
-        `Equals(phaseFE, control::PHASE_EXEC)
+        `Equals(CPU.phaseExec, 1)
 
         `Equals(CPU.PCHI, 8'h00) // doesn't advnce yet
         `Equals(CPU.PCLO, 8'h00) // doesn't advnce yet
@@ -257,7 +255,7 @@ module test();
         `DISPLAY("phase - fetch")
         CLK_UP;
         #HALF_CLK
-        `Equals(phaseFE, control::PHASE_FETCH)
+        `Equals(CPU.phaseExec, 0)
         `Equals(CPU.PCHI, 8'h00) 
         `Equals(CPU.PCLO, 8'h01)
         `Equals(CPU._addrmode_register, 1);
@@ -269,7 +267,7 @@ module test();
         CLK_DN;
         #HALF_CLK
 
-        `Equals(phaseFE, control::PHASE_EXEC)
+        `Equals(CPU.phaseExec, 1)
         `Equals(CPU.MARLO.Q, 8'h42)
         `assertTrue(CPU.MARHI.isUndef());
 
@@ -277,7 +275,7 @@ module test();
         `DISPLAY("phase - fetch")
         CLK_UP;
         #HALF_CLK
-        `Equals(phaseFE, control::PHASE_FETCH)
+        `Equals(CPU.phaseExec, 0)
         `Equals(CPU.PCHI, 8'h00)
         `Equals(CPU.PCLO, 8'h02)
         `Equals(CPU._addrmode_register, 0);
@@ -286,7 +284,7 @@ module test();
 
         CLK_DN;
         #HALF_CLK
-        `Equals(phaseFE, control::PHASE_EXEC)
+        `Equals(CPU.phaseExec, 1)
         `Equals(CPU.MARLO.Q, 8'h42)
         `Equals(CPU.MARHI.Q, 8'h00)
 
@@ -295,7 +293,7 @@ module test();
         `DISPLAY("phase - fetch")
         CLK_UP;
         #HALF_CLK
-        `Equals(phaseFE, control::PHASE_FETCH)
+        `Equals(CPU.phaseExec, 0)
         `Equals(CPU.PCHI, 8'h00)
         `Equals(CPU.PCLO, 8'h03)
         `Equals(CPU._addrmode_register, 0);
@@ -303,7 +301,7 @@ module test();
 
         CLK_DN;
         #HALF_CLK
-        `Equals(phaseFE, control::PHASE_EXEC) 
+        `Equals(CPU.phaseExec, 1)
         `Equals(CPU.MARLO.Q, 8'h43)
         `Equals(CPU.MARHI.Q, 8'h00)
 
@@ -312,12 +310,12 @@ module test();
         `DISPLAY("phase - fetch")
         CLK_UP;
         #HALF_CLK
-        `Equals(phaseFE, control::PHASE_FETCH)
+        `Equals(CPU.phaseExec, 0)
         `Equals(`RAM(16'h0043), CPU.ram64.UNDEF); //8'hxx); // Should still be XX as we've not entered EXECUTE yet
 
         CLK_DN;
         #HALF_CLK
-        `Equals(phaseFE, control::PHASE_EXEC) 
+        `Equals(CPU.phaseExec, 1)
         `Equals(`RAM(16'h0043), 8'h22);
 
 
@@ -457,10 +455,9 @@ module test();
 
     task DUMP;
             DUMP_OP;
-            `DD " phase=%1s", control::fPhase(CPU.phaseFetch, CPU.phaseExec));
+            `DD " phaseExec=%1d", CPU.phaseExec);
             `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
-            `DD " FE=%1b%1b(%1s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
             `DD " DIRECT=%02x:%02x", CPU.ctrl.direct_address_hi, CPU.ctrl.direct_address_lo);
             `DD " amode=%1s", control::fAddrMode(CPU._addrmode_register), " addbbus=0x%4x", CPU.address_bus);
             `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
