@@ -18,12 +18,12 @@ module test(
     logic _RESET_SWITCH;
     logic system_clk;
     
-    wire _mrPos, _mrNeg, gated_clk;
+    wire _mrPos, _mrNeg, phase_clk;
 
     reset RESET(
         ._RESET_SWITCH,
         .system_clk,
-        .gated_clk(gated_clk),
+        .phase_clk(phase_clk),
 //        ._mrPos,
         ._mrNeg
     );
@@ -40,7 +40,7 @@ module test(
     
     // PC reset is sync with +ve edge of clock
     pc #(.LOG(0))  PC (
-        //.clk(gated_clk),
+        //.clk(phase_clk),
         .clk(system_clk),
         ._MR(_mrNeg),
         ._long_jump(_do_jmp),  // load both
@@ -73,7 +73,7 @@ module test(
         system_clk=1;
         #GAP
         `Equals(_mrNeg, 'x);
-        `Equals(gated_clk, 1);
+        `Equals(phase_clk, 1);
         `Equals(pc, 16'hffff);
     
         $display("RESET HIGH");
@@ -83,13 +83,13 @@ module test(
         // cycle and count
         system_clk=1'b0;
         #GAP
-        `Equals(gated_clk, 1'b0);
+        `Equals(phase_clk, 1'b0);
         `Equals(_mrNeg, 1'b1);
         `Equals(pc, 16'hffff);
 
         system_clk=1;
         #GAP
-        `Equals(gated_clk, 1'b1);
+        `Equals(phase_clk, 1'b1);
         `Equals(_mrNeg, 1'b1);
         `Equals(pc, 16'h0000);
 
@@ -97,20 +97,20 @@ module test(
         // cycle and count
         system_clk=0;
         #GAP
-        `Equals(gated_clk, 1'b0);
+        `Equals(phase_clk, 1'b0);
         `Equals(_mrNeg, 1'b1);
         `Equals(pc, 16'h0000);
 
         system_clk=1;
         #GAP
-        `Equals(gated_clk, 1'b1);
+        `Equals(phase_clk, 1'b1);
         `Equals(_mrNeg, 1'b1);
         `Equals(pc, 16'h0001);
 
         $display("SET RESET LOW => instant _mrNeg=0 without clock");
         _RESET_SWITCH = 0;
         #GAP
-        `Equals(gated_clk, 1'b0); // pulled low by reset
+        `Equals(phase_clk, 1'b0); // pulled low by reset
         `Equals(_mrNeg, 1'b0); // pulled low by reset
         `Equals(pc, 16'h0001);
 
@@ -119,13 +119,13 @@ module test(
         $display("RESET STILL LOW => pc reset on system clock +ve");
         system_clk=0;
         #GAP
-        `Equals(gated_clk, 1'b0);
+        `Equals(phase_clk, 1'b0);
         `Equals(_mrNeg, 1'b0);
         `Equals(pc, 16'h0001);
 
         system_clk=1;
         #GAP
-        `Equals(gated_clk, 1'b0);
+        `Equals(phase_clk, 1'b0);
         `Equals(_mrNeg, 1'b0);
         `Equals(pc, 16'h0000);
 
@@ -134,13 +134,13 @@ module test(
         $display("RESET STILL LOW => no counting");
         system_clk=0;
         #GAP
-        `Equals(gated_clk, 1'b0);
+        `Equals(phase_clk, 1'b0);
         `Equals(_mrNeg, 1'b0);
         `Equals(pc, 16'h0000);
 
         system_clk=1;
         #GAP
-        `Equals(gated_clk, 1'b0);
+        `Equals(phase_clk, 1'b0);
         `Equals(_mrNeg, 1'b0);
         `Equals(pc, 16'h0000);
 
@@ -150,13 +150,13 @@ module test(
         _RESET_SWITCH = 1;
         system_clk=0;
         #GAP
-        `Equals(gated_clk, 1'b0);
+        `Equals(phase_clk, 1'b0);
         `Equals(_mrNeg, 1'b0);
         `Equals(pc, 16'h0000);
 
         system_clk=1;
         #GAP
-        `Equals(gated_clk, 1'b1);
+        `Equals(phase_clk, 1'b1);
         `Equals(_mrNeg, 1'b0);
         `Equals(pc, 16'h0000);
 
@@ -165,13 +165,13 @@ module test(
         $display("_mrNeg goes high and Counting starts");
         system_clk=0;
         #GAP
-        `Equals(gated_clk, 1'b0);
+        `Equals(phase_clk, 1'b0);
         `Equals(_mrNeg, 1'b1);
         `Equals(pc, 16'h0000);
 
         system_clk=1;
         #GAP
-        `Equals(gated_clk, 1'b1);
+        `Equals(phase_clk, 1'b1);
         `Equals(_mrNeg, 1'b1);
         `Equals(pc, 16'h0001);
 

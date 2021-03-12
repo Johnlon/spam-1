@@ -8,9 +8,8 @@ module reset(
     input _RESET_SWITCH, // HOLD LO FOR RESET
     input system_clk,
     
-//    output _mrPos,  // clears on the 1st positive edge after _RESET_SWITH is released
     output _mrNeg,    // stays low for two cycles - clears later - goes high on the 1st negative edge after the positive edge that cleared _mrPos
-    output gated_clk  // gated clock - clock stops in low state during reset - but is this useful??
+    output phase_clk  // phase clock - stops in low state during reset - so stops in the fetch phase which is the required initial phase
 );
     parameter LOG=0;
 
@@ -39,7 +38,7 @@ module reset(
           ._Q()
         );
 
-    assign #(10) gated_clk = system_clk & _mrPos; // AND GATE
+    assign #(10) phase_clk = system_clk & _mrPos; // AND GATE
 
 endmodule 
  

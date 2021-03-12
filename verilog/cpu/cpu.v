@@ -54,60 +54,20 @@ module cpu(
     wire _flag_do;
     wire _set_flags;
 
-    wire _mrPC, gated_clk;
-
-    always @(pc_addr) begin
-        if ($isunknown(pc_addr)) begin // just check leftmost but as this is part of the op and is mandatory
-            $display ("%9t ", $time,  "CPU HALT");
-            $error("CPU : ERROR - UNKNOWN PC %4h", pc_addr); 
-            `FINISH_AND_RETURN(1);
-        end
-        if ($isunknown(ctrl.rom_6.Mem[pc_addr][7])) begin // just check leftmost but as this is part of the op and is mandatory
-            $display ("%9t ", $time,  "CPU HALT");
-            $error("CPU : END OF PROGRAM - NO CODE FOUND AT PC %4h = %8b", pc_addr, ctrl.rom_6.Mem[pc_addr][7]); 
-//            `FINISH_AND_RETURN(1);
-        end
-    end
-    always @(negedge system_clk) begin
-        if (_mrPC && $isunknown(alu_result_bus)) begin // just check leftmost but as this is part of the op and is mandatory
-            $display ("%9t ", $time,  "CPU HALT");
-            $error("CPU : ERROR - ALU RESULT BUS UNDEFINED AT EXECUTE = %8b", alu_result_bus); 
-            `FINISH_AND_RETURN(1);
-        end
-    end
-
-
-    int halt_code;
-    always @(negedge system_clk) begin
-        if (_halt_in == 0) begin
-            halt_code = (CPU.MARHI.Q  << 8) + CPU.MARLO.Q;
-
-            // leave space around the code as Verification.scala looks for them to extract the value
-            $display("----------------------------- HALTED %1d h:%04x ---------------------------", halt_code, 16'(halt_code));
-            $finish();
-        end
-    end
-
-
+    wire _mrPC, phase_clk;
 
     reset RESET(
         .system_clk,
         ._RESET_SWITCH,
-        .gated_clk(gated_clk),
+        .phase_clk(phase_clk),
         //._mrPos(_mr),
         ._mrNeg(_mrPC)
     );
 
 
     // CLOCK ===================================================================================
-    //localparam T=1000;
 
-    wire #8 _clk = ! gated_clk; // GATE + PD
-
-
-    wire  phaseFetch = gated_clk; // FETCH ON HIGH
-    wire _phaseExec = gated_clk;  // EXEC ON LOW
-    wire  #(10) _phaseFetch = !phaseFetch;
+    wire _phaseExec = phase_clk;  // EXEC ON LOW
     wire  #(10) phaseExec = !_phaseExec;
     
 
@@ -177,6 +137,7 @@ module cpu(
 
     // MAR =============================================================================================
 // verilator lint_off PINMISSING
+    // clocks data in as we enter phase exec - on the +ve edge - so use positive logic phaseExec here
     hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
     hct74377 #(.LOG(0)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
 // verilator lint_on PINMISSING
@@ -210,15 +171,8 @@ module cpu(
         ._flag_ne(_flag_ne_out)
     );
 
-    //wire #(9) gated_flags_clk = phaseExec & (!_set_flags);
-    // TODO FIXME: should flags set if the instruction doesn't exec? NO
     wire gated_flags_clk;
     nor #(9) gating( gated_flags_clk , _phaseExec , _set_flags);
-
-    /*always @*  begin
-        $display("!!!! gated_flags_clk %b  = _set_flags %b | phaseExec %b" , gated_flags_clk , _set_flags , phaseExec);
-    end
-*/
 
     wire [7:0] alu_flags_czonGLEN = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
 
@@ -246,10 +200,10 @@ module cpu(
     end
 
 
-    // !!!!!!! NOTE THAT THIS USES THE phaseExec AS CLOCK !!!
+    // clocks data in as we enter phase exec - on the +ve edge - so use positive logic phaseExec here
     syncRegisterFile #(.LOG(LOG)) regFile(
-        .clk(phaseExec), // only on the execute phase edge (clock going low) otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
-        ._wr_en(_gated_regfile_in), // only enabled on the execute phase (low clock)
+        .clk(phaseExec), // only on the execute phase edge otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
+        ._wr_en(_gated_regfile_in), // only enabled for input during the execute phase 
         .wr_addr(regfile_wr_addr),
         .wr_data(alu_result_bus),
         
@@ -278,5 +232,40 @@ module cpu(
 
     hct74245 uart_alubus_buf(.A(alu_result_bus), .B(uart_d), .nOE(_uart_in), .dir(1'b1));
     hct74245 uart_abus_buf(.A(uart_d), .B(abus), .nOE(_adev_uart), .dir(1'b1));
+
+
+
+    always @(pc_addr) begin
+        if ($isunknown(pc_addr)) begin // just check leftmost but as this is part of the op and is mandatory
+            $display ("%9t ", $time,  "CPU HALT");
+            $error("CPU : ERROR - UNKNOWN PC %4h", pc_addr); 
+            `FINISH_AND_RETURN(1);
+        end
+        if ($isunknown(ctrl.rom_6.Mem[pc_addr][7])) begin // just check leftmost but as this is part of the op and is mandatory
+            $display ("%9t ", $time,  "CPU HALT");
+            $error("CPU : END OF PROGRAM - NO CODE FOUND AT PC %4h = %8b", pc_addr, ctrl.rom_6.Mem[pc_addr][7]); 
+//            `FINISH_AND_RETURN(1);
+        end
+    end
+    always @(negedge system_clk) begin
+        if (_mrPC && $isunknown(alu_result_bus)) begin // just check leftmost but as this is part of the op and is mandatory
+            $display ("%9t ", $time,  "CPU HALT");
+            $error("CPU : ERROR - ALU RESULT BUS UNDEFINED AT EXECUTE = %8b", alu_result_bus); 
+            `FINISH_AND_RETURN(1);
+        end
+    end
+
+
+    int halt_code;
+    always @(negedge system_clk) begin
+        if (_halt_in == 0) begin
+            halt_code = (CPU.MARHI.Q  << 8) + CPU.MARLO.Q;
+
+            // leave space around the code as Verification.scala looks for them to extract the value
+            $display("----------------------------- HALTED %1d h:%04x ---------------------------", halt_code, 16'(halt_code));
+            $finish();
+        end
+    end
+
 
 endmodule : cpu
