@@ -45,3 +45,9 @@ module reset(
 
 endmodule 
  
+an-out as this attached to led
+    nand #(10) nand3(_phase_exec , led_phase_exec); 
+    nand #(10) nand4(phase_exec , _phase_exec); 
+
+endmodule 
+ 
