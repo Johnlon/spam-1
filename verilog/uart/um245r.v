@@ -260,7 +260,7 @@ initial
         if (fControl == `NULL) // If error opening file 
         begin
                 $error("%9t ERROR ", $time, "failed opening file %s", uart_control_file);
-                $finish_and_return(1);
+                `FINISH_AND_RETURN(1);
                 disable file_block; // Just quit 
         end
 
@@ -272,7 +272,7 @@ initial
         if (fOut == `NULL) // If error opening file 
         begin
                 $error("%9t ERROR ", $time, "failed opening file %s", uart_out_file);
-                $finish_and_return(1);
+                `FINISH_AND_RETURN(1);
                 disable file_block; // Just quit 
         end
 

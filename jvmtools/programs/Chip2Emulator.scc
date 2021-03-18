@@ -1,8 +1,8 @@
 program {
-    
+
     fun main() {
         uint16 FONT_ADDR = $50;
-        uint16 PC_INIT=$200;
+        uint16 PC_INIT = $200;
 
         uint16 GOTO_INIT_STATE = 0;
         uint16 GOTO_SETX_STATE = 1;  // switch state
@@ -18,55 +18,55 @@ program {
         uint16 DO_CENTRE = 16;
 
         // 16 x 8 bits
-        var registers = [ 16: [] ];
+        var registers = [16: []];
 
         // 16 x 16 bits
-        var stack = [ 32: [] ];
+        var stack = [32: []];
 
         uint16 FontMemAddress = $50;
         uint16 FontCharWidth = 5;
 
         var memory = [
-            // fonts : 10 rows = 10 digits, each row of 5 bytes defines the 5 rows of 8 pixels wide
-            $50 : [
-                $F0 $90 $90 $90 $F0       
-                $20 $60 $20 $20 $70      
-                $F0 $10 $F0 $80 $F0     
-                $F0 $10 $F0 $10 $F0    
-                $90 $90 $F0 $10 $10   
-                $F0 $80 $F0 $10 $F0  
-                $F0 $80 $F0 $90 $F0       
-                $F0 $10 $20 $40 $40      
-                $F0 $90 $F0 $90 $F0     
-                $F0 $90 $F0 $10 $F0    
-                $F0 $90 $F0 $90 $90   
-                $E0 $90 $E0 $90 $E0  
-                $F0 $80 $80 $80 $F0      
-                $E0 $90 $90 $90 $E0     
-                $F0 $80 $F0 $80 $F0    
-                $F0 $80 $F0 $80 $80   
-            ]
+                // fonts : 10 rows = 10 digits, each row of 5 bytes defines the 5 rows of 8 pixels wide
+                $50  : [
+                        $F0 $90 $90 $90 $F0
+                        $20 $60 $20 $20 $70
+                        $F0 $10 $F0 $80 $F0
+                        $F0 $10 $F0 $10 $F0
+                        $90 $90 $F0 $10 $10
+                        $F0 $80 $F0 $10 $F0
+                        $F0 $80 $F0 $90 $F0
+                        $F0 $10 $20 $40 $40
+                        $F0 $90 $F0 $90 $F0
+                        $F0 $90 $F0 $10 $F0
+                        $F0 $90 $F0 $90 $90
+                        $E0 $90 $E0 $90 $E0
+                        $F0 $80 $80 $80 $F0
+                        $E0 $90 $90 $90 $E0
+                        $F0 $80 $F0 $80 $F0
+                        $F0 $80 $F0 $80 $80
+                ]
 
-            // program
-            // $200 : [file("/home/john/OneDrive/github/johnlon/chip-8/src/main/resources/chip8/roms/IBM_Logo.ch8")]
-            $200 : [file(systemProp("CHIP8_FILENAME"))]
+                // program
+                // $200 : [file("/home/john/OneDrive/github/johnlon/chip-8/src/main/resources/chip8/roms/IBM_Logo.ch8")]
+                $200 : [file(systemProp("CHIP8_FILENAME"))]
 
-            // memory limit - put a zero explicitly at posn - this has same effect as as "$FFF=[]"
-            $0FFF: [0] // 4k
+                // memory limit - put a zero explicitly at posn - this has same effect as as "$FFF=[]"
+                $0FFF: [0] // 4k
         ];
 
         uint16 pc = PC_INIT;
         uint16 index = 0;
-        uint16 stackPtr  = 0;
+        uint16 stackPtr = 0;
 
         // reset by sending this twice
         putchar(GOTO_INIT_STATE)
         putchar(GOTO_INIT_STATE)
 
-        while (true)  {
+        while (true) {
 
             uint16 opcodehi = memory[pc];
-            uint16 opcodelo = memory[pc+1];
+            uint16 opcodelo = memory[pc + 1];
 
             uint16 opcode = (opcodehi << 8) + opcodelo;
 
@@ -83,125 +83,134 @@ program {
             if (opcode == $00e0) {
                 // draw
                 putchar(DO_CLEAR)
-            }
-            else if (opcode == $00ee) { // DONE
-               // return by pulling address off stack
+
+            } else if (opcode == $00ee) { // DONE
+                // ReturnSub
+                // return by pulling address off stack
                 stackPtr = stackPtr - 1;
                 uint16 addrLo = stack[stackPtr];
                 stackPtr = stackPtr - 1;
                 uint16 addrHi = stack[stackPtr];
                 pc = (addrHi << 8) + addrLo;
-               //putchar('R')
-            }
-            else if (opcodehi == $00) {
-               // obsolete machine jump
-               //putchar('!')
-            } 
-            else if (N___ == $1000) {  // DONE
-               // jump to nnn
-               //putchar('J')
-               pc = _NNN - 2; // subtract 2 as there is an auto increment at end of loop
-               putchar(GOTO_INIT_STATE)
-            }
-            else if (N___ == $3000) {  // DONE
-               // skip if X eq N
 
-               if (registers[_X__] == __NN) {
-                pc = pc + 2;
-               }
+            } else if (opcodehi == $00) {
+                // obsolete machine jump
 
-               putchar(GOTO_INIT_STATE)
-            }
-            else if (N___ == $4000) {  // DONE
-               // skip if X ne N
+            } else if (N___ == $1000) {  // DONE
+                // jump to nnn
+                pc = _NNN - 2; // subtract 2 as there is an auto increment at end of loop
+                putchar(GOTO_INIT_STATE)
+            } else if (N___ == $2000) {  // DONE
+                // done using test_opcode.ch8
+                // store into stack
+                uint16 addrLo = pc & $ff;
+                uint16 addrHi = pc >> 8;
 
-               if (registers[_X__] != __NN) {
-                pc = pc + 2;
-               }
+                stack[stackPtr] = addrHi;
+                stackPtr = stackPtr + 1;
+                stack[stackPtr] = addrLo;
+                stackPtr = stackPtr + 1;
 
-               putchar(GOTO_INIT_STATE)
-            }
-            else if (N___ == $5000) {  // DONE
-               // skip if X eq Y
-               if (___N != 0) {
-                halt(opcode)
-               }
-               if (registers[_X__] == registers[__Y_]) {
-                pc = pc + 2;
-               }
+                // do jump
+                pc = _NNN - 2;
 
-               putchar(GOTO_INIT_STATE)
-            }
-            else if (N___ == $6000) { // DONE
-               registers[_X__] = __NN;
-            } 
-            else if (N___ == $7000) { // DONE
-               registers[_X__] = registers[_X__] + __NN;
-            }
-            else if (N___ == $8000) {
-               if (___N == 1) {
+            } else if (N___ == $3000) {  // DONE
+                // skip if X eq N
+
+                if (registers[_X__] == __NN) {
+                    pc = pc + 2;
+                }
+
+                putchar(GOTO_INIT_STATE)
+
+            } else if (N___ == $4000) {  // DONE
+                // skip if X ne N
+
+                if (registers[_X__] != __NN) {
+                    pc = pc + 2;
+                }
+
+                putchar(GOTO_INIT_STATE)
+
+            } else if (N___ == $5000) {  // DONE
+                // skip if X eq Y
+                if (___N != 0) {
+                    halt(opcode)
+                }
+                if (registers[_X__] == registers[__Y_]) {
+                    pc = pc + 2;
+                }
+
+                putchar(GOTO_INIT_STATE)
+
+            } else if (N___ == $6000) { // DONE
+                registers[_X__] = __NN;
+            } else if (N___ == $7000) { // DONE
+                registers[_X__] = registers[_X__] + __NN;
+            } else if (N___ == $8000) {
+                if (___N == 0) {
+                    registers[_X__] = y;
+                } else if (___N == 1) {
                     registers[_X__] = x | y;
-               } else {
-                   if (___N == 2) {
+                } else if (___N == 2) {
                     registers[_X__] = x & y;
-                   }
-                   else {
-                       if (___N == 3) {
-                           registers[_X__] = x ^ y;
-                       } else {
-                           if (___N == 5) {
+                } else if (___N == 3) {
+                    registers[_X__] = x ^ y;
+                } else if (___N == 4) {
+                    //AddXPlusYCarry
+                    uint16 result = x + y;
+                    registers[_X__] = result & $ff;
+                    if (result > $ff) {
+                        registers[15] = 1;
+                    } else {
+                        registers[15] = 0;
+                    }
+                } else if (___N == 5) {
+                    // XEqXMinusY
+                    if (x < y) {
+                        registers[15] = 0;
+                    } else {
+                        registers[15] = 1;
+                    }
+                    registers[_X__] = x - y;
+                } else if (___N == 6) {
+                    if ((x & 1) != 0) {
+                        registers[15] = 1;
+                    } else {
+                        registers[15] = 0;
+                    }
+                    registers[_X__] = x >> 1;
+                } else if (___N == 7) {
+                    if (x > y) {
+                        registers[15] = 0;
+                    } else {
+                        registers[15] = 1;
+                    }
+                    registers[_X__] = y - x;
 
-                             // XEqXMinusY
-                             if (x < y) {
-                                registers[15] = 0;
-                             } else {
-                                registers[15] = 1;
-                             }
-                             registers[_X__] = x - y;
+                } else if (___N == $e) {
+                    if ((x & % 10000000) != 0) {
+                        registers[15] = 1;
+                    } else {
+                        registers[15] = 0;
+                    }
+                    registers[_X__] = x << 1;
+                }
+            } else if (N___ == $9000) {
+                // ADDED VIA test_opcode.ch8
+                if (___N == 0) {
+                    // SkipIfXNeY(opS, _X__, __Y_)
+                    if (x != y) {
+                        pc = pc + 2;
+                    }
+                }
+            } else if (N___ == $A000) { // DONE
+                // set index
+                //putchar('I')
+                index = _NNN;
 
-                           } else {
-                               if (___N == 6) {
-                                    if ((x & 1) != 0) {
-                                        registers[15] = 1;
-                                    } else {
-                                        registers[15] = 0;
-                                    }
-                                    registers[_X__] = x >> 1;
-                               } else {
-                                   if (___N == 7) {
-                                     // XEqYMinusX
-                                     if (y < x) {
-                                        registers[15] = 0;
-                                     } else {
-                                        registers[15] = 1;
-                                     }
-                                     registers[_X__] = y - x;
-
-                                   } else {
-                                     if (___N == $e) {
-                                        if ((x & %10000000) != 0) {
-                                            registers[15] = 1;
-                                        } else {
-                                            registers[15] = 0;
-                                        }
-                                        registers[_X__] = x << 1;
-                                     } else {
-                                        halt(opcode)
-                                     }
-                                   }
-                               }
-                           }
-                       }
-                   }
-               }
-            }
-            else if (N___ == $A000) { // DONE
-               // set index
-               //putchar('I')
-               index = _NNN;
-            }
-            else if (N___ == $D000) {
-               // draw glyph identified by Index reg at position X/Y with height N
+            } else if (N___ == $D000) {
+                // draw glyph identified by Index reg at position X/Y with height N
 
                 uint16 xpos = registers[_X__];
                 uint16 ypos = registers[__Y_];
@@ -210,39 +219,72 @@ program {
 
                 while (true) { // TODO - make while take an expr
 
-                   if (ycount >= ___N) {
-                     break
-                   }
+                    if (ycount >= ___N) {
+                        break
+                    }
 
-                   putchar(GOTO_SETX_STATE)
-                   putchar(xpos)
+                    putchar(GOTO_SETX_STATE)
+                    putchar(xpos)
 
-                   putchar(GOTO_SETY_STATE)
-                   putchar(ypos + ycount)
+                    putchar(GOTO_SETY_STATE)
+                    putchar(ypos + ycount)
 
-                   uint16 glyphRow = memory[index+ycount];
-                   putchar(GOTO_DRAW_BYTE_STATE)
-                   putchar(glyphRow)
+                    uint16 glyphRow = memory[index + ycount];
+                    putchar(GOTO_DRAW_BYTE_STATE)
+                    putchar(glyphRow)
 
-                   ycount =  ycount + 1;
+                    ycount = ycount + 1;
                 }
-            }
-            else if (N___ == $F000) {
+
+            } else if (N___ == $F000) {
                 if (__NN == $29) {
                     uint16 ch = registers[_X__];
                     uint16 offset = 0;
 
                     // !!!!! NEED TO IMPL MULTIPLY => LOOP FOR NOW
                     //uint16 offset = ch * FontCharWidth;
-                    while (ch > 0 ) {
+                    while (ch > 0) {
                         offset = offset + FontCharWidth;
                         ch = ch - 1;
                     }
 
                     uint16 locn = FontMemAddress + offset;
                     index = locn;
+
+                } else if (__NN == $33) {
+                    uint16 i100 = x / 100;
+                    uint16 i10 = (x / 10) % 10;
+                    uint16 i1 = x % 10;
+
+                    memory[index] = i100;
+                    memory[index+1] = i10;
+                    memory[index+2] = i1;
                 } else if (__NN == $55) {
-//StoreRegisters(opS, _X__) <<<< TODO
+                    // broken?
+                    uint16 i = 0;
+                    while (true) {
+                        registers[i] = memory[index + i];
+                        i = i + 1;
+                        if (i > x) {
+                            break
+                        }
+                    }
+                    // NB THERE IS AN OPTIONAL LEGACY STEP HERE THAT SOME PROGS MIGHT RELY ON
+                    //       index = if (LoadStoreBehaviour == Legacy) (st.index + xReg.ubyte + 1) else st.index
+
+                } else if (__NN == $65) {
+                    // broken?
+                    uint16 i = 0;
+                    while (true) {
+                        memory[index + i] = registers[i];
+                        i = i + 1;
+                        if (i > x) {
+                            break
+                        }
+                    }
+                    // NB THERE IS AN OPTIONAL LEGACY STEP HERE THAT SOME PROGS MIGHT RELY ON
+                    //       index = if (LoadStoreBehaviour == Legacy) (st.index + xReg.ubyte + 1) else st.index
+
                 } else {
                     halt(opcode)
                 }
@@ -252,9 +294,9 @@ program {
 
             pc = pc + 2;
         }
-        
 
-       // uint16 pc_lo= >:PC_INIT
+
+        // uint16 pc_lo= >:PC_INIT
 
         //uint16 pc_hi= <:PC_INIT
 

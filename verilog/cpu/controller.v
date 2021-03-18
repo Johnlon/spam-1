@@ -34,17 +34,17 @@ module controller(
 `define OUT_TDEV_SEL(DNAME) output _``DNAME``_in
 
     `CONTROL_WIRES(OUT, `COMMA),
-    output [7:0] direct_address_lo, direct_address_hi,
-    output [7:0] immed8,
     output [4:0] alu_op,
     output [2:0] bbus_dev, abus_dev,
     output [3:0] targ_dev,
     output _set_flags
 );
 
+    wire [7:0] direct_address_lo, direct_address_hi;
     wire _addrmode_direct;
 
     // ROM IMMEDIATE TO BBUS AND ROM DIRECT ADDRESSING TO ADDRESSBUS OUTPUT 
+    wire [7:0] immed8;
 
     hct74245 rom_bbus_buf(.A(immed8), .B(bbus), .nOE(_bdev_immed), .dir(1'b1));  // DONE
     hct74245 rom_addbbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]),  .nOE(_addrmode_direct), .dir(1'b1));  // DONE

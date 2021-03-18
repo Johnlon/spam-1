@@ -538,6 +538,26 @@ class SpamCCTest {
   }
 
   @Test
+  def varScopeVarsWithIfBlock(): Unit = {
+
+    val lines =
+      """
+        |fun main(x) {
+        | uint16 a = 0;
+        | if (a == 0) {
+        |     uint16 thevar = 0;
+        | }
+        | else if (a == 1) {
+        |     uint16 thevar = 1;
+        | }
+        |}
+        |""".stripMargin
+
+    compile(lines, verbose = true)
+    // no other assertion yet
+  }
+
+  @Test
   def varEqVar(): Unit = {
 
     val lines =
@@ -792,6 +812,82 @@ class SpamCCTest {
     compile(lines, verbose = true, outputCheck = {
       str =>
         checkTransmittedL('h', str, List("01", "00", "00", "01", "01"))
+    })
+  }
+
+  @Test
+  def valEqVarAdd(): Unit = {
+
+    val lines =
+      """
+        |fun main() {
+        | uint16 a='a';
+        | uint16 c = a + 2;
+        | putchar(c)
+        |}
+        |""".stripMargin
+
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+        checkTransmittedL('c', str, List("c"))
+    })
+  }
+
+  @Test
+  def valEqVarMinus(): Unit = {
+
+    val lines =
+      """
+        |fun main() {
+        | uint16 c='c';
+        | uint16 a = c - 2;
+        | putchar(c)
+        |}
+        |""".stripMargin
+
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+        checkTransmittedL('c', str, List("a"))
+    })
+  }
+
+  @Test
+  def valEqVarTimes(): Unit = {
+
+    // TIMES NOT IMPLEMENTED YET
+    val lines =
+      """
+        |fun main() {
+        | uint16 s = 'a' / 2; // const expr
+        | uint16 a = s * 2; // alu expr
+        | putchar(c)
+        |}
+        |""".stripMargin
+
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+        checkTransmittedL('c', str, List("a"))
+    })
+  }
+
+  @Test
+  def valEqVarDivide(): Unit = {
+
+    // IMPLEMENTED BUT NOT WORKING
+    val lines =
+      """
+        |fun main() {
+        | uint16 a=8; // const expr
+        |
+        | uint16 res = a / 3; // alu expr
+        | putchar(res)
+        |}
+        |""".stripMargin
+
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+        val expected = "2"
+        checkTransmittedL('d', str, List(expected))
     })
   }
 

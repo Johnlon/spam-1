@@ -168,41 +168,18 @@ endfunction
     task CLK_DN; 
     begin
         opcount ++;
-        if (LOG) $display("\n%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
-        if (LOG) $display("\n%9t", $time, " EXECUTING ..."); 
-        //$display("\n%9t", $time, " DECOMPILE %s", CPU.ctrl.decode(1).display()); 
-        //DUMP; 
+        if (LOG) begin 
+            $display("\n%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
+            $display("\n%9t", $time, " EXECUTING ..."); 
+
+
+            //$display("\n%9t", $time, " DECOMPILE %s", CPU.ctrl.decode(1).display()); 
+            //DUMP; 
         
-        if (LOG) $display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
-/*
+            $display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
+        end
+       // if (LOG) 
         $display("%9t", $time, " DECOMPILE ",
-            " PC=%-5d  ", pc,
-            " op=%-10s",  aluopName(CPU.ctrl.instruction[47:43]),
-            " tdev=%-8s", control::tdevname(CPU.ctrl.instruction[42:39]),
-            " adev=%-8s", control::adevname(CPU.ctrl.instruction[38:36]),
-            " bdev=%-8s", control::bdevname(CPU.ctrl.instruction[35:33]),
-            " cond=%-2s ", control::condname(CPU.ctrl.instruction[32:29]),
-            " set=%s ", CPU.ctrl.instruction[28] ? "N" : "Y",
-            " mode=%3s ", control::amode(CPU.ctrl.instruction[24]),
-            " addr=%02x:%02x ", CPU.ctrl.instruction[23:17], CPU.ctrl.instruction[16:8],
-            " immed=%02x (dec %d) ", CPU.ctrl.instruction[7:0], CPU.ctrl.instruction[7:0]
-        );
-*/
-/*
-        $display("%9t", $time, " DECOMPILE ",
-            " %-5d : ", pc,
-            " %-8s = ", control::tdevname(CPU.ctrl.instruction[42:39]),
-            " %-8s", control::adevname(CPU.ctrl.instruction[38:36]),
-            " %-10s",  aluopName(CPU.ctrl.instruction[47:43]),
-            " %-8s", control::bdevname(CPU.ctrl.instruction[35:33]),
-            " %-2s ", control::condname(CPU.ctrl.instruction[32:29]),
-            " %s ", CPU.ctrl.instruction[28] ? " " : "S",
-            " %3s ", control::amode(CPU.ctrl.instruction[24]),
-            " a:%02x:%02x ", CPU.ctrl.instruction[23:17], CPU.ctrl.instruction[16:8],
-            " i:%02x (dec %d) ", CPU.ctrl.instruction[7:0], CPU.ctrl.instruction[7:0]
-        );
-*/
-        if (LOG) $display("%9t", $time, " DECOMPILE ",
             " PC=%-5d : ", pc,
             " %-1s = ", control::tdevname(CPU.ctrl.instruction[42:39]),
             " %1s", control::adevname(CPU.ctrl.instruction[38:36]),
@@ -214,6 +191,17 @@ endfunction
             " addr:%02x:%02x ", CPU.ctrl.instruction[23:16], CPU.ctrl.instruction[15:8],
             " imm:%02x (dec %d) ", CPU.ctrl.instruction[7:0], CPU.ctrl.instruction[7:0]
         );
+
+        $display("%09t", $time, " RAM divisorL:H %02x:%02x dividendL:H %02x:%02x remainderL:H%02x:%02x resultL:H", 
+                CPU.ram64.Mem[6],
+                CPU.ram64.Mem[7],
+                CPU.ram64.Mem[8],
+                CPU.ram64.Mem[9],
+                CPU.ram64.Mem[10],
+                CPU.ram64.Mem[11],
+                CPU.ram64.Mem[12],
+                CPU.ram64.Mem[13]
+            );
 
         if (LOG) $display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
         clk = 0;
@@ -310,20 +298,6 @@ endfunction
             DUMP_OP;
             `DD " phase=%1b", CPU.phaseExec);
             `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
-    //        `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
-   //         `DD " FE=%1b%1b(%1s)", CPU.phaseFetch, CPU.phaseExec, control::fPhase(CPU.phaseFetch, CPU.phaseExec));
-   //         `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
-   //         `DD " DIRECT=%02x:%02x", CPU.direct_address_hi, CPU.direct_address_lo);
-   //         `DD " _amode=%2s", control::fAddrMode(CPU._addrmode_register, CPU._addrmode_direct), " (%02b)", {CPU._addrmode_register, CPU._addrmode_direct});
-   //         `DD " immed8=%08b", CPU.immed8);
-   //         `DD " address_bus=0x%4x (%d) ", CPU.address_bus, CPU.address_bus);
-   //         `DD " ram=%08b", CPU.ram64.D);
-   //         `DD " tdev=%b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
-   //             " adev=%b(%s)", CPU.abus_dev, control::adevname(CPU.abus_dev),
-   //             " bdev=%b(%s)", CPU.bbus_dev,control::bdevname(CPU.bbus_dev),
-   //             " alu_op=%b(%1s)", CPU.alu_op, aluopName(CPU.alu_op)
-   //         );            
-   //         `DD " condition=%02d(%1s) _do_exec=%b", CPU.ctrl.condition, control::condname(CPU.ctrl.condition), CPU.ctrl._do_exec);
             `DD " address_bus=0x%4x (%d) ", CPU.address_bus, CPU.address_bus);
             `DD " abus=%8b(%d) bbus=%8b(%d) alu_result_bus=%8b(%d)", CPU.abus, CPU.abus, CPU.bbus, CPU.bbus, CPU.alu_result_bus, CPU.alu_result_bus);
             `DD " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU._registered_flags_czonGLEN, CPU.gated_flags_clk);
@@ -340,23 +314,6 @@ endfunction
 //            `DD " WIRES ", `CONTROL_WIRES(LOG, `COMMA));
     endtask 
 
-
-/*
-    if (0) always @* begin
-        $display ("%9t ", $time,  "MON     ",
-                 "rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
-                 " _amode=%-2s", control::fAddrMode(_addrmode_register, _addrmode_direct),
-                 " address_bus=0x%4x", address_bus,
-                 " FE=%-6s (%1b%1b)", control::fPhase(phaseFetch, phaseExec), phaseFetch, phaseExec,
-                 " bbus=%8b abus=%8b alu_result_bus=%8b", bbus, abus, alu_result_bus,
-                 " bdev=%04b adev=%04b targ=%05b alu_op=%05b (%1s)", bbus_dev, abus_dev, targ_dev, alu_op, aluopName(alu_op),
-                 " tsel=%32b ", tsel,
-                 " PC=%02h:%02h", PCHI, PCLO,
-                 "     : %1s", label
-                 );
-    end
-
-*/
 
     always @* 
         if (_RESET_SWITCH)  

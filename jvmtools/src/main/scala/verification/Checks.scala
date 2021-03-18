@@ -48,7 +48,8 @@ object Checks {
   }
 
   private def extractTransmitted(selector: Char, str: Seq[String]): Seq[String] = {
-    str.filter(_.contains(s"TRANSMITTING")).map(s => s.replaceAll(s".*\\[$selector:", "").replaceAll("].*", ""))
+    val transmitted = str.filter(_.contains(s"TRANSMITTING"))
+    transmitted.map(s => s.replaceAll(s".*\\[$selector:", "").replaceAll("].*", ""))
   }
 
 }

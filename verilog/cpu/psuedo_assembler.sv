@@ -39,6 +39,7 @@
                     ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, AMODE, IMMED, ADDRESS); \
         CODE_NUM[LOCN] = TEMP_STRING;
 
+// in the same order as the instruction layout
 `define INSTRUCTION_N(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
     `INSTRUCTION_NN(LOCN, \
          cast.to5(ALUOP), \
@@ -51,6 +52,7 @@
          cast.to16(ADDRESS), \
          cast.to8(IMMED) );
 
+// in the order old scripts use
 `define INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
     `INSTRUCTION_N(LOCN, \
          `toALUOP(ALUOP), \

@@ -34,6 +34,7 @@ hct74377 PCHiTmpReg(
 );
 
 // _do_jump is synchronous and must be held low DURING a +ve clk
+// USE DIODE LOGIC AS NO SPACE ON BOARD NOW
 wire #11 _do_jump = _local_jump & _long_jump;
 
 // see applications here https://www.ti.com/lit/ds/symlink/sn54ls161a-sp.pdf?ts=1599773093420&ref_url=https%253A%252F%252Fwww.google.com%252F

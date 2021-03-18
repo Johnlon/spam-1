@@ -1,6 +1,5 @@
 package scc
 
-import scc.Program.{DivByZeroLabel, MathErrorLabel}
 import scc.Scope.LABEL_NAME_SEPARATOR
 import scc.SpamCC.{TWO_BYTE_STORAGE, split}
 
@@ -93,6 +92,10 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
     // if there is no right side then no need for temporary variables or merge logic
     val optionalExtraForRight = if (otherExpr.nonEmpty) {
       val temporaryVarLabel = parent.assignVarLabel("compoundBlkExpr" + depth + LABEL_NAME_SEPARATOR + Scope.nextInt, IsVar16, TWO_BYTE_STORAGE).fqn
+
+      // !!!!!!!
+      // The expr evaluates left to right and results accumulate in the temp var pair and new right hand side args are found in $WORKLO/$WORKHI
+      // !!!!!!!
 
       val assignLeftToTemp =
         List(
@@ -222,33 +225,156 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
 
               )
             case "/" =>
+              // https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
+              val divisorLo = ":" + parent.assignVarLabel("divisor", IsVar16, TWO_BYTE_STORAGE).fqn
+              val divisorHi = s"($divisorLo + 1)"
+
+              val dividendLo = ":" + parent.assignVarLabel("dividend", IsVar16, TWO_BYTE_STORAGE).fqn
+              val dividendHi = s"($dividendLo + 1)"
+
+              val remainderLo = ":" + parent.assignVarLabel("remainder", IsVar16, TWO_BYTE_STORAGE).fqn
+              val remainderHi = s"($remainderLo + 1)"
+
+//              val resultLo = ":" + parent.assignVarLabel("result", IsVar16, TWO_BYTE_STORAGE).fqn
+//              val resultLo = s"$dividendLo"
+//              val resultHi = s"($resultLo + 1)"
+
+              val loopVar = ":" + parent.assignVarLabel("loopVar", IsVar16, TWO_BYTE_STORAGE).fqn
+
+              val divideLabel = parent.fqnLabelPathUnique("divide")
+              val divLoopLabel = parent.fqnLabelPathUnique("divLoop")
+              val skipLabel = parent.fqnLabelPathUnique("skip")
+              val endLabel = parent.fqnLabelPathUnique("end")
+
+              val tmpLabel = parent.fqnLabelPathUnique("tmp")
+
+              // https://www.tutorialspoint.com/8085-program-to-divide-two-16-bit-numbers#:~:text=8085%20has%20no%20division%20operation.&text=To%20perform%2016%2Dbit%20division,stored%20at%20FC02%20and%20FC03.
               List(
-                s"; only allow div by 0-255 for now so abort if RHS > 255",
-                s"NOOP = 0 A_MINUS_B [:$temporaryVarLabel + 1] _S",
-                s"PCHITMP = < $MathErrorLabel",
-                s"PC = > $MathErrorLabel _NE",
 
-                s"; check for divide by zero",
-                s"NOOP = 0 A_MINUS_B [:$temporaryVarLabel] _S", // only do op is HI was 0, result is _Z if both are zero
-                s"PCHITMP = < $DivByZeroLabel",
-                s"PC = > $DivByZeroLabel _EQ",
-                ???, // NEEDTO FIGURE OUT OR ALLOW ONLY @ 8 BIT ?
-                s"; run division loop - MARHI is divisor, MARLO is quotient ",
-                s"MARHI = [:$temporaryVarLabel]",
-                s"MARLO = 0",
+                s"; MINUS OPERATION",
+                s"; setup input params",
+                s"  $TMPREG = [:$temporaryVarLabel]",
+                s"  [$dividendLo] = $TMPREG",
+                s"  $TMPREG = [:$temporaryVarLabel+1]",
+                s"  [$dividendHi] = $TMPREG",
+                s"  [$divisorLo] = $WORKLO",
+                s"  [$divisorHi] = $WORKHI",
+                // s"  [$resultLo] = 0",
+                //s"  [$resultHi] = 0",
 
-                // WORK  OUT THE  DIV LOOP
-                s"$V2 = [:$temporaryVarLabel + 1]",
-                s"$TMPREG = [:$temporaryVarLabel]",
-                s"subtract_loop:",
-                s"[:$temporaryVarLabel] = $TMPREG A_MINUS_B $WORKLO _S",
-                s"PCHITMP = < :done_loop",
-                s"PC = > :done_loop _C",
+                s"$divideLabel:",
+                s"; lda #0 -- NO NEED HERE",
 
-                s"[:$temporaryVarLabel+1] = $TMPREG A_MINUS_B_MINUS_C $WORKHI",
-                s"done_loop:",
+                s"; sta remainder",
+                s"  [$remainderLo] = 0",
 
-              )
+                s"; sta remainder+1",
+                s"  [$remainderHi] = 0",
+
+                s"; ldx 16",
+                s"  [$loopVar] = 16",
+
+                s"$divLoopLabel:",
+
+                s"; asl dividend",
+                s"  $TMPREG = [$dividendLo]",
+                s"  [$dividendLo] = $TMPREG A_LSL_B 1 _S",
+
+                s"; rol dividend+1    rotate in the shifted out bit",
+                s"  PCHITMP = < :${tmpLabel}_1_CARRY",
+                s"  PC      = > :${tmpLabel}_1_CARRY _C",
+                s"  $TMPREG       = [$dividendHi]",
+                s"  [$dividendHi] = $TMPREG A_LSL_B 1 _S ; no carry path",
+                s"  PCHITMP = < :${tmpLabel}_1_DONE",
+                s"  PC      = > :${tmpLabel}_1_DONE",
+                s"  ${tmpLabel}_1_CARRY:",
+                s"  $TMPREG       = [$dividendHi]",
+                s"  $TMPREG       = $TMPREG A_LSL_B 1 _S",
+                s"  [$dividendHi] = $TMPREG A_PLUS_B 1 ; add the carry bit",
+                s"  ${tmpLabel}_1_DONE:",
+
+                s"; rol remainder",
+                s"  PCHITMP = < :${tmpLabel}_2_CARRY",
+                s"  PC      = > :${tmpLabel}_2_CARRY _C",
+                s"  $TMPREG        = [$remainderLo]",
+                s"  [$remainderLo] = $TMPREG A_LSL_B 1 _S ; no carry path",
+                s"  PCHITMP = < :${tmpLabel}_2_DONE",
+                s"  PC      = > :${tmpLabel}_2_DONE",
+                s"  ${tmpLabel}_2_CARRY:",
+                s"  $TMPREG        = [$remainderLo]",
+                s"  $TMPREG        = $TMPREG A_LSL_B 1 _S",
+                s"  [$remainderLo] = $TMPREG A_PLUS_B 1 ; add the carry bit",
+                s"  ${tmpLabel}_2_DONE:",
+
+                s"; rol remainder+1",
+                s"  PCHITMP = < :${tmpLabel}_3_CARRY",
+                s"  PC      = > :${tmpLabel}_3_CARRY _C",
+                s"  $TMPREG        = [$remainderHi]",
+                s"  [$remainderHi] = $TMPREG A_LSL_B 1 _S ; no carry path",
+                s"  PCHITMP = < :${tmpLabel}_3_DONE",
+                s"  PC      = > :${tmpLabel}_3_DONE",
+                s"  ${tmpLabel}_3_CARRY:",
+                s"  $TMPREG        = [$remainderHi]",
+                s"  $TMPREG        = $TMPREG A_LSL_B 1 _S",
+                s"  [$remainderHi] = $TMPREG A_PLUS_B 1 ; add the carry bit",
+                s"  ${tmpLabel}_3_DONE:",
+
+                s"; lda remainder",
+                s"  $TMPREG = [$remainderLo]",
+
+                s"; sec -  set carry - SBC uses the inverse of the carry bit so SEC is actualll clearing carry",
+                s"  ; NOT_USED = $WORKLO B 0 _S ; clear carry << bit not needed as SPAM has dedicate MINUS without carry in",
+
+                s"; sbc divisor",
+                s"  $TMPREG = $TMPREG A_MINUS_B [$divisorLo] _S",
+
+                s"; tay - WORKHI is Y REG",
+                s"  $WORKHI = $TMPREG",
+
+                s"; lda remainder+1",
+                s"  $TMPREG = [$remainderHi]",
+
+                s"; sbc divisor+1",
+                s"  $TMPREG = $TMPREG A_MINUS_B_MINUS_C [$divisorHi] _S",
+
+                s"; bcc skip -  if a cleared carry bit means carry occured, then bcc means skip if carry occured",
+                s"  PCHITMP = < :$skipLabel",
+                s"  PC      = > :$skipLabel _C",
+
+                s"; sta remainder+1",
+                s"  [$remainderHi] = $TMPREG",
+
+                s"; sty remainder",
+                s"  [$remainderLo] = $WORKHI",
+
+                s"; inc result",
+//                s"  $TMPREG     = [$resultLo]",
+//                s"  [$resultLo] = $TMPREG + 1",
+                s"  $TMPREG     = [$dividendLo]",
+                s"  [$dividendLo] = $TMPREG + 1",
+
+                s"$skipLabel:",
+
+                s"; dex",
+                s" $TMPREG    = [$loopVar]",
+                s" [$loopVar] = $TMPREG - 1 _S",
+
+                s"; bne divloop",
+                s"  PCHITMP = < :$endLabel ; equal so continue to next instruction",
+                s"  PC      = > :$endLabel _Z",
+                s"  PCHITMP = < :$divLoopLabel ; not equal so branch",
+                s"  PC      = > :$divLoopLabel",
+
+                s"$endLabel:",
+
+//                s"$TMPREG = [$resultLo]",
+//                s"[:$temporaryVarLabel] = $TMPREG",
+//                s"$TMPREG = [$resultHi]",
+                s"$TMPREG = [$dividendLo]",
+                s"[:$temporaryVarLabel] = $TMPREG",
+                s"$TMPREG = [$dividendHi]",
+                s"[:$temporaryVarLabel+1] = $TMPREG"
+          )
             case x =>
               sys.error("NOT IMPL " + x)
           }
@@ -297,3 +423,63 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
       List((depth, ")"))
 
 }
+
+/*
+Division is based on this : https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
+6502 code below executed on this emulator https://sbc.rictor.org/kowalski.html
+The converted to SPAM-1
+
+Observation : Rotate with carry in would save a lot of lines
+
+	*= $10
+
+divisorL = $0     ;$59 used for hi-byte
+divisorH = $1     ;$59 used for hi-byte
+
+dividendL = $2	  ;$fc used for hi-byte
+dividendH = $3	  ;$fc used for hi-byte
+remainderL = $4	  ;$fe used for hi-byte
+remainderH = $5	  ;$fe used for hi-byte
+
+result = dividendL ;save memory by reusing divident to store the result
+
+	lda #2
+	sta divisorL
+	lda #0
+	sta divisorH
+	LDA #6
+	sta dividendL
+	lda #0
+	sta dividendH
+
+.divide
+	LDA #0	        ;preset remainder to 0
+	sta remainderL
+	sta remainderH
+	ldx #16	        ;repeat for each bit: ...
+;10
+.divloop
+ 	ASL dividendL	;dividend lb & hb*2, msb -> Carry
+	rol dividendH
+	rol remainderL	;remainder lb & hb * 2 + msb from carry
+	rol remainderH
+	lda remainderL
+;15
+	sec
+	sbc divisorL	;substract divisor to see if it fits in
+	tay	        ;lb result -> Y, for we may need it later
+	lda remainderH
+	sbc divisorH
+;20
+	bcc .skip	;if carry=0 then divisor didn't fit in yet
+
+	sta remainderH	;else save substraction result as new remainder,
+	sty remainderL
+	inc result	;and INCrement result cause divisor fit in 1 times
+;24
+.skip
+	DEX
+	bne .divloop
+	LDA result
+	rts
+ */

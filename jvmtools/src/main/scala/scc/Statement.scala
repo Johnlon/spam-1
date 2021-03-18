@@ -354,8 +354,8 @@ case class Halt(haltCode: Int)
 
   override def gen(depth: Int, parent: Scope): List[String] = {
     List(
-      s"MARHI = <: $haltCode",
-      s"MARLO = >: $haltCode",
+      s"MARHI = " + ((haltCode >> 8) & 0xff),
+      s"MARLO = " + (haltCode & 0xff),
       s"HALT = 1"
     )
   }
@@ -653,15 +653,18 @@ case class IfCond(flagToCheck: String,
               """)
     }
 
+    // need separate scopes for the main and else blocks to lexically scope vars
+    val scopeMatch = parent.pushScope("MATCH")
+    val scopeNotMatch = parent.pushScope("NOTMATCH")
     val stmts = content.flatMap {
       b => {
-        b.expr(depth + 1, parent) //.pushName(newName = labelBase))
+        b.expr(depth + 1, scopeMatch) // SHOULD THIS BE this RATHER THAN PARENT - test case two if's in the same function and both declare same var name
       }
     }
 
     val elseStmts = elseContent.flatMap {
       b => {
-        b.expr(depth + 1, parent) //.pushName(newName = labelBase))
+        b.expr(depth + 1, scopeNotMatch) //.pushName(newName = labelBase))
       }
     }
 
