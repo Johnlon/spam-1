@@ -67,16 +67,16 @@ case class Scope private(parent: Scope,
     assert(typ != IsVar16 || data.length==2)
     assert(typ != IsVar8But || data.length==1)
 
-    val label = lookupVarLabel(name)
+    val newFqn = toFqVarPath(name)
 
+    val label = lookupVarLabel(name)
     label.map { existing =>
       if (existing.typ != typ) sys.error(s"cannot redefine '$name' as $typ; it is already defined as a ${existing.typ}' with label ${existing.fqn}")
-      sys.error(s"cannot redefine '$name' it is already defined with label ${existing.fqn} with initial value 0x${existing.address.toHexString}(${existing.address} dec)")
+      sys.error(s"cannot redefine '$name' as label\n ${newFqn} because it is already defined with label\n ${existing.fqn}\n with initial value 0x${existing.address.toHexString}(${existing.address} dec)")
     }
 
-    val fqn = toFqVarPath(name)
     val address = variables.lastOption.map(v => v.address + v.bytes.length).getOrElse(0)
-    val v = Variable(name, fqn, address, data, typ)
+    val v = Variable(name, newFqn, address, data, typ)
     variables.append(v)
     v
   }

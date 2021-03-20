@@ -1,5 +1,6 @@
 package scc
 
+import scc.COUNTER.iii
 import scc.Scope.LABEL_NAME_SEPARATOR
 import scc.SpamCC.{TWO_BYTE_STORAGE, split}
 
@@ -76,8 +77,13 @@ case class BlkConst(konst: Int) extends Block {
 
 case class AluExpr(aluop: String, rhs: Block)
 
+object COUNTER {
+  var iii : Int = 0
+}
 
-case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends Block {
+case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
+  extends Block(nestedName = s"Compound${Scope.nextInt}") {
+
   val description: String = otherExpr.foldLeft(leftExpr.toString) {
     case (acc, b) =>
       s"$acc ${b.aluop} (${b.rhs})"
@@ -109,8 +115,10 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
       val otherStatements: List[String] = otherExpr.reverse.zipWithIndex.flatMap {
         case (AluExpr(op, b), idx) =>
 
-          // clause must drop it's result into WORKLO/WORKHI
-          val expressionValueClause = b.expr(depth + 1, parent)
+          val scope = parent.pushScope("CHAIN"+ idx + "_" + iii)
+          
+          // clause caled here is expected to drop it's result into WORKLO/WORKHI
+          val expressionValueClause = b.expr(depth + 1, scope)
 
           val label = s"; concatenate clause ${idx + 1} to ram [:$temporaryVarLabel] <= $op $b"
 
@@ -130,6 +138,23 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
                 s"$TMPREG = [:$temporaryVarLabel + 1]",
                 s"[:$temporaryVarLabel+1] = $TMPREG A_MINUS_B_MINUS_C $WORKHI"
               )
+            case "*" =>
+              val resultLo = ":" + scope.assignVarLabel("divisor", IsVar16, TWO_BYTE_STORAGE).fqn
+              val resultHi = s"($resultLo + 1)"
+
+              //   val res = ((timeHi(a.l, b.l) + timeLo(a.l, b.h) + timeLo(a.h, b.l)) << 8) + timeLo(a.l, b.l)
+              List(
+                s"$TMPREG = [:$temporaryVarLabel]",
+                s"[:$temporaryVarLabel] = $TMPREG *LO $WORKLO", // units:  lo * lo
+                s"$V2 = $TMPREG *HI $WORKLO", // 256's : lo * lo
+                s"$TMPREG = $TMPREG *LO $WORKHI", // 256's : lo * hi
+                s"$V2 = $V2  + $TMPREG",
+                s"$TMPREG = [:$temporaryVarLabel+1]",
+                s"$TMPREG = $TMPREG *LO $WORKLO _S", // 256's : hi * lo
+                s"$V2 = $V2 + $TMPREG",
+
+                s"[:$temporaryVarLabel+1] = $V2"
+              )
             case op@("&" | "|" | "^" | "~&" | "~") =>
               List(
                 s"$TMPREG = [:$temporaryVarLabel]",
@@ -138,9 +163,9 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
                 s"[:$temporaryVarLabel + 1] = $TMPREG $op $WORKHI"
               )
             case ">>" =>
-              val shiftLoop = parent.fqnLabelPathUnique("shiftLoop")
-              val doShift = parent.fqnLabelPathUnique("doShift")
-              val endLoop = parent.fqnLabelPathUnique("endShiftLoop")
+              val shiftLoop = scope.fqnLabelPathUnique("shiftLoop")
+              val doShift = scope.fqnLabelPathUnique("doShift")
+              val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
 
               // sadly my alu doesn't allow carry-in to the shift operations
               List(
@@ -181,9 +206,9 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
 
               )
             case "<<" =>
-              val shiftLoop = parent.fqnLabelPathUnique("shiftLoop")
-              val doShift = parent.fqnLabelPathUnique("doShift")
-              val endLoop = parent.fqnLabelPathUnique("endShiftLoop")
+              val shiftLoop = scope.fqnLabelPathUnique("shiftLoop")
+              val doShift = scope.fqnLabelPathUnique("doShift")
+              val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
 
               // sadly my alu doesn't allow carry-in to the shift operations
               List(
@@ -226,27 +251,23 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
               )
             case "/" =>
               // https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
-              val divisorLo = ":" + parent.assignVarLabel("divisor", IsVar16, TWO_BYTE_STORAGE).fqn
+              val divisorLo = ":" + scope.assignVarLabel("divisor", IsVar16, TWO_BYTE_STORAGE).fqn
               val divisorHi = s"($divisorLo + 1)"
 
-              val dividendLo = ":" + parent.assignVarLabel("dividend", IsVar16, TWO_BYTE_STORAGE).fqn
+              val dividendLo = ":" + scope.assignVarLabel("dividend", IsVar16, TWO_BYTE_STORAGE).fqn
               val dividendHi = s"($dividendLo + 1)"
 
-              val remainderLo = ":" + parent.assignVarLabel("remainder", IsVar16, TWO_BYTE_STORAGE).fqn
+              val remainderLo = ":" + scope.assignVarLabel("remainder", IsVar16, TWO_BYTE_STORAGE).fqn
               val remainderHi = s"($remainderLo + 1)"
 
-//              val resultLo = ":" + parent.assignVarLabel("result", IsVar16, TWO_BYTE_STORAGE).fqn
-//              val resultLo = s"$dividendLo"
-//              val resultHi = s"($resultLo + 1)"
+              val loopVar = ":" + scope.assignVarLabel("loopVar", IsVar16, TWO_BYTE_STORAGE).fqn
 
-              val loopVar = ":" + parent.assignVarLabel("loopVar", IsVar16, TWO_BYTE_STORAGE).fqn
+              val divideLabel = scope.fqnLabelPathUnique("divide")
+              val divLoopLabel = scope.fqnLabelPathUnique("divLoop")
+              val skipLabel = scope.fqnLabelPathUnique("skip")
+              val endLabel = scope.fqnLabelPathUnique("end")
 
-              val divideLabel = parent.fqnLabelPathUnique("divide")
-              val divLoopLabel = parent.fqnLabelPathUnique("divLoop")
-              val skipLabel = parent.fqnLabelPathUnique("skip")
-              val endLabel = parent.fqnLabelPathUnique("end")
-
-              val tmpLabel = parent.fqnLabelPathUnique("tmp")
+              val tmpLabel = scope.fqnLabelPathUnique("tmp")
 
               // https://www.tutorialspoint.com/8085-program-to-divide-two-16-bit-numbers#:~:text=8085%20has%20no%20division%20operation.&text=To%20perform%2016%2Dbit%20division,stored%20at%20FC02%20and%20FC03.
               List(
@@ -259,8 +280,6 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
                 s"  [$dividendHi] = $TMPREG",
                 s"  [$divisorLo] = $WORKLO",
                 s"  [$divisorHi] = $WORKHI",
-                // s"  [$resultLo] = 0",
-                //s"  [$resultHi] = 0",
 
                 s"$divideLabel:",
                 s"; lda #0 -- NO NEED HERE",
@@ -348,8 +367,6 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
                 s"  [$remainderLo] = $WORKHI",
 
                 s"; inc result",
-//                s"  $TMPREG     = [$resultLo]",
-//                s"  [$resultLo] = $TMPREG + 1",
                 s"  $TMPREG     = [$dividendLo]",
                 s"  [$dividendLo] = $TMPREG + 1",
 
@@ -367,18 +384,16 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr]) extends
 
                 s"$endLabel:",
 
-//                s"$TMPREG = [$resultLo]",
-//                s"[:$temporaryVarLabel] = $TMPREG",
-//                s"$TMPREG = [$resultHi]",
                 s"$TMPREG = [$dividendLo]",
                 s"[:$temporaryVarLabel] = $TMPREG",
                 s"$TMPREG = [$dividendHi]",
                 s"[:$temporaryVarLabel+1] = $TMPREG"
           )
             case x =>
-              sys.error("NOT IMPL " + x)
+              sys.error("NOT IMPL ALU OP '" + x + "'")
           }
           expressionValueClause ++ (label +: thisClause)
+          
       }
 
       val suffix = split(

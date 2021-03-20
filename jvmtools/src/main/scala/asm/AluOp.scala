@@ -42,12 +42,13 @@ object AluOp  {
     object NOT_B extends AluOp(29, "~")
     object A_PLUS_B_BCD extends AluOp(20)
     object A_MINUS_B_BCD extends AluOp(31)
+    object A_TIMES_B extends AluOp(100, "*") // synthesised as 16 bit
 
     def valueOf(id: Int) : AluOp = {
         values.find(c => c.id == id).getOrElse(throw new RuntimeException("unknown AluOp " + id))
     }
     def  valueOfAbbrev(abbrev: String): AluOp = {
-        values.find(c => c.abbrev.equals(abbrev)).getOrElse(throw new RuntimeException("unknown AluOp abbrev '" + abbrev + "'"))
+          values.find(c => c.abbrev.equals(abbrev)).getOrElse(throw new RuntimeException("unknown AluOp abbrev '" + abbrev + "'"))
     }
 
     def values: Seq[AluOp ] = Seq(
@@ -82,6 +83,7 @@ object AluOp  {
           A_NAND_B ,
           NOT_B ,
           A_PLUS_B_BCD ,
-          A_MINUS_B_BCD
+          A_MINUS_B_BCD,
+          A_TIMES_B
       )
 }

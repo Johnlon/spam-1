@@ -841,7 +841,7 @@ class SpamCCTest {
         |fun main() {
         | uint16 c='c';
         | uint16 a = c - 2;
-        | putchar(c)
+        | putchar(a)
         |}
         |""".stripMargin
 
@@ -854,19 +854,23 @@ class SpamCCTest {
   @Test
   def valEqVarTimes(): Unit = {
 
-    // TIMES NOT IMPLEMENTED YET
     val lines =
       """
         |fun main() {
-        | uint16 s = 'a' / 2; // const expr
+        | uint16 s = 503;
         | uint16 a = s * 2; // alu expr
-        | putchar(c)
+        | putchar(a>>8)
+        | putchar(a)
         |}
         |""".stripMargin
 
+    val expected = 503*2
+    val upper = expected >> 8
+    val lower = expected & 0xff
+
     compile(lines, verbose = true, outputCheck = {
       str =>
-        checkTransmittedL('c', str, List("a"))
+        checkTransmittedL('d', str, List(upper.toString, lower.toString))
     })
   }
 
@@ -889,6 +893,22 @@ class SpamCCTest {
         val expected = "2"
         checkTransmittedL('d', str, List(expected))
     })
+  }
+
+  @Test
+  def multipleDivs(): Unit = {
+
+    val lines =
+      s"""fun main() {
+         | uint16 x = 2;
+         | uint16 i100 = x / 100;
+         | uint16 i10 = (x /10) % 10;
+         | uint16 i1 = x % 10;
+         |}
+         |""".stripMargin
+
+    val actual = compile(lines, verbose = true)
+
   }
 
   @Test
