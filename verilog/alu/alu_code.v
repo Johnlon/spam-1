@@ -95,7 +95,7 @@ module alu_code #(parameter LOG=0, PD=80) (
     // - No overflow when adding a +ve and a -ve number
     // - No overflow when signs are the same for subtraction (because -- means a +)
     //- overflow when adding two +ves yields a -ve
-    //- or, adding two -ves gives a +ve
+    
     //- or, subtract a -ve from a +ve and get a -ve
     //- or, subtract a +ve from a -ve and get a +ve
     function _subOv(left, right, o);
@@ -286,7 +286,11 @@ module alu_code #(parameter LOG=0, PD=80) (
                 _overflow = !(a[7] != result_sign()); // sign bit change can't happen unless this code is flawed
             end
 
-            OP_A_RLC_B: begin // C <- A <- C  : shifted out value enters other side - last shift ends up in carry out
+            // C <- A <-   : shifted out value enters other side - last shift ends up in carry out
+            //   |     ^
+            //   -------
+            // https://www.tutorialspoint.com/instruction-type-rlc-in-8085-microprocessor
+            OP_A_RLC_B: begin 
                 //c_buf_c = {a, 1'b0};
                 
                 c_buf_c = {a, 1'bx};
@@ -294,11 +298,15 @@ module alu_code #(parameter LOG=0, PD=80) (
                 for (count = 0; count < (b%8); count++) begin
                     c_buf_c[8:1] = { c_buf_c[7:1], c_buf_c[8]};
                 end
+
                 if (b>0) set_ctop(c_buf_c[1]);
                 _overflow = !(a[7] != result_sign()); // sign bit change - not much use but hey ho
             end
 
-            OP_A_RRC_B: begin // C -> A -> C : shifted out value enters other side - last shift ends up in carry out
+            //   -> A -> C   : shifted out value enters other side - last shift ends up in carry out
+            //   ^    |
+            //   ------
+            OP_A_RRC_B: begin 
                 //c_buf_c = {1'b0, a, 1'b0};
                 set_ctop(0);
                 c_buf_c = {a, 1'bx};

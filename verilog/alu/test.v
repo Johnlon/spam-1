@@ -889,10 +889,10 @@ module test();
         `Equals(o, 8'b01000000);
         `FLAGS(O|C|NE|GT)  
 
-        assign b = 1;
+        assign b = 2;
         PD;
-        `Equals(o, 8'b01000000);
-        `FLAGS(O|C|NE|GT)  
+        `Equals(o, 8'b00100000);
+        `FLAGS(O|NE|GT)  
 
         assign b = 8;
         PD;

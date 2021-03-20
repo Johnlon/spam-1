@@ -253,7 +253,7 @@ program {
 
                 } else if (__NN == $33) {
                     uint16 i100 = x / 100;
-                    uint16 i10 = (x / 10) % 10;
+                    uint16 i10 = (x /10) % 10;
                     uint16 i1 = x % 10;
 
                     memory[index] = i100;
@@ -294,12 +294,6 @@ program {
 
             pc = pc + 2;
         }
-
-
-        // uint16 pc_lo= >:PC_INIT
-
-        //uint16 pc_hi= <:PC_INIT
-
 
     }
 }

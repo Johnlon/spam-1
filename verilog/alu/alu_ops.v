@@ -31,7 +31,7 @@ package alu_ops;
     localparam [4:0] OP_A_TIMES_B_HI=17;
     localparam [4:0] OP_A_DIV_B=18; // doesn't use carry remainer in as not enought ALU inputs, sets Overflow if div by zero
     localparam [4:0] OP_A_MOD_B=19; // doesn't use carry remainer in as not enought ALU inputs, sets Overflow if div by zero
-    localparam [4:0] OP_A_LSL_B=20;
+    localparam [4:0] OP_A_LSL_B=20; // C <- A <- 0
     localparam [4:0] OP_A_LSR_B=21; // logical shift right - simple bit wise
     localparam [4:0] OP_A_ASR_B=22; // arith shift right - preserves top bit and fills with top bit as shift right   nb. same as "CMP #80/ROR A" on 6502
     localparam [4:0] OP_A_RLC_B=23; // Z80 RLC RotateLeftCircular http://z80-heaven.wikidot.com/instructions-set:rlc rather than https://www.masswerk.at/6502/6502_instruction_set.html#ROL as we don't have a carry in to the ROM or external logic
