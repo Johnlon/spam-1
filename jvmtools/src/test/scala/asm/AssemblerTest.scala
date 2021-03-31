@@ -1,13 +1,13 @@
 package asm
 
-import asm.Mode._
+import asm.AddressMode._
 import org.junit.jupiter.api.Assertions.{assertEquals, fail}
 import org.junit.jupiter.api.Test
 
 class AssemblerTest {
 
   @Test
-  def `allow_positioning_of_data`(): Unit =  {
+  def `allow_positioning_of_data`(): Unit = {
     val code = Seq(
       "A:     STR \"A\"",
       "POSN:  EQU 10",
@@ -20,15 +20,15 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 10, 'P'.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 11, 'P'.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 12, 'B'.toByte)
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 0, 'A'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 10, 'P'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 11, 'P'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 12, 'B'.toByte)
     ), instructions(code, asm))
   }
 
   @Test
-  def `LEN_and_EQU_arith`(): Unit =  {
+  def `LEN_and_EQU_arith`(): Unit = {
     val codeTuples = Seq[(String, java.lang.Integer)](
       ("A0: EQU 0             ", 0),
       ("A1: EQU 1             ", 1),
@@ -73,7 +73,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `EQU_const`(): Unit =  {
+  def `EQU_const`(): Unit = {
     val code = Seq("CONST:    EQU ($10 + 1) ; some arbitrarily complicated constant expression", "END")
 
     val asm = new Assembler()
@@ -84,7 +84,7 @@ class AssemblerTest {
   }
 
   @Test
-  def `EQU_CHAR`(): Unit =  {
+  def `EQU_CHAR`(): Unit = {
     val code = Seq("CONSTA:    EQU 'A'",
       "CONSTB: EQU :CONSTA+1",
       "END")
@@ -97,73 +97,73 @@ class AssemblerTest {
   }
 
   @Test
-  def `REGA_eq_immed_dec`(): Unit =  {
+  def `REGA_eq_immed_dec`(): Unit = {
     val code = Seq("REGA=17", "END")
     val asm = new Assembler()
     import asm._
 
     assertEqualsList(Seq(
-      i(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, 0, 17)
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 17)
     ), instructions(code, asm))
   }
 
   @Test
-  def `REGA_eq_UART`(): Unit =  {
+  def `REGA_eq_UART`(): Unit = {
     val code = Seq("REGA=UART", "END")
     val asm = new Assembler()
     import asm._
 
     assertEqualsList(Seq(
-      i(AluOp.PASS_A, TDevice.REGA, ADevice.UART, BDevice.REGA, Control._A, REGISTER, 0, 0)
+      inst(AluOp.PASS_A, TDevice.REGA, ADevice.UART, BDevice.REGA, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
     ), instructions(code, asm))
   }
 
   @Test
-  def `REGA_eq_RAM`(): Unit =  {
+  def `REGA_eq_RAM`(): Unit = {
     val code = Seq("REGA=RAM", "END")
     val asm = new Assembler()
     import asm._
 
     assertEqualsList(Seq(
-      i(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.RAM, Control._A, REGISTER, 0, 0)
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.RAM, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
     ), instructions(code, asm))
   }
 
   @Test
-  def `NOOP_eq_RAM`(): Unit =  {
+  def `NOOP_eq_RAM`(): Unit = {
     val code = Seq("NOOP = RAM", "END")
     val asm = new Assembler()
     import asm._
 
     assertEqualsList(Seq(
-      i(AluOp.PASS_B, TDevice.NOOP, ADevice.REGA, BDevice.RAM, Control._A, REGISTER, 0, 0)
+      inst(AluOp.PASS_B, TDevice.NOOP, ADevice.REGA, BDevice.RAM, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
     ), instructions(code, asm))
   }
 
   @Test
-  def `REGA_eq_immed_hex`(): Unit =  {
+  def `REGA_eq_immed_hex`(): Unit = {
     val code = Seq("REGA=$11", "END")
 
     val asm = new Assembler()
     import asm._
 
     assertEqualsList(Seq(
-      i(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, 0, 17)
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 17)
     ), instructions(code, asm))
   }
 
   @Test
-  def `REGA_eq_immed_expr`(): Unit =  {
+  def `REGA_eq_immed_expr`(): Unit = {
     val code = Seq("REGA=($11+%1+2+@7)", "END")
     val asm = new Assembler()
     import asm._
 
-    assertEqualsList(Seq(i(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, 0, 27)
+    assertEqualsList(Seq(inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 27)
     ), instructions(code, asm))
   }
 
   @Test
-  def `REGA_eq_REGB`(): Unit =  {
+  def `REGA_eq_REGB`(): Unit = {
     val code = List(
       "REGA=REGB",
       "END")
@@ -171,12 +171,12 @@ class AssemblerTest {
     val asm = new Assembler()
     import asm._
 
-    assertEqualsList(Seq(i(AluOp.PASS_A, TDevice.REGA, ADevice.REGB, BDevice.REGA, Control._A, REGISTER, 0, 0)
+    assertEqualsList(Seq(inst(AluOp.PASS_A, TDevice.REGA, ADevice.REGB, BDevice.REGA, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
     ), instructions(code, asm))
   }
 
   @Test
-  def `REGA_eq_REGA__PASS_A__NU`(): Unit =  {
+  def `REGA_eq_REGA__PASS_A__NU`(): Unit = {
     val code = List(
       "REGA=REGA PASS_A NU",
       "END")
@@ -184,12 +184,12 @@ class AssemblerTest {
     val asm = new Assembler()
     import asm._
 
-    assertEqualsList(Seq(i(AluOp.PASS_A, TDevice.REGA, ADevice.REGA, BDevice.REGA, Control._A, REGISTER, 0, 0)),
+    assertEqualsList(Seq(inst(AluOp.PASS_A, TDevice.REGA, ADevice.REGA, BDevice.REGA, Control._A, REGISTER, ConditionMode.Standard, 0, 0)),
       instructions(code, asm))
   }
 
   @Test
-  def `REGA_eq_forward_label`(): Unit =  {
+  def `REGA_eq_forward_label`(): Unit = {
     val code = Seq(
       "REGA=:LABEL",
       "LABEL: REGB=$ff",
@@ -199,13 +199,35 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      i(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, 0, 1),
-      i(AluOp.PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, 0, 255.toByte)
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 1),
+      inst(AluOp.PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 255.toByte)
     ), instructions(code, asm))
   }
 
   @Test
-  def `REGB_eq_REGC_plus_KONST_setflags`(): Unit =  {
+  def `Not_Conditions`(): Unit = {
+    val code = Seq(
+      "REGB=REGC A_PLUS_B $ff ! _A_S",
+      "REGB=REGC A_PLUS_B $ff ! _A",
+      "REGB=REGC A_PLUS_B $ff !",
+      "REGB=REGC A_PLUS_B $ff ! _S",
+      "REGB=REGC A_PLUS_B $ff",
+      "END")
+
+    val asm = new Assembler()
+    import asm._
+
+    assertEqualsList(Seq(
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A_S, REGISTER, ConditionMode.Invert, 0, 255.toByte),
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Invert, 0, 255.toByte),
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Invert, 0, 255.toByte),
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A_S, REGISTER, ConditionMode.Invert, 0, 255.toByte),
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 255.toByte)
+    ), instructions(code, asm))
+  }
+
+  @Test
+  def `REGB_eq_REGC_plus_KONST_setflags`(): Unit = {
     val code = Seq(
       "REGB=REGC A_PLUS_B $ff _S",
       "END")
@@ -214,12 +236,12 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      i(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A_S, REGISTER, 0, 255.toByte)
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A_S, REGISTER, ConditionMode.Standard, 0, 255.toByte)
     ), instructions(code, asm))
   }
 
   @Test
-  def `REGB_eq_REGC_plus_REGA`(): Unit =  {
+  def `REGB_eq_REGC_plus_REGA`(): Unit = {
     val code = Seq(
       "REGB=REGC A_PLUS_B REGA",
       "END")
@@ -228,12 +250,12 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      i(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._A, REGISTER, 0, 0)
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
     ), instructions(code, asm))
   }
 
   @Test
-  def `REGB_eq_REGC_plus_REGA__setflags_C_S`(): Unit =  {
+  def `REGB_eq_REGC_plus_REGA__setflags_C_S`(): Unit = {
     val code = Seq(
       "REGB=REGC A_PLUS_B REGA _C_S",
       "END")
@@ -242,7 +264,7 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      i(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._C_S, REGISTER, 0, 0)
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._C_S, REGISTER, ConditionMode.Standard, 0, 0)
     ), instructions(code, asm))
   }
 
@@ -256,12 +278,12 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      i(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.RAM, Control._C_S, DIRECT, 1000, 0)
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.RAM, Control._C_S, DIRECT, ConditionMode.Standard, 1000, 0)
     ), instructions(code, asm))
   }
 
   @Test
-  def `RAM_direct__eq__REGA__setflags__C_S`(): Unit =  {
+  def `RAM_direct__eq__REGA__setflags__C_S`(): Unit = {
     val code = Seq(
       "[1000]=REGA _C_S",
       "END")
@@ -270,12 +292,12 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      i(AluOp.PASS_A, TDevice.RAM, ADevice.REGA, BDevice.REGA, Control._C_S, DIRECT, 1000, 0)
+      inst(AluOp.PASS_A, TDevice.RAM, ADevice.REGA, BDevice.REGA, Control._C_S, DIRECT, ConditionMode.Standard, 1000, 0)
     ), instructions(code, asm))
   }
 
   @Test
-  def `const_strings_to_RAM`(): Unit =  {
+  def `const_strings_to_RAM`(): Unit = {
     val code = Seq(
       "STRING1: STR     \"AB\\u0000\\n\"",
       "END")
@@ -287,15 +309,15 @@ class AssemblerTest {
     assertEquals(Some(KnownByteArray(0, List(65, 66, 0, 10))), asm.labels("STRING1").getVal)
 
     assertEqualsList(Seq(
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 1, 'B'.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 2, 0),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 3, '\n')
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 0, 'A'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 1, 'B'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 2, 0),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 3, '\n')
     ), compiled)
   }
 
   @Test
-  def `compile_bytes_to_RAM`(): Unit =  {
+  def `compile_bytes_to_RAM`(): Unit = {
     // 255 == -1
     //  == -1
     val code = Seq(
@@ -315,7 +337,11 @@ class AssemblerTest {
     val B_65 = 65.toByte
 
     assertEquals(Some(KnownByteArray(0, List(1, 2, 3))), asm.labels("FIRST").getVal)
-    assertEquals(Some(KnownByteArray(3, List(B_65, B_65, B_65, B_65, 255.toByte, 255.toByte, -127.toByte, 0.toByte, 127.toByte, 128.toByte))), asm.labels("SECOND").getVal)
+    val minus127: Byte = (-127 & 0xff).toByte
+
+    val value : List[Byte] = List[Byte](B_65, B_65, B_65, B_65, 255.toByte, 255.toByte, minus127, 0.toByte, 127.toByte, 128.toByte)
+
+    assertEquals(Some(KnownByteArray(3, value)), asm.labels("SECOND").getVal)
     assertEquals(Some(KnownInt(3)), asm.labels("FIRST_LEN").getVal)
     assertEquals(Some(KnownInt(10)), asm.labels("SECOND_LEN").getVal)
     assertEquals(Some(KnownInt(0)), asm.labels("FIRST_POS").getVal)
@@ -329,24 +355,24 @@ class AssemblerTest {
     }
 
     assertEqualsList(Seq(
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 1),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 2),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 3),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, B_65),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, (-127).toByte), // 255 unsigned has same bit pattern as -1 signed
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 0.toByte), // 255 unsigned has same bit pattern as -1 signed
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, 127.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, nextPos, -128) // unsigned 128 has sae bit pattern as -128 twos compl
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 1),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 2),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 3),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, B_65),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, B_65),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, B_65),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, B_65),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, (-127).toByte), // 255 unsigned has same bit pattern as -1 signed
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 0.toByte), // 255 unsigned has same bit pattern as -1 signed
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 127.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, -128) // unsigned 128 has sae bit pattern as -128 twos compl
     ), compiled)
   }
 
   @Test
-  def `strings_len`(): Unit =  {
+  def `strings_len`(): Unit = {
     val code = Seq(
       "REGA = 1", // put this ahead of the data so make sure it's not simply counting the PC then allocating addresses for data
       "MYSTR:     STR     \"AB\"", // should be at address 0
@@ -366,18 +392,18 @@ class AssemblerTest {
     assertEquals(Some(KnownByteArray(2, List(67, 68))), asm.labels("YOURSTR").getVal)
 
     assertEqualsList(Seq(
-      i(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, 0, 1),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 0, 'A'.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 1, 'B'.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 2, 'C'.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 3, 'D'.toByte),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 255, 2),
-      i(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, 255, 3)
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 1),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 0, 'A'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 1, 'B'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 2, 'C'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 3, 'D'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 255, 2),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 255, 3)
     ), compiled)
   }
 
   @Test
-  def `ram_direct_eq_ram_direct_illegal`(): Unit =  {
+  def `ram_direct_eq_ram_direct_illegal`(): Unit = {
     val code = List(
       "[1000]=[1]",
       "END")
@@ -393,7 +419,7 @@ class AssemblerTest {
     }
   }
 
-  private def instructions(code: Seq[String], asm: Assembler): Seq[(AluOp, Any, Any, Any, Control, Mode, Int, Byte)] = {
+  private def instructions(code: Seq[String], asm: Assembler): Seq[(AluOp, Any, Any, Any, Control, Mode, ConditionMode, Int, Byte)] = {
     val roms = asm.assemble(code.mkString("\n")) // comments run to end of line
     roms.map(r => asm.decode(r))
   }

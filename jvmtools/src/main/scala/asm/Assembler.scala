@@ -1,8 +1,8 @@
 package asm
 
 import java.io.{File, PrintWriter}
-
-import Mode.Mode
+import AddressMode.Mode
+import asm.ConditionMode.Standard
 
 import scala.io.Source
 
@@ -112,7 +112,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     }
   }
 
-  def decode[A <: Assembler](rom: List[String]): (AluOp, TDevice, ADevice, BDevice, Control, Mode, Int, Byte) = {
+  def decode[A <: Assembler](rom: List[String]): (AluOp, TDevice, ADevice, BDevice, Control, Mode, ConditionMode, Int, Byte) = {
     val str = rom.mkString("");
     decode(str)
   }
@@ -126,25 +126,27 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     val b = fromBin(sitr, 3)
     val cond = fromBin(sitr, 4)
     val f = fromBin(sitr, 1)
-    sitr.take(3).mkString("")
-    val m = if (fromBin(sitr, 1) == 1) Mode.DIRECT else Mode.REGISTER
+    val condmode = if (fromBin(sitr, 1) == 1) ConditionMode.Invert else ConditionMode.Standard
+    sitr.take(2).mkString("")
+    val m = if (fromBin(sitr, 1) == 1) AddressMode.DIRECT else AddressMode.REGISTER
     val addr = fromBin(sitr, 16)
     val immed = fromBin(sitr, 8)
 
-    i(
+    inst(
       AluOp.valueOf(op),
       TDevice.valueOf(t),
       ADevice.valueOf(a),
       BDevice.valueOf(b),
       Control.valueOf(cond, f),
       m,
+      condmode,
       addr,
       immed.toByte
     )
   }
 
-  def i(passb: AluOp, ram: TDevice, nu: ADevice, immed: BDevice, a1: Control, direct: Mode.Value, addr: Int, byte: Byte) = {
-    (passb, ram, nu, immed, a1, direct, addr, byte)
+  def inst(passb: AluOp, ram: TDevice, nu: ADevice, immed: BDevice, a1: Control, direct: AddressMode.Value, cm: ConditionMode, addr: Int, byte: Byte) = {
+    (passb, ram, nu, immed, a1, direct, cm, addr, byte)
   }
 
   def fromBin(str: Iterator[Char], len: Int): Int = {

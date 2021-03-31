@@ -922,7 +922,7 @@ class SpamCCTest {
 
     compile(lines, verbose = true, outputCheck = {
       str =>
-        checkTransmittedL('d', str, List("1","2","3"))
+        checkTransmittedL('d', str, List("1", "2", "3"))
     })
 
   }
@@ -1377,10 +1377,10 @@ class SpamCCTest {
       fail("should have halted")
     } catch {
       case ex: HaltedException if ex.halt.mar == 65432 =>
-        println("halted ok with "+ ex)
+        println("halted ok with " + ex)
       case ex: HaltedException =>
         fail("halted with wrong code " + ex.halt)
-      case ex =>
+      case ex: Throwable =>
         fail("unexpected exception : " + ex.getMessage)
     }
   }
@@ -1401,10 +1401,10 @@ class SpamCCTest {
       fail("should have halted")
     } catch {
       case ex: HaltedException if ex.halt.mar == 65432 =>
-        println("halted ok with "+ ex)
+        println("halted ok with " + ex)
       case ex: HaltedException =>
         fail("halted with wrong code " + ex.halt)
-      case ex =>
+      case ex: Throwable =>
         fail("unexpected exception : " + ex.getMessage)
     }
   }

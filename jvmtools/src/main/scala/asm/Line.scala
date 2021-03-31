@@ -1,6 +1,6 @@
 package asm
 
-import Mode.{DIRECT, Mode}
+import AddressMode.{DIRECT, Mode}
 
 trait Lines {
   self: Knowing with Devices =>
@@ -18,7 +18,7 @@ trait Lines {
     instNo += 1
   }
 
-  case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, control: Option[Control], amode: Mode, address: Know[KnownInt], immed: Know[KnownInt])
+  case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, condition: Option[Condition], amode: Mode, address: Know[KnownInt], immed: Know[KnownInt])
     extends Line {
 
     pc += 1
@@ -76,15 +76,16 @@ trait Lines {
       val sTDev = bits("tdev", tdev.id.toBinaryString, 4)
       val sADev = bits("adev", adev.id.toBinaryString, 3)
       val sBDev = bits("bdev", bdev.id.toBinaryString, 3)
-      val sFlags = bits("control", bitString(control.getOrElse(Control._A)), 5)
-      val sNU = bits("nu", "", 3)
+      val sFlags = bits("control", bitString(condition.map(_.cond).getOrElse(Control._A)), 5)
+      val sCondMode = condition.map(_.mode).getOrElse(ConditionMode.Standard).bit
+      val sNU = bits("nu", "", 2)
       val sMode = if (amode == DIRECT) "1" else "0"
       val sAddress = bits("address", address.getVal.map(_.toBinaryString).getOrElse(""), 16)
       val sImmed = bits("immed", immed.getVal.map { v =>
         v.value & 0xff
       }.map(_.toBinaryString).getOrElse(""), 8)
 
-      val i = sAluop + sTDev + sADev + sBDev + sFlags + sNU + sMode + sAddress + sImmed
+      val i = sAluop + sTDev + sADev + sBDev + sFlags + sCondMode + sNU + sMode + sAddress + sImmed
       if (i.length != 48) throw new RuntimeException(s"sw error: expected 48 bits but got ${i.size} in '${i}''")
 
       val list = i.grouped(8).toList

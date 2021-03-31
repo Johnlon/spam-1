@@ -1,11 +1,12 @@
 package asm
 
-import Mode.{DIRECT, REGISTER}
+import AddressMode.{DIRECT, REGISTER}
+import asm.ConditionMode.{Invert, Standard}
 
 import scala.language.postfixOps
 import scala.util.parsing.combinator._
 
-object Mode extends Enumeration {
+object AddressMode extends Enumeration {
   type Mode = Value
   val DIRECT, REGISTER = Value
 }
@@ -55,6 +56,12 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   def tdev: Parser[TDevice] = enumToParser(TDevice.values)
 
   def controlCode: Parser[Control] = enumToParser(Control.values)
+
+  def condition: Parser[Condition] = ("!"?) ~ (controlCode?) ^^ {
+    case mode ~ ctrl =>
+      Condition(mode.map(_ => Invert).getOrElse(Standard), ctrl.getOrElse(Control._A))
+  }
+
 
   def name: Parser[String] = "[a-zA-Z][a-zA-Z0-9_]*".r ^^ (a => a)
 
@@ -168,7 +175,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       dataAddress = stored.knownVal.value
 
       Label(a) +: bytes.map { c => {
-        val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Control._A), Known("", c))
+        val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), Known("", c))
         dataAddress += 1
         ni
       }
@@ -194,14 +201,14 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
           // then name "c" will render as whatever int value was actually presented in the code (eg when c=255 then toByte = -1 )
           val immed = Known(f"${c.toByte}%02X", c.toByte)
 
-          val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Control._A), immed)
+          val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), immed)
           dataAddress += 1
           ni
         }
       }
   }
 
-  private def inst(t: TExpression, a: ADevice, op: AluOp, b: BExpression, f: Option[Control], immed: Know[KnownInt]): Instruction = {
+  private def inst(t: TExpression, a: ADevice, op: AluOp, b: BExpression, f: Option[Condition], immed: Know[KnownInt]): Instruction = {
     (t, b) match {
       case (t: TDevice, b: BDevice) =>
         Instruction(t, a, b, op, f, REGISTER, Irrelevant(), immed)
@@ -214,27 +221,27 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     }
   }
 
-  def abInstruction: Parser[Line] = (targets <~ "=") ~ adev ~ aluop ~ bdevices ~ (controlCode ?) ^^ {
+  def abInstruction: Parser[Line] = (targets <~ "=") ~ adev ~ aluop ~ bdevices ~ (condition ?) ^^ {
     case t ~ a ~ op ~ b ~ f =>
       inst(t, a, op, b, f, Irrelevant())
   }
 
-  def abInstructionImmed: Parser[Line] = (targets <~ "=") ~ adev ~ aluop ~ expr ~ (controlCode ?) ^^ {
+  def abInstructionImmed: Parser[Line] = (targets <~ "=") ~ adev ~ aluop ~ expr ~ (condition ?) ^^ {
     case t ~ a ~ op ~ immed ~ f =>
       inst(t, a, op, BDevice.IMMED, f, immed)
   }
 
-  def bInstruction: Parser[Line] = (targets <~ "=") ~ bdeviceOrRamDirect ~ (controlCode ?) ^^ {
+  def bInstruction: Parser[Line] = (targets <~ "=") ~ bdeviceOrRamDirect ~ (condition ?) ^^ {
     case t ~ b ~ f =>
       inst(t, ADevice.NU, AluOp.PASS_B, b, f, Irrelevant())
   }
 
-  def bInstructionImmed: Parser[Line] = (targets <~ "=") ~ expr ~ (controlCode ?) ^^ {
+  def bInstructionImmed: Parser[Line] = (targets <~ "=") ~ expr ~ (condition ?) ^^ {
     case t ~ immed ~ f =>
       inst(t, ADevice.NU, AluOp.PASS_B, BDevice.IMMED, f, immed)
   }
 
-  def aInstruction: Parser[Line] = (targets <~ "=") ~ adev ~ (controlCode ?) ^^ {
+  def aInstruction: Parser[Line] = (targets <~ "=") ~ adev ~ (condition ?) ^^ {
     case t ~ a ~ f =>
       inst(t, a, AluOp.PASS_A, BDevice.NU, f, Irrelevant())
   }
