@@ -48,6 +48,7 @@ package alu_ops;
 
     // returning a bitset is needed when using strobe to print
     typedef reg[13*8:1] OpName;
+
     function OpName aluopNameR; input [4:0] opcode;
         OpName ret;
         begin
