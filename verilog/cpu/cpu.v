@@ -56,14 +56,14 @@ module cpu(
 
     wire _mrPC;
 
-    wire _phaseExec;
-    wire phaseExec;
+    wire _phase_exec;
+    wire phase_exec;
 
     reset RESET(
         .system_clk,
         ._RESET_SWITCH,
-        ._phase_exec(_phaseExec),
-        .phase_exec(phaseExec),
+        ._phase_exec(_phase_exec), //?? not used
+        .phase_exec(phase_exec),
         ._mrNeg(_mrPC)
     );
 
@@ -123,7 +123,7 @@ module cpu(
     // RAM =============================================================================================
 
 // verilator lint_off PINMISSING
-    wire #(8) _gated_ram_in = _phaseExec | _ram_in;
+    wire #(8) _gated_ram_in = _phase_exec | _ram_in;
     ram #(.AWIDTH(16), .LOG(0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
 // verilator lint_on PINMISSING
     
@@ -135,9 +135,9 @@ module cpu(
 
     // MAR =============================================================================================
 // verilator lint_off PINMISSING
-    // clocks data in as we enter phase exec - on the +ve edge - so use positive logic phaseExec here
-    hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phaseExec), .D(alu_result_bus));    
-    hct74377 #(.LOG(0)) MARHI(._EN(_marhi_in), .CP(phaseExec), .D(alu_result_bus));
+    // clocks data in as we enter phase exec - on the +ve edge - so use positive logic phase_exec here
+    hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phase_exec), .D(alu_result_bus));    
+    hct74377 #(.LOG(0)) MARHI(._EN(_marhi_in), .CP(phase_exec), .D(alu_result_bus));
 // verilator lint_on PINMISSING
 
     hct74245 marlo_abus_buf(.A(MARLO.Q), .B(abus), .nOE(_adev_marlo), .dir(1'b1)); // optional - needed for marlo arith so MAR appears as a GP register
@@ -170,7 +170,7 @@ module cpu(
     );
 
     wire gated_flags_clk;
-    nor #(9) gating( gated_flags_clk , _phaseExec , _set_flags);
+    nor #(9) gating( gated_flags_clk , _phase_exec , _set_flags);
 
     wire [7:0] alu_flags_czonGLEN = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
 
@@ -183,8 +183,8 @@ module cpu(
 
     // REGISTER FILE =====================================================================================
     // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
-    // NOTE !!!! THIS CODE USES _phaseExec AS THE REGFILE GATING MEANING _WE IS LOW ONLY ON SECOND PHASE OF CLOCK - THIS PREVENTS A SPURIOUS WRITE TO REGFILE FROM IT'S INPUT LATCH
-    wire #(2*8) _gated_regfile_in = _phaseExec | (_rega_in & _regb_in & _regc_in & _regd_in);
+    // NOTE !!!! THIS CODE USES _phase_exec AS THE REGFILE GATING MEANING _WE IS LOW ONLY ON SECOND PHASE OF CLOCK - THIS PREVENTS A SPURIOUS WRITE TO REGFILE FROM IT'S INPUT LATCH
+    wire #(2*8) _gated_regfile_in = _phase_exec | (_rega_in & _regb_in & _regc_in & _regd_in);
     wire #(8) _regfile_rdL_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ;
     wire #(8) _regfile_rdR_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ;
     wire [1:0] regfile_rdL_addr = abus_dev[1:0];
@@ -198,9 +198,9 @@ module cpu(
     end
 
 
-    // clocks data in as we enter phase exec - on the +ve edge - so use positive logic phaseExec here
+    // clocks data in as we enter phase exec - on the +ve edge - so use positive logic phase_exec here
     syncRegisterFile #(.LOG(LOG)) regFile(
-        .clk(phaseExec), // only on the execute phase edge otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
+        .clk(phase_exec), // only on the execute phase edge otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
         ._wr_en(_gated_regfile_in), // only enabled for input during the execute phase 
         .wr_addr(regfile_wr_addr),
         .wr_data(alu_result_bus),
@@ -216,11 +216,11 @@ module cpu(
 
 
     // UART =============================================================
-    wire #(10) _gated_uart_wr = _uart_in | _phaseExec;   // sync clock data into uart - must occur AFTER uart_alubuf_buf has been enabled
+    wire #(10) _gated_uart_wr = _uart_in | _phase_exec;   // sync clock data into uart - must occur AFTER uart_alubuf_buf has been enabled
 
     wire [7:0] uart_d;
 
-    um245r #(.LOG(LOG*2))  uart (
+    um245r #(.LOG(2))  uart (
         .D(uart_d),
         .WR(_gated_uart_wr),// Writes data on -ve edge
         ._RD(_adev_uart),	// When goes from high to low then the FIFO data is placed onto D (equates to _OE)

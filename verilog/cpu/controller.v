@@ -2,6 +2,35 @@
 // verilator lint_off PINMISSING
 // verilator lint_off MULTITOP
 
+/*
+TODO - use an unused istruction bit to invert the condition so "do if DO ready" becomes "do if DO not ready"
+
+take the do_exec through a XOR gate to optionally invert the do_exec signal
+
+use spare gates: (a or b) and (a nand b)  = a XOR b
+https://en.wikipedia.org/wiki/XOR_gate see diagram three mxed gates
+
+better logic ...
+
+    loop:
+        pchitmp = loop
+        pc = loop !DO
+        uart = X
+
+existing logic ...
+
+    loop:
+        pchitmp = prt
+        pc = prt DO
+        pchitmp = loop
+        pc = loop
+    prt:
+        uart = X
+
+
+
+*/
+
 
 `ifndef V_CONTROLLER_WIDE
 `define V_CONTROLLER_WIDE
@@ -73,6 +102,7 @@ module controller(
     assign direct_address_lo = instruction_2; // DONE
     assign direct_address_hi = instruction_3; // DONR
     wire amode_bit           = instruction_4[0]; // DONE
+    wire unused_bits         = instruction_4[3:1]; // DONE
     wire _set_flags_bit      = instruction_4[4]; // DONE
     wire [3:0] condition     ={instruction_5[0],instruction_4[7:5]}; // DONE
     assign bbus_dev          = instruction_5[3:1]; // DONE
@@ -84,6 +114,8 @@ module controller(
 
     // only set flags if executing instruction 
     or #(9) ic7432_a(_set_flags, _set_flags_bit, _do_exec); // DONE
+// switch _do_exec to +ve logic and _set flags to +vs then swicth the or for a nand freeing up a chip for an XOR
+
 
     // addressing mode
     assign _addrmode_register = amode_bit; // low = reg  // DONE
@@ -112,7 +144,7 @@ module controller(
             5'b0,
             _flag_do, //DO
             _flag_di, // DI
-            _flags_czonGLEN[0]  // LT
+            _flags_czonGLEN[8]  // NE
             };
 
     wire [7:0] _flags_lo = {

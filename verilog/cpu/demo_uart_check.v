@@ -46,12 +46,6 @@ module test();
     
     int exec_count=0;
 
-    always begin
-       #TCLK 
-       clk = !clk;
-       if (clk) exec_count++;
-    end
-
     cpu CPU(_RESET_SWITCH, clk);
 
 
@@ -74,44 +68,22 @@ module test();
     task INIT_ROM;
     begin
 
-         // implement 16 bit counter
-         icount = 0;
+        // implement 16 bit counter
+        icount = 0;
 
-         `DEV_EQ_IMMED8(icount, rega, '0); icount++;
-         `DEV_EQ_IMMED8(icount, regb, '0); icount++;
-         `DEV_EQ_IMMED8(icount, regc, '0); icount++;
-         `DEV_EQ_IMMED8(icount, regd, '0); icount++;
-         `DEV_EQ_IMMED8(icount, marlo, '0); icount++;
-         `DEV_EQ_IMMED8(icount, marhi, '0); icount++;
+        `DEV_EQ_IMMED8(icount, rega, 64); icount++;
+        `INSTRUCTION_S(icount, pchitmp, not_used, immed, B, DO,  `SET_FLAGS, `NA_AMODE, 'z, 20>>8); icount++;
+        `INSTRUCTION_S(icount, pc     , not_used, immed, B, DO,  `SET_FLAGS, `NA_AMODE, 'z, 20); icount++;
 
+icount = `WRITE_UART;
+        `INSTRUCTION_S(icount, uart, not_used, immed, B, A,  `SET_FLAGS, `NA_AMODE, 'z, 66); icount++;
+        `JMP_IMMED16(icount, 0); icount+=2;
 
-        // jump to read or write if 
-         LOOP = icount;
-         `JMPDI_IMMED16(icount, `READ_UART); icount+=2;
-         `JMPDO_IMMED16(icount, `WRITE_UART); icount+=2;
-         `JMP_IMMED16(icount, LOOP); icount+=2;
-
-        // counter increment
-         ADD_ONE=icount;
-         `DEV_EQ_XI_ALU(icount, rega, rega, 1, A_PLUS_B) ; icount++; // A_PLUS_B - doesn't consume carry but sets it 
-         `DEV_EQ_XI_ALU(icount, regb, regb, 0, A_PLUS_B_PLUS_C); icount++; // B=B+0+Carryin   - sets and consumes carry 
-         `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
-         `JMP_IMMED16(icount, LOOP); icount+=2;
-
-
-        // write to uart
-         icount = `WRITE_UART;
-         `DEV_EQ_XY_ALU(icount, uart, rega, not_used, A); icount++;
-         `JMP_IMMED16(icount, ADD_ONE); icount+=2;
-
-        // read from uart
-         icount = `READ_UART;
-         `DEV_EQ_XY_ALU(icount, marhi, uart, not_used, A); icount++;
-         `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
-         `JMP_IMMED16(icount, ADD_ONE); icount+=2;
 
     end
     endtask : INIT_ROM
+
+    int HALF_CLK=1500;
 
     initial begin
         //$timeformat(-3, 0, "ms", 10);
@@ -121,11 +93,32 @@ module test();
         _RESET_SWITCH = 0;
         clk=0;
 
-        #1000
+        #HALF_CLK
         _RESET_SWITCH = 1;
 
-    end
+        #HALF_CLK
+        clk=0;
 
+        
+        #HALF_CLK
+$display(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CYCLE0 - load A");
+        clk=1; // fetch
+        #HALF_CLK
+        clk=0; // exec
+        
+        #HALF_CLK
+$display(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CYCLE0 - load UART");
+        clk=1; // fetch
+        #HALF_CLK
+        clk=0; // exec
+        
+        #HALF_CLK
+$display(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CYCLE0 - HALT");
+        clk=1; // fetch
+        #HALF_CLK
+        clk=0; // exec
+
+    end
 
     integer pcval;
     assign pcval={CPU.PCHI, CPU.PCLO};
@@ -136,11 +129,12 @@ module test();
         currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
         $display ("%9t ", $time,  "OPERATION (cycle %1d): ", exec_count, " %-s", currentCode);
     end
+
     if (1) always @(CPU.phase_exec) begin
         $display("");
         if (CPU.phase_exec) begin
             $display("%9t ", $time, "PC=%-d    ====  ENTERTED EXEC PHASE ", {CPU.PCHI, CPU.PCLO});
-            $display("%9t ", $time, "_GRFIN", CPU._gated_regfile_in , " _phase_exec",  CPU._phase_exec , " _REGA_IN ", CPU._rega_in);
+            $display("%9t ", $time, "_gates_regfie_in ", CPU._gated_regfile_in , " _phase_exec ",  CPU._phase_exec , " _REGA_IN ", CPU._rega_in);
         end
     end
 
@@ -151,43 +145,24 @@ module test();
     integer last_marlo;
 
 
-    always @( CPU.MARLO.Q )
+    always @( CPU.uart._TXE )
     begin
-        count = { CPU.regFile.get(1), CPU.regFile.get(0) };
-
-        $display("%9t", $time, " MARLO.Q= %4h ", CPU.MARLO.Q);
-        $display("%9t", $time, " REGISTER COUNT = %4h ", 16'(count));
-        $display("%9t", $time, " LAST COUNT = %2h ", last_count);
-        $display("%9t", $time, " LAST MARLO = %2h ", last_marlo);
-        $display("%9t", $time, " THIS MARLO = %2h ", CPU.MARLO.Q);
-        last_marlo = CPU.MARLO.Q;
-        
-
-        if (last_count !== not_initialised) begin
-            if (last_count == 65535 && count != 0) begin 
-                $error("ERROR wrong count roll value : count=%1d (hex %02x) last_count=%1d but expected count=0", count , count, last_count);
-                `FINISH_AND_RETURN(2);
-            end
-            
-            if (count != 0 && last_count != 65535 && count != last_count+1) begin 
-                $error("ERROR wrong count next +1 value : count=%1d (hex %02x) last_count=%1d but expected count=%1d", count , count, last_count, last_count+1);
-                `FINISH_AND_RETURN(2);
-            end
-        end
-/*
-        else 
-        begin
-            if (count != 0) begin 
-                $error("ERROR wrong initial count : count=%1d (hex %02x)", count, count);
-                `FINISH_AND_RETURN(2);
-            end
-    
-        end
-*/
-        
-        $display("OK %4h", {CPU.regFile.get(1), CPU.regFile.get(0) });
-        last_count=count;
+        $display("%9t", $time, " UART: _TXE %1d ", CPU.uart._TXE);
     end
+    always @( CPU.uart._TXE_SUPPRESS )
+    begin
+        $display("%9t", $time, " UART: _TXE_SUPPRESS %1d ", CPU.uart._TXE_SUPPRESS);
+    end
+    //wire #(10) _gated_uart_wr = _uart_in | _phase_exec;   // sync clock data into uart - must occur AFTER uart_alubuf_buf has been enabled
+    always @( CPU.uart.WR )
+    begin
+        $display("%9t", $time, " UART: WR %1d ", CPU.uart.WR);
+    end
+    always @( * )
+    begin
+        $display("%9t", $time, " UART: _gated_uart_wr %1d ", CPU._gated_uart_wr, " _uart_in %1d ", CPU._uart_in, " _phase_exec %1d ", CPU._phase_exec);
+    end
+    
 
     
 ///////////////////////////////////////////////////////////////////////////////////////////////////////

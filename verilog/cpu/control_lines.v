@@ -101,7 +101,7 @@ package control;
     function string bdevname([2:0] dev); 
     begin
         case (dev)
-            BDEV_rega: bdevname = "REGA"; 
+            BDEV_rega: bdevname = "REGA/NU"; 
             BDEV_regb: bdevname = "REGB";
             BDEV_regc: bdevname = "REGC";
             BDEV_regd: bdevname = "REGD";

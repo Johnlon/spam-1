@@ -47,9 +47,12 @@ module test();
     localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
 
     // CLOCK ===================================================================================
-    localparam HALF_CLK_HI=300;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
-    localparam HALF_CLK_LO=50;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
-    //localparam HALF_CLK=1335;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    //localparam HALF_CLK_HI=300;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    //localparam HALF_CLK_LO=50;   // half clock cycle - if phases are shorter then make this clock longer etc 100ns
+    // !!! MADE THESE LONG SO OSCILLATIONS IN THINGS LIKE UART MODE LIKELY TO APPEAR
+    localparam HALF_CLK_HI=3000; // fetch 
+    localparam HALF_CLK_LO=5000;  // exec  
 
     // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
     logic _RESET_SWITCH;
@@ -178,7 +181,7 @@ endfunction
         
             $display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
         end
-       // if (LOG) 
+        if (LOG) 
         $display("%9t", $time, " DECOMPILE ",
             " PC=%-5d : ", pc,
             " %-1s = ", control::tdevname(CPU.ctrl.instruction[42:39]),
@@ -192,6 +195,7 @@ endfunction
             " imm:%02x (dec %d) ", CPU.ctrl.instruction[7:0], CPU.ctrl.instruction[7:0]
         );
 
+/*
         $display("%09t", $time, " RAM divisorL:H %02x:%02x dividendL:H %02x:%02x remainderL:H%02x:%02x resultL:H", 
                 CPU.ram64.Mem[6],
                 CPU.ram64.Mem[7],
@@ -202,7 +206,7 @@ endfunction
                 CPU.ram64.Mem[12],
                 CPU.ram64.Mem[13]
             );
-
+*/
         if (LOG) $display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
         clk = 0;
     end
@@ -296,7 +300,7 @@ endfunction
 
     task DUMP;
             DUMP_OP;
-            `DD " phase=%1b", CPU.phaseExec);
+            `DD " phase=%1b", CPU.phase_exec);
             `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " address_bus=0x%4x (%d) ", CPU.address_bus, CPU.address_bus);
             `DD " abus=%8b(%d) bbus=%8b(%d) alu_result_bus=%8b(%d)", CPU.abus, CPU.abus, CPU.bbus, CPU.bbus, CPU.alu_result_bus, CPU.alu_result_bus);
@@ -337,11 +341,11 @@ endfunction
         $display("%9t", $time, " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CLK %1b  <<<<<<<<<<<<<<<<<<<<<<<", CPU.clk);
     end
 
-    always @(posedge CPU.phaseExec) begin
+    always @(posedge CPU.phase_exec) begin
         $display("%9t", $time, " START PHASE: EXECUTE (posedge) =============================================================="); 
     end
 
-    always @(negedge CPU.phaseExec) begin
+    always @(negedge CPU.phase_exec) begin
         $display("%9t", $time, " END PHASE: EXECUTE (negedge) =============================================================="); 
         DUMP;
     end
@@ -356,7 +360,7 @@ endfunction
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     always @(posedge CPU.gated_flags_clk) begin
-        if (CPU._phaseExec) begin
+        if (CPU._phase_exec) begin
             $display("ILLEGAL FLAGS LOAD DURING FETCH PHASE");
             $finish();
         end
@@ -364,7 +368,7 @@ endfunction
         
     // constraints
 
-    always @(posedge CPU.phaseExec) begin
+    always @(posedge CPU.phase_exec) begin
         if (_RESET_SWITCH && CPU.ctrl.instruction_6 === 'x) begin
            $display("instruction_6", CPU.ctrl.instruction_6); 
             DUMP;
@@ -399,7 +403,7 @@ endfunction
     always @* begin
         // permits a situation where the control lines conflict.
         // this is ok as long as they settle quickly and are settled before exec phase.
-        if (CPU._mrPC & CPU.phaseExec) begin
+        if (CPU._mrPC & CPU.phase_exec) begin
             if (CPU._addrmode_register === 1'bx) begin
                 $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _REG=%1b", CPU._addrmode_register);
                 DUMP;
