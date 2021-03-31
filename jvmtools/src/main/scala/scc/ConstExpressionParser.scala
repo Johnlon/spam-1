@@ -22,10 +22,18 @@ trait ConstExpressionParser {
       v.toInt
     }
 
-  def charToken: Parser[Int] = "'" ~> ".".r <~ "'" ^^ { v =>
-    val i = v.codePointAt(0)
-    if (i > 127) throw new RuntimeException(s"asm error: character '$v' codepoint $i is outside the 0-127 range")
-    i.toByte
+  // any single char or \n is permitted
+  def charToken: Parser[Int] = "'" ~> """\\?.""".r <~ "'" ^^ {
+    v =>
+      val c = org.apache.commons.text.StringEscapeUtils.unescapeJava(v)
+//      val c = if (v == "\\n") {
+//        //"\n"
+//      } else {
+//        v
+//      }
+      val i = c.codePointAt(0)
+      if (i > 127) throw new RuntimeException(s"asm error: character '$v' (code:${v.toInt}) codepoint $i is outside the 0-127 range")
+      i.toByte
   }
 
   def hexToken: Parser[Int] = "$" ~ "[0-9a-hA-H]+".r ^^ { case _ ~ v => Integer.valueOf(v, 16) }
@@ -36,7 +44,7 @@ trait ConstExpressionParser {
 
   def constFactor: Parser[Int] = (charToken | decToken | hexToken | binToken | octToken | "(" ~> constExpression <~ ")")
 
-  def constOperation: Parser[String] =  "*" | "/" | "%" | "+" | "-" | ">" | "<" | "&" | "|" | "^" | "==" | "!="
+  def constOperation: Parser[String] = "*" | "/" | "%" | "+" | "-" | ">" | "<" | "&" | "|" | "^" | "==" | "!="
 
   def constExpression: Parser[Int] = constFactor ~ ((constOperation ~ constFactor) *) ^^ {
     case x ~ list =>
@@ -51,8 +59,8 @@ trait ConstExpressionParser {
         case (acc, "&" ~ i) => acc & i
         case (acc, "|" ~ i) => acc | i
         case (acc, "^" ~ i) => acc ^ i
-        case (acc, "==" ~ i) =>if (acc == i) 1 else 0
-        case (acc, "!=" ~ i) =>if (acc != i) 1 else 0
+        case (acc, "==" ~ i) => if (acc == i) 1 else 0
+        case (acc, "!=" ~ i) => if (acc != i) 1 else 0
       })
   }
 }

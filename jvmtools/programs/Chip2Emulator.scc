@@ -9,6 +9,8 @@ program {
         uint16 GOTO_SETY_STATE = 2;  // switch state
         uint16 GOTO_DRAW_PIXEL_STATE = 3; // switch state
         uint16 GOTO_DRAW_BYTE_STATE = 4; // switch state
+        uint16 GOTO_LOG_CHAR_STATE = 5; // switch state
+        uint16 GOTO_LOG_BYTE_STATE = 6; // switch state
         uint16 DO_CLEAR = 10;
         uint16 DO_UP = 11;
         uint16 DO_DOWN = 12;
@@ -63,6 +65,13 @@ program {
         putchar(GOTO_INIT_STATE)
         putchar(GOTO_INIT_STATE)
 
+        putchar(GOTO_LOG_CHAR_STATE)
+        putchar('G')
+        putchar(GOTO_LOG_CHAR_STATE)
+        putchar('O')
+        putchar(GOTO_LOG_CHAR_STATE)
+        putchar('\n')
+
         while (true) {
 
             uint16 opcodehi = memory[pc];
@@ -79,6 +88,79 @@ program {
 
             uint16 x = registers[_X__];
             uint16 y = registers[__Y_];
+
+
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar('P')
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar('C')
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(':')
+            putchar(GOTO_LOG_BYTE_STATE)
+            putchar(pc>>8)
+            putchar(GOTO_LOG_BYTE_STATE)
+            putchar(pc)
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(32)
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(32)
+
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar('O')
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar('P')
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(':')
+            putchar(GOTO_LOG_BYTE_STATE)
+            putchar(opcodehi)
+            putchar(GOTO_LOG_BYTE_STATE)
+            putchar(opcodelo)
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(32)
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(32)
+
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar('X')
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(':')
+            putchar(GOTO_LOG_BYTE_STATE)
+            putchar(_X__)
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(':')
+            putchar(GOTO_LOG_BYTE_STATE)
+            putchar(x)
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(32)
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(32)
+
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar('Y')
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(':')
+            putchar(GOTO_LOG_BYTE_STATE)
+            putchar(__Y_)
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(':')
+            putchar(GOTO_LOG_BYTE_STATE)
+            putchar(y)
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(32)
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(32)
+
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar('I')
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar(':')
+            putchar(GOTO_LOG_BYTE_STATE)
+            putchar(index>>8)
+            putchar(GOTO_LOG_BYTE_STATE)
+            putchar(index)
+            putchar(GOTO_LOG_CHAR_STATE)
+            putchar('\n')
+
 
             if (opcode == $00e0) {
                 // draw
@@ -252,18 +334,76 @@ program {
                     index = locn;
 
                 } else if (__NN == $33) {
+
                     uint16 i100 = x / 100;
-                    uint16 i10 = (x /10) % 10;
-                    uint16 i1 = x % 10;
+                    uint16 xDiv10 = x / 10;
+                    uint16 i10 = xDiv10 - (10 * i100);
+                    uint16 i1 = x - (10 * xDiv10);
 
                     memory[index] = i100;
                     memory[index+1] = i10;
                     memory[index+2] = i1;
+
                 } else if (__NN == $55) {
                     // broken?
                     uint16 i = 0;
                     while (true) {
+                        memory[index + i] = registers[i];
+
+                        i = i + 1;
+                        if (i > x) {
+                            break
+                        }
+                    }
+                    // NB THERE IS AN OPTIONAL LEGACY STEP HERE THAT SOME PROGS MIGHT RELY ON
+                    //       index = if (LoadStoreBehaviour == Legacy) (st.index + xReg.ubyte + 1) else st.index
+                } else if (__NN == $65) {
+                    // broken?
+                    uint16 i = 0;
+
+
+                    putchar(GOTO_LOG_CHAR_STATE)
+                    putchar('$')
+                    putchar(GOTO_LOG_CHAR_STATE)
+                    putchar('6')
+                    putchar(GOTO_LOG_CHAR_STATE)
+                    putchar('5')
+                    putchar(GOTO_LOG_CHAR_STATE)
+                    putchar(':')
+                    putchar(GOTO_LOG_BYTE_STATE)
+                    putchar(x)
+                    putchar(GOTO_LOG_CHAR_STATE)
+                    putchar('\n')
+
+                    while (true) {
                         registers[i] = memory[index + i];
+
+                        putchar(GOTO_LOG_CHAR_STATE)
+                        putchar('V')
+                        putchar(GOTO_LOG_BYTE_STATE)
+                        putchar(i)
+                        putchar(GOTO_LOG_CHAR_STATE)
+                        putchar('=')
+                        putchar(GOTO_LOG_BYTE_STATE)
+                        putchar(registers[i])
+                        putchar(GOTO_LOG_CHAR_STATE)
+                        putchar(32)
+                        putchar(GOTO_LOG_CHAR_STATE)
+                        putchar(32)
+
+                        putchar(GOTO_LOG_CHAR_STATE)
+                        putchar('M')
+                        putchar(GOTO_LOG_BYTE_STATE)
+                        putchar((index+i) >> 8)
+                        putchar(GOTO_LOG_BYTE_STATE)
+                        putchar(index+i)
+                        putchar(GOTO_LOG_CHAR_STATE)
+                        putchar('=')
+                        putchar(GOTO_LOG_BYTE_STATE)
+                        putchar(memory[index + i])
+                        putchar(GOTO_LOG_CHAR_STATE)
+                        putchar('\n')
+
                         i = i + 1;
                         if (i > x) {
                             break
@@ -272,18 +412,6 @@ program {
                     // NB THERE IS AN OPTIONAL LEGACY STEP HERE THAT SOME PROGS MIGHT RELY ON
                     //       index = if (LoadStoreBehaviour == Legacy) (st.index + xReg.ubyte + 1) else st.index
 
-                } else if (__NN == $65) {
-                    // broken?
-                    uint16 i = 0;
-                    while (true) {
-                        memory[index + i] = registers[i];
-                        i = i + 1;
-                        if (i > x) {
-                            break
-                        }
-                    }
-                    // NB THERE IS AN OPTIONAL LEGACY STEP HERE THAT SOME PROGS MIGHT RELY ON
-                    //       index = if (LoadStoreBehaviour == Legacy) (st.index + xReg.ubyte + 1) else st.index
 
                 } else {
                     halt(opcode)

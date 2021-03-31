@@ -1,6 +1,5 @@
 package scc
 
-import scc.COUNTER.iii
 import scc.Scope.LABEL_NAME_SEPARATOR
 import scc.SpamCC.{TWO_BYTE_STORAGE, split}
 
@@ -80,6 +79,8 @@ case class AluExpr(aluop: String, rhs: Block)
 object COUNTER {
   var iii : Int = 0
 }
+
+import scc.COUNTER.iii
 
 case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
   extends Block(nestedName = s"Compound${Scope.nextInt}") {

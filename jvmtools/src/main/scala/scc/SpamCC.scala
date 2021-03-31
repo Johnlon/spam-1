@@ -101,7 +101,7 @@ class SpamCC extends StatementParser with ExpressionParser with ConstExpressionP
     parse(program, code) match {
       case Success(matched, _) =>
         println("SpamCC parsed : ")
-        println(matched.dump(1))
+        //println(matched.dump(1))
 
         println("Compiling : ")
         matched.compile()

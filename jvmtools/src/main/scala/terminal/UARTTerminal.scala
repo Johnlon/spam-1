@@ -3,16 +3,21 @@ package terminal
 import java.awt.Color
 import java.io.{File, FileOutputStream, PrintStream}
 import java.util.concurrent.atomic.AtomicInteger
-
-import javax.swing.BorderFactory
+import javax.swing.{BorderFactory, JScrollPane}
 import org.apache.commons.io.input.{Tailer, TailerListener}
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+import scala.swing.ScrollPane.BarPolicy
 import scala.swing.event._
 import scala.swing.{Rectangle, _}
 
 
 object UARTTerminal extends SimpleSwingApplication {
+  val replay = true
+
+  @volatile var stopped = false
+
   val uartOut = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.out"
   val uartControl = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.control"
 
@@ -36,10 +41,12 @@ object UARTTerminal extends SimpleSwingApplication {
 
   // valid in NONE_STATE
   val GOTO_INIT_STATE: Char = 0
-  val GOTO_SETX_STATE: Char = 1  // switch state
-  val GOTO_SETY_STATE: Char = 2  // switch state
+  val GOTO_SETX_STATE: Char = 1 // switch state
+  val GOTO_SETY_STATE: Char = 2 // switch state
   val GOTO_DRAW_PIXEL_STATE: Char = 3 // switch state
   val GOTO_DRAW_BYTE_STATE: Char = 4 // switch state
+  val GOTO_LOG_CHAR_STATE: Char = 5 // switch state
+  val GOTO_LOG_BYTE_STATE: Char = 6 // switch state
   val DO_CLEAR: Char = 10
   val DO_UP: Char = 11
   val DO_DOWN: Char = 12
@@ -49,32 +56,66 @@ object UARTTerminal extends SimpleSwingApplication {
   val DO_CENTRE: Char = 16
 
   sealed trait TerminalIOState
-  object STATE_INIT extends TerminalIOState  // next is a direct op like "RIGHT", or a signal to start a two byte binary value op like DRAW
-  object STATE_SETX  extends TerminalIOState
-  object STATE_SETY  extends TerminalIOState
-  object STATE_DRAW_PIXEL  extends TerminalIOState
-  object STATE_DRAW_BYTE  extends TerminalIOState
+
+  object STATE_INIT extends TerminalIOState // next is a direct op like "RIGHT", or a signal to start a two byte binary value op like DRAW
+  object STATE_SETX extends TerminalIOState
+
+  object STATE_SETY extends TerminalIOState
+
+  object STATE_DRAW_PIXEL extends TerminalIOState
+
+  object STATE_DRAW_BYTE extends TerminalIOState
+
+  object STATE_LOG_CHAR extends TerminalIOState
+
+  object STATE_LOG_BYTE extends TerminalIOState
+
   var state: TerminalIOState = STATE_INIT
 
   var data: mutable.Seq[mutable.Buffer[Char]] = fill()
 
   val text = new TextArea("Java Version: " + util.Properties.javaVersion + "\n" + "john")
   text.border = BorderFactory.createLineBorder(Color.BLUE)
+  text.preferredSize = new Dimension(900, 450)
+  text.font = new Font("Courier New", scala.swing.Font.Plain.id, 10)
+
+  val logLine = new TextArea(1, 100)
+  logLine.border = BorderFactory.createLineBorder(Color.GREEN)
+  logLine.font = new Font("Courier New", scala.swing.Font.Plain.id, 10)
+
+  val logPanel = new TextArea(20, 100)
+  logPanel.border = BorderFactory.createLineBorder(Color.GREEN)
+  logPanel.font = new Font("Courier New", scala.swing.Font.Plain.id, 10)
+  val scrText = new scala.swing.ScrollPane(logPanel)
+  scrText.verticalScrollBarPolicy = BarPolicy.Always
+
 
   private def run(): Unit = {
     val listener = new FileListener
-    Tailer.create(new File(uartOut), listener, 0, true, false, 1000)
+    val gotoEnd = !replay
+    Tailer.create(new File(uartOut), listener, 0, gotoEnd, false, 1000)
   }
 
   class FileListener extends TailerListener {
     def handle(line: String): Unit = {
 
+      var wasStopped = false
+      while (stopped) {
+        wasStopped = false
+        Thread.sleep(10)
+      }
 
       if (line.trim.length > 0) {
         println("! " + line)
         val c = Integer.parseInt(line, 16)
         val char = c.toChar
         plot(char)
+      }
+
+      if (wasStopped) {
+        Thread.sleep(1000)
+        // if was stopped then don't recover speed immediately
+        // this allows one to quickly press top again to allow app to advance slowly
       }
     }
 
@@ -99,13 +140,11 @@ object UARTTerminal extends SimpleSwingApplication {
 
     val brefresh = new Button("Reset")
     val bpaint = new Button("Paint")
-
-    text.preferredSize = new Dimension(900, 600)
-    text.font = new Font("Courier New", scala.swing.Font.Plain.id, 10)
+    val bstop = new Button("Stop")
 
     plot(DO_CENTRE)
 
-    listenTo(text.keys, brefresh, bpaint)
+    listenTo(text.keys, brefresh, bpaint, bstop)
 
     val uartCtrl = new PrintStream(new FileOutputStream(uartControl, true))
 
@@ -126,6 +165,9 @@ object UARTTerminal extends SimpleSwingApplication {
       case ButtonClicked(b) if b == bpaint =>
         doRepaint()
 
+      case ButtonClicked(b) if b == bstop =>
+        stopped = !stopped
+
       case KeyPressed(_, c, _, _) if c == Key.Left =>
         send(DO_LEFT)
         send('#')
@@ -141,8 +183,11 @@ object UARTTerminal extends SimpleSwingApplication {
       case _ =>
     }
 
+    val buttons = new BoxPanel(Orientation.Horizontal) {
+      contents ++= Seq(brefresh, bpaint, bstop)
+    }
     contents = new BoxPanel(Orientation.Vertical) {
-      contents ++= Seq(brefresh, bpaint, text)
+      contents ++= Seq(buttons, text, logLine, scrText)
     }
 
     //t.start()
@@ -175,6 +220,22 @@ object UARTTerminal extends SimpleSwingApplication {
     }
   }
 
+  def log(c: Char): Unit = {
+    if (c == '\n') {
+      // insert at top : https://stackoverflow.com/questions/12565358/how-to-insert-or-append-new-line-on-top-of-the-jtextarea-in-java-swing
+      logPanel.peer.getDocument.insertString(0, logLine.text + "\n", null);
+      //logPanel.text = logLine.text +  "\n" + logPanel.text
+      logLine.text = ""
+    } else {
+      logLine.text += c
+    }
+  }
+
+  def logByte(c: Char): Unit = {
+    logLine.text += f"$c%02x"
+  }
+
+
   def plot(c: Char): Unit = synchronized {
     state match {
       case STATE_SETX =>
@@ -196,8 +257,14 @@ object UARTTerminal extends SimpleSwingApplication {
         bits.zipWithIndex foreach {
           case (bit, i) =>
             val char = if (bit == '1') BLOCKCHAR else BLANKCHAR
-              data(yi)(xi+i) = char
+            data(yi)(xi + i) = char
         }
+        state = STATE_INIT
+      case STATE_LOG_CHAR =>
+        log(c)
+        state = STATE_INIT
+      case STATE_LOG_BYTE =>
+        logByte(c)
         state = STATE_INIT
       case STATE_INIT =>
         c match {
@@ -214,6 +281,10 @@ object UARTTerminal extends SimpleSwingApplication {
             state = STATE_DRAW_PIXEL
           case GOTO_DRAW_BYTE_STATE =>
             state = STATE_DRAW_BYTE
+          case GOTO_LOG_CHAR_STATE =>
+            state = STATE_LOG_CHAR
+          case GOTO_LOG_BYTE_STATE =>
+            state = STATE_LOG_BYTE
 
           // FOLLOWING COMMANDS ARE ONE BYTE SEQ
           case DO_CLEAR =>

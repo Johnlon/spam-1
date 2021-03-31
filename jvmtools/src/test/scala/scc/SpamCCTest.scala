@@ -325,7 +325,7 @@ class SpamCCTest {
     compile(lines, verbose = true, outputCheck = {
       str =>
 
-        checkTransmittedL('d', str, List("66","66", "161", "65", "32", "0"))
+        checkTransmittedL('d', str, List("66", "66", "161", "65", "32", "0"))
     })
   }
 
@@ -370,7 +370,7 @@ class SpamCCTest {
     compile(lines, verbose = true, outputCheck = {
       str =>
 
-        checkTransmittedL('b', str, List(EqAsBin,EqAsBin,
+        checkTransmittedL('b', str, List(EqAsBin, EqAsBin,
           "00001001", "00010010", "00100100", "01001000", "10010000", "10000000", "00000000", EqAsBin, "00001001"))
     })
   }
@@ -407,7 +407,7 @@ class SpamCCTest {
     compile(lines, verbose = true, outputCheck = {
       str =>
 
-        checkTransmittedL('h', str, List("c0","0d","a0","0a", "0b", '='.toInt.toHexString))
+        checkTransmittedL('h', str, List("c0", "0d", "a0", "0a", "0b", '='.toInt.toHexString))
     })
   }
 
@@ -755,10 +755,11 @@ class SpamCCTest {
         |""".stripMargin
 
     compile(lines, verbose = true, outputCheck = str => {
-      checkTransmittedChar(str, 'A')
-      checkTransmittedChar(str, 'B')
-      checkTransmittedChar(str, 'C')
-      checkTransmittedChar(str, 'D')
+      checkTransmittedL('c', str, List("A", "B", "C", "D"))
+      //checkTransmittedChar(str, 'A')
+      //checkTransmittedChar(str, 'B')
+      //checkTransmittedChar(str, 'C')
+      //checkTransmittedChar(str, 'D')
     })
 
   }
@@ -864,7 +865,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val expected = 503*2
+    val expected = 503 * 2
     val upper = expected >> 8
     val lower = expected & 0xff
 
@@ -900,14 +901,29 @@ class SpamCCTest {
 
     val lines =
       s"""fun main() {
-         | uint16 x = 2;
+         |
+         | uint16 a1 = 1;
+         | uint16 a2 = a1 / 10;
+         | uint16 a3 = a1 / 10;
+         |
+         | uint16 x = 123;
+         |
          | uint16 i100 = x / 100;
-         | uint16 i10 = (x /10) % 10;
-         | uint16 i1 = x % 10;
+         | uint16 xDiv10 = x / 10;
+         | uint16 i10 = xDiv10 - (10 * i100);
+         | uint16 i1 = x - (10*xDiv10);
+         |
+         | uint16 bcd = (i100 * 100) + (i10 * 10) + i1;
+         | putchar(i100)
+         | putchar(i10)
+         | putchar(i1)
          |}
          |""".stripMargin
 
-    val actual = compile(lines, verbose = true)
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+        checkTransmittedL('d', str, List("1","2","3"))
+    })
 
   }
 
@@ -1093,7 +1109,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual = compile(lines, timeout=5, quiet = true)
+    val actual = compile(lines, timeout = 5, quiet = true)
 
     val expected = split(
       """root_function_main___VAR_RETURN_HI: EQU   0
@@ -1128,7 +1144,8 @@ class SpamCCTest {
         |
         | uint16 i = 10;
         | while (i>0) {
-        |   i = i - 1;
+        |    System.out.pri
+        |        |   i = i - 1;
         |   uint16 c = i % 2;
         |   if (c == 0) {
         |       // set pointer to point at even
@@ -1356,12 +1373,12 @@ class SpamCCTest {
         |""".stripMargin
 
     try {
-      compile(lines, timeout=5, quiet = true)
+      compile(lines, timeout = 5, quiet = true)
       fail("should have halted")
     } catch {
       case ex: HaltedException if ex.halt == 65432 =>
         println("halted ok")
-      case ex: HaltedException  =>
+      case ex: HaltedException =>
         fail("halted with wrong code " + ex.halt)
       case ex =>
         fail("unexpected exception : " + ex.getMessage)
@@ -1380,12 +1397,12 @@ class SpamCCTest {
         |""".stripMargin
 
     try {
-      compile(lines, timeout=5, quiet = true)
+      compile(lines, timeout = 5, quiet = true)
       fail("should have halted")
     } catch {
       case ex: HaltedException if ex.halt == 65432 =>
         println("halted ok")
-      case ex: HaltedException  =>
+      case ex: HaltedException =>
         fail("halted with wrong code " + ex.halt)
       case ex =>
         fail("unexpected exception : " + ex.getMessage)

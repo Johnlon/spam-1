@@ -86,7 +86,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
         assertAllResolved(theCode)
 
         val instructions = filtered.collect { case x: Instruction => x.roms }
-        instructions.zipWithIndex.foreach(l => println("CODE : " + l))
+        //instructions.zipWithIndex.foreach(l => println("CODE : " + l))
         instructions
       }
 
