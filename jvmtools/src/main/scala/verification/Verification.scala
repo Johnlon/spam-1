@@ -133,7 +133,8 @@ object Verification {
     //    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix  +uart_control_file=`pwd`/$controlFileUnix"""))
     val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh '$timeout' ../verilog/cpu/demo_assembler_roms.v `pwd`/$romFileUnix"""))
 
-    val halted = new AtomicReference[Integer]()
+
+    val halted = new AtomicReference[HaltCode]()
     val success = new AtomicBoolean()
     val lines = ListBuffer.empty[String]
 
@@ -142,10 +143,10 @@ object Verification {
         lines.append("OUT:" + output)
         if (output.contains("SUCCESS - AT EXPECTED END OF PROGRAM")) success.set(true)
         if (output.contains("--- HALTED ")) {
-          val haltedRegex = "--* HALTED (\\d+) .*".r
-          val haltedRegex(haltCode) = output
+          val haltedRegex = "--* HALTED <(\\d+)\\s.*> <(\\d+)\\s.*>.*".r
+          val haltedRegex(marHaltCode,aluHaltCode) = output
 
-          halted.set(haltCode.toInt)
+          halted.set(HaltCode(marHaltCode.toInt,aluHaltCode.toInt))
         }
         if (verbose) println("\t   \t: " + output)
       },
@@ -179,4 +180,5 @@ object Verification {
   }
 }
 
-case class HaltedException(halt: Int) extends RuntimeException
+case class HaltCode(mar:Int, alu:Int)
+case class HaltedException(halt: HaltCode) extends RuntimeException

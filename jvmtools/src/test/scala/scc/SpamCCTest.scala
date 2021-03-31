@@ -1376,8 +1376,8 @@ class SpamCCTest {
       compile(lines, timeout = 5, quiet = true)
       fail("should have halted")
     } catch {
-      case ex: HaltedException if ex.halt == 65432 =>
-        println("halted ok")
+      case ex: HaltedException if ex.halt.mar == 65432 =>
+        println("halted ok with "+ ex)
       case ex: HaltedException =>
         fail("halted with wrong code " + ex.halt)
       case ex =>
@@ -1400,8 +1400,8 @@ class SpamCCTest {
       compile(lines, timeout = 5, quiet = true)
       fail("should have halted")
     } catch {
-      case ex: HaltedException if ex.halt == 65432 =>
-        println("halted ok")
+      case ex: HaltedException if ex.halt.mar == 65432 =>
+        println("halted ok with "+ ex)
       case ex: HaltedException =>
         fail("halted with wrong code " + ex.halt)
       case ex =>
