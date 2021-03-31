@@ -255,12 +255,15 @@ module cpu(
 
 
     int halt_code;
+    // neg edge is start of execute
     always @(negedge system_clk) begin
         if (_halt_in == 0) begin
             halt_code = (CPU.MARHI.Q  << 8) + CPU.MARLO.Q;
 
             // leave space around the code as Verification.scala looks for them to extract the value
-            $display("----------------------------- HALTED %1d h:%04x ---------------------------", halt_code, 16'(halt_code));
+            $display("----------------------------- HALTED <%1d h:%04x> <%1d h:%02x> ---------------------------", 
+                        halt_code, 16'(halt_code),
+                        alu_result_bus, 8'(alu_result_bus));
             $finish();
         end
     end
