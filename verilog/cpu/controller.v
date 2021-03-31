@@ -97,7 +97,7 @@ module controller(
     wire [7:0] direct_address_hi = instruction_3; // DONR
     wire amode_bit               = instruction_4[0]; // DONE
     wire [1:0] unused_bits       = instruction_4[2:1]; // DONE
-    wire control_invert_bit      = instruction_4[3]; 
+    wire condition_invert_bit    = instruction_4[3]; 
     wire _set_flags_bit          = instruction_4[4]; // DONE
     wire [2:0] conditionBot      = instruction_4[7:5]; // DONE
     wire conditionTopBit         = instruction_5[0]; // DONE
@@ -158,12 +158,12 @@ module controller(
     xor #(9) ic7486_b(set_flags_bit, _set_flags_bit, 1'b1); // use xor as inverter
     nand #(9) ic7400_d(_set_flags, set_flags_bit, do_exec); // use nand
 
-    // When control_invert is active high then the conditional exec logic is reversed.
+    // When condition_invert_bit is active high then the conditional exec logic is reversed.
     // eg when "invert" is inactive "DO" means execute only if DO flag is set, 
     // but when "invert" is active "DO" means execute only if DO flag is not set.
     // This new feature means the NE output of the ALU is redundant as the same can be achieved using 
     // using EQ but with the condition invert enabled.
-    xor #(9) ic7486_c(_do_exec, _condition_met, control_invert_bit); // use xor as conditional inverter 
+    xor #(9) ic7486_c(_do_exec, _condition_met, condition_invert_bit); // use xor as conditional inverter 
 
     //----------------------------------------------------------------------------------
     // address mode logic
