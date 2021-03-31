@@ -42,8 +42,9 @@ module hct74151(_E, I, S, Y, _Y);
         (Sd==6 & Id[6]) ||
         (Sd==7 & Id[7]);
 
-    assign Y = _Ed==0 ? O : 0;
-    assign _Y = Ed==1 ? !O : 1;
+    // when _E is high then fixed values are assumed otherwise Y follows the selected pin and _Y is the inverse
+    assign Y  = _Ed==0 ? O  : 0;
+    assign _Y = _Ed==0 ? !O : 1;
 
     if (LOG) always @*
     begin 
