@@ -106,6 +106,7 @@ integer cycle_count=0;
 integer tx_count=0;
 
 assign _TXE = !(fOut != `NULL && _TXE_SUPPRESS && tx_count > 0 && _MR);
+
 //assign #T6 _RXF = !(unreadDataAvailable && _RXF_SUPPRESS && _MR);
 assign  _RXF = !(unreadDataAvailable && _RXF_SUPPRESS && _MR);
 
@@ -331,7 +332,7 @@ initial
                             $display("%9t ", $time, "UART: CONTROL RECEIVE totalBytesReceived %3d, totalBytesRead=%3d", totalBytesReceived, totalBytesRead);
                     end
                     
-                    if (c == "t") // wait for simulation to transmit N chars
+                    if (c == "t") // permit simulation to transmit N chars
                     begin
                         txLength=0;
 
@@ -343,7 +344,7 @@ initial
                         tx_count = txLength;
                     end
                     
-                    if (c == "#") // skil N ns
+                    if (c == "#") // sleep N ns
                     begin
                         tDelta=0;
                         line="";
