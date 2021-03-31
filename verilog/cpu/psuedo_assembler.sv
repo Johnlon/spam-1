@@ -11,6 +11,9 @@
 `define SET_FLAGS 1'b0
 `define NA_FLAGS 1'b1
 
+`define COND_STD 1'b0
+`define COND_INV 1'b1
+
 // PSEUDO ASSEMBLER
 `define ROM(A) { CPU.ctrl.rom_6.Mem[A], CPU.ctrl.rom_5.Mem[A], CPU.ctrl.rom_4.Mem[A], CPU.ctrl.rom_3.Mem[A], CPU.ctrl.rom_2.Mem[A], CPU.ctrl.rom_1.Mem[A] }
 
@@ -22,62 +25,6 @@
 
 // Instruction populates the ROM and adds a text version of the instruction to the CODE array
 `define TEXT(LOCN,TXT)    CODE_TEXT[LOCN] = TXT;
-
-// in the same order as the instruction layout - args as numeric values already cast to correct size
-`define INSTRUCTION_NN(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
-    `ROM(LOCN) = { \
-         (ALUOP), \
-         (TARGET), \
-         (SRCA), \
-         (SRCB), \
-         (CONDITION), \
-         (FLAG_CTL), \
-         1'b0, \
-         2'bz, \
-         (AMODE), \
-         (ADDRESS), \
-         (IMMED) }; \
-        $sformat(TEMP_STRING, "aluop:%x  target:%x  a:%x  b:%x  cond:%x setf:%x amode:%x immed8:%x addr:%x", \
-                    ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, AMODE, IMMED, ADDRESS); \
-        CODE_NUM[LOCN] = TEMP_STRING;
-
-// in the same order as the instruction layout - args as numeric values already cast to correct size
-`define DISASSEMBLE(LOCN, INSTRUCTION) { \
-    { \
-         wire i_aluop = INSTRUCTION[47:43]; \
-         wire i_target = INSTRUCTION[42:39]; \
-         wire i_srca = INSTRUCTION[38:36]; \
-         wire i_srcb = INSTRUCTION[35:33]; \
-         wire i_cond = INSTRUCTION[32:29]; \
-         wire i_flag = INSTRUCTION[28]; \
-         wire i_nu   = INSTRUCTION[27:25]; \
-         wire i_amode= INSTRUCTION[24]; \
-         wire i_addr = INSTRUCTION[23:8]; \
-         wire i_immed= INSTRUCTION[7:0]; \
-        $sformat(TEMP_STRING, "aluop:%s  target:%s  a:%s  b:%s  cond:%x setf:%s amode:%s immed8:%x addr:%x", \
-                    aluopname(i_aluop), \
-                    tdevname(i_target), \
-                    adevname(i_srca), \
-                    bdevname(i_srcb), \
-                    condname(i_cond), \
-                    (i_flag "NOSET" : "SET"), \
-                    (i_amode  "DIR": "REG"), \
-                    i_addr, \
-                    i_immed); \
-    }
-
-// in the same order as the instruction layout - args as numeric values 
-`define INSTRUCTION_N(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
-    `INSTRUCTION_NN(LOCN, \
-         cast.to5(ALUOP), \
-         cast.to4(TARGET), \
-         cast.to3(SRCA), \
-         cast.to3(SRCB), \
-         cast.to4(CONDITION), \
-         cast.to1(FLAG_CTL), \
-         cast.to1(AMODE), \
-         cast.to16(ADDRESS), \
-         cast.to8(IMMED) );
 
 // in same order as instruction - symbolic args
 `define INSTRUCTION_SYM(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
@@ -97,6 +44,65 @@
         `INSTRUCTION_SYM(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED); \
         LOCN++;
 
+
+// in the same order as the instruction layout - args as numeric values already cast to correct size
+`define DISASSEMBLE(LOCN, INSTRUCTION) { \
+    { \
+         wire i_aluop = INSTRUCTION[47:43]; \
+         wire i_target = INSTRUCTION[42:39]; \
+         wire i_srca = INSTRUCTION[38:36]; \
+         wire i_srcb = INSTRUCTION[35:33]; \
+         wire i_cond = INSTRUCTION[32:29]; \
+         wire i_flag = INSTRUCTION[28]; \
+         wire i_cinv = INSTRUCTION[27]; \
+         wire i_nu   = INSTRUCTION[26:25]; \
+         wire i_amode= INSTRUCTION[24]; \
+         wire i_addr = INSTRUCTION[23:8]; \
+         wire i_immed= INSTRUCTION[7:0]; \
+        $sformat(TEMP_STRING, "aluop:%s  target:%s  a:%s  b:%s  cond:%x setf:%s invert:%s amode:%s immed8:%x addr:%x", \
+                    aluopname(i_aluop), \
+                    tdevname(i_target), \
+                    adevname(i_srca), \
+                    bdevname(i_srcb), \
+                    condname(i_cond), \
+                    (i_flag "NOSET" : "SET"), \
+                    (i_cinv "INV" : "STD"), \
+                    (i_amode  "DIR": "REG"), \
+                    i_addr, \
+                    i_immed); \
+    }
+
+// in the same order as the instruction layout - args as numeric values already cast to correct size
+`define INSTRUCTION_NN(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, COND_INVERT, AMODE, ADDRESS, IMMED) \
+    `ROM(LOCN) = { \
+         (ALUOP), \
+         (TARGET), \
+         (SRCA), \
+         (SRCB), \
+         (CONDITION), \
+         (FLAG_CTL), \
+         (COND_INVERT)  \
+         2'bz, \
+         (AMODE), \
+         (ADDRESS), \
+         (IMMED) }; \
+        $sformat(TEMP_STRING, "aluop:%x  target:%x  a:%x  b:%x  cond:%x setf:%x cinv:%x amode:%x immed8:%x addr:%x", \
+                    ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, COND_INVERT, AMODE, IMMED, ADDRESS); \
+        CODE_NUM[LOCN] = TEMP_STRING;
+
+// in the same order as the instruction layout - args as numeric values 
+`define INSTRUCTION_N(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
+    `INSTRUCTION_NN(LOCN, \
+         cast.to5(ALUOP), \
+         cast.to4(TARGET), \
+         cast.to3(SRCA), \
+         cast.to3(SRCB), \
+         cast.to4(CONDITION), \
+         cast.to1(FLAG_CTL), \
+         cast.to1(COND_STD), \
+         cast.to1(AMODE), \
+         cast.to16(ADDRESS), \
+         cast.to8(IMMED) );
 
 // in the order old scripts use
 `define INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \

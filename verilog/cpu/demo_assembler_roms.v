@@ -186,7 +186,7 @@ endfunction
             end
 
             data = `ROM(pc);
-            $display("\nCODE[%d] : %-s" , pc, CPU.disasm(data));
+            $display(">>>> CODE[%d] : %-s" , pc, CPU.disasm(data));
 
 
             //$display("\n%9t", $time, " DECOMPILE %s", CPU.ctrl.decode(1).display()); 
