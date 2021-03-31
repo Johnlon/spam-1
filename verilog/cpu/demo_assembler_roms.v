@@ -30,43 +30,6 @@ module test();
 
     parameter LOG = 0;
 
-    import alu_ops::*;
-    import control::*;
-
-    function string disasm([47:0] INSTRUCTION);
-         reg [4:0] i_aluop;
-         reg [3:0] i_target;
-         reg [2:0] i_srca;
-         reg [2:0] i_srcb;
-         reg [3:0] i_cond;
-         reg i_flag;
-         reg [2:0] i_nu;
-         reg i_amode;
-         reg [23:8] i_addr ;
-         reg [7:0] i_immed;
-    begin
-         i_aluop = INSTRUCTION[47:43]; 
-         i_target = INSTRUCTION[42:39]; 
-         i_srca = INSTRUCTION[38:36]; 
-         i_srcb = INSTRUCTION[35:33]; 
-         i_cond = INSTRUCTION[32:29]; 
-         i_flag = INSTRUCTION[28]; 
-         i_nu   = INSTRUCTION[27:25]; 
-         i_amode= INSTRUCTION[24]; 
-         i_addr = INSTRUCTION[23:8]; 
-         i_immed= INSTRUCTION[7:0]; 
-        disasm = $sformatf("aluop:%-10ss(%d)  target:%-10s(%d) a:%-5s(%d)  b:%-10s(%d)  cond:%s(%d) setf:%s amode:%s addr:%4x immed8:%2x", 
-                    aluopName(i_aluop), i_aluop,
-                    tdevname(i_target), i_target,
-                    adevname(i_srca),  i_srca,
-                    bdevname(i_srcb),  i_srcb,
-                    condname(i_cond),  i_cond,
-                    (i_flag? "NOSET" : "SET"), 
-                    (i_amode?  "DIR": "REG"), 
-                    i_addr, 
-                    i_immed); 
-    end 
-    endfunction
     string rom;
     initial begin
         if (! $value$plusargs("rom=%s", rom)) begin
@@ -214,9 +177,16 @@ endfunction
        // if (LOG) 
         begin 
             $display("%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
-            $display("%9t", $time, " EXECUTING ..."); 
+            if (CPU.ctrl._do_exec == 0) begin
+                $display("%9t", $time, " EXECUTING ..."); 
+            end
+            else
+            begin
+                $display("%9t", $time, " SKIPPING ..."); 
+            end
+
             data = `ROM(pc);
-            $display("CODE : %-s" , disasm(data));
+            $display("\nCODE[%d] : %-s" , pc, CPU.disasm(data));
 
 
             //$display("\n%9t", $time, " DECOMPILE %s", CPU.ctrl.decode(1).display()); 
@@ -456,9 +426,6 @@ endfunction
         end
     end
 
-    always @(*) begin
-        $display("DO_EXEC = %b ", CPU.ctrl._do_exec);
-    end 
 
     always @( * )
     begin
