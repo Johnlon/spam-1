@@ -201,7 +201,7 @@ module test();
         CLK_UP;
         #1000
 
-        `Equals(CPU.phaseExec, 1)
+        `Equals(CPU.phase_exec, 1)
         `Equals({CPU.PCHI,CPU.PCLO}, 16'b0)
         `Equals(CPU._addrmode_register, 1'b1)
         `Equals(CPU.address_bus, 16'hffaa); // because first instruction will be on system and it's using direct ram addressing
@@ -219,7 +219,7 @@ module test();
         `DISPLAY("_RESET_SWITCH releasing");
         _RESET_SWITCH = 1;
         `Equals(CPU._mrPC, 0);
-        `Equals(CPU.phaseExec, 1)
+        `Equals(CPU.phase_exec, 1)
 
         `DISPLAY("CLOCK DOWN - NOTHING SHOULD HAPPEN");
         CLK_DN;
@@ -232,7 +232,7 @@ module test();
         #1000
         `Equals(CPU._mrPC, 0);
         `Equals({CPU.PCHI,CPU.PCLO}, 16'b0)
-        `Equals(CPU.phaseExec, 0)
+        `Equals(CPU.phase_exec, 0)
         `Equals(CPU._addrmode_register, 1);
         DUMP();
         `Equals(CPU.address_bus, 16'hffaa);
@@ -244,7 +244,7 @@ module test();
         #HALF_CLK
         `Equals(CPU._mrPC, 1);
 
-        `Equals(CPU.phaseExec, 1)
+        `Equals(CPU.phase_exec, 1)
 
         `Equals(CPU.PCHI, 8'h00) // doesn't advnce yet
         `Equals(CPU.PCLO, 8'h00) // doesn't advnce yet
@@ -255,7 +255,7 @@ module test();
         `DISPLAY("phase - fetch")
         CLK_UP;
         #HALF_CLK
-        `Equals(CPU.phaseExec, 0)
+        `Equals(CPU.phase_exec, 0)
         `Equals(CPU.PCHI, 8'h00) 
         `Equals(CPU.PCLO, 8'h01)
         `Equals(CPU._addrmode_register, 1);
@@ -267,7 +267,7 @@ module test();
         CLK_DN;
         #HALF_CLK
 
-        `Equals(CPU.phaseExec, 1)
+        `Equals(CPU.phase_exec, 1)
         `Equals(CPU.MARLO.Q, 8'h42)
         `assertTrue(CPU.MARHI.isUndef());
 
@@ -275,7 +275,7 @@ module test();
         `DISPLAY("phase - fetch")
         CLK_UP;
         #HALF_CLK
-        `Equals(CPU.phaseExec, 0)
+        `Equals(CPU.phase_exec, 0)
         `Equals(CPU.PCHI, 8'h00)
         `Equals(CPU.PCLO, 8'h02)
         `Equals(CPU._addrmode_register, 0);
@@ -284,7 +284,7 @@ module test();
 
         CLK_DN;
         #HALF_CLK
-        `Equals(CPU.phaseExec, 1)
+        `Equals(CPU.phase_exec, 1)
         `Equals(CPU.MARLO.Q, 8'h42)
         `Equals(CPU.MARHI.Q, 8'h00)
 
@@ -293,7 +293,7 @@ module test();
         `DISPLAY("phase - fetch")
         CLK_UP;
         #HALF_CLK
-        `Equals(CPU.phaseExec, 0)
+        `Equals(CPU.phase_exec, 0)
         `Equals(CPU.PCHI, 8'h00)
         `Equals(CPU.PCLO, 8'h03)
         `Equals(CPU._addrmode_register, 0);
@@ -301,7 +301,7 @@ module test();
 
         CLK_DN;
         #HALF_CLK
-        `Equals(CPU.phaseExec, 1)
+        `Equals(CPU.phase_exec, 1)
         `Equals(CPU.MARLO.Q, 8'h43)
         `Equals(CPU.MARHI.Q, 8'h00)
 
@@ -310,12 +310,12 @@ module test();
         `DISPLAY("phase - fetch")
         CLK_UP;
         #HALF_CLK
-        `Equals(CPU.phaseExec, 0)
+        `Equals(CPU.phase_exec, 0)
         `Equals(`RAM(16'h0043), CPU.ram64.UNDEF); //8'hxx); // Should still be XX as we've not entered EXECUTE yet
 
         CLK_DN;
         #HALF_CLK
-        `Equals(CPU.phaseExec, 1)
+        `Equals(CPU.phase_exec, 1)
         `Equals(`RAM(16'h0043), 8'h22);
 
 
@@ -455,7 +455,7 @@ module test();
 
     task DUMP;
             DUMP_OP;
-            `DD " phaseExec=%1d", CPU.phaseExec);
+            `DD " phase_exec=%1d", CPU.phase_exec);
             `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
             `DD " DIRECT=%02x:%02x", CPU.ctrl.direct_address_hi, CPU.ctrl.direct_address_lo);
@@ -490,7 +490,7 @@ module test();
                  "rom=%08b:%08b:%08b", rom_hi.D, rom_mid.D, rom_lo.D, 
                  " _amode=%-2s", control::fAddrMode(_addrmode_register, _addrmode_direct),
                  " address_bus=0x%4x", address_bus,
-                 " FE=%-6s (%1b%1b)", control::fPhase(phaseFetch, phaseExec), phaseFetch, phaseExec,
+                 " FE=%-6s (%1b%1b)", control::fPhase(phaseFetch, phase_exec), phaseFetch, phase_exec,
                  " bbus=%8b abus=%8b alu_result_bus=%8b", bbus, abus, alu_result_bus,
                  " bdev=%04b adev=%04b targ=%05b alu_op=%05b (%1s)", bbus_dev, abus_dev, targ_dev, alu_op, aluopName(alu_op),
                  " tsel=%32b ", tsel,
@@ -523,11 +523,11 @@ module test();
         $display("%9t", $time, " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CLK %1b  <<<<<<<<<<<<<<<<<<<<<<<", CPU.clk);
     end
 
-    always @(posedge CPU.phaseExec) begin
+    always @(posedge CPU.phase_exec) begin
         $display("%9t", $time, " START PHASE: EXECUTE (posedge) =============================================================="); 
     end
 
-    always @(negedge CPU.phaseExec) begin
+    always @(negedge CPU.phase_exec) begin
         $display("%9t", $time, " END PHASE: EXECUTE (negedge) =============================================================="); 
         DUMP;
     end
@@ -542,7 +542,7 @@ module test();
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     always @(posedge CPU.gated_flags_clk) begin
-        if (CPU._phaseExec) begin
+        if (CPU._phase_exec) begin
             $display("ILLEGAL FLAGS LOAD DURING FETCH PHASE");
             $finish();
         end
@@ -550,7 +550,7 @@ module test();
         
     // constraints
 
-    always @(posedge CPU.phaseExec) begin
+    always @(posedge CPU.phase_exec) begin
         if (_RESET_SWITCH && CPU.ctrl.instruction_6 === 'x) begin
            $display("instruction_6", CPU.ctrl.instruction_6); 
             DUMP;
@@ -585,7 +585,7 @@ module test();
     always @* begin
         // permits a situation where the control lines conflict.
         // this is ok as long as they settle quickly and are settled before exec phase.
-        if (CPU._mrPC & CPU.phaseExec) begin
+        if (CPU._mrPC & CPU.phase_exec) begin
             if (CPU._addrmode_register === 1'bx) begin
                 $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _REG=%1b", CPU._addrmode_register );
                 DUMP;
