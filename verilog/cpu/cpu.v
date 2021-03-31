@@ -277,7 +277,7 @@ module cpu(
          reg [2:0] i_srcb;
          reg [3:0] i_cond;
          reg i_flag;
-         reg i_cinv;
+         reg i_cmode;
          reg [1:0] i_nu;
          reg i_amode;
          reg [23:8] i_addr ;
@@ -292,7 +292,7 @@ module cpu(
         i_srcb = INSTRUCTION[35:33]; 
         i_cond = INSTRUCTION[32:29]; 
         i_flag = INSTRUCTION[28]; 
-        i_cinv = INSTRUCTION[27]; 
+        i_cmode = INSTRUCTION[27]; 
         i_nu   = INSTRUCTION[26:25]; 
         i_amode= INSTRUCTION[24]; 
         i_addr = INSTRUCTION[23:8]; 
@@ -304,7 +304,7 @@ module cpu(
                     "  b:(%1d)%-10s", i_srcb, bdevname(i_srcb),  
                     "  cond:(%1d)%s", i_cond, condname(i_cond),  
                     " setf:(%b)%s", i_flag, (i_flag? "NOSET" : "SET"), 
-                    " cinv:(%b)%s", i_cinv, (i_cinv? "INV" : "STD"), 
+                    " cmode:(%b)%s", i_cmode, (i_cmode? "INV" : "STD"), 
                     " amode:(%1b)%s", i_amode, (i_amode?  "DIR": "REG"), 
                     " addr:(%1d)%04x", i_addr, i_addr, 
                     " immed:(%1d)%02x", i_immed, i_immed

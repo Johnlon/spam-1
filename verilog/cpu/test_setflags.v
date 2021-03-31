@@ -75,20 +75,20 @@ module test();
 
          icount = 0;
         // A = 0, carry set
-        `INSTRUCTION(icount, B_PLUS_1, rega, not_used, immed, A, `SET_FLAGS, `NA_AMODE, 1'bz, 255);
+        `INSTRUCTION(icount, B_PLUS_1, rega, not_used, immed, A, `SET_FLAGS, `CM_STD, `NA_AMODE, 1'bz, 255);
         // B = 1, carry persisted
-        `INSTRUCTION(icount, B_PLUS_1, regb, not_used, immed, C, `NA_FLAGS, `NA_AMODE, 1'bz, 1);
+        `INSTRUCTION(icount, B_PLUS_1, regb, not_used, immed, C, `NA_FLAGS, `CM_STD, `NA_AMODE, 1'bz, 1);
         // B = 2, carry persisted
-        `INSTRUCTION(icount, B_PLUS_1, regb, not_used, regb,  C, `NA_FLAGS, `NA_AMODE, 1'bz, 1);
+        `INSTRUCTION(icount, B_PLUS_1, regb, not_used, regb,  C, `NA_FLAGS, `CM_STD, `NA_AMODE, 1'bz, 1);
         // B = 3, carry persisted
-        `INSTRUCTION(icount, B_PLUS_1, regb, not_used, regb,  C, `NA_FLAGS, `NA_AMODE, 1'bz, 1);
+        `INSTRUCTION(icount, B_PLUS_1, regb, not_used, regb,  C, `NA_FLAGS, `CM_STD, `NA_AMODE, 1'bz, 1);
         // C = 2, carry cleared
-        `INSTRUCTION(icount, B_PLUS_1, regc, not_used, immed, C, `SET_FLAGS, `NA_AMODE, 1'bz, 2);
+        `INSTRUCTION(icount, B_PLUS_1, regc, not_used, immed, C, `SET_FLAGS, `CM_STD, `NA_AMODE, 1'bz, 2);
 
         // carry is clear at the moment 
         // carry flag should not be set by these two instructions because second instruction doesn't execute
-        `INSTRUCTION(icount, B,        rega, not_used, immed, A, `SET_FLAGS, `NA_AMODE, 1'bz, 255);
-        `INSTRUCTION(icount, B_PLUS_1, regb, not_used, immed, C, `SET_FLAGS, `NA_AMODE, 1'bz, 255); // should NOT update carry bit !!
+        `INSTRUCTION(icount, B,        rega, not_used, immed, A, `SET_FLAGS, `CM_STD, `NA_AMODE, 1'bz, 255);
+        `INSTRUCTION(icount, B_PLUS_1, regb, not_used, immed, C, `SET_FLAGS, `CM_STD, `NA_AMODE, 1'bz, 255); // should NOT update carry bit !!
 
         `HALT(icount, 255); 
             

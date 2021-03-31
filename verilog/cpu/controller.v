@@ -106,6 +106,7 @@ module controller(
     assign targ_dev              ={instruction_6[2:0],instruction_5[7]}; // DONE
     assign alu_op                ={instruction_6[7:3]}; // DONE 
 
+    wire [3:0] condition        = { conditionTopBit, conditionBot};
 
     //----------------------------------------------------------------------------------
     // condition logic
