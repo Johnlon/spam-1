@@ -22,6 +22,7 @@
 `include "../alu/alu.v"
 `include "../uart/um245r.v"
 
+
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
 
@@ -267,6 +268,50 @@ module cpu(
             $finish();
         end
     end
+
+
+    function string disasm([47:0] INSTRUCTION);
+         reg [4:0] i_aluop;
+         reg [3:0] i_target;
+         reg [2:0] i_srca;
+         reg [2:0] i_srcb;
+         reg [3:0] i_cond;
+         reg i_flag;
+         reg [2:0] i_nu;
+         reg i_amode;
+         reg [23:8] i_addr ;
+         reg [7:0] i_immed;
+    begin
+        import alu_ops::*;
+        import control::*;
+
+         i_aluop = INSTRUCTION[47:43]; 
+         i_target = INSTRUCTION[42:39]; 
+         i_srca = INSTRUCTION[38:36]; 
+         i_srcb = INSTRUCTION[35:33]; 
+         i_cond = INSTRUCTION[32:29]; 
+         i_flag = INSTRUCTION[28]; 
+         i_nu   = INSTRUCTION[27:25]; 
+         i_amode= INSTRUCTION[24]; 
+         i_addr = INSTRUCTION[23:8]; 
+         i_immed= INSTRUCTION[7:0]; 
+        disasm = $sformatf("aluop:{%d)%-10s  target:%-10s(%d) a:%-5s(%d)  b:%-10s(%d)  cond:%s(%d) setf:%s amode:%s addr:%4x immed8:%2x", 
+                    i_aluop,
+                    aluopName(i_aluop), 
+                    i_target,
+                    tdevname(i_target), 
+                    i_srca,
+                    adevname(i_srca),  
+                    i_srcb,
+                    bdevname(i_srcb),  
+                    i_cond,
+                    condname(i_cond),  
+                    (i_flag? "NOSET" : "SET"), 
+                    (i_amode?  "DIR": "REG"), 
+                    i_addr, 
+                    i_immed); 
+    end 
+    endfunction
 
 
 endmodule : cpu
