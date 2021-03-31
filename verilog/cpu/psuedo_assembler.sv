@@ -32,7 +32,8 @@
          (SRCB), \
          (CONDITION), \
          (FLAG_CTL), \
-         3'bz, \
+         1'b0, \
+         2'bz, \
          (AMODE), \
          (ADDRESS), \
          (IMMED) }; \
@@ -92,6 +93,10 @@
          IMMED ); \
         CODE[LOCN] = "TARGET=SRCA(ALUOP)SRCB  cond=CONDITION setf=FLAG_CTL amode=AMODE immed8=IMMED addr=ADDRESS";
 
+`define INSTRUCTION(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
+        `INSTRUCTION_SYM(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED); \
+        LOCN++;
+
 
 // in the order old scripts use
 `define INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
@@ -108,7 +113,7 @@
         CODE[LOCN] = "TARGET=SRCA(ALUOP)SRCB  cond=CONDITION setf=FLAG_CTL amode=AMODE immed8=IMMED addr=ADDRESS";
 
 // always sets the flags
-`define INSTRUCTION(LOCN, TARGET, SRCA, SRCB, ALUOP,                   AMODE, ADDRESS, IMMED) \
+`define INSTRUCTION_A(LOCN, TARGET, SRCA, SRCB, ALUOP,                   AMODE, ADDRESS, IMMED) \
      `INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, A,    `SET_FLAGS, AMODE, ADDRESS, IMMED);
 
 `define NA 'z
@@ -156,3 +161,4 @@
   `JMP_UNCONDITIONAL_PCHITMP_IMMED(INST, ADDRESS_LONG >>  8) \
   `JMPDI_IMMED(INST+1, ADDRESS_LONG & 8'hff)
 
+`define HALT(INST, i) `INSTRUCTION_SYM(INST, B, halt, not_used, immed, A, `NA_FLAGS , `NA_AMODE, 1'bz, i);
