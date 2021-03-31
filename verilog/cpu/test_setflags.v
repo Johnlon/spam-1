@@ -75,21 +75,22 @@ module test();
 
          icount = 0;
         // A = 0, carry set
-        `INSTRUCTION_S(icount, rega, not_used, immed, B_PLUS_1, A, `SET_FLAGS, `NA_AMODE, 1'bz, 255); icount++;
+        `INSTRUCTION(icount, B_PLUS_1, rega, not_used, immed, A, `SET_FLAGS, `NA_AMODE, 1'bz, 255);
         // B = 1, carry persisted
-        `INSTRUCTION_S(icount, regb, not_used, immed, B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 1); icount++;
+        `INSTRUCTION(icount, B_PLUS_1, regb, not_used, immed, C, `NA_FLAGS, `NA_AMODE, 1'bz, 1);
         // B = 2, carry persisted
-        `INSTRUCTION_S(icount, regb, not_used, regb,  B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 1); icount++;
+        `INSTRUCTION(icount, B_PLUS_1, regb, not_used, regb,  C, `NA_FLAGS, `NA_AMODE, 1'bz, 1);
         // B = 3, carry persisted
-        `INSTRUCTION_S(icount, regb, not_used, regb,  B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 1); icount++;
+        `INSTRUCTION(icount, B_PLUS_1, regb, not_used, regb,  C, `NA_FLAGS, `NA_AMODE, 1'bz, 1);
         // C = 2, carry cleared
-        `INSTRUCTION_S(icount, regc, not_used, immed, B_PLUS_1, C, `SET_FLAGS, `NA_AMODE, 1'bz, 2); icount++;
+        `INSTRUCTION(icount, B_PLUS_1, regc, not_used, immed, C, `SET_FLAGS, `NA_AMODE, 1'bz, 2);
 
         // carry is clear at the moment 
         // carry flag should not be set by these two instructions because second instruction doesn't execute
-        `INSTRUCTION_S(icount, rega, not_used, immed, B,        A, `SET_FLAGS, `NA_AMODE, 1'bz, 255); icount++;
-        `INSTRUCTION_S(icount, regb, not_used, immed, B_PLUS_1, C, `SET_FLAGS, `NA_AMODE, 1'bz, 255); icount++; // should NOT update carry bit !!
-        
+        `INSTRUCTION(icount, B,        rega, not_used, immed, A, `SET_FLAGS, `NA_AMODE, 1'bz, 255);
+        `INSTRUCTION(icount, B_PLUS_1, regb, not_used, immed, C, `SET_FLAGS, `NA_AMODE, 1'bz, 255); // should NOT update carry bit !!
+
+        `HALT(icount, 255); 
             
     end
     endtask : INIT_ROM
@@ -199,11 +200,15 @@ module test();
        `Equals(CPU.regFile.get(2), 8'h03); // default vals of reg
        `Equals(CPU.regFile.get(3), 8'h33); // default vals of reg
 
+        // halt
+       clk = 1;
+       #TCLK
+       clk = 0;
+       #TCLK
 
-        $display("DONE - advance to no op");
-       clk = 1; // END OF PROGRAM
-        $finish();
-        
+
+        $error("SHOULD HAVE HALTED");
+       `FINISH_AND_RETURN(1);
 
     end
 
@@ -212,7 +217,7 @@ module test();
          //   DUMP_OP;
             `define DD $display ("%9t ", $time,  "DUMP  ", 
 
-            `DD " phaseExec=%1d", CPU.phaseExec);
+            `DD " phase_exec=%1d", CPU.phase_exec);
             `DD " PC=%1d (0x%4h) PCHItmp=%d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
             `DD " addrmode=%1s", control::fAddrMode(CPU._addrmode_register),
@@ -262,7 +267,7 @@ module test();
 
     string_bits currentCode; // create field so it can appear in dump file
 
-    always @( posedge CPU.phaseExec ) begin
+    always @( posedge CPU.phase_exec ) begin
        $display ("%9t ", $time,  "PHASE_EXEC +ve");
        `DD " ALUFLAGS czonGLEN=%8b ", CPU.alu_flags_czonGLEN);
        `DD " FLAGSREG czonGLEN=%8b gated_flags_clk=%1b", CPU.status_register_czonGLEN.Q, CPU.gated_flags_clk);
@@ -271,7 +276,7 @@ module test();
         //CPU.ctrl.dump;
        $display ("%9t ", $time,  "EXECUTE....");
     end
-    always @( negedge CPU.phaseExec ) begin
+    always @( negedge CPU.phase_exec ) begin
        $display ("%9t ", $time,  "PHASE_EXEC -ve");
        DUMP();
     end
@@ -301,7 +306,7 @@ module test();
 // CONSTRAINTS
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
     always @(*) begin
-        if (CPU._mrPC && CPU.phaseExec && CPU.ctrl.instruction_6 === 'x) begin
+        if (CPU._mrPC && CPU.phase_exec && CPU.ctrl.instruction_6 === 'x) begin
             #1
             //DUMP;
             $display("rom value instruction_6", CPU.ctrl.instruction_6); 
