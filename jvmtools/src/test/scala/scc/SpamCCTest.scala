@@ -742,6 +742,28 @@ class SpamCCTest {
 
   @Test
   def putcharUsingConditionInvert(): Unit = {
+    /*
+    * Purpose of this test doing a validation by comparing the code is to double check that the more efficient condition invert bit is being employed
+    *
+    * Previous logic was ..
+    *
+    * root_function_main_putcharConst_65____LABEL_wait_1:
+    * PCHITMP = <:root_function_main_putcharConst_65____LABEL_transmit_2
+    * PC = >:root_function_main_putcharConst_65____LABEL_transmit_2 _DO
+    * PCHITMP = <:root_function_main_putcharConst_65____LABEL_wait_1
+    * PC = >:root_function_main_putcharConst_65____LABEL_wait_1
+    * root_function_main_putcharConst_65____LABEL_transmit_2:
+    * UART = 65
+    *
+    * New logic is ....
+    *
+    * root_function_main_putcharConst_65____LABEL_wait_1:
+    * PCHITMP = <:root_function_main_putcharConst_65____LABEL_wait_1
+    * PC = >:root_function_main_putcharConst_65____LABEL_wait_1 ! _DO
+    * UART = 65
+    *
+    * Saving two instructions and simpler logic.
+    */
 
     val lines =
       """
@@ -754,25 +776,23 @@ class SpamCCTest {
       checkTransmittedL('c', str, List("A"))
     })
 
-    val expected = split("""root_function_main___VAR_RETURN_HI: EQU   0
-                           |root_function_main___VAR_RETURN_HI: BYTES [0]
-                           |root_function_main___VAR_RETURN_LO: EQU   1
-                           |root_function_main___VAR_RETURN_LO: BYTES [0]
-                           |PCHITMP = < :ROOT________main_start
-                           |PC = > :ROOT________main_start
-                           |       ROOT________main_start:
-                           |       root_function_main___LABEL_START:
-                           |              root_function_main_putcharConst_65____LABEL_wait_1:
-                           |              PCHITMP = <:root_function_main_putcharConst_65____LABEL_transmit_2
-                           |              PC = >:root_function_main_putcharConst_65____LABEL_transmit_2 _DO
-                           |              PCHITMP = <:root_function_main_putcharConst_65____LABEL_wait_1
-                           |              PC = >:root_function_main_putcharConst_65____LABEL_wait_1
-                           |              root_function_main_putcharConst_65____LABEL_transmit_2:
-                           |              UART = 65
-                           |       PCHITMP = <:root_end
-                           |       PC = >:root_end
-                           |root_end:
-                           |END""".stripMargin)
+    val expected = split(
+      """root_function_main___VAR_RETURN_HI: EQU   0
+        |root_function_main___VAR_RETURN_HI: BYTES [0]
+        |root_function_main___VAR_RETURN_LO: EQU   1
+        |root_function_main___VAR_RETURN_LO: BYTES [0]
+        |PCHITMP = < :ROOT________main_start
+        |PC = > :ROOT________main_start
+        |       ROOT________main_start:
+        |       root_function_main___LABEL_START:
+        |              root_function_main_putcharConst_65____LABEL_wait_1:
+        |              PCHITMP = <:root_function_main_putcharConst_65____LABEL_wait_1
+        |              PC = >:root_function_main_putcharConst_65____LABEL_wait_1 ! _DO
+        |              UART = 65
+        |       PCHITMP = <:root_end
+        |       PC = >:root_end
+        |root_end:
+        |END""".stripMargin)
 
     assertSame(expected, code)
   }

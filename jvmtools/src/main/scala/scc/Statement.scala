@@ -523,15 +523,11 @@ case class Getchar() extends Block(nestedName = s"getchar_") {
 case class PutcharConst(konst: Int) extends Block(nestedName = s"putcharConst_${konst}_") {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val labelWait = parent.fqnLabelPathUnique("wait")
-    val labelTransmit = parent.fqnLabelPathUnique("transmit")
     split(
       s"""
          |$labelWait:
-         |PCHITMP = <:$labelTransmit
-         |PC = >:$labelTransmit _DO
          |PCHITMP = <:$labelWait
-         |PC = >:$labelWait
-         |$labelTransmit:
+         |PC = >:$labelWait ! _DO
          |UART = $konst
          |""")
   }
