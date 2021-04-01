@@ -741,6 +741,43 @@ class SpamCCTest {
   }
 
   @Test
+  def putcharUsingConditionInvert(): Unit = {
+
+    val lines =
+      """
+        |fun main() {
+        |  putchar('A')
+        |}
+        |""".stripMargin
+
+    val code: List[String] = compile(lines, verbose = true, outputCheck = str => {
+      checkTransmittedL('c', str, List("A"))
+    })
+
+    val expected = split("""root_function_main___VAR_RETURN_HI: EQU   0
+                           |root_function_main___VAR_RETURN_HI: BYTES [0]
+                           |root_function_main___VAR_RETURN_LO: EQU   1
+                           |root_function_main___VAR_RETURN_LO: BYTES [0]
+                           |PCHITMP = < :ROOT________main_start
+                           |PC = > :ROOT________main_start
+                           |       ROOT________main_start:
+                           |       root_function_main___LABEL_START:
+                           |              root_function_main_putcharConst_65____LABEL_wait_1:
+                           |              PCHITMP = <:root_function_main_putcharConst_65____LABEL_transmit_2
+                           |              PC = >:root_function_main_putcharConst_65____LABEL_transmit_2 _DO
+                           |              PCHITMP = <:root_function_main_putcharConst_65____LABEL_wait_1
+                           |              PC = >:root_function_main_putcharConst_65____LABEL_wait_1
+                           |              root_function_main_putcharConst_65____LABEL_transmit_2:
+                           |              UART = 65
+                           |       PCHITMP = <:root_end
+                           |       PC = >:root_end
+                           |root_end:
+                           |END""".stripMargin)
+
+    assertSame(expected, code)
+  }
+
+  @Test
   def putchar(): Unit = {
 
     val lines =
@@ -756,12 +793,7 @@ class SpamCCTest {
 
     compile(lines, verbose = true, outputCheck = str => {
       checkTransmittedL('c', str, List("A", "B", "C", "D"))
-      //checkTransmittedChar(str, 'A')
-      //checkTransmittedChar(str, 'B')
-      //checkTransmittedChar(str, 'C')
-      //checkTransmittedChar(str, 'D')
     })
-
   }
 
   @Test
