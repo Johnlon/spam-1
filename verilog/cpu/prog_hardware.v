@@ -50,16 +50,16 @@ module test();
 `define POS2  (65536/2)
 `define POS3  (65536-16)
 
-         `JMPDO_IMMED16(icount, `POS1); icount+=2;
+         `JMP_IMMED_COND(icount, `POS1, DO); 
 
          icount = `POS1;
-         `JMPDO_IMMED16(icount, `POS2); icount+=2;
+         `JMP_IMMED_COND(icount, `POS2, DO); 
 
          icount = `POS2;
-         `JMPDO_IMMED16(icount, `POS3); icount+=2;
+         `JMP_IMMED_COND(icount, `POS3, DO); 
 
          icount = `POS3;
-         `JMPDO_IMMED16(icount, 0); icount+=2;
+         `JMP_IMMED_COND(icount, 0, DO); 
 
         n_file1 = $fopen(rom1, "wb");
         n_file2 = $fopen(rom2, "wb");

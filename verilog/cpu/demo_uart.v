@@ -75,27 +75,25 @@ module test();
 
         counter=0;
 
-        `DEV_EQ_IMMED8(counter, rega, 1); counter++;
-        `DEV_EQ_IMMED8(counter, regb, 2); counter++;
+        `DEV_EQ_IMMED8(counter, rega, 1); 
+        `DEV_EQ_IMMED8(counter, regb, 2);
         
-        `INSTRUCTION_S(counter, pchitmp, not_used, immed, B, A,  `SET_FLAGS, `NA_AMODE, 'z, (`READ_LOOP>>8)); counter++;
-        `INSTRUCTION_S(counter, pc,      not_used, immed, B, DI, `SET_FLAGS, `NA_AMODE, 'z, (`READ_LOOP)); counter++;
-        `JMP_IMMED16(counter, 0); counter+=2; 
+        `JMP_IMMED16(counter, `READ_LOOP); 
 
 
         // do while DI 
         counter=`READ_LOOP;
-        `INSTRUCTION_S(counter, rega,    uart,     not_used, A, A,  `SET_FLAGS, `NA_AMODE, 'z, 'z); counter++;
-        `INSTRUCTION_S(counter, pchitmp, not_used, immed,    B, A,  `SET_FLAGS, `NA_AMODE, 'z, (`READ_LOOP>>8)); counter++;
-        `INSTRUCTION_S(counter, pc,      not_used, immed,    B, DI, `SET_FLAGS, `NA_AMODE, 'z, (`READ_LOOP)); counter++;
-        `JMP_IMMED16(counter, `WRITE_HELLO); counter+=2; 
+        `INSTRUCTION(counter, B, pchitmp, not_used, immed,    A,  `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, (`READ_LOOP>>8)); 
+        `INSTRUCTION(counter, B, pc,      not_used, immed,    DI, `SET_FLAGS, `NA_AMODE, `CM_INV, 'z, (`READ_LOOP)); 
+        `INSTRUCTION(counter, A, rega,    uart,     not_used, A,  `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, 'z); 
+        `JMP_IMMED16(counter, `WRITE_HELLO); 
 
 
         counter=`WRITE_HELLO;
         for (idx=0; idx<hello.len(); idx++) begin
-        `INSTRUCTION_S(counter, uart, not_used, immed, B, DO,  `SET_FLAGS, `NA_AMODE, 'z, hello[idx]); counter++;
+            `INSTRUCTION(counter, B, uart,     not_used, immed, DO,  `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, hello[idx]);
         end
-        `JMP_IMMED16(counter, 0); counter+=2; 
+        `JMP_IMMED16(counter, 0); 
 
     end
     endtask : INIT_ROM

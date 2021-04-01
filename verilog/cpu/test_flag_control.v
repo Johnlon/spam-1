@@ -52,24 +52,24 @@ module test();
     task INIT_ROM;
     begin
 
-        `INSTRUCTION_S(counter, marlo, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 'z, 254); counter++;
-        `INSTRUCTION_S(counter, marhi, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 'z, 0); counter++;
+        `INSTRUCTION(counter, B, marlo, not_used, immed, A, `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, 254); 
+        `INSTRUCTION(counter, B, marhi, not_used, immed, A, `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, 0); 
 
         start = counter;
 
         `TEXT(counter, "START OF MAIN LOOP BLOCK - ADD ONE TO MARLO");
-        `INSTRUCTION_S(counter, marlo, not_used, marlo, B_PLUS_1, A, `SET_FLAGS, `NA_AMODE, 'z, 'z); counter++;
+        `INSTRUCTION(counter, B_PLUS_1, marlo, not_used, marlo, A, `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, 'z); 
 
         `TEXT(counter, "CONDITIONAL ADD ONE TO MARHI");
-        `INSTRUCTION_S(counter, marhi, not_used, marhi, B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 'z, 'z); counter++;
+        `INSTRUCTION(counter, B_PLUS_1, marhi, not_used, marhi, C, `NA_FLAGS, `CM_STD, `NA_AMODE, 'z, 'z); 
 
         `TEXT(counter, "GOTO LOOP");
-        `JMP_IMMED16(counter, start); counter+=2;
+        `JMP_IMMED16(counter, start); 
     end
     endtask : INIT_ROM
 
     always @(posedge CPU.gated_flags_clk) begin
-        if (CPU._phaseExec) begin
+        if (CPU._phase_exec) begin
             $display("ILLEGAL FLAGS LOAD AT PC %d", CPU.pc_addr);
             $finish();
         end
@@ -98,14 +98,14 @@ module test();
         clk=1;
         #1000
        `Equals(CPU.pc_addr, 0); 
-       `Equals(CPU._phaseExec, 1); 
+       `Equals(CPU._phase_exec, 1); 
        `Equals(CPU._flag_c, 'x); 
 
         // exec marlo load
         clk=0;
         #1000
        `Equals(CPU.pc_addr, 0); 
-       `Equals(CPU._phaseExec, 0); 
+       `Equals(CPU._phase_exec, 0); 
        `Equals(CPU._flag_c, 1); 
        `Equals(CPU.MARLO.Q, 254); 
        `Equals(CPU.MARHI.Q, CPU.MARHI.UNDEF); 
@@ -243,7 +243,7 @@ module test();
          //   DUMP_OP;
             `define DD $display ("%9t ", $time,  "DUMP  ", 
 
-            `DD " phaseExec=%1b", CPU.phaseExec);
+            `DD " phase_exec=%1b", CPU.phase_exec);
             `DD " PC=%1d (0x%4h) PCHItmp=%d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
             `DD " amode=%1s", control::fAddrMode(CPU._addrmode_register), " addbbus=0x%4x", CPU.address_bus);
@@ -292,7 +292,7 @@ module test();
 
     string_bits currentCode; // create field so it can appear in dump file
 
-    always @( posedge CPU.phaseExec ) begin
+    always @( posedge CPU.phase_exec ) begin
        $display ("%9t ", $time,  "PHASE_EXEC +ve");
        `DD " ALUFLAGS czonGLEN=%8b ", CPU.alu_flags_czonGLEN );
        `DD " FLAGSREG czonGLEN=%8b gated_flags_clk=%1b", CPU.status_register_czonGLEN.Q, CPU.gated_flags_clk);
@@ -301,7 +301,7 @@ module test();
         //CPU.ctrl.dump;
        $display ("%9t ", $time,  "EXECUTE....");
     end
-    always @( negedge CPU.phaseExec ) begin
+    always @( negedge CPU.phase_exec ) begin
        $display ("%9t ", $time,  "PHASE_EXEC -ve");
        DUMP();
     end
@@ -331,7 +331,7 @@ module test();
 // CONSTRAINTS
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
     always @(*) begin
-        if (CPU._mrPC && CPU.phaseExec && CPU.ctrl.instruction_6 === 'x) begin
+        if (CPU._mrPC && CPU.phase_exec && CPU.ctrl.instruction_6 === 'x) begin
             #1
             //DUMP;
             $display("rom value instruction_6", CPU.ctrl.instruction_6); 

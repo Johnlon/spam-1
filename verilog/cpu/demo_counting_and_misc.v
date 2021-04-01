@@ -66,83 +66,83 @@ module test();
     begin
     // JLJL
         // RAM[ffaa] = 42h
-        `RAM_DIRECT_EQ_IMMED8(counter, 16'hffaa, 8'h42); counter++;
+        `RAM_DIRECT_EQ_IMMED8(counter, 16'hffaa, 8'h42); 
     // JLJL
 
         // marlo = 42h
-        `DEV_EQ_RAM_DIRECT(counter, marlo, 16'hffaa); counter++;
+        `DEV_EQ_RAM_DIRECT(counter, marlo, 16'hffaa); 
 
         // marhi = 0
-        `DEV_EQ_IMMED8(counter, marhi, 0); counter++;
+        `DEV_EQ_IMMED8(counter, marhi, 0); 
 
         // marlo = 43h
-        `DEV_EQ_XI_ALU(counter, marlo, marlo, 1, A_PLUS_B) ; counter++;
+        `DEV_EQ_XI_ALU(counter, marlo, marlo, 1, A_PLUS_B) ; 
 
         // RAM[00:43] = 22h
-        `DEV_EQ_IMMED8(counter, ram, 8'h22); counter++;
+        `DEV_EQ_IMMED8(counter, ram, 8'h22); 
 
         // marlo = 22h
-        `DEV_EQ_RAM_DIRECT(counter, marlo, 16'h0043); counter++;
+        `DEV_EQ_RAM_DIRECT(counter, marlo, 16'h0043); 
 
         // RAM[abcd] = 43h
-        `RAM_DIRECT_EQ_DEV(counter, 16'habcd, marlo); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 16'habcd, marlo); 
 
         // regb = 22h
-        `DEV_EQ_RAM_DIRECT(counter, regb, 16'h0043); counter++;
+        `DEV_EQ_RAM_DIRECT(counter, regb, 16'h0043); 
 
         // RAM[fcba] = 22h
-        `RAM_DIRECT_EQ_DEV(counter, 16'hdcba, regb); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 16'hdcba, regb); 
 
         // test all registers read write
         `TEXT(counter, "WRITING TO ALL REGA");
-        `DEV_EQ_IMMED8(counter, rega, 1); counter++;
+        `DEV_EQ_IMMED8(counter, rega, 1); 
         `TEXT(counter, "WRITING TO ALL REGB");
-        `DEV_EQ_IMMED8(counter, regb, 2); counter++;
+        `DEV_EQ_IMMED8(counter, regb, 2);
         `TEXT(counter, "WRITING TO ALL REGC");
-        `DEV_EQ_IMMED8(counter, regc, 3); counter++;
+        `DEV_EQ_IMMED8(counter, regc, 3); 
         `TEXT(counter, "WRITING TO ALL REGD");
-        `DEV_EQ_IMMED8(counter, regd, 4); counter++;
+        `DEV_EQ_IMMED8(counter, regd, 4); 
 
         `TEXT(counter, "READING FROM ALL REGA");
-        `RAM_DIRECT_EQ_DEV(counter, 16'h0001, rega); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 16'h0001, rega); 
         `TEXT(counter, "READING FROM ALL REGB");
-        `RAM_DIRECT_EQ_DEV(counter, 16'h0002, regb); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 16'h0002, regb); 
         `TEXT(counter, "READING FROM ALL REGC");
-        `RAM_DIRECT_EQ_DEV(counter, 16'h0003, regc); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 16'h0003, regc); 
         `TEXT(counter, "READING FROM ALL REGD");
-        `RAM_DIRECT_EQ_DEV(counter, 16'h0004, regd); counter++;
+        `RAM_DIRECT_EQ_DEV(counter, 16'h0004, regd); 
 
 /*
         // test all registers on L and R channel into ALU
-        `DEV_EQ_XY_ALU(counter, marlo, rega,     not_used, A); counter++;  
-        `DEV_EQ_XY_ALU(counter, marhi, not_used, rega,     B)  ; counter++;
-        `DEV_EQ_XY_ALU(counter, marlo, regb,     not_used, A)  ; counter++;
-        `DEV_EQ_XY_ALU(counter, marhi, not_used, regb,     B)  ; counter++;
-        `DEV_EQ_XY_ALU(counter, marlo, regc,     not_used, A)  ; counter++;
-        `DEV_EQ_XY_ALU(counter, marhi, not_used, regc,     B)  ; counter++;
-        `DEV_EQ_XY_ALU(counter, marlo, regd,     not_used, A)  ; counter++;
+        `DEV_EQ_XY_ALU(counter, marlo, rega,     not_used, A); 
+        `DEV_EQ_XY_ALU(counter, marhi, not_used, rega,     B)  ; 
+        `DEV_EQ_XY_ALU(counter, marlo, regb,     not_used, A)  ; 
+        `DEV_EQ_XY_ALU(counter, marhi, not_used, regb,     B)  ; 
+        `DEV_EQ_XY_ALU(counter, marlo, regc,     not_used, A)  ; 
+        `DEV_EQ_XY_ALU(counter, marhi, not_used, regc,     B)  ; 
+        `DEV_EQ_XY_ALU(counter, marlo, regd,     not_used, A)  ; 
         `TEXT(counter, "REG D into marhi");
-        `DEV_EQ_XY_ALU(counter, marhi, not_used, regd,     B)  ; counter++;
+        `DEV_EQ_XY_ALU(counter, marhi, not_used, regd,     B)  ; 
 
-        `INSTRUCTION_S(counter, marlo, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 8'b0); counter++;
-        `INSTRUCTION_S(counter, marhi, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 8'b0); counter++;
+        `INSTRUCTION_S(counter, marlo, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 8'b0); 
+        `INSTRUCTION_S(counter, marhi, not_used, immed, B, A, `SET_FLAGS, `NA_AMODE, 1'bz, 8'b0); 
 */
 
-        `DEV_EQ_IMMED8(counter, marlo, 8'd254); counter++;
+        `DEV_EQ_IMMED8(counter, marlo, 8'd254); 
 
 `define ADD_ONE 256
         // PC=17
-        `JMP_IMMED16(counter, `ADD_ONE); counter+=2;
+        `JMP_IMMED16(counter, `ADD_ONE); 
         // implement 16 bit counter
         counter=`ADD_ONE;
         `TEXT(counter, "START OF MAIN LOOP BLOCK - ADD ONE TO MARLO");
-        `INSTRUCTION_S(counter, marlo, not_used, marlo, B_PLUS_1, A, `SET_FLAGS, `NA_AMODE, 1'bz, 8'bz); counter++;
+        `INSTRUCTION(counter, B_PLUS_1, marlo, not_used, marlo, A, `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, 'z); 
 
         `TEXT(counter, "CONDITIONAL ADD ONE TO MARHI");
-        `INSTRUCTION_S(counter, marhi, not_used, marhi, B_PLUS_1, C, `NA_FLAGS, `NA_AMODE, 1'bz, 8'bz); counter++;
+        `INSTRUCTION(counter, B_PLUS_1, marhi, not_used, marhi, C, `NA_FLAGS, `CM_STD, `NA_AMODE, 'z, 'z); 
 
         `TEXT(counter, "GOTO LOOP");
-        `JMP_IMMED16(counter, `ADD_ONE); counter+=2;
+        `JMP_IMMED16(counter, `ADD_ONE); 
 
     end
     endtask : INIT_ROM

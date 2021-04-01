@@ -77,38 +77,38 @@ module test();
          // implement 16 bit counter
          icount = 0;
 
-         `DEV_EQ_IMMED8(icount, rega, '0); icount++;
-         `DEV_EQ_IMMED8(icount, regb, '0); icount++;
-         `DEV_EQ_IMMED8(icount, regc, '0); icount++;
-         `DEV_EQ_IMMED8(icount, regd, '0); icount++;
-         `DEV_EQ_IMMED8(icount, marlo, '0); icount++;
-         `DEV_EQ_IMMED8(icount, marhi, '0); icount++;
+         `DEV_EQ_IMMED8(icount, rega, '0); 
+         `DEV_EQ_IMMED8(icount, regb, '0); 
+         `DEV_EQ_IMMED8(icount, regc, '0); 
+         `DEV_EQ_IMMED8(icount, regd, '0); 
+         `DEV_EQ_IMMED8(icount, marlo, '0); 
+         `DEV_EQ_IMMED8(icount, marhi, '0); 
 
 
         // jump to read or write if 
          LOOP = icount;
-         `JMPDI_IMMED16(icount, `READ_UART); icount+=2;
-         `JMPDO_IMMED16(icount, `WRITE_UART); icount+=2;
-         `JMP_IMMED16(icount, LOOP); icount+=2;
+         `JMP_IMMED_COND(icount, `READ_UART, DI);
+         `JMP_IMMED_COND(icount, `WRITE_UART, DO); 
+         `JMP_IMMED16(icount, LOOP); 
 
         // counter increment
          ADD_ONE=icount;
-         `DEV_EQ_XI_ALU(icount, rega, rega, 1, A_PLUS_B) ; icount++; // A_PLUS_B - doesn't consume carry but sets it 
-         `DEV_EQ_XI_ALU(icount, regb, regb, 0, A_PLUS_B_PLUS_C); icount++; // B=B+0+Carryin   - sets and consumes carry 
-         `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
-         `JMP_IMMED16(icount, LOOP); icount+=2;
+         `DEV_EQ_XI_ALU(icount, rega, rega, 1, A_PLUS_B) ; 
+         `DEV_EQ_XI_ALU(icount, regb, regb, 0, A_PLUS_B_PLUS_C); 
+         `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); 
+         `JMP_IMMED16(icount, LOOP); 
 
 
         // write to uart
          icount = `WRITE_UART;
-         `DEV_EQ_XY_ALU(icount, uart, rega, not_used, A); icount++;
-         `JMP_IMMED16(icount, ADD_ONE); icount+=2;
+         `DEV_EQ_XY_ALU(icount, uart, rega, not_used, A); 
+         `JMP_IMMED16(icount, ADD_ONE); 
 
         // read from uart
          icount = `READ_UART;
-         `DEV_EQ_XY_ALU(icount, marhi, uart, not_used, A); icount++;
-         `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); icount++;
-         `JMP_IMMED16(icount, ADD_ONE); icount+=2;
+         `DEV_EQ_XY_ALU(icount, marhi, uart, not_used, A); 
+         `DEV_EQ_XY_ALU(icount, marlo, not_used, rega, B_PLUS_1); 
+         `JMP_IMMED16(icount, ADD_ONE); 
 
     end
     endtask : INIT_ROM

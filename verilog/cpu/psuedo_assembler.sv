@@ -73,6 +73,7 @@
          IMMED ); \
         CODE[LOCN] = "TARGET=SRCA(ALUOP)SRCB  cond=CONDITION setf=FLAG_CTL amode=AMODE cmode=CMODE immed8=IMMED addr=ADDRESS";
 
+// does autocounting
 `define INSTRUCTION(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, CMODE, AMODE, ADDRESS, IMMED) \
         `INSTRUCTION_SYM(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, CMODE, AMODE, ADDRESS, IMMED); \
         LOCN++;
@@ -126,15 +127,18 @@
 
 `define NA 'z
 
-`define DEV_EQ_XI_ALU(INST, TARGET, SRCA, IMMED8, ALUOP) `INSTRUCTION(INST, TARGET, SRCA,   immed,  ALUOP, `REGISTER, `NA,     IMMED8)
-
-`define DEV_EQ_XY_ALU(INST, TARGET, SRCA, SRCB, ALUOP) `INSTRUCTION(INST, TARGET, SRCA,     SRCB, ALUOP, `REGISTER, `NA,     `NA)
 `define DEV_EQ_ROM_IMMED(INST,TARGET, ADDRESS)         `INSTRUCTION(INST, TARGET, not_used, immed B,     `x,        ADDRESS, `NA)
-`define DEV_EQ_IMMED8(INST,TARGET, IMMED8)             `INSTRUCTION(INST, TARGET, not_used, immed,B,     `REGISTER, `NA,     IMMED8) // src is the immed8 but target if ram is via MAR
-`define DEV_EQ_RAM_DIRECT(INST,TARGET, ADDRESS)        `INSTRUCTION(INST, TARGET, not_used, ram,  B,     `DIRECT,   ADDRESS, `NA)
+
 `define DEV_EQ_RAM_REGISTER(INST,TARGET, ADDRESS)      `INSTRUCTION(INST, TARGET, not_used, ram,  B,     `REGISTER, ADDRESS, `NA)
-`define RAM_DIRECT_EQ_DEV(INST,ADDRESS, SRC)           `INSTRUCTION(INST, ram,    not_used, SRC,  B,     `DIRECT,   ADDRESS, `NA)
-`define RAM_DIRECT_EQ_IMMED8(INST,ADDRESS, IMMED8)     `INSTRUCTION(INST, ram,    not_used, immed,B,     `DIRECT,   ADDRESS, IMMED8)
+
+// fixed
+`define RAM_DIRECT_EQ_IMMED8(INST,ADDRESS, IMMED8)     `INSTRUCTION(INST, B,      ram,      not_used, immed,    A, `SET_FLAGS, `CM_STD,  `DIRECT,   ADDRESS,  IMMED8)
+`define DEV_EQ_RAM_DIRECT(INST,TARGET, ADDRESS)        `INSTRUCTION(INST, B,      TARGET,   not_used, ram,      A, `SET_FLAGS, `CM_STD,  `DIRECT,   ADDRESS,  'z)
+`define DEV_EQ_XI_ALU(INST, TARGET, SRCA, IMMED8, ALUOP) `INSTRUCTION(INST, ALUOP,TARGET,   SRCA,     immed,    A, `SET_FLAGS, `CM_STD,  `REGISTER, 'z,        IMMED8)
+`define RAM_DIRECT_EQ_DEV(INST,ADDRESS, SRC)           `INSTRUCTION(INST, A,      ram,      SRC,      not_used, A, `SET_FLAGS, `CM_STD,  `DIRECT,   ADDRESS, `NA)
+`define DEV_EQ_IMMED8(INST,TARGET, IMMED8)             `INSTRUCTION(INST, B,      TARGET,   not_used, immed,    A, `SET_FLAGS, `CM_STD,  `REGISTER, `NA,     IMMED8)
+`define DEV_EQ_XY_ALU(INST, TARGET, SRCA, SRCB, ALUOP) `INSTRUCTION(INST, ALUOP,  TARGET,   SRCA,     SRCB,     A, `SET_FLAGS, `CM_STD,  `REGISTER, `NA,     'z)
+
 
 `define CLEAR_CARRY(INST)   `DEV_EQ_IMMED8(INST, not_used, 0); // assign zero to a non-reg to clear
 `define SET_CARRY(INST)     `DEV_EQ_XI_ALU(INST, not_used, not_used, 255, B_PLUS_1)  // FIXME BROKEN COS B_PLUS_1 doesn't add
@@ -147,15 +151,22 @@
 `define JMPZ_IMMED(INST, ADDRESS_LO)       `INSTRUCTION_S(INST, pc, not_used, immed, B, Z, `NA_FLAGS,     `NA_AMODE, `NA, ADDRESS_LO) 
 // conditional jump sourcing the PCLO from the immed8
 `define JMPC_IMMED(INST, ADDRESS_LO)       `INSTRUCTION_S(INST, pc, not_used, immed, B, C, `NA_FLAGS,    `NA_AMODE, `NA, ADDRESS_LO) 
-`define JMPDO_IMMED(INST, ADDRESS_LO)      `INSTRUCTION_S(INST, pc, not_used, immed, B, DO, `NA_FLAGS,     `NA_AMODE, `NA, ADDRESS_LO) 
 `define JMPDI_IMMED(INST, ADDRESS_LO)      `INSTRUCTION_S(INST, pc, not_used, immed, B, DI, `NA_FLAGS,     `NA_AMODE, `NA, ADDRESS_LO) 
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // !!!!!!!! PCHITMP MUST ALWAYS BE UNCONDITIONAL OTHERWISE RISK THAT CONTROL LINE LIKE DI/DO MIGHT GO HIGH BETWEEN THE PCHITMP AND PC INSTRUCTIONS...
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 `define JMP_IMMED16(INST, ADDRESS_LONG)       \
-  `JMP_UNCONDITIONAL_PCHITMP_IMMED(INST, ADDRESS_LONG >>  8) \
-  `JMP_IMMED(INST+1, ADDRESS_LONG & 8'hff)
+        `INSTRUCTION(INST, B, pchitmp, not_used, immed, A, `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, (ADDRESS_LONG>>8));  \
+        `INSTRUCTION(INST, B, pc,      not_used, immed, A, `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, (ADDRESS_LONG)); 
+
+`define JMP_IMMED_COND(INST, ADDRESS_LONG, COND)       \
+        `INSTRUCTION(INST, B, pchitmp, not_used, immed, A, `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, (ADDRESS_LONG>>8));  \
+        `INSTRUCTION(INST, B, pc,      not_used, immed, COND, `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, (ADDRESS_LONG)); 
+
+
+//  `JMP_UNCONDITIONAL_PCHITMP_IMMED(INST, ADDRESS_LONG >>  8) \
+//  `JMP_IMMED(INST+1, ADDRESS_LONG & 8'hff)
 
 `define JMPC_IMMED16(INST, ADDRESS_LONG)       \
   `JMP_UNCONDITIONAL_PCHITMP_IMMED(INST, ADDRESS_LONG >>  8) \
