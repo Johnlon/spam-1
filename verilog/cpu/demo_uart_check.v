@@ -71,13 +71,14 @@ module test();
         // implement 16 bit counter
         icount = 0;
 
-        `DEV_EQ_IMMED8(icount, rega, 64); icount++;
-        `INSTRUCTION_S(icount, pchitmp, not_used, immed, B, DO,  `SET_FLAGS, `NA_AMODE, 'z, 20>>8); icount++;
-        `INSTRUCTION_S(icount, pc     , not_used, immed, B, DO,  `SET_FLAGS, `NA_AMODE, 'z, 20); icount++;
+        `DEV_EQ_IMMED8(icount, rega, 64); 
+        `INSTRUCTION(icount, B, pchitmp, not_used, immed, A,  `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, `WRITE_UART>>8); 
+        `INSTRUCTION(icount, B, pc     , not_used, immed, DO, `SET_FLAGS, `NA_AMODE,`CM_STD,  'z, `WRITE_UART); 
+        `JMP_IMMED16(icount, 0); 
 
 icount = `WRITE_UART;
-        `INSTRUCTION_S(icount, uart, not_used, immed, B, A,  `SET_FLAGS, `NA_AMODE, 'z, 66); icount++;
-        `JMP_IMMED16(icount, 0); icount+=2;
+        `INSTRUCTION(icount, B, uart,   not_used, immed, A,  `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, 66);
+        `INSTRUCTION(icount, B, halt,   not_used, immed, A,  `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, 66);
 
 
     end
@@ -101,22 +102,48 @@ icount = `WRITE_UART;
 
         
         #HALF_CLK
-$display(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CYCLE0 - load A");
         clk=1; // fetch
         #HALF_CLK
         clk=0; // exec
         
         #HALF_CLK
-$display(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CYCLE0 - load UART");
         clk=1; // fetch
         #HALF_CLK
         clk=0; // exec
         
         #HALF_CLK
-$display(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CYCLE0 - HALT");
         clk=1; // fetch
         #HALF_CLK
         clk=0; // exec
+        #HALF_CLK
+        clk=1; // fetch
+        #HALF_CLK
+        clk=0; // exec
+        #HALF_CLK
+        clk=1; // fetch
+        #HALF_CLK
+        clk=0; // exec
+        #HALF_CLK
+        clk=1; // fetch
+        #HALF_CLK
+
+        clk=1; // fetch
+        #HALF_CLK
+        clk=0; // exec
+        #HALF_CLK
+        clk=1; // fetch
+        #HALF_CLK
+        clk=0; // exec
+        #HALF_CLK
+        clk=1; // fetch
+        #HALF_CLK
+        clk=0; // exec
+        #HALF_CLK
+        clk=1; // fetch
+        #HALF_CLK
+        clk=0; // exec
+
+        $display("no more clocks");
 
     end
 
@@ -133,7 +160,7 @@ $display(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     if (1) always @(CPU.phase_exec) begin
         $display("");
         if (CPU.phase_exec) begin
-            $display("%9t ", $time, "PC=%-d    ====  ENTERTED EXEC PHASE ", {CPU.PCHI, CPU.PCLO});
+            $display("%9t ", $time, "PC=%-d    ====  ENTERED EXEC PHASE ", {CPU.PCHI, CPU.PCLO});
             $display("%9t ", $time, "_gates_regfie_in ", CPU._gated_regfile_in , " _phase_exec ",  CPU._phase_exec , " _REGA_IN ", CPU._rega_in);
         end
     end
