@@ -10,49 +10,16 @@
 `define COMMA ,
 
 module test();
+    bit doSim = 1; 
 
     import alu_ops::*;
     import control::*;
 
-    function string disasm([47:0] INSTRUCTION);
-         reg [4:0] i_aluop;
-         reg [3:0] i_target;
-         reg [2:0] i_srca;
-         reg [2:0] i_srcb;
-         reg [3:0] i_cond;
-         reg i_flag;
-         reg [2:0] i_nu;
-         reg i_amode;
-         reg [23:8] i_addr ;
-         reg [7:0] i_immed;
-    begin
-         i_aluop = INSTRUCTION[47:43]; 
-         i_target = INSTRUCTION[42:39]; 
-         i_srca = INSTRUCTION[38:36]; 
-         i_srcb = INSTRUCTION[35:33]; 
-         i_cond = INSTRUCTION[32:29]; 
-         i_flag = INSTRUCTION[28]; 
-         i_nu   = INSTRUCTION[27:25]; 
-         i_amode= INSTRUCTION[24]; 
-         i_addr = INSTRUCTION[23:8]; 
-         i_immed= INSTRUCTION[7:0]; 
-        disasm = $sformatf("aluop:%-10ss(%d)  target:%-10s(%d) a:%-5s(%d)  b:%-10s(%d)  cond:%s(%d) setf:%s amode:%s addr:%4x immed8:%2x", 
-                    aluopName(i_aluop), i_aluop,
-                    tdevname(i_target), i_target,
-                    adevname(i_srca),  i_srca,
-                    bdevname(i_srcb),  i_srcb,
-                    condname(i_cond),  i_cond,
-                    (i_flag? "NOSET" : "SET"), 
-                    (i_amode?  "DIR": "REG"), 
-                    i_addr, 
-                    i_immed); 
-    end 
-    endfunction
-
    `include "../lib/display_snippet.sv"
 
     logic clk=0;
-    cpu CPU(1'b0, clk);
+    bit _RESET_SWITCH = 0;
+    cpu CPU(_RESET_SWITCH, clk);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     // TESTS ===========================================================================================
@@ -85,46 +52,66 @@ module test();
     wire [7:0] cL = "l";
     wire [7:0] cO = "o";
 
-    string hello = "Hello!";
-    string bye = "Hello!";
+    string NL=8'h0A;
+
+    string hello = {"Hello!", NL};
+    string bye = {"Bye!", NL};
     int idx;
     int loop_addr;
     int write_addr;
 
-    `define READ 20
-    `define READ_LOOP (`READ+1)
-    `define WRITE_HELLO 128
+    int start;
+    int write_loop;
+
+
+    int TCLK=1000;
+
     initial begin
 
         icount=0;
 
-        `DEV_EQ_IMMED8(icount, rega, 1); icount++;
-        `DEV_EQ_IMMED8(icount, regb, 2); icount++;
+        start=icount;
+        `DEV_EQ_IMMED8(icount, rega, 1); 
+        `DEV_EQ_IMMED8(icount, regb, 2); 
         
-        `INSTRUCTION_S(icount, pchitmp, not_used, immed, B, A,  `SET_FLAGS, `NA_AMODE, 'z, (`READ_LOOP>>8)); icount++;
-        `INSTRUCTION_S(icount, pc,      not_used, immed, B, DI, `SET_FLAGS, `NA_AMODE, 'z, (`READ_LOOP)); icount++;
-        `JMP_IMMED16(icount, 0); icount+=2; 
+        `INSTRUCTION(icount, B, pchitmp, not_used, immed, A,  `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, (start>>8)); 
+        `INSTRUCTION(icount, B, pc,      not_used, immed, DI, `SET_FLAGS, `CM_INV, `NA_AMODE, 'z, (start)); 
 
+        `INSTRUCTION(icount, A, rega,    uart,     not_used, DI,  `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, 'z); 
 
-        // do while DI 
-        icount=`READ_LOOP;
-        `INSTRUCTION_S(icount, rega,    uart,     not_used, A, A,  `SET_FLAGS, `NA_AMODE, 'z, 'z); icount++;
-        `INSTRUCTION_S(icount, pchitmp, not_used, immed,    B, A,  `SET_FLAGS, `NA_AMODE, 'z, (`READ_LOOP>>8)); icount++;
-        `INSTRUCTION_S(icount, pc,      not_used, immed,    B, DI, `SET_FLAGS, `NA_AMODE, 'z, (`READ_LOOP)); icount++;
-        `JMP_IMMED16(icount, `WRITE_HELLO); icount+=2; 
-
-
-        icount=`WRITE_HELLO;
+        $display("LEN " , hello.len());
         for (idx=0; idx<hello.len(); idx++) begin
-            loop_addr = icount;
-            write_addr = icount+4;
-            `INSTRUCTION_S(icount, pchitmp, not_used, immed,    B, A,  `SET_FLAGS, `NA_AMODE, 'z, (write_addr>>8)); icount++;
-            `INSTRUCTION_S(icount, pc,      not_used, immed,    B, DO, `SET_FLAGS, `NA_AMODE, 'z, (write_addr)); icount++;
-            `JMP_IMMED16(icount, loop_addr); icount+=2; 
+            write_loop = icount;
+            `INSTRUCTION(icount, B, pchitmp, not_used, immed,    A,  `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, (write_loop>>8)); 
+            `INSTRUCTION(icount, B, pc,      not_used, immed,    DO, `SET_FLAGS, `CM_INV, `NA_AMODE, 'z, (write_loop)); 
 
-            `INSTRUCTION_S(icount, uart,    not_used, immed,    B, A,  `SET_FLAGS, `NA_AMODE, 'z, hello[idx]); icount++;
+            `INSTRUCTION(icount, B, uart,    not_used, immed,    A,  `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, hello[idx]); 
         end
-        `JMP_IMMED16(icount, 0); icount+=2; 
+        `JMP_IMMED16(icount, 0); 
+        //`INSTRUCTION(icount, B, halt,    not_used, immed,    A,  `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, hello[idx]); 
+
+
+
+        if (doSim) begin
+            //`DISPLAY("init : _RESET_SWITCH=0")
+            _RESET_SWITCH = 0;
+            clk=0;
+            #1000
+            $display("RELEASE");
+            _RESET_SWITCH = 1;
+            clk = 1; // high fetch phase - +ve clk reset _mr
+            #TCLK;
+
+            while (1==1) begin
+                #TCLK
+                $display("");
+                $display("CLOCK DOWN - EXEC ", CPU.disasmCur());
+                clk=0;
+                #TCLK;
+                $display("CLOCK UP - PC INC");
+                clk = 1; // high fetch phase - +ve clk reset _mr
+            end
+        end
 
 
         //`JMP_IMMED16(icount, 0); icount+=2; 
@@ -159,7 +146,7 @@ module test();
                 data[7:0],
                 printable(data[7:0]),
                 );
-            $display("CODE : %-s" , disasm(data), "(%c)(%d)",
+            $display("CODE : %-s" , CPU.disasm(data), "(%c)(%d)",
                 printable(data[7:0]),
                 data[7:0]
              );
