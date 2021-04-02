@@ -132,7 +132,7 @@ module controller(
 
     // need inverse of this signal so select the other mux
     wire _conditionTopBit;
-    nand #(8) ic7400_b(_conditionTopBit, conditionTopBit, conditionTopBit); // as inverter - DONE
+    nand #(8) ic7400_c(_conditionTopBit, conditionTopBit, conditionTopBit); // as inverter - DONE
 
     // organises two 8-to-1 multiplexers as a 16-1 multiulexer
     hct74151 #(.LOG(0)) condition_mux_lo(._E(conditionTopBit),  .S(conditionBot), .I(_flags_lo)); // DONE
@@ -144,7 +144,7 @@ module controller(
     // If the selected flag is set (ie low) then both mux's will be emitting a high and therefore the result will be a low.
     // On the other hand if the selected flag is unset (high) then the active mux will be emitting a low and the nand will return a high
     wire _condition_met; // set to low when the execution condition is met
-    nand #(9) ic7400_c(_condition_met, condition_mux_lo._Y, condition_mux_hi._Y);  // DONE
+    nand #(9) ic7400_d(_condition_met, condition_mux_lo._Y, condition_mux_hi._Y);  // DONE
 
 
     //----------------------------------------------------------------------------------
@@ -155,9 +155,9 @@ module controller(
     // The following three lines are the same as an OR as shown below however by using XOR (inverter) and Nand I can avoid the need for an OR gate chip and avoid an IC
     //   or #(9) ic7432_a(_set_flags, _set_flags_bit, _do_exec); 
     // enable flag update when both _set_flags_bit is active low and _do_exec is active low
-    xor #(9) ic7486_a(do_exec, _do_exec, 1'b1); // use xor as inverter
-    xor #(9) ic7486_b(set_flags_bit, _set_flags_bit, 1'b1); // use xor as inverter
-    nand #(9) ic7400_d(_set_flags, set_flags_bit, do_exec); // use nand
+    xor #(9) ic7486_b(do_exec, _do_exec, 1'b1); // use xor as inverter
+    xor #(9) ic7486_d(set_flags_bit, _set_flags_bit, 1'b1); // use xor as inverter
+    nand #(9) ic7400_b(_set_flags, set_flags_bit, do_exec); // use nand
 
     // When condition_invert_bit is active high then the conditional exec logic is reversed.
     // eg when "invert" is inactive "DO" means execute only if DO flag is set, 
