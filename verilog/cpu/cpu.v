@@ -269,6 +269,16 @@ module cpu(
         end
     end
 
+    function string disasmCur();
+        string msg;
+    begin
+        disasmCur = $sformatf( " PC=%d _do_exec=%1d   %s", 
+                ctrl.PC.pcval,
+                ctrl._do_exec,
+                disasm(ctrl.instruction) 
+            );
+    end
+    endfunction
 
     function string disasm([47:0] INSTRUCTION);
          reg [4:0] i_aluop;
@@ -298,11 +308,11 @@ module cpu(
         i_addr = INSTRUCTION[23:8]; 
         i_immed= INSTRUCTION[7:0]; 
         disasm = $sformatf(
-                    "aluop:(%1d)%-10s", i_aluop, aluopName(i_aluop), 
-                    "  target:(%1d)%-10s", i_target, tdevname(i_target), 
-                    " a:(%1d)%-5s", i_srca, adevname(i_srca),  
-                    "  b:(%1d)%-10s", i_srcb, bdevname(i_srcb),  
-                    "  cond:(%1d)%s", i_cond, condname(i_cond),  
+                    "aluop:(%2d)%-10s", i_aluop, aluopName(i_aluop), 
+                    "  target:(%2d)%-10s", i_target, tdevname(i_target), 
+                    " a:(%2d)%-8s", i_srca, adevname(i_srca),  
+                    "  b:(%2d)%-10s", i_srcb, bdevname(i_srcb),  
+                    "  cond:(%1d)%2s", i_cond, condname(i_cond),  
                     " setf:(%b)%s", i_flag, (i_flag? "NOSET" : "SET"), 
                     " cmode:(%b)%s", i_cmode, (i_cmode? "INV" : "STD"), 
                     " amode:(%1b)%s", i_amode, (i_amode?  "DIR": "REG"), 
