@@ -78,6 +78,8 @@ byte rxBuf[BUFFER_SIZE]; // Line of text read from file
 int totalBytesReceived = 0; // next place to write
 int totalBytesRead = 0; // next place to read
 
+int REPORTING_INTERVAL=1000;
+integer cycle_count=0;
 
 wire #T11 unreadDataAvailable = totalBytesRead < totalBytesReceived;
 wire spaceIsAvailable = (totalBytesReceived - totalBytesRead) < BUFFER_SIZE;
@@ -102,7 +104,6 @@ if (LOG>1)
 
     end
 
-integer cycle_count=0;
 integer tx_count=0;
 
 assign _TXE = !(fOut != `NULL && _TXE_SUPPRESS && tx_count > 0 && _MR);
@@ -375,11 +376,12 @@ initial
                 // allow time to advance
                 #10000
                 cycle_count++;
-/*                if (cycle_count > 1000) begin
-                    $display("UART - read nothing for 1000 iterations");
+                if (cycle_count > REPORTING_INTERVAL) begin
+                    $display("UART - read nothing for %d iterations", REPORTING_INTERVAL);
+                    REPORTING_INTERVAL= 10000;
                     cycle_count=0;
                 end
-*/
+
             end
         end // while
     end
