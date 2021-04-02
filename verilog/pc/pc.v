@@ -84,6 +84,9 @@ hct74163 PCHI_7_4
 assign PCLO = {PCLO_7_4.Q, PCLO_3_0.Q};
 assign PCHI = {PCHI_7_4.Q, PCHI_3_0.Q};
 
+// for logging
+wire [15:0] pcval = {PCHI, PCLO};
+
 if (LOG) always @(posedge clk)
 begin
   if (~_MR)
