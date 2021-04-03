@@ -35,7 +35,7 @@ package control;
     localparam [2:0] ADEV_marlo = 4;
     localparam [2:0] ADEV_marhi = 5;
     localparam [2:0] ADEV_uart = 6;
-    localparam [2:0] ADEV_not_used = 7;
+    localparam [2:0] ADEV_not_used = 7; // use for random number?
 
     // B BUS
     localparam [2:0] BDEV_rega = 0; 
