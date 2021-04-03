@@ -1,5 +1,6 @@
 `include "cpu.v"
 `include "../lib/assertion.v"
+`include "../lib/util.v"
 `include "psuedo_assembler.sv"
 `include "control_lines.v"
 `timescale 1ns/1ns
@@ -14,6 +15,7 @@ module test();
 
     import alu_ops::*;
     import control::*;
+    import util::*;
 
    `include "../lib/display_snippet.sv"
 
@@ -88,8 +90,6 @@ module test();
             `INSTRUCTION(icount, B, uart,    not_used, immed,    A,  `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, hello[idx]); 
         end
         `JMP_IMMED16(icount, 0); 
-        //`INSTRUCTION(icount, B, halt,    not_used, immed,    A,  `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, hello[idx]); 
-
 
 
         if (doSim) begin
@@ -103,13 +103,15 @@ module test();
             #TCLK;
 
             while (1==1) begin
+                sleep(1000);
                 #TCLK
                 $display("");
-                $display("CLOCK DOWN - EXEC ", CPU.disasmCur());
+                $display("%9t ", $time, " CLOCK DOWN - EXEC ", CPU.disasmCur());
                 clk=0;
                 #TCLK;
                 $display("CLOCK UP - PC INC");
                 clk = 1; // high fetch phase - +ve clk reset _mr
+                $display("%9t RT", $realtime);
             end
         end
 

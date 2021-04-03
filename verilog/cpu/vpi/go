@@ -1,0 +1,6 @@
+set -e
+
+iverilog-vpi sleep.c
+iverilog -osleep.vvp sleep.v
+vvp -M. -msleep sleep.vvp
+
