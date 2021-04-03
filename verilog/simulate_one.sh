@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 echo ARGS "$@"
@@ -49,7 +50,7 @@ if [ $? != 0 ] ; then
 fi
 
 #    echo $vvp
-$vvp -N -i $rootname.vvp "$@"
+$vvp -M/home/john/OneDrive/simplecpu/verilog/cpu/vpi -msleep  -N -i $rootname.vvp "$@"
 if [ $? != 0 ] ; then
     echo ERROR exit code vvp
     exit 1
