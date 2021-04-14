@@ -9,6 +9,7 @@
 
 
 `define SET_FLAGS 1'b0
+`define KEEP_FLAGS 1'b1
 `define NA_FLAGS 1'b1
 
 `define CM_STD 1'b0
@@ -157,8 +158,8 @@
 // !!!!!!!! PCHITMP MUST ALWAYS BE UNCONDITIONAL OTHERWISE RISK THAT CONTROL LINE LIKE DI/DO MIGHT GO HIGH BETWEEN THE PCHITMP AND PC INSTRUCTIONS...
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 `define JMP_IMMED16(INST, ADDRESS_LONG)       \
-        `INSTRUCTION(INST, B, pchitmp, not_used, immed, A, `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, (ADDRESS_LONG>>8));  \
-        `INSTRUCTION(INST, B, pc,      not_used, immed, A, `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, (ADDRESS_LONG)); 
+        `INSTRUCTION(INST, B, pchitmp, not_used, immed, A, `KEEP_FLAGS, `NA_AMODE, `CM_STD, 'z, (ADDRESS_LONG>>8));  \
+        `INSTRUCTION(INST, B, pc,      not_used, immed, A, `KEEP_FLAGS, `NA_AMODE, `CM_STD, 'z, (ADDRESS_LONG)); 
 
 `define JMP_IMMED_COND(INST, ADDRESS_LONG, COND)       \
         `INSTRUCTION(INST, B, pchitmp, not_used, immed, A, `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, (ADDRESS_LONG>>8));  \
