@@ -135,31 +135,36 @@ endfunction
 */
 always @(negedge WR) begin
     if (_MR) begin
-    if (_TXE) begin
-            $display("%9t ", $time, "UART: TRANSMITTING %8b", D);
-            $error("%9t ", $time, "UART: ERROR WR low while _TXE not ready");
+        if (_TXE) begin
+            $display("%9t ", $time, "UART: ATTEMPT TRANSMITTING %8b WHEN NOT READY", D);
+            $error("%9t ", $time, "UART: ERROR WR set low while _TXE not ready - Transmit ignored");
             if (EXIT_ON_BAD_TIMING == 1) `FINISH_AND_RETURN(1);
-    end
+        end
+        else
+        begin
+            // FIXME - DOUBLE CHECK THE HARDWARE - WHAT DOES IT DO IF WR IS BROUGHT LOW WHEN _TXE NOT READY - IS IT IGNORED?
 
-    $display("%9t ", $time, "UART: TRANSMITTING [h:%02x] [c:%c] [b:%08b] [d:%1d]", D, printable(D), D, D);
-//    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING h%02x (b=%08b)", D, D, D);
 
-    $fwrite(fOut, "%02x\n", D);
-    $fflush(fOut);
+            $display("%9t ", $time, "UART: TRANSMITTING [h:%02x] [c:%c] [b:%08b] [d:%1d]", D, printable(D), D, D);
+        //    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING h%02x (b=%08b)", D, D, D);
 
-    #T11 // -WR to _TXE inactive delay
-    if (LOG>1) $display("%9t ", $time, "UART: TX NOT READY");
-    _TXE_SUPPRESS=0; 
+            $fwrite(fOut, "%02x\n", D);
+            $fflush(fOut);
 
-    tx_count --;
-    if (tx_count < 0) begin
-            $error("%9t ", $time, "UART: ERROR tx_count went negative");
-            if (EXIT_ON_BAD_TIMING == 1) `FINISH_AND_RETURN(1);
-    end
+            #T11 // -WR to _TXE inactive delay
+            if (LOG>1) $display("%9t ", $time, "UART: TX NOT READY");
+            _TXE_SUPPRESS=0; 
 
-    #T12 // min inactity period
-    if (LOG>1) $display("%9t ", $time, "UART: inactive period ends");
-    _TXE_SUPPRESS=1;
+            tx_count --;
+            if (tx_count < 0) begin
+                $error("%9t ", $time, "UART: ERROR tx_count went negative");
+                if (EXIT_ON_BAD_TIMING == 1) `FINISH_AND_RETURN(1);
+            end
+
+            #T12 // min inactity period
+            if (LOG>1) $display("%9t ", $time, "UART: inactive period ends");
+            _TXE_SUPPRESS=1;
+        end
 
     end
 end
@@ -212,7 +217,7 @@ always @(posedge _RD) begin
             if (LOG>1) $display("%9t ", $time, "UART: ADVANCING READ POS FROM %3d", totalBytesRead);
             totalBytesRead++;
         end else begin
-            if (LOG>1) $display("%9t ", $time, "UART: NOT ADVANCING READ POS FROM %3d BECAUSE AT END OF BUFFER", totalBytesRead);
+            if (LOG>1) $display("%9t ", $time, "UART: NOT ADVANCING READ POS FROM %3d BECAUSE AT END OF BUFFER - will return last thing received", totalBytesRead);
             immedBusUpdateOnNextReceive=1;
         end
 
