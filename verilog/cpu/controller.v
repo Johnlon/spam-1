@@ -197,14 +197,14 @@ module controller(
     // hookup all the signals from the decoders to the output wires
 
     // control lines for device selection
-    wire [7:0] lsel = {abus_dev_08_demux.Y};
-    wire [7:0] rsel = {bbus_dev_08_demux.Y};
-    wire [15:0] tsel = {targ_dev_16_demux.Y, targ_dev_08_demux.Y};
+    wire [7:0] adev_sel = {abus_dev_08_demux.Y};
+    wire [7:0] bdev_sel = {bbus_dev_08_demux.Y};
+    wire [15:0] tdev_sel = {targ_dev_16_demux.Y, targ_dev_08_demux.Y};
 
     // define the functions to hookup the lines
-    `define HOOKUP_ADEV_SEL(DNAME) assign _adev_``DNAME`` = lsel[ADEV_``DNAME``]
-    `define HOOKUP_BDEV_SEL(DNAME) assign _bdev_``DNAME`` = rsel[BDEV_``DNAME``]
-    `define HOOKUP_TDEV_SEL(DNAME) assign _``DNAME``_in = tsel[TDEV_``DNAME``]
+    `define HOOKUP_ADEV_SEL(DNAME) assign _adev_``DNAME`` = adev_sel[ADEV_``DNAME``]
+    `define HOOKUP_BDEV_SEL(DNAME) assign _bdev_``DNAME`` = bdev_sel[BDEV_``DNAME``]
+    `define HOOKUP_TDEV_SEL(DNAME) assign _``DNAME``_in = tdev_sel[TDEV_``DNAME``]
     
     // apply the functions to the lines
     `CONTROL_WIRES(HOOKUP, `SEMICOLON);
