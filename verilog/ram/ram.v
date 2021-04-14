@@ -1,5 +1,7 @@
 `ifndef RAM_V
 `define RAM_V
+// Consistent with AS6C1008, 6116 and 62256 RAM 
+// Chip enable lines not included in the interface - AS6C1008 has +ve and -ve CE lines, wherea 62256 for example has only one CE line
 
 `timescale 1ns/1ns
 
@@ -14,22 +16,26 @@ module ram(_OE, _WE, A, D);
     // depth is # elements
     parameter DWIDTH=8,AWIDTH=16, DEPTH= 1 << AWIDTH;
     parameter LOG=0;
+    parameter UNDEFINED_VALUE=4'bxzzx;
 
-    parameter [DWIDTH-1:0] UNDEF = {(DWIDTH/4){4'bxzzx}};
+    parameter [DWIDTH-1:0] UNDEF = {(DWIDTH/$bits(UNDEFINED_VALUE)){UNDEFINED_VALUE}}; // repeat xzzx as many times as needed to fill up DWIDTH
     parameter [DWIDTH-1:0] HIZ = {DWIDTH{1'bz}};
 
     reg [DWIDTH-1:0] Mem [0:DEPTH-1];
     wire [DWIDTH-1:0] delayedMemRead;
 
-    localparam t_a_a = 70;
-    localparam t_dis_w = 25;
-    localparam t_en_w = 0;
-    localparam t_dis_g = 25;
-    localparam t_en_g = 0;
-    wire #(t_en_w, t_dis_w) _delayedWE = _WE;
-    wire #(t_dis_g, t_en_g) _delayedOE = _OE;
+    // I'm using AS6C1008-55PIN - https://www.alliancememory.com/wp-content/uploads/pdf/AS6C1008feb2007.pdf
+    localparam tAA = 55; // names from AS6C1008
+    localparam tOW = 5;
+    localparam tWHZ = 20;  
+    localparam tOHZ = 20;
+    localparam tOLZ = 5;
+
+    // (rise time, fall time)
+    wire #(tOW, tWHZ) _delayedWE = _WE;
+    wire #(tOHZ, tOLZ) _delayedOE = _OE;
     wire [AWIDTH-1:0] delayedA;
-    assign #(t_a_a) delayedA = A;
+    assign #(tAA) delayedA = A;
 
     assign delayedMemRead = Mem[delayedA];
 
@@ -59,7 +65,7 @@ end
 
   if (LOG) begin
     always @(*) begin
-        // NOTE: 6116 and 62256 RAM datasheet says _WE overrides _OE but I want to detect this unexpected situation
+        // NOTE: AS6C1008, 6116 and 62256 RAM datasheet says _WE overrides _OE but I want to detect this unexpected situation
         if (!_WE && !_OE) begin
            $display("%9t", $time, " ALERT - RAM _OE and _WE simultaneously - WRITE WINS - RAM[0x%04x]=%08b", A, D );
         end
@@ -96,8 +102,9 @@ end
   integer i;
   initial begin
 `ifndef verilator
-    for(i=0;i<DEPTH;i=i+1)
+    for(i=0;i<DEPTH;i=i+1) begin
        Mem[i]=UNDEF;
+    end
 `endif
   end
 

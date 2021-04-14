@@ -15,7 +15,7 @@ module test();
 
  `include "../lib/display_snippet.sv"
 
- localparam PD=1000;
+ localparam PD=56; // max delay is tAA which is 55 ns
 
   ram #(.AWIDTH(8), .LOG(1)) RAM(._OE, ._WE, .A, .D);
 
