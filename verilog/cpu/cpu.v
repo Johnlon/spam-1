@@ -124,8 +124,8 @@ module cpu(
     // RAM =============================================================================================
 
 // verilator lint_off PINMISSING
-    wire #(8) _gated_ram_in = _phase_exec | _ram_in;
-    ram #(.AWIDTH(16), .LOG(0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
+    wire #(8) _gated_ram_in = _phase_exec | _ram_in; // THIS IS ON THE RAM BOARD
+    ram #(.AWIDTH(16), .LOG(0), .UNDEFINED_VALUE(1'b0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
 // verilator lint_on PINMISSING
     
 `ifndef verilator
@@ -171,7 +171,7 @@ module cpu(
     );
 
     wire gated_flags_clk;
-    nor #(9) gating( gated_flags_clk , _phase_exec , _set_flags);
+    nor #(9) gating( gated_flags_clk , _phase_exec , _set_flags); // TODO : NOT IMPLEMENTED YET - NOR or OR AND NOT?
 
     wire [7:0] alu_flags_czonGLEN = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
 
@@ -185,9 +185,9 @@ module cpu(
     // REGISTER FILE =====================================================================================
     // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
     // NOTE !!!! THIS CODE USES _phase_exec AS THE REGFILE GATING MEANING _WE IS LOW ONLY ON SECOND PHASE OF CLOCK - THIS PREVENTS A SPURIOUS WRITE TO REGFILE FROM IT'S INPUT LATCH
-    wire #(2*8) _gated_regfile_in = _phase_exec | (_rega_in & _regb_in & _regc_in & _regd_in);
-    wire #(8) _regfile_rdL_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ;
-    wire #(8) _regfile_rdR_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ;
+    wire #(2*8) _gated_regfile_in = _phase_exec | (_rega_in & _regb_in & _regc_in & _regd_in); // TODO: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAD REGFILE!!
+    wire #(8) _regfile_rdL_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ; // NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAD REGFILE!!
+    wire #(8) _regfile_rdR_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ; // NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAD REGFILE!!
     wire [1:0] regfile_rdL_addr = abus_dev[1:0];
     wire [1:0] regfile_rdR_addr = bbus_dev[1:0];
     wire [1:0] regfile_wr_addr = targ_dev[1:0];
@@ -250,7 +250,7 @@ module cpu(
         if (_mrPC && $isunknown(alu_result_bus)) begin // just check leftmost but as this is part of the op and is mandatory
             $display ("%9t ", $time,  "CPU ERROR");
             $error("CPU : ERROR - ALU RESULT BUS UNDEFINED AT EXECUTE = %8b", alu_result_bus); 
-            `FINISH_AND_RETURN(1);
+            //`FINISH_AND_RETURN(1);
         end
     end
 
