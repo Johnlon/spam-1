@@ -132,7 +132,7 @@ module cpu(
     // verilator complains about tristate
     hct74245 ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in), .dir(1'b1));
 `endif
-    hct74245 ram_bbus_buf(.A(ram64.D), .B(bbus), .nOE(_bdev_ram), .dir(1'b1));
+    hct74245 ram_bbus_buf(.A(bbus), .B(ram64.D), .nOE(_bdev_ram), .dir(1'b0));
 
     // MAR =============================================================================================
 // verilator lint_off PINMISSING
