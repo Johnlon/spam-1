@@ -6,18 +6,28 @@
 
 `timescale 1ns/1ns
 
-module hct74157(_E, S, I0, I1, Y);
+module hct74157 #(parameter WIDTH=4) (_E, S, I0, I1, Y);
     input S, _E;
-    input [3:0] I0;
-    input [3:0] I1;
-    output [3:0] Y;
+    input [WIDTH-1:0] I0;
+    input [WIDTH-1:0] I1;
+    output [WIDTH-1:0] Y;
 
-    assign #(19) Y = _E? 4'b0 : S? I1: I0;
+    logic Spd = S;
+    logic _Epd = _E;
+    logic [WIDTH-1:0] I0pd;
+    logic [WIDTH-1:0] I1pd;
 
-    //assign #(19) Y[0] = _E==1'b1? 1'b0 : (S & B[0]) | (!S & A[0]);
-    //assign #(19) Y[1] = _E==1'b1? 1'b0 : (S & B[1]) | (!S & A[1]);
-    //assign #(19) Y[2] = _E==1'b1? 1'b0 : (S & B[2]) | (!S & A[2]);
-    //assign #(19) Y[3] = _E==1'b1? 1'b0 : (S & B[3]) | (!S & A[3]);
+    // models "transmission delays"
+    always @* begin
+        Spd <= #(19) S;
+        _Epd <= #(12) _E;
+        I0pd <= #(13) I0;
+        I1pd <= #(13) I1;
+    end
+
+    // 19 is the worst of the PD'
+    assign Y = _Epd? WIDTH'(0) : Spd? I1pd: I0pd;
+
 endmodule
 
 

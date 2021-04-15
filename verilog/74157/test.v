@@ -25,8 +25,10 @@ module tb();
 
       hct74157 mux(.I0, .I1, .S, ._E, .Y);
 
+    time st;
+
     always @*
-        $display($time, " => S=%1b", S, " _E=%1b", _E, " I0=%4b", VI0, " I1=%4b ", I1," Y=%4b ", Y);
+        $display($time, ":delta=%5d ", ($time-st), " => S=%1b", S, " _E=%1b", _E, " I0=%4b", VI0, " I1=%4b ", I1," Y=%4b ", Y);
      
     initial begin
       
@@ -34,22 +36,26 @@ module tb();
       VI1='x;
       S = 1; // a->b
       _E = 1;
-      #2 // not enought time to stabilise
+      st =$time;
+      #2 // not enough time to stabilise
       `Equals(Y , 4'bxxxx)
 
-      #20
+      st =$time; #(10+2+1) // After Epd+1 0 appears on output
       `Equals(Y , 4'b0)
 
+      // enable and set new data => data should appear longest of Epd or Ipd - therefore Ipd
       VI0=4'b1010;
       VI1=4'b0101;
-
-      S = 1; 
-      _E = 0;
-      #20
+      S = 1; // stays same
+      _E = 0; // is enabled
+      st =$time; #(13+1)
       `Equals(Y , 4'b0101)
 
+      // flip the selection ..
       S = 0; 
-      #20 
+      st =$time; #(19) // old data data still there at 18 secs (== 19 delay)..... 
+      `Equals(Y , 4'b0101)
+      st =$time; #(1) // but data appears after 1 more nS
       `Equals(Y , 4'b1010)
       
     end
