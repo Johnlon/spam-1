@@ -25,7 +25,7 @@ module test();
     wire _flag_eq;
     wire _flag_ne;
 	
-	alu #(.LOG(0)) Alu( .o, .a, .b, .alu_op, ._flag_c_in, ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_gt, ._flag_lt, ._flag_eq, ._flag_ne);
+	alu #(.LOG(0)) Alu( .result(o), .a, .b, .alu_op, ._flag_c_in, ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_gt, ._flag_lt, ._flag_eq, ._flag_ne);
 
     `define MAX_POS (127)
     `define MAX_NEG (-128)

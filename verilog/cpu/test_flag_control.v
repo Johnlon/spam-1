@@ -192,7 +192,7 @@ module test();
         clk=0;
         #1000
        `Equals(CPU.pc_addr, 4); 
-       `Equals(CPU._flag_c, 0); // flags preserved during PC assignments
+       `Equals(CPU._flag_c, 1'b0); // flags preserved during PC assignments
        `Equals(CPU.PC.PCHITMP, 0);
        `Equals(CPU.MARLO.Q, 0); 
        `Equals(CPU.MARHI.Q, 1); 
@@ -203,7 +203,7 @@ module test();
         clk=0;
         #1000
        `Equals(CPU.pc_addr, 5); 
-       `Equals(CPU._flag_c, 0); // flags preserved during PC assignments
+       `Equals(CPU._flag_c, 1'b0); // flags preserved during PC assignments
        `Equals(CPU.PC.PCHITMP, 0); 
        `Equals(CPU.MARLO.Q, 0); 
        `Equals(CPU.MARHI.Q, 1); 

@@ -155,7 +155,7 @@ module cpu(
     wire _flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne;
 
 	alu #(.LOG(0)) Alu(
-        .o(alu_result_bus), 
+        .result(alu_result_bus), 
         .a(abus),
         .b(bbus),
         .alu_op(alu_op),

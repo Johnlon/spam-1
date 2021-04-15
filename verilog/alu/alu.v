@@ -38,6 +38,7 @@
 
 
 `include "../74138/hct74138.v"
+`include "../74157/hct74157.v"
 `include "../rom/rom.v"
 `include "alu_ops.v"
 `include "alu_code.v"
@@ -65,7 +66,7 @@
 */
 
 module alu #(parameter LOG=0, PD=120) (
-    output tri [7:0] o,
+    output tri [7:0] result,
     output tri _flag_c,
     output tri _flag_z,
     output tri _flag_n,
@@ -85,25 +86,26 @@ module alu #(parameter LOG=0, PD=120) (
     // CARRY-IN LOGIC - EXTERNAL LOGIC
     //////////////////////////////////////////////////////
 
-    wire selD,selE,selC,selB,selA;
-    assign selE=alu_op[4];
-    assign selD=alu_op[3];
-    assign selC=alu_op[2];
-    assign selB=alu_op[1];
-    assign selA=alu_op[0];
+    wire aluop_4,aluop_3,aluop_2,aluop_1,aluop_0;
+    assign aluop_4=alu_op[4];
+    assign aluop_3=alu_op[3];
+    assign aluop_2=alu_op[2];
+    assign aluop_1=alu_op[1];
+    assign aluop_0=alu_op[0];
 
     wire [7:0] _decoded;
-    hct74138 decoder(.Enable1_bar(selE), .Enable2_bar(1'b0), .Enable3(selD), .A({selC,selB,selA}), .Y(_decoded) );
+    hct74138 alu_op_decoder(.Enable1_bar(aluop_4), .Enable2_bar(1'b0), .Enable3(aluop_3), .A({aluop_2,aluop_1,aluop_0}), .Y(_decoded) );
 
     wire _use_cin;
-    and #(8) hct7411(_use_cin, _decoded[7], _decoded[6],  _decoded[5]); 
+    and #(8) use_cin_decoder(_use_cin, _decoded[7], _decoded[6],  _decoded[5]); 
 
     wire flag_c_in;
     not #(8) hct7404(flag_c_in, _flag_c_in); // inverter
 
-    wire #(19) effective_bit3 = _use_cin ? selC: flag_c_in; // multiplexer 74157
+    wire effective_aluop_2;
+    hct74157 #(.WIDTH(1)) effective_bit_sel(._E(1'b0), .S(_use_cin), .I1({aluop_2}), .I0({flag_c_in}), .Y({ effective_aluop_2 })); // decoder
 
-    wire [4:0] alu_op_effective = {selE, selD, effective_bit3, selB, selA};
+    wire [4:0] alu_op_effective = {aluop_4, aluop_3, effective_aluop_2, aluop_1, aluop_0};
 
 
     //////////////////////////////////////////////////////
@@ -124,7 +126,7 @@ if (1) begin
 
     rom #(.AWIDTH(21), .DWIDTH(16), .FILENAME("../alu/roms/alu-hex.rom"), .LOG(0)) ALU_ROM(._CS(1'b0), ._OE(1'b0), .A, .D);
 
-    assign { _flag_c, _flag_z, _flag_n, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt, o} = D;
+    assign { _flag_c, _flag_z, _flag_n, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt, result} = D;
 
     if (LOG) 
     always @(*) 
@@ -138,7 +140,7 @@ if (1) begin
         " address = %021b (d %d, h %04x)", A, A, A,
         " data = %16b (d %d, h %04x)", D,D,D,
         "  ",
-        " out=%08b (u%-3d/h%-02h) ", o, o, o,
+        " out=%08b (u%-3d/h%-02h) ", result, result, result,
         " _c%1b",  _flag_c,
         " _z%1b",  _flag_z,
         " _n%1b",  _flag_n,
