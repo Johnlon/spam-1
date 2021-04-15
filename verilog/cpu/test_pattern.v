@@ -55,7 +55,7 @@ module test();
         for (pcAddress=0; pcAddress < 256; pcAddress++) begin
             // make b count in opposite direction so it's distinctive in test
             //             aluop      t           a          b            cond
-            `INSTRUCTION_N(pcAddress, pcAddress,  pcAddress, 7-pcAddress, pcAddress,        0,         `SET_FLAGS,  `DIRECT  ,   pcAddress, pcAddress ); 
+            `INSTRUCTION_N(pcAddress, pcAddress,  pcAddress, 7-pcAddress, pcAddress,        0,         `SET_FLAGS,  `CM_STD, `DIRECT  ,   pcAddress, pcAddress ); 
 
             $display("CODE : %-s" , CODE_NUM[pcAddress]);
         end
