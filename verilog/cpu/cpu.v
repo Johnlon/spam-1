@@ -105,15 +105,14 @@ module cpu(
     
 
     // PROGRAM COUNTER ======================================================================================
-    wire _long_jump = _pc_in; 
 
     // PC reset is sync with +ve edge of clock
     pc #(.LOG(0))  PC (
         //.clk(clk),
         .clk(system_clk),
         ._MR(_mrPC),
-        ._long_jump(_long_jump),  // load both
-        ._local_jump(_pclo_in), // load lo
+        ._pc_in(_pc_in),  // load both
+        ._pclo_in(_pclo_in), // load lo
         ._pchitmp_in(_pchitmp_in), // load tmp
         .D(alu_result_bus),
 
