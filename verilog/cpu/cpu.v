@@ -88,7 +88,7 @@ module cpu(
     wire [15:0] pc_addr = {PCHI, PCLO}; 
 
     // ROM =============================================================================================
-    controller ctrl(
+    controller ctrl( // DONE
         .pc(pc_addr),
         ._flags_czonGLEN(_registered_flags_czonGLEN),
         ._flag_di, ._flag_do,
@@ -105,7 +105,7 @@ module cpu(
     
 
     // PROGRAM COUNTER ======================================================================================
-    wire #(8) _long_jump = _pc_in; // FIXME - need to include _do_Exec somehow
+    wire _long_jump = _pc_in; 
 
     // PC reset is sync with +ve edge of clock
     pc #(.LOG(0))  PC (

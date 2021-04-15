@@ -204,7 +204,7 @@ module controller(
     // define the functions to hookup the lines
     `define HOOKUP_ADEV_SEL(DNAME) assign _adev_``DNAME`` = adev_sel[ADEV_``DNAME``]
     `define HOOKUP_BDEV_SEL(DNAME) assign _bdev_``DNAME`` = bdev_sel[BDEV_``DNAME``]
-    `define HOOKUP_TDEV_SEL(DNAME) assign _``DNAME``_in = tdev_sel[TDEV_``DNAME``]
+    `define HOOKUP_TDEV_SEL(DNAME) assign _``DNAME``_in   = tdev_sel[TDEV_``DNAME``]
     
     // apply the functions to the lines
     `CONTROL_WIRES(HOOKUP, `SEMICOLON);

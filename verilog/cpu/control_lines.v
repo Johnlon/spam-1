@@ -58,10 +58,10 @@ package control;
     localparam [3:0] TDEV_uart = 6;
     localparam [3:0] TDEV_ram = 7;
     localparam [3:0] TDEV_halt = 8;
-    localparam [3:0] TDEV_not_used = 12; // needed for things like compare where we don't want to overwrite
+    localparam [3:0] TDEV_not_used = 12;// needed for things like compare where we don't want to overwrite
     localparam [3:0] TDEV_pchitmp = 13; // only load pchitmp
-    localparam [3:0] TDEV_pclo= 14; // only load pclo
-    localparam [3:0] TDEV_pc= 15;   // load pclo from instruction and load pchi from pchitmp
+    localparam [3:0] TDEV_pclo= 14;     // only load pclo
+    localparam [3:0] TDEV_pc= 15;       // load pclo from instruction and load pchi from pchitmp
 
 
     localparam [3:0] CONDITION_A= 0; 

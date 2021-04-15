@@ -140,7 +140,7 @@ module test();
         $display("");
         if (CPU.phase_exec) begin
             $display("%9t ", $time, "PC=%-d    ====  ENTERTED EXEC PHASE ", {CPU.PCHI, CPU.PCLO});
-            $display("%9t ", $time, "_GRFIN", CPU._gated_regfile_in , " _phase_exec",  CPU._phase_exec , " _REGA_IN ", CPU._rega_in);
+            $display("%9t ", $time, "_gated_regfile_in ", CPU._gated_regfile_in , " _phase_exec ",  CPU._phase_exec , " _REGA_IN ", CPU._rega_in);
         end
     end
 
@@ -155,7 +155,7 @@ module test();
     begin
         count = { CPU.regFile.get(1), CPU.regFile.get(0) };
 
-        $display("%9t", $time, " MARLO.Q= %4h ", CPU.MARLO.Q);
+        $display("%9t", $time, " MARLO.Q = %4h ", CPU.MARLO.Q);
         $display("%9t", $time, " REGISTER COUNT = %4h ", 16'(count));
         $display("%9t", $time, " LAST COUNT = %2h ", last_count);
         $display("%9t", $time, " LAST MARLO = %2h ", last_marlo);
