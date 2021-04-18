@@ -66,6 +66,7 @@ module test();
     begin
     // JLJL
         // RAM[ffaa] = 42h
+        `TEXT(counter, "START");
         `RAM_DIRECT_EQ_IMMED8(counter, 16'hffaa, 8'h42); 
     // JLJL
 
@@ -141,6 +142,10 @@ module test();
         `TEXT(counter, "CONDITIONAL ADD ONE TO MARHI");
         `INSTRUCTION(counter, B_PLUS_1, marhi, not_used, marhi, C, `NA_FLAGS, `CM_STD, `NA_AMODE, 'z, 'z); 
 
+        
+        `TEXT(counter, "REGA=REGA+1");
+        `INSTRUCTION(counter, B_PLUS_1, rega, not_used, rega, A, `NA_FLAGS, `CM_STD, `NA_AMODE, 'z, 'z); 
+
         `TEXT(counter, "GOTO LOOP");
         `JMP_IMMED16(counter, `ADD_ONE); 
 
@@ -153,6 +158,9 @@ module test();
 
     task CLK_UP; 
     begin
+        // DUMP VALUES AT START OF NEXT INST SO FINAL VALUES ARE SEEN
+        DUMP; 
+
         if (_RESET_SWITCH) icount++; else icount=0;
 
         $display("\n%9t", $time, " CLK GOING HIGH  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ INSTRUCTION %1d\n", icount); 
@@ -163,8 +171,7 @@ module test();
     task CLK_DN; 
     begin
         $display("\n%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
-        $display("\n%9t", $time, " EXECUTING ..."); 
-        DUMP; 
+        $display("\n%9t", $time, " EXECUTING ... ", currentCodeText);
         clk = 0;
     end
     endtask
@@ -173,6 +180,10 @@ module test();
     // TESTS
 
     integer count;
+
+    integer addInstOffset;
+    logic [7:0] expectedA;
+    integer loopCount;
 
     task noop;
         // do nothing - just for syntax
@@ -186,7 +197,7 @@ module test();
         $dumpvars(0, test);
 
         `define CYCLE begin CLK_UP; #HALF_CLK CLK_DN; #HALF_CLK; noop(); end
-        `define FULL_CYCLE(N) for (count =0; count < N; count++) begin CLK_UP; #HALF_CLK; CLK_DN; #HALF_CLK; noop(); end
+        `define CLK_UP_DN(N) for (count =0; count < N; count++) begin CLK_UP; #HALF_CLK; CLK_DN; #HALF_CLK; noop(); end
         CPU.PC.PCHI_7_4.count = 15;
         CPU.PC.PCHI_3_0.count = 15;
         CPU.PC.PCLO_7_4.count = 15;
@@ -210,7 +221,7 @@ module test();
         `DISPLAY("_mrPC=0  - so clocking is ineffective");
         `Equals(CPU._mrPC, 0);
 
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         #1000
         `DISPLAY("_mrPC=0  - so clocking resets the PC");
         `Equals({CPU.PCHI,CPU.PCLO}, 16'b0)
@@ -320,109 +331,125 @@ module test();
 
 
         `DISPLAY("NEXT INSTRUCTION")
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `Equals(CPU.MARLO.Q, 8'h22)
         `Equals(CPU.MARHI.Q, 8'h00)
 
         `DISPLAY("instruction - fetch/exec");
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `Equals(`RAM(16'habcd), 8'h22);
 
         `DISPLAY("instruction - fetch/exec");
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `Equals( CPU.regFile.get(1), 8'h22);
 
         `DISPLAY("instruction  - fetch/exec");
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `Equals(`RAM(16'hdcba), 8'h22);
 
         `DUMP_REG
+        `regEquals(8'h00,8'h22,8'h22,8'h33); // initial state for next test
 
         `DISPLAY("instruction 9 to 16 - values set as REGA=1 / B=2 / C=3 / E=4 round trip const to reg to ram");
-        `regEquals(8'h00,8'h22,8'h22,8'h33);
-        `FULL_CYCLE(1)
-        `regEquals(8'h01,8'h22,8'h22,8'h33);
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
+        `Equals(pc, 8'd9);
+        `CLK_UP_DN(1)
         `regEquals(8'h1,8'h2,8'h22,8'h33);
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `regEquals(8'h1,8'h2,8'h3,8'h33);
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `regEquals(8'h1,8'h2,8'h3,8'h4);
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `Equals(`RAM(1), 1);
-        `FULL_CYCLE(1)
+        `regEquals(8'h1,8'h2,8'h3,8'h4);
+        `CLK_UP_DN(1)
         `Equals(`RAM(2), 2);
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `Equals(`RAM(3), 3);
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `Equals(`RAM(4), 4);
 
         // COUNTING UP
         `Equals(CPU.MARLO.Q, 8'h22)
         `Equals(CPU.MARHI.Q, 8'd0)
 
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `Equals(CPU.pc_addr, 16'd17)
         `Equals(CPU.MARLO.Q, 8'd254)
         `Equals(CPU.MARHI.Q, 8'd0)
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `Equals(CPU.MARLO.Q, 8'd254)
         `Equals(CPU.MARHI.Q, 8'd0)
 
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `Equals(CPU.MARLO.Q, 8'd254)
         `Equals(CPU.MARHI.Q, 8'd0)
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `Equals(CPU.MARLO.Q, 8'd255)
         `Equals(CPU.MARHI.Q, 8'd0)
 
-        `FULL_CYCLE(1)
-        `Equals(CPU.MARLO.Q, 8'd255)
-        `Equals(CPU.MARHI.Q, 8'd0)
-        `FULL_CYCLE(1)
+        `CLK_UP_DN(1)
         `Equals(CPU.MARLO.Q, 8'd255)
         `Equals(CPU.MARHI.Q, 8'd0)
 
-        `FULL_CYCLE(1)
+        `DISPLAY("EXPECTING: REGA=REGA+1");
+        `CLK_UP_DN(1)
         `Equals(CPU.MARLO.Q, 8'd255)
         `Equals(CPU.MARHI.Q, 8'd0)
-        `FULL_CYCLE(1)
+        `regEquals(8'h2,8'h2,8'h3,8'h4);
+
+        
+        `DISPLAY("EXPECTING: SET HITMP");
+        `CLK_UP_DN(1)
+        `Equals(CPU.MARLO.Q, 8'd255)
+        `Equals(CPU.MARHI.Q, 8'd0)
+
+        `DISPLAY("EXPECTING: SET PC");
+        `CLK_UP_DN(1)
+        `Equals(CPU.MARLO.Q, 8'd255)
+        `Equals(CPU.MARHI.Q, 8'd0)
+
+        `DISPLAY("EXPECTING: EXPECTING MARLO OVERFLOW TO 0");
+        `CLK_UP_DN(1)
         `Equals(CPU.MARLO.Q, 8'd0)
         `Equals(CPU.MARHI.Q, 8'd0)
 
-        `FULL_CYCLE(1)
-        `Equals(CPU.MARLO.Q, 8'd0)
-        `Equals(CPU.MARHI.Q, 8'd1)
-        `FULL_CYCLE(1)
+        `DISPLAY("EXPECTING: EXPECTING MARHI INC");
+        `CLK_UP_DN(1)
         `Equals(CPU.MARLO.Q, 8'd0)
         `Equals(CPU.MARHI.Q, 8'd1)
         #1
 
-        $display("END OF TEST CASES ==============================================");
-/*
-*/
 
-//`include "./generated_tests.v"
-/*
-        #HALF_CLK
-        count=100;
-        while (count -- > 0) begin
-            #HALF_CLK
-            CLK_UP;
-            #HALF_CLK
-            CLK_DN;
-            $display("PC %2x:%2x !!!!!!!!!!!!!!!!!!!!!!!! CLK COUNT REMAINING=%-d", PCHI, PCLO, count);
-        end
-*/
+        $display("END OF TEST CASES ==============================================");
 
         // consume any remaining code
         // verilator lint_off INFINITELOOP
         $display("FREE RUN CPU ==================================");
-         while (1==1) begin
-             #HALF_CLK
-             CLK_UP;
-             #HALF_CLK
-             CLK_DN;
+
+        // regs intact?
+        `regEquals(8'h2,8'h2,8'h3,8'h4);
+
+        loopCount=0;
+        addInstOffset = 0; // rega++ is index from where we start the loop
+        expectedA=2; // rega ought to be 2 initially
+        while (1==1) begin
+            #HALF_CLK
+            CLK_UP;
+            #HALF_CLK
+            CLK_DN;
+
+            #29 // allow for 74670 to settle
+
+            // num instructions in loop=5
+            if (((loopCount+addInstOffset) % 5) == 0) begin
+                expectedA++;
+            end
+
+            // regs intact?
+            `regEquals(expectedA,8'h2,8'h3,8'h4);
+
+            loopCount++;
          end
         // verilator lint_on INFINITELOOP
 
@@ -447,8 +474,9 @@ module test();
 
     `define DD  $display ("%9t ", $time,  "DUMP  ",
     task DUMP_OP;
-          `DD ": CODE: %1s", currentCode);
-          `DD ": %1s", label);
+          `DD ": CODE : %1s", currentCode);
+          `DD ": TEXT : %1s", currentCodeText);
+          `DD ": LABEL: %1s", label);
           label="";
     endtask
 
