@@ -1,8 +1,10 @@
-// FIXME = don't set flags if instruction doesn't exec
 
 // FIXME: Add random number generator - eg use an unused device as a readonly source - connect it to a 8 bit counter running at an arbitraty speed
+
+// NB..
 // ADDRESSING TERMINOLOGY
 //  IMMEDIATE ADDRESSING = INSTRUCTION CONTAINS THE CONSTANT VALUE DATA TO USE
+// RAM:
 //  DIRECT ADDRESSING = INSTRUCTION CONTAINS THE ADDRESS IN MEMORY OF THE DATA TO USE
 //  REGISTER ADDRESSING = INSTRUCTION CONTAINS THE NAME OF THE REGISTER FROM WHICH TO FETCH THE DATA
 
@@ -42,6 +44,8 @@ module cpu(
 );
 
     parameter LOG=0;
+
+    localparam tPD_7486=14;
     
     tri0 [15:0] address_bus;
     tri0 [7:0] abus; // when NA device is selected we don't want Z going into ALU sim as this is not a value so we get X out
@@ -171,7 +175,7 @@ module cpu(
     );
 
     wire gated_flags_clk;
-    nor #(9) gating( gated_flags_clk , _phase_exec , _set_flags); // TODO : NOT IMPLEMENTED YET - NOR or OR AND NOT?
+    nor #(9) ic7486_a_flags_gating( gated_flags_clk , _phase_exec , _set_flags); // FIXME : NOT IMPLEMENTED YET
 
     wire [7:0] alu_flags_czonGLEN = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
 
@@ -186,22 +190,22 @@ module cpu(
     // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
     // NOTE !!!! THIS CODE USES _phase_exec AS THE REGFILE GATING MEANING _WE IS LOW ONLY ON SECOND PHASE OF CLOCK - THIS PREVENTS A SPURIOUS WRITE TO REGFILE FROM IT'S INPUT LATCH
 
-    // FIXME?? _regfile_in ought to be === OR(targdev[2], targdev[3])
-    wire #(8) _regfile_in = _rega_in & _regb_in & _regc_in & _regd_in; // TODO: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    wire #(8) _regfile_in = _rega_in & _regb_in & _regc_in & _regd_in; // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
 
     // NOTE targ lines are gated with do_exec in the controller but we still need to gate with _phase_exec as we only want them enabled in the late phase as they are latches
-    // This is needed to avoid starting a write while address lines have not settled.
-    wire #(8) _gated_regfile_in = _phase_exec | _regfile_in; // TODO: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    // IMPL OF ... _gated_regfile_in = _phase_exec | _regfile_in;
+    // wire #(8) _gated_regfile_in = _phase_exec | _regfile_in; // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    wire _gated_regfile_in, gated_regfile_in_tmp;
+    nor #(tPD_7486) ic7486_b_gated_regfile(gated_regfile_in_tmp , _phase_exec , _regfile_in); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    nor #(tPD_7486) ic7486_c_gated_regfile(_gated_regfile_in , gated_regfile_in_tmp); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
 
-    // decide whether we are reading
-    // FIXME OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdA_en === abus_dev[2]
-    //OLD wire #(8) _regfile_rdA_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ; // TODO NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
-    wire _regfile_rdA_en = abus_dev[2] ; // TODO NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    // OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdA_en === abus_dev[2]
+    // OLD wire #(8) _regfile_rdA_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ; 
+    wire _regfile_rdA_en = abus_dev[2]; 
 
-
-    // FIXME OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdB_en === bbus_dev[2]
-    //OLD wire #(8) _regfile_rdB_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ; // TODO IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
-    wire _regfile_rdB_en = bbus_dev[2]; // TODO IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    // OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdB_en === bbus_dev[2]
+    // OLD wire #(8) _regfile_rdB_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ; 
+    wire _regfile_rdB_en = bbus_dev[2];
 
     // the lower two bits can be used to address the regfile as the regfile is the first four locns
     wire [1:0] regfile_rdA_addr = abus_dev[1:0]; 
@@ -233,11 +237,11 @@ module cpu(
 
 
     // UART =============================================================
-    wire #(10) _gated_uart_wr = _uart_in | _phase_exec;   // sync clock data into uart - must occur AFTER uart_alubuf_buf has been enabled
+    wire #(10) _gated_uart_wr = _uart_in | _phase_exec;   // DONE sync clock data into uart - must occur AFTER uart_alubuf_buf has been enabled
 
     wire [7:0] uart_d;
 
-    um245r #(.LOG(2))  uart (
+    um245r #(.LOG(2))  uart ( // DONE
         .D(uart_d),
         .WR(_gated_uart_wr),// Writes data on -ve edge
         ._RD(_adev_uart),	// When goes from high to low then the FIFO data is placed onto D (equates to _OE)
@@ -245,8 +249,8 @@ module cpu(
         ._RXF(_flag_di)		// When high to NOT read from D, when low then data is available to read by strobing RD low
       );
 
-    hct74245 uart_alubus_buf(.A(alu_result_bus), .B(uart_d), .nOE(_uart_in), .dir(1'b1));
-    hct74245 uart_abus_buf(.A(uart_d), .B(abus), .nOE(_adev_uart), .dir(1'b1));
+    hct74245 uart_alubus_buf(.A(alu_result_bus), .B(uart_d), .nOE(_uart_in), .dir(1'b1)); // DONE
+    hct74245 uart_abus_buf(.A(uart_d), .B(abus), .nOE(_adev_uart), .dir(1'b1)); // DONE
 
 
 
