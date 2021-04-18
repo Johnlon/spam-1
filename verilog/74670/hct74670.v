@@ -15,6 +15,8 @@ module hct74670 (input _wr_en,
     
     parameter LOG=0;
 
+    localparam PD_D_TO_Q=27;
+
 // verilator lint_off UNOPTFLAT
     // Register file storage
     reg [3:0] registers[3:0];
@@ -32,10 +34,10 @@ module hct74670 (input _wr_en,
     reg [3:0] out_val;
     
     specify
-    (_rd_en *> rd_data)  = 18;
-    (_wr_en *> rd_data)  = 28;
-    (rd_addr *> rd_data) = 21;
-    (wr_data => rd_data) = 27;
+        (_rd_en *> rd_data)  = 18;
+        (_wr_en *> rd_data)  = 28;
+        (rd_addr *> rd_data) = 21;
+        (wr_data => rd_data) = PD_D_TO_Q;
     endspecify
     
     // write to register file
