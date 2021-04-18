@@ -107,7 +107,7 @@ module cpu(
     // PROGRAM COUNTER ======================================================================================
 
     // PC reset is sync with +ve edge of clock
-    pc #(.LOG(0))  PC (
+    pc #(.LOG(0))  PC ( // DONE
         //.clk(clk),
         .clk(system_clk),
         ._MR(_mrPC),
@@ -123,37 +123,38 @@ module cpu(
     // RAM =============================================================================================
 
 // verilator lint_off PINMISSING
-    wire #(8) _gated_ram_in = _phase_exec | _ram_in; // THIS IS ON THE RAM BOARD
-    ram #(.AWIDTH(16), .LOG(0), .UNDEFINED_VALUE(1'b0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // OK to leave _OE enabled as ram data sheet makes WE override it
+    wire #(8) _gated_ram_in = _phase_exec | _ram_in; // DONE - THIS IS ON THE RAM BOARD
+    //OK to leave _OE enabled all the time as ram data sheet says WE override it
+    ram #(.AWIDTH(16), .LOG(0), .UNDEFINED_VALUE(1'b0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // DONE
 // verilator lint_on PINMISSING
     
 `ifndef verilator
     // verilator complains about tristate
-    hct74245 ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in), .dir(1'b1));
+    hct74245 ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in), .dir(1'b1)); // DONE
 `endif
-    hct74245 ram_bbus_buf(.A(bbus), .B(ram64.D), .nOE(_bdev_ram), .dir(1'b0));
+    hct74245 ram_bbus_buf(.A(bbus), .B(ram64.D), .nOE(_bdev_ram), .dir(1'b0)); // DONE
 
     // MAR =============================================================================================
 // verilator lint_off PINMISSING
     // clocks data in as we enter phase exec - on the +ve edge - so use positive logic phase_exec here
-    hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phase_exec), .D(alu_result_bus));    
-    hct74377 #(.LOG(0)) MARHI(._EN(_marhi_in), .CP(phase_exec), .D(alu_result_bus));
+    hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phase_exec), .D(alu_result_bus));   // DONE  
+    hct74377 #(.LOG(0)) MARHI(._EN(_marhi_in), .CP(phase_exec), .D(alu_result_bus)); // DONE
 // verilator lint_on PINMISSING
 
-    hct74245 marlo_abus_buf(.A(MARLO.Q), .B(abus), .nOE(_adev_marlo), .dir(1'b1)); // optional - needed for marlo arith so MAR appears as a GP register
-    hct74245 marlo_bbus_buf(.A(MARLO.Q), .B(bbus), .nOE(_bdev_marlo), .dir(1'b1)); // optional - needed for marlo arith so MAR appears as a GP register
+    hct74245 marlo_abus_buf(.A(MARLO.Q), .B(abus), .nOE(_adev_marlo), .dir(1'b1)); // DONE
+    hct74245 marlo_bbus_buf(.A(MARLO.Q), .B(bbus), .nOE(_bdev_marlo), .dir(1'b1)); // DONE
 
-    hct74245 marhi_abus_buf(.A(MARHI.Q), .B(abus), .nOE(_adev_marhi), .dir(1'b1)); // optional - needed for marlo arith so MAR appears as a GP register
-    hct74245 marhi_bbus_buf(.A(MARHI.Q), .B(bbus), .nOE(_bdev_marhi), .dir(1'b1)); // optional - needed for marlo arith so MAR appears as a GP register
+    hct74245 marhi_abus_buf(.A(MARHI.Q), .B(abus), .nOE(_adev_marhi), .dir(1'b1)); // DONE
+    hct74245 marhi_bbus_buf(.A(MARHI.Q), .B(bbus), .nOE(_bdev_marhi), .dir(1'b1)); // DONE
 
-    hct74245 #(.LOG(0)) marhi_addbbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .nOE(_addrmode_register), .dir(1'b1));
-    hct74245 #(.LOG(0)) marlo_addbbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register), .dir(1'b1));
+    hct74245 #(.LOG(0)) marhi_addbbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .nOE(_addrmode_register), .dir(1'b1)); // DONE
+    hct74245 #(.LOG(0)) marlo_addbbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register), .dir(1'b1)); // DONE
 
     // ALU ==============================================================================================
     wire _flag_c_out, _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out;
     wire _flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne;
 
-	alu #(.LOG(0)) Alu(
+	alu #(.LOG(0)) Alu( // DONE
         .result(alu_result_bus), 
         .a(abus),
         .b(bbus),
@@ -174,7 +175,7 @@ module cpu(
 
     wire [7:0] alu_flags_czonGLEN = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
 
-    hct74574 #(.LOG(LOG)) status_register_czonGLEN( .D(alu_flags_czonGLEN),
+    hct74574 #(.LOG(LOG)) status_register_czonGLEN( .D(alu_flags_czonGLEN), // DONE
                                        .Q(_registered_flags_czonGLEN),
                                         .CLK(gated_flags_clk), 
                                         ._OE(1'b0)); 
@@ -184,34 +185,50 @@ module cpu(
     // REGISTER FILE =====================================================================================
     // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
     // NOTE !!!! THIS CODE USES _phase_exec AS THE REGFILE GATING MEANING _WE IS LOW ONLY ON SECOND PHASE OF CLOCK - THIS PREVENTS A SPURIOUS WRITE TO REGFILE FROM IT'S INPUT LATCH
-    wire #(2*8) _gated_regfile_in = _phase_exec | (_rega_in & _regb_in & _regc_in & _regd_in); // TODO: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAD REGFILE!!
-    wire #(8) _regfile_rdL_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ; // NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAD REGFILE!!
-    wire #(8) _regfile_rdR_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ; // NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAD REGFILE!!
-    wire [1:0] regfile_rdL_addr = abus_dev[1:0];
-    wire [1:0] regfile_rdR_addr = bbus_dev[1:0];
+
+    // FIXME?? _regfile_in ought to be === OR(targdev[2], targdev[3])
+    wire #(8) _regfile_in = _rega_in & _regb_in & _regc_in & _regd_in; // TODO: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+
+    // NOTE targ lines are gated with do_exec in the controller but we still need to gate with _phase_exec as we only want them enabled in the late phase as they are latches
+    // This is needed to avoid starting a write while address lines have not settled.
+    wire #(8) _gated_regfile_in = _phase_exec | _regfile_in; // TODO: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+
+    // decide whether we are reading
+    // FIXME OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdA_en === abus_dev[2]
+    //OLD wire #(8) _regfile_rdA_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ; // TODO NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    wire _regfile_rdA_en = abus_dev[2] ; // TODO NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+
+
+    // FIXME OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdB_en === bbus_dev[2]
+    //OLD wire #(8) _regfile_rdB_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ; // TODO IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    wire _regfile_rdB_en = bbus_dev[2]; // TODO IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+
+    // the lower two bits can be used to address the regfile as the regfile is the first four locns
+    wire [1:0] regfile_rdA_addr = abus_dev[1:0]; 
+    wire [1:0] regfile_rdB_addr = bbus_dev[1:0];
     wire [1:0] regfile_wr_addr = targ_dev[1:0];
 
     if (LOG) begin
         always @* $display("regfile _gated_regfile_in = ", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
-        always @* $display("regfile _regfile_rdL_en   = ", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
-        always @* $display("regfile _regfile_rdR_en   = ", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
+        always @* $display("regfile _regfile_rdA_en   = ", _regfile_rdA_en, " rd addr  ", regfile_rdA_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
+        always @* $display("regfile _regfile_rdB_en   = ", _regfile_rdB_en, " rd addr  ", regfile_rdB_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
     end
 
 
     // clocks data in as we enter phase exec - on the +ve edge - so use positive logic phase_exec here
     syncRegisterFile #(.LOG(LOG)) regFile(
-        .clk(phase_exec), // only on the execute phase edge otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
-        ._wr_en(_gated_regfile_in), // only enabled for input during the execute phase 
+        .clk(phase_exec),               // clock only on the execute phase edge otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
+        ._wr_en(_gated_regfile_in),     // only enabled for write during the execute phase by which time the write address select lines are stable
         .wr_addr(regfile_wr_addr),
         .wr_data(alu_result_bus),
         
-        ._rdL_en(_regfile_rdL_en),
-        .rdL_addr(regfile_rdL_addr),
-        .rdL_data(abus),
+        ._rdA_en(_regfile_rdA_en),
+        .rdA_addr(regfile_rdA_addr),
+        .rdA_data(abus),
         
-        ._rdR_en(_regfile_rdR_en),
-        .rdR_addr(regfile_rdR_addr),
-        .rdR_data(bbus)
+        ._rdB_en(_regfile_rdB_en),
+        .rdB_addr(regfile_rdB_addr),
+        .rdB_data(bbus)
     );
 
 
