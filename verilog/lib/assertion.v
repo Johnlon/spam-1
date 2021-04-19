@@ -11,22 +11,29 @@
 
 
 
-`define equals(actual, expected, msg) \
-if (actual !== expected) \
+`define equals(ACTUAL, EXPECTED, MSG) \
+if (ACTUAL !== EXPECTED) \
 begin  \
-  $display("Line %d: FAILED: '%b' is not '%b' - %s", `__LINE__,actual, expected, msg); 	\
+  $display("Line %d: FAILED: actual ACTUAL '%b' is not expected EXPECTED '%b' - %s", `__LINE__, ACTUAL, EXPECTED, MSG); 	\
   `FAIL \
 end
 
 
+/* Format ...
+    FAILED Line 82   : expected 'xxxxxxxx'
+                     : but got  '00010001'
+*/
 `define assertEquals(actual, expected_value) \
 if (actual !== expected_value) \
 begin  \
-  $display("FAILED Line %-4d : expected '%b'", `__LINE__, expected_value); 	\
-  $display("                : but got  '%b'", actual); 	\
+  $display("%9t ", $time, "FAILED Line %-4d : expected '%b'", `__LINE__, expected_value); 	\
+  $display("%9t ", $time, "                 : but got  '%b'", actual); 	\
   `FAIL \
 end
 
+/* Format ...
+     1122  Line:82    FAILED: actual '00010001' != 'xxxxxxxx' expected,   (d17!=dx)(h11!=hxx)  : rdA_data != B
+*/
 `ifdef verilator
   `define Equals(ACTUAL, EXPECTED)  $write(""); // noop
 `else

@@ -112,7 +112,6 @@ module cpu(
 
     // PC reset is sync with +ve edge of clock
     pc #(.LOG(0))  PC ( // DONE
-        //.clk(clk),
         .clk(system_clk),
         ._MR(_mrPC),
         ._pc_in(_pc_in),  // load both
@@ -199,23 +198,23 @@ module cpu(
     nor #(tPD_7486) ic7486_b_gated_regfile(gated_regfile_in_tmp , _phase_exec , _regfile_in); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
     nor #(tPD_7486) ic7486_c_gated_regfile(_gated_regfile_in , gated_regfile_in_tmp); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
 
-    // OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdA_en === abus_dev[2]
-    // OLD wire #(8) _regfile_rdA_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ; 
-    wire _regfile_rdA_en = abus_dev[2]; 
+    // OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdL_en === abus_dev[2]
+    // OLD wire #(8) _regfile_rdL_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ; 
+    wire _regfile_rdL_en = abus_dev[2]; 
 
-    // OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdB_en === bbus_dev[2]
-    // OLD wire #(8) _regfile_rdB_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ; 
-    wire _regfile_rdB_en = bbus_dev[2];
+    // OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdR_en === bbus_dev[2]
+    // OLD wire #(8) _regfile_rdR_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ; 
+    wire _regfile_rdR_en = bbus_dev[2];
 
     // the lower two bits can be used to address the regfile as the regfile is the first four locns
-    wire [1:0] regfile_rdA_addr = abus_dev[1:0]; 
-    wire [1:0] regfile_rdB_addr = bbus_dev[1:0];
+    wire [1:0] regfile_rdL_addr = abus_dev[1:0]; 
+    wire [1:0] regfile_rdR_addr = bbus_dev[1:0];
     wire [1:0] regfile_wr_addr = targ_dev[1:0];
 
     if (LOG) begin
         always @* $display("regfile _gated_regfile_in = ", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
-        always @* $display("regfile _regfile_rdA_en   = ", _regfile_rdA_en, " rd addr  ", regfile_rdA_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
-        always @* $display("regfile _regfile_rdB_en   = ", _regfile_rdB_en, " rd addr  ", regfile_rdB_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
+        always @* $display("regfile _regfile_rdL_en   = ", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
+        always @* $display("regfile _regfile_rdR_en   = ", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
     end
 
 
@@ -226,13 +225,13 @@ module cpu(
         .wr_addr(regfile_wr_addr),
         .wr_data(alu_result_bus),
         
-        ._rdA_en(_regfile_rdA_en),
-        .rdA_addr(regfile_rdA_addr),
-        .rdA_data(abus),
+        ._rdL_en(_regfile_rdL_en),
+        .rdL_addr(regfile_rdL_addr),
+        .rdL_data(abus),
         
-        ._rdB_en(_regfile_rdB_en),
-        .rdB_addr(regfile_rdB_addr),
-        .rdB_data(bbus)
+        ._rdR_en(_regfile_rdR_en),
+        .rdR_addr(regfile_rdR_addr),
+        .rdR_data(bbus)
     );
 
 

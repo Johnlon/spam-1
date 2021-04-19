@@ -26,18 +26,18 @@ module testSync();
     parameter enabled        = 0;
 
     syncRegisterFile #(.LOG(1)) regFile(
-    clk,
-    _wr_en,
-    wr_addr,
-    wr_data,
-    
-    _rdL_en,
-    rdL_addr,
-    rdL_data,
-    
-    _rdR_en,
-    rdR_addr,
-    rdR_data
+        clk,
+        _wr_en,
+        wr_addr,
+        wr_data,
+        
+        _rdL_en,
+        rdL_addr,
+        rdL_data,
+        
+        _rdR_en,
+        rdR_addr,
+        rdR_data
     );
 
     
@@ -102,7 +102,7 @@ module testSync();
         #PD
         `assertEquals(rdL_data, 8'hff);
         `assertEquals(rdR_data, 8'hff);
-        `assertEquals(regFile.binding_for_tests, {8'd255, 8'bx, 8'bx, 8'bx} );
+        `assertEquals(regFile.binding_for_tests, {8'd255, 8'h11, 8'h22, 8'h33} );
 
         $display("if address changes then old reg value gets applied to the regfile");
         wr_data = 123; // will not get thru register
@@ -111,7 +111,7 @@ module testSync();
         rdR_addr = 1;
 
         #PD
-        `assertEquals(regFile.binding_for_tests, {8'd255, 8'd255, 8'bx, 8'bx} );
+        `assertEquals(regFile.binding_for_tests, {8'd255, 8'd255, 8'h22, 8'h33} );
         `assertEquals(rdL_data, 8'hff);
         `assertEquals(rdR_data, 8'hff);
 

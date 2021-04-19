@@ -22,20 +22,20 @@ module syncRegisterFile #(parameter LOG=0, PulseWidth=100) (
         input [1:0] wr_addr,
         input [7:0] wr_data,
 
-        input _rdA_en,
-        input [1:0] rdA_addr,
-        output [7:0] rdA_data,
+        input _rdL_en,
+        input [1:0] rdL_addr,
+        output [7:0] rdL_data,
 
-        input _rdB_en,
-        input [1:0] rdB_addr,
-        output [7:0] rdB_data
+        input _rdR_en,
+        input [1:0] rdR_addr,
+        output [7:0] rdR_data
 );
     logic [31:0] binding_for_tests;
     assign binding_for_tests = {
-                {regFile.bankA_hi.registers[0] , regFile.bankA_lo.registers[0]} ,
-                {regFile.bankA_hi.registers[1] , regFile.bankA_lo.registers[1]} ,
-                {regFile.bankA_hi.registers[2] , regFile.bankA_lo.registers[2]} ,
-                {regFile.bankA_hi.registers[3] , regFile.bankA_lo.registers[3]} };
+                {regFile.bankL_hi.registers[0] , regFile.bankL_lo.registers[0]} ,
+                {regFile.bankL_hi.registers[1] , regFile.bankL_lo.registers[1]} ,
+                {regFile.bankL_hi.registers[2] , regFile.bankL_lo.registers[2]} ,
+                {regFile.bankL_hi.registers[3] , regFile.bankL_lo.registers[3]} };
 
     
     function [7:0] get([1:0] r);
@@ -51,12 +51,12 @@ module syncRegisterFile #(parameter LOG=0, PulseWidth=100) (
         ._wr_en(_wr_en),
         .wr_addr,
         .wr_data(wr_data_latched),
-        ._rdA_en,
-        .rdA_addr,
-        .rdA_data,
-        ._rdB_en,
-        .rdB_addr,
-        .rdB_data
+        ._rdL_en,
+        .rdL_addr,
+        .rdL_data,
+        ._rdR_en,
+        .rdR_addr,
+        .rdR_data
     );
 
 /*
@@ -68,7 +68,7 @@ module syncRegisterFile #(parameter LOG=0, PulseWidth=100) (
 /*
     if (LOG) always @(*) begin
         //$display("%9t ", $time, "REGFILE-S : ARGS : _wr_en=%1b _pulse=%1b write[%d]=%d     _rdX_en=%1b X[%d]=>%d    _rdY_en=%1b Y[%d]=>%d   (preletch=%d)  _MR=%1b" ,
-         //    _wr_en, _pulse, wr_addr, wr_data, _rdA_en, rdA_addr, rdA_data, _rdA_en, rdB_addr, rdB_data, wr_data_latched, _MR);
+         //    _wr_en, _pulse, wr_addr, wr_data, _rdL_en, rdL_addr, rdL_data, _rdL_en, rdR_addr, rdR_data, wr_data_latched, _MR);
 
         if (!_wr_en) $display("%9t ", $time, "REGFILE : UPDATING write[%d] = %d", wr_addr, wr_data_latched);
     end

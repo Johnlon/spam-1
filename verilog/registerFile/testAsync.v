@@ -16,13 +16,11 @@ module testAsync();
     logic [1:0] rdL_addr;
     logic [7:0] rdL_data;
     
-    logic _rdR_en;
-    logic [1:0] rdR_addr;
-    logic [7:0] rdR_data;
+    logic _rdB_en;
+    logic [1:0] rdB_addr;
+    logic [7:0] rdB_data;
     
-    logic we;
-    
-    registerFile regFile(
+    registerFile #(.LOG(1)) regFile(
         _wr_en,
         wr_addr,
         wr_data,
@@ -31,175 +29,186 @@ module testAsync();
         rdL_addr,
         rdL_data,
         
-        _rdR_en,
-        rdR_addr,
-        rdR_data
+        _rdB_en,
+        rdB_addr,
+        rdB_data
     );
     
     parameter disabled       = 1;
     parameter enabled        = 0;
-    parameter pulse_disabled = 0;
-    parameter pulse_enabled  = 1;
-    parameter cycle          = 25;
+
+    localparam IC_PD_A_TO_Q  = 21;
+    localparam IC_PD_D_TO_Q  = 27;
+
+    localparam PD_MISC       = (IC_PD_A_TO_Q+1);
+    localparam PD_A_TO_Q     = (IC_PD_A_TO_Q+1);
     
     initial begin
         $dumpfile("dumpfile.vcd");
 `ifndef verilator
-        $dumpvars(0, _wr_en, wr_addr, wr_data, _rdL_en, rdL_addr, rdL_data, _rdR_en, rdR_addr, rdR_data);
+        $dumpvars(0, _wr_en, wr_addr, wr_data, _rdL_en, rdL_addr, rdL_data, _rdB_en, rdB_addr, rdB_data);
 `endif
-        
-/*
-        $display ("");
-        $display ($time, "   _____                       ______                           ______");
-        $display ($time, "   _wr_en wr_addr   wr_data  |  _rdL_en   rdL_addr  rdL_data  |   _rdR_en  rdR_addr  rdR_data");
-        $monitor ($time, "   %1b           %2b  %8b  |         %1b        %2b  %8b  |          %1b       %2b  %8b",
-        _wr_en, wr_addr, wr_data, _rdL_en, rdL_addr, rdL_data, _rdR_en, rdR_addr, rdR_data
-        );
-*/
-        /*
-         $display ($time, "   _wr_en  |  ");
-         $monitor ($time, "   %b    |  %1b   ",
-         _wr_en, pulse
-         );
-         */
     end
 
-    task check;
-        input [7:0] A,B,C,D;
-    begin
-        _rdL_en  = enabled;
-        _rdR_en  = enabled;
 
-        rdL_addr = 0;
-        rdR_addr = 0;
-        #cycle;
-        `Equals(rdL_data, A);
-        `Equals(rdR_data, A);
-        
-        rdL_addr = 1;
-        rdR_addr = 1;
-        #cycle;
-        `Equals(rdL_data, B);
-        `Equals(rdR_data, B);
-        
-        rdL_addr = 2;
-        rdR_addr = 2;
-        #cycle;
-        `Equals(rdL_data, C);
-        `Equals(rdR_data, C);
-        
-        rdL_addr = 3;
-        rdR_addr = 3;
-        #cycle;
-        `Equals(rdL_data, D);
-        `Equals(rdR_data, D);
-        
-    end
-    endtask
+    `define regEquals(A,B,C,D) begin \
+            `Equals( regFile.get(0), 8'(A)); \
+            `Equals( regFile.get(1), 8'(B)); \
+            `Equals( regFile.get(2), 8'(C)); \
+            `Equals( regFile.get(3), 8'(D)); \
+        end
 
     
     initial begin
         
-        $display("0: defaults: write enabled at 0 with 255, no read");
+        `regEquals(8'h00, 8'h11, 8'h22, 8'h33);
+
+        $display("%9t ", $time, " ----  0: defaults: write enabled at 0 with 255, no read");
         _wr_en   = enabled;
-        wr_addr = 0;
         wr_data = 255;
+        wr_addr = 0;
         
         _rdL_en   = disabled;
-        _rdR_en   = disabled;
+        _rdB_en   = disabled;
         rdL_addr = 0;
-        rdR_addr = 0;
+        rdB_addr = 0;
         
-        #10;
+        #1; // too quick for propagation
         `assertEquals(rdL_data, 8'bx);
-        `assertEquals(rdR_data, 8'bx);
-        
-        $display("1: write enabled at 0 with 1, readL disabled, readR en at 0");
+        `assertEquals(rdB_data, 8'bx);
+
+        #1000; // allow settling before rest of rests
+
+        $display("%9t ", $time, " ----  1: write enabled at 0 with 1, readL disabled, readR en at 0");
         _wr_en   = enabled;
         wr_data = 1;
         _rdL_en  = disabled;
-        _rdR_en  = enabled;
-        rdL_addr = 0;
-        rdR_addr = 0;
-        #cycle;
+        _rdB_en  = enabled;
+        rdL_addr = 'x;
+        rdB_addr = 0;
+        #PD_MISC
         `assertEquals(rdL_data, 8'bz);
-        `assertEquals(rdR_data, 8'd1);
+        `assertEquals(rdB_data, 8'd1);
         
 
-        $display("2: write enabled at 2 with 2, readL at 2, readR en at 0");
+        $display("%9t ", $time, " ----  2: write enabled at 2 with 2, readL at 2, readR en at 0");
         wr_data  = 2;
         wr_addr  = 2;
-        _rdR_en   = enabled;
+        _rdB_en   = enabled;
         _rdL_en   = enabled;
         rdL_addr = 2;
-        rdR_addr = 0;
-        #cycle;
+        rdB_addr = 0;
+        #PD_MISC
         `assertEquals(rdL_data, 8'd2);
-        `assertEquals(rdR_data, 8'd1);
+        `assertEquals(rdB_data, 8'd1);
 
-        check(1, 'x, 2, 'x);
+        `regEquals(1, 8'h11, 2, 8'h33);
         
-        $display("3: write enabled at 1 with 255, readL at 2, readR en at 0");
+        $display("%9t ", $time, " ----  3: write enabled at 1 with 255, readL at 2, readR en at 0");
         wr_addr = 1;
         wr_data = 255;
         rdL_addr = 2;
-        rdR_addr = 0;
-        #cycle;
+        rdB_addr = 0;
+        #PD_MISC
         `assertEquals(rdL_data, 8'd2);
-        `assertEquals(rdR_data, 8'd1);
-
-        check(1, 255, 2, 'x);
+        `assertEquals(rdB_data, 8'd1);
+        `regEquals(1, 255, 2, 8'h33);
         
-        $display("4: write enabled at 1 with 255, readL at 2, readR disabled");
+        $display("%9t ", $time, " ----  4: write enabled at 1 with 255, readL at 2, readR disabled");
         _rdL_en=enabled;
-        _rdR_en=disabled;
+        _rdB_en=disabled;
         rdL_addr = 2;
-        rdR_addr = 0;
-        #cycle;
+        rdB_addr = 0;
+        #PD_MISC
         `assertEquals(rdL_data, 8'd2);
-        `assertEquals(rdR_data, 8'dz);
+        `assertEquals(rdB_data, 8'dz);
 
-        check(1, 255, 2, 'x);
+        `regEquals(1, 255, 2, 8'h33);
         
-        $display("5: write enabled at 1 with 255, readL at 2, readR at 2");
+        $display("%9t ", $time, " ----  5: write enabled at 1 with 255, readL at 2, readR at 2");
         _rdL_en=enabled;
-        _rdR_en=enabled;
+        _rdB_en=enabled;
         rdL_addr = 2;
-        rdR_addr = 2;
-        #cycle;
+        rdB_addr = 2;
+        #PD_MISC
         `assertEquals(rdL_data, 8'd2);
-        `assertEquals(rdR_data, 8'd2);
+        `assertEquals(rdB_data, 8'd2);
         
-        check(1, 255, 2, 'x);
-
-        $display("6: write disabled at 1 with 1, readL at 2, readR at 2");
-        _wr_en = disabled;
-        wr_data = 1;
+        $display("%9t ", $time, " ----  6: read and write at same location, then change input data");
+        _wr_en   = enabled;
         _rdL_en=enabled;
-        _rdR_en=enabled;
+        _rdB_en=enabled;
+        wr_data = 255;
+        wr_addr = 2;
         rdL_addr = 2;
-        rdR_addr = 2;
-        #cycle;
-        `assertEquals(rdL_data, 8'd2);
-        `assertEquals(rdR_data, 8'd2);
-        
-        check(1, 255, 2, 'x);
-
-        $display("7: write disabled, readL at 1, readR at 2");
-        _wr_en = disabled;
-        wr_data = 1;
-        _rdL_en=enabled;
-        _rdR_en=enabled;
-        rdL_addr = 1;
-        rdR_addr = 2;
-        #cycle;
+        rdB_addr = 2;
+        #1000 // big settle
+        `regEquals(1, 255, 255, 8'h33);
+        wr_data = 0;
+        #IC_PD_D_TO_Q // too soon
         `assertEquals(rdL_data, 8'd255);
-        `assertEquals(rdR_data, 8'd2);
+        `assertEquals(rdB_data, 8'd255);
+        `regEquals(1, 255, 0, 8'h33); // measures without PD
+        #1
+        `assertEquals(rdL_data, 8'd0);
+        `assertEquals(rdB_data, 8'd0);
+        `regEquals(1, 255, 0, 8'h33);
+
+        $display("%9t ", $time, " ----  7: read and write at same location but write disabled, then change input data and enable write");
+        _wr_en   = disabled;
+        _rdL_en=enabled;
+        _rdB_en=enabled;
+        wr_data = 0;
+        wr_addr = 2;
+        rdL_addr = 2;
+        rdB_addr = 2;
+        #1000 // big settle
+        `regEquals(1, 255, 0, 8'h33);
+        wr_data = 0;
+        #1000 // big settle
+        `assertEquals(rdL_data, 8'd0);
+        `assertEquals(rdB_data, 8'd0);
+        `regEquals(1, 255, 0, 8'h33); // measures without PD
+
+        // make the change
+        _wr_en   = enabled;
+        wr_data = 255;
+        #IC_PD_D_TO_Q // too soon
+        `assertEquals(rdL_data, 8'd0);
+        `assertEquals(rdB_data, 8'd0);
+        `regEquals(1, 255, 255, 8'h33); // measures without PD
+        #1
+        `assertEquals(rdL_data, 8'd255);
+        `assertEquals(rdB_data, 8'd255);
+        `regEquals(1, 255, 255, 8'h33); // measures without PD
+
+        $display("%9t ", $time, " ----  8: write disabled at 1 with 1, readL at 2, readR at 2");
+        _wr_en = disabled;
+        wr_data = 1;
+        _rdL_en=enabled;
+        _rdB_en=enabled;
+        rdL_addr = 2;
+        rdB_addr = 2;
+        #PD_MISC
+        `assertEquals(rdL_data, 8'd255);
+        `assertEquals(rdB_data, 8'd255);
         
-        check(1, 255, 2, 'x);
+        `regEquals(1, 255, 255, 8'h33);
 
+        $display("%9t ", $time, " ----  9: write disabled, readL at 1, readR at 2");
+        _wr_en = disabled;
+        wr_data = 1;
+        _rdL_en=enabled;
+        _rdB_en=enabled;
+        rdL_addr = 1;
+        rdB_addr = 2;
+        #PD_MISC
+        `assertEquals(rdL_data, 8'd255);
+        `assertEquals(rdB_data, 8'd255);
+        `regEquals(1, 255, 255, 8'h33);
 
-        #cycle;
+        #PD_MISC
+        $display("%9t ", $time, " ----  DONE");
         $finish;
     end
     

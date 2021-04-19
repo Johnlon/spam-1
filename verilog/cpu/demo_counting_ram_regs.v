@@ -19,6 +19,7 @@
 `define SEMICOLON ;
 `define COMMA ,
 
+// gives instant reading of new reg value without any PD
 `define regEquals(A,B,C,D) begin \
         `Equals( CPU.regFile.get(0), 8'(A)); \
         `Equals( CPU.regFile.get(1), 8'(B)); \
@@ -176,6 +177,9 @@ module test();
     end
     endtask
 
+    always @* begin
+        $display("%9t ", $time, " PHASE EXEC = " , (CPU.phase_exec));
+    end
 
     // TESTS
 
@@ -290,7 +294,6 @@ module test();
         `Equals(CPU.PCHI, 8'h00)
         `Equals(CPU.PCLO, 8'h02)
         `Equals(CPU._addrmode_register, 0);
-        //`Equals(CPU.address_bus, {CPU.MARHI.UNDEF, 8'h42});
         `Equals(CPU.address_bus, {8'b0xx00xx0, 8'h42});
 
         CLK_DN;
@@ -439,14 +442,18 @@ module test();
             #HALF_CLK
             CLK_DN;
 
-            #29 // allow for 74670 to settle
+            // doesn't exactly work out with timings but it's something like this...
+            // 7486   CLK_GATING IC's = 2 * 14 = 28
+            // 74574  CLK to Q output = 15 
+            // plus time for _phase_exec to PD
+            #(28+15+6) // allow for logic to settle
 
             // num instructions in loop=5
             if (((loopCount+addInstOffset) % 5) == 0) begin
                 expectedA++;
             end
 
-            // regs intact?
+            // reads reg without further PD
             `regEquals(expectedA,8'h2,8'h3,8'h4);
 
             loopCount++;
