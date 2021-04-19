@@ -62,7 +62,7 @@ module hct74670 (input _wr_en,
     always @(registers[2]) begin
             if (LOG) $display("%9t ", $time, ": 74670 setting reg[2]  <= ", registers[2], " : %m");
     end
-    always @(registers[0]) begin
+    always @(registers[3]) begin
             if (LOG) $display("%9t ", $time, ": 74670 setting reg[3]  <= ", registers[3], " : %m");
     end
         
