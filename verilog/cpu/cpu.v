@@ -188,13 +188,12 @@ module cpu(
     // REGISTER FILE =====================================================================================
     // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
     // NOTE !!!! THIS CODE USES _phase_exec AS THE REGFILE GATING MEANING _WE IS LOW ONLY ON SECOND PHASE OF CLOCK - THIS PREVENTS A SPURIOUS WRITE TO REGFILE FROM IT'S INPUT LATCH
-
-    wire #(8) _regfile_in = _rega_in & _regb_in & _regc_in & _regd_in; // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    wire _regfile_in, gated_regfile_in_tmp, _gated_regfile_in;
+    and #(11) ic7421_regfile_in(_regfile_in , _rega_in , _regb_in , _regc_in , _regd_in); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
 
     // NOTE targ lines are gated with do_exec in the controller but we still need to gate with _phase_exec as we only want them enabled in the late phase as they are latches
     // IMPL OF ... _gated_regfile_in = _phase_exec | _regfile_in;
     // wire #(8) _gated_regfile_in = _phase_exec | _regfile_in; // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
-    wire _gated_regfile_in, gated_regfile_in_tmp;
     nor #(tPD_7486) ic7486_b_gated_regfile(gated_regfile_in_tmp , _phase_exec , _regfile_in); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
     nor #(tPD_7486) ic7486_c_gated_regfile(_gated_regfile_in , gated_regfile_in_tmp); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
 
