@@ -174,7 +174,7 @@ module cpu(
     );
 
     wire gated_flags_clk;
-    nor #(9) ic7486_a_flags_gating( gated_flags_clk , _phase_exec , _set_flags); // FIXME : NOT IMPLEMENTED YET
+    nor #(9) ic7486_gating_a( gated_flags_clk , _phase_exec , _set_flags); // FIXME : NOT IMPLEMENTED YET
 
     wire [7:0] alu_flags_czonGLEN = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
 
@@ -189,13 +189,14 @@ module cpu(
     // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
     // NOTE !!!! THIS CODE USES _phase_exec AS THE REGFILE GATING MEANING _WE IS LOW ONLY ON SECOND PHASE OF CLOCK - THIS PREVENTS A SPURIOUS WRITE TO REGFILE FROM IT'S INPUT LATCH
     wire _regfile_in, gated_regfile_in_tmp, _gated_regfile_in;
+
     and #(11) ic7421_regfile_in(_regfile_in , _rega_in , _regb_in , _regc_in , _regd_in); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
 
-    // NOTE targ lines are gated with do_exec in the controller but we still need to gate with _phase_exec as we only want them enabled in the late phase as they are latches
+    // NOTE targ regX_in lines are gated with do_exec in the controller but we still need to gate with _phase_exec as we only want them enabled in the late phase as they are latches
     // IMPL OF ... _gated_regfile_in = _phase_exec | _regfile_in;
     // wire #(8) _gated_regfile_in = _phase_exec | _regfile_in; // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
-    nor #(tPD_7486) ic7486_b_gated_regfile(gated_regfile_in_tmp , _phase_exec , _regfile_in); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
-    nor #(tPD_7486) ic7486_c_gated_regfile(_gated_regfile_in , gated_regfile_in_tmp); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    nor #(tPD_7486) ic7486_gating_b(gated_regfile_in_tmp , _phase_exec , _regfile_in); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    nor #(tPD_7486) ic7486_gating_c(_gated_regfile_in , gated_regfile_in_tmp); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
 
     // OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdL_en === abus_dev[2]
     // OLD wire #(8) _regfile_rdL_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ; 
@@ -218,7 +219,7 @@ module cpu(
 
 
     // clocks data in as we enter phase exec - on the +ve edge - so use positive logic phase_exec here
-    syncRegisterFile #(.LOG(LOG)) regFile(
+    syncRegisterFile #(.LOG(1)) regFile(
         .clk(phase_exec),               // clock only on the execute phase edge otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
         ._wr_en(_gated_regfile_in),     // only enabled for write during the execute phase by which time the write address select lines are stable
         .wr_addr(regfile_wr_addr),
