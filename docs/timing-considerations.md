@@ -69,8 +69,7 @@ Whilst a spurious clock may or may not be a problem when latching it is more lik
 A common case is where the clock is ANDed with some other control signal - I need to do exactly this in a register file I'm designing because I'm using 74HC574 which doesn't have a LE input. I need the 74HC574 for it's tristate output which means I need to compromise on the clock gating. It a question of reducing the complexity. But now I'm worried about gating effects. A spurious clock might make me latch the wrong value. Surely AND won't cause a problem? 
 
 The paper 
-[A Review of Clock Gating Techniques](ijetmas.com/admin/resources/project/paper/f201503041425478178.pdf
-) covers a few of the approaches and the first option discussed is a "simple" AND gated approach. The paper demonstrates how the relative timing aspect can cause spurious triggers.
+[A Review of Clock Gating Techniques (Kathuria/Ayoubkhan/Noor 2011)](references/clock-gating-1315565167_logo_13.pdf) covers a few of the approaches and the first option discussed is a "simple" AND gated approach. The paper demonstrates how the relative timing aspect can cause spurious triggers.
 
 Even with this paper I wondered whether this figure was correct, whether a hazard had been missed. Below I've highlighted the transition I'm concerned about in this extract. 
 
