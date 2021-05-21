@@ -186,7 +186,12 @@ class StatementParser {
   def systemPropString: Parser[String] =
     "systemProp(" ~> quotedString <~ ")" ^^ {
       name => {
-        Objects.requireNonNull(System.getProperty(name), "System Property undefined : '" + name + "'")
+        val propVal = System.getProperty(name)
+        Objects.requireNonNull(propVal, "System Property undefined : '" + name + "'")
+        if (propVal.trim.isEmpty) {
+          sys.error("System Property defined as blank : '" + name + "'")
+        }
+        propVal
       }
     }
 
@@ -195,12 +200,17 @@ class StatementParser {
   def dataSourceFile: Parser[Seq[Byte]] =
     "file(" ~> stringValue <~ ")" ^^ {
       fileName => {
+        if (fileName.trim.length == 0) {
+          sys.error("illegal datasource:   file(<blank or null>)")
+        }
         val path = Paths.get(fileName)
         try {
           Files.readAllBytes(path).toSeq
         } catch {
           case _: Throwable =>
-            sys.error("can't read " + path.toFile.getPath + " (" + path.toFile.getAbsolutePath + ")")
+            sys.error("can't read data source '"
+              + fileName
+              + "' (path:" + path.toFile.getPath + ", abs:" + path.toFile.getAbsolutePath + ")")
         }
       }
     }

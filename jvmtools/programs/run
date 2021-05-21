@@ -1,4 +1,10 @@
-./scc.sh  Chip2Emulator.scc
+chip8_prog=$1
+if [ -z $chip8_prog ]; then 
+    echo "$0: missing arg 'chip8_prg'"
+    exit 1
+fi
+
+./scc.sh  Chip2Emulator.scc $1
 if [ $? -ne 0 ]; then
     echo error
     exit 1

@@ -89,7 +89,7 @@ program {
             uint16 x = registers[_X__];
             uint16 y = registers[__Y_];
 
-
+/*
             putchar(GOTO_LOG_CHAR_STATE)
             putchar('P')
             putchar(GOTO_LOG_CHAR_STATE)
@@ -104,6 +104,7 @@ program {
             putchar(32)
             putchar(GOTO_LOG_CHAR_STATE)
             putchar(32)
+*/
 
             putchar(GOTO_LOG_CHAR_STATE)
             putchar('O')
@@ -115,6 +116,7 @@ program {
             putchar(opcodehi)
             putchar(GOTO_LOG_BYTE_STATE)
             putchar(opcodelo)
+/*
             putchar(GOTO_LOG_CHAR_STATE)
             putchar(32)
             putchar(GOTO_LOG_CHAR_STATE)
@@ -124,10 +126,12 @@ program {
             putchar('X')
             putchar(GOTO_LOG_CHAR_STATE)
             putchar(':')
+            // emit register num
             putchar(GOTO_LOG_BYTE_STATE)
             putchar(_X__)
+            // emit register val
             putchar(GOTO_LOG_CHAR_STATE)
-            putchar(':')
+            putchar('=')
             putchar(GOTO_LOG_BYTE_STATE)
             putchar(x)
             putchar(GOTO_LOG_CHAR_STATE)
@@ -142,7 +146,7 @@ program {
             putchar(GOTO_LOG_BYTE_STATE)
             putchar(__Y_)
             putchar(GOTO_LOG_CHAR_STATE)
-            putchar(':')
+            putchar('=')
             putchar(GOTO_LOG_BYTE_STATE)
             putchar(y)
             putchar(GOTO_LOG_CHAR_STATE)
@@ -158,9 +162,9 @@ program {
             putchar(index>>8)
             putchar(GOTO_LOG_BYTE_STATE)
             putchar(index)
+*/
             putchar(GOTO_LOG_CHAR_STATE)
             putchar('\n')
-
 
             if (opcode == $00e0) {
                 // draw
@@ -351,7 +355,7 @@ program {
                         memory[index + i] = registers[i];
 
                         i = i + 1;
-                        if (i > x) {
+                        if (i > _X__) {
                             break
                         }
                     }
@@ -362,50 +366,50 @@ program {
                     uint16 i = 0;
 
 
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('$')
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('6')
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('5')
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar(':')
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(x)
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('\n')
+//                    putchar(GOTO_LOG_CHAR_STATE)
+//                    putchar('$')
+//                    putchar(GOTO_LOG_CHAR_STATE)
+//                    putchar('6')
+//                    putchar(GOTO_LOG_CHAR_STATE)
+//                    putchar('5')
+//                    putchar(GOTO_LOG_CHAR_STATE)
+//                    putchar(':')
+//                    putchar(GOTO_LOG_BYTE_STATE)
+//                    putchar(x)
+//                    putchar(GOTO_LOG_CHAR_STATE)
+//                    putchar('\n')
 
                     while (true) {
                         registers[i] = memory[index + i];
 
-                        putchar(GOTO_LOG_CHAR_STATE)
-                        putchar('V')
-                        putchar(GOTO_LOG_BYTE_STATE)
-                        putchar(i)
-                        putchar(GOTO_LOG_CHAR_STATE)
-                        putchar('=')
-                        putchar(GOTO_LOG_BYTE_STATE)
-                        putchar(registers[i])
-                        putchar(GOTO_LOG_CHAR_STATE)
-                        putchar(32)
-                        putchar(GOTO_LOG_CHAR_STATE)
-                        putchar(32)
-
-                        putchar(GOTO_LOG_CHAR_STATE)
-                        putchar('M')
-                        putchar(GOTO_LOG_BYTE_STATE)
-                        putchar((index+i) >> 8)
-                        putchar(GOTO_LOG_BYTE_STATE)
-                        putchar(index+i)
-                        putchar(GOTO_LOG_CHAR_STATE)
-                        putchar('=')
-                        putchar(GOTO_LOG_BYTE_STATE)
-                        putchar(memory[index + i])
-                        putchar(GOTO_LOG_CHAR_STATE)
-                        putchar('\n')
+ //                       putchar(GOTO_LOG_CHAR_STATE)
+ //                       putchar('V')
+ //                       putchar(GOTO_LOG_BYTE_STATE)
+ //                       putchar(i)
+ //                       putchar(GOTO_LOG_CHAR_STATE)
+ //                       putchar('=')
+ //                       putchar(GOTO_LOG_BYTE_STATE)
+ //                       putchar(registers[i])
+ //                       putchar(GOTO_LOG_CHAR_STATE)
+ //                       putchar(32)
+ //                       putchar(GOTO_LOG_CHAR_STATE)
+ //                       putchar(32)
+//
+ //                       putchar(GOTO_LOG_CHAR_STATE)
+ //                       putchar('M')
+  //                      putchar(GOTO_LOG_BYTE_STATE)
+   //                     putchar((index+i) >> 8)
+   //                     putchar(GOTO_LOG_BYTE_STATE)
+   //                     putchar(index+i)
+   //                     putchar(GOTO_LOG_CHAR_STATE)
+   //                     putchar('=')
+   //                     putchar(GOTO_LOG_BYTE_STATE)
+   //                     putchar(memory[index + i])
+   //                     putchar(GOTO_LOG_CHAR_STATE)
+   //                     putchar('\n')
 
                         i = i + 1;
-                        if (i > x) {
+                        if (i > _X__) {
                             break
                         }
                     }
@@ -413,10 +417,21 @@ program {
                     //       index = if (LoadStoreBehaviour == Legacy) (st.index + xReg.ubyte + 1) else st.index
 
 
+                } else if (__NN == $1E) {
+                    // set carry if index exceeds mem size of 4096
+                    index = index + x;                  
+                    if (index > 4095) {
+                        registers[15] = 1;
+                    } else {
+                        registers[15] = 0;
+                    }
+
                 } else {
+                    // not impl F0xx
                     halt(opcode)
                 }
             } else {
+                // not impl top level
                 halt(opcode)
             }
 
