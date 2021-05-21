@@ -154,7 +154,7 @@ if (1) begin
 end
 else  
 begin
-    alu_code ALU_CODE( .o, ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt, .a, .b, .alu_op(alu_op_effective));
+    alu_code ALU_CODE( .o(result), ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt, .a, .b, .alu_op(alu_op_effective));
 end
 
 if (LOG) 
@@ -166,7 +166,7 @@ if (LOG)
         " a=%08b (u%-3d/h%-02h) ", a, a, a,
         " b=%08b (u%-3d/h%-02h) ", b, b, b,
         "  ",
-        " out=%08b (u%-3d/h%-02h) ", o, o, o,
+        " out=%08b (u%-3d/h%-02h) ", result, result, result,
         " _c%1b",  _flag_c,
         " _z%1b",  _flag_z,
         " _n%1b",  _flag_n,

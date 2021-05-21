@@ -4,6 +4,7 @@
 
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
+/* verilator lint_off MULTITOP */
 
 `timescale 1ns/1ns
 

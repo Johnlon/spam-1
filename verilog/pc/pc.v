@@ -34,7 +34,9 @@ hct74377 PCHiTmpReg(
 );
 
 // _load_pclo is synchronous and must be held low DURING a +ve clk
-wire #11 _load_pclo = _pclo_in & _pc_in;
+// In the hardware this 7408 is shared with the logic in the clock circuit.
+wire _load_pclo;
+and #11 and7408( _load_pclo , _pclo_in , _pc_in);
 
 // see applications here https://www.ti.com/lit/ds/symlink/sn54ls161a-sp.pdf?ts=1599773093420&ref_url=https%253A%252F%252Fwww.google.com%252F
 // see ripple mode approach - CEP/CET can be tied high because _PE overrides those and so they can be left enabled.

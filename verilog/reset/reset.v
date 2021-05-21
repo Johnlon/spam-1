@@ -40,6 +40,7 @@ module reset(
           ._Q()
         );
 
+    // H/W uses 74132 SCHMITT NAND
     nand #(10) nand2(phase_exec , system_clk , _mrPos); 
     nand #(10) nand3(_phase_exec , phase_exec); 
 

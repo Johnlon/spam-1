@@ -1,5 +1,6 @@
 // Quad 2-input multiplexer
 // https://assets.nexperia.com/documents/data-sheet/74HC_HCT157.pdf
+
                
 `ifndef hct74157
 `define hct74157
@@ -17,6 +18,7 @@ module hct74157 #(parameter WIDTH=4) (_E, S, I0, I1, Y);
     logic [WIDTH-1:0] I0pd;
     logic [WIDTH-1:0] I1pd;
 
+/* verilator lint_off COMBDLY */
     // models "transmission delays"
     always @* begin
         Spd <= #(19) S;
@@ -24,6 +26,7 @@ module hct74157 #(parameter WIDTH=4) (_E, S, I0, I1, Y);
         I0pd <= #(13) I0;
         I1pd <= #(13) I1;
     end
+/* verilator lint_on COMBDLY */
 
     // 19 is the worst of the PD'
     assign Y = _Epd? WIDTH'(0) : Spd? I1pd: I0pd;
