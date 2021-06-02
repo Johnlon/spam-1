@@ -295,8 +295,21 @@ program {
                 //putchar('I')
                 index = _NNN;
 
+            } else if (N___ == $C000) { // DONE
+                // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Cxkk
+                // Vx = Random AND __NN
+                // TODO : IMPLEMENT RANDOM
+                uint16 rand = 1;
+                registers[_X__] = rand & __NN;
+                
+
             } else if (N___ == $D000) {
                 // draw glyph identified by Index reg at position X/Y with height N
+// TODO !!!!! NEED TO DETECT IF THE WRITE TOGGLES A BIT 
+// See     val signalOverwrite = flip && existingBitSet
+// ... IN THE ALL SCALA IMPL
+// NEED TO MAINTAIN A SCREEN BUFF     60x40=2.5k
+// 
 
                 uint16 xpos = registers[_X__];
                 uint16 ypos = registers[__Y_];
@@ -322,8 +335,38 @@ program {
                     ycount = ycount + 1;
                 }
 
+            } else if (N___ == $E000) {
+/*
+ExA1 - SKNP Vx
+Skip next instruction if key with the value of Vx is not pressed.
+Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
+*/
+                // TODO IMPL KEYPRESS IO FROM UART??? GETCHAR?
+
+                // ALWAYS SKIP << FIXME
+                pc = pc + 2;
+
+
             } else if (N___ == $F000) {
-                if (__NN == $29) {
+                if (__NN == $07) {
+                    // GET DELAY TIMER
+                    // TODO WORK OUT HOW MANY CYCLES FOR 60 Hz
+                    // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx07
+                    registers[_X__] = 0;
+
+                } else if (__NN == $15) {
+                    // SET DELAY TIMER
+                    // TODO WORK OUT HOW MANY CYCLES FOR 60 Hz
+                    // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx15
+                    uint16 DT = registers[_X__];
+
+                } else if (__NN == $18) {
+                    // SET SOUND TIMER
+                    // TODO WORK OUT HOW MANY CYCLES FOR 60 Hz
+                    // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx18
+                    uint16 ST = registers[_X__];
+
+                } else if (__NN == $29) {
                     uint16 ch = registers[_X__];
                     uint16 offset = 0;
 

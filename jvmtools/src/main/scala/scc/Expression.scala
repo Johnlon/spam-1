@@ -262,26 +262,37 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
 
               val loopVar = ":" + scope.assignVarLabel("loopVar", IsVar16, TWO_BYTE_STORAGE).fqn
 
-              val divideLabel = scope.fqnLabelPathUnique("divide")
+              val longMethod = scope.fqnLabelPathUnique("longDivideMethod")
               val divLoopLabel = scope.fqnLabelPathUnique("divLoop")
               val skipLabel = scope.fqnLabelPathUnique("skip")
               val endLabel = scope.fqnLabelPathUnique("end")
 
-              val tmpLabel = scope.fqnLabelPathUnique("tmp")
-
               // https://www.tutorialspoint.com/8085-program-to-divide-two-16-bit-numbers#:~:text=8085%20has%20no%20division%20operation.&text=To%20perform%2016%2Dbit%20division,stored%20at%20FC02%20and%20FC03.
               List(
 
-                s"; DIVIDE OPERATION",
+                s"; DIVIDE OPERATION     quotient = dividend / divisor    << but this algo accumulates the quotient in the dividend location",
                 s"; setup input params",
                 s"    $TMP1 = [:$temporaryVarLabel]",
                 s"    [$dividendLo] = $TMP1",
                 s"    $TMP1 = [:$temporaryVarLabel+1]",
                 s"    [$dividendHi] = $TMP1",
                 s"    [$divisorLo] = $WORKLO",
-                s"    [$divisorHi] = $WORKHI",
+                s"    [$divisorHi] = $WORKHI _S",
 
-                s"  $divideLabel:",
+                s"; if both are 8 bit then use direct ALU op",
+                s"    PCHITMP = < :$longMethod",
+                s"    PC      = > :$longMethod ! _Z", // FLAG WAS SET ABOVE divisor=HI
+                s"    $TMP1   =   [$dividendHi] _S",
+                s"    PCHITMP = < :$longMethod",
+                s"    PC      = > :$longMethod ! _Z",
+                s"    [$dividendHi] = 0",
+                s"    $TMP1   =   [$dividendLo]",
+                s"    [$dividendLo] = $TMP1 / $WORKLO",  // at this point it is assumed that TMP1 = dividendlo and WORKLO = divisorlo
+                s"    PCHITMP = < :$endLabel",
+                s"    PC      = > :$endLabel",
+
+
+                s"  $longMethod:",
                 s"; lda #0 -- NO NEED IN SPAM1 IMPL",
 
                 s"; sta remainder",
