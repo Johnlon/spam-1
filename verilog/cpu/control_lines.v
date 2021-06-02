@@ -48,6 +48,13 @@ package control;
     localparam [2:0] BDEV_ram = 7;
     localparam [2:0] BDEV_not_used = BDEV_rega;
 
+    /*
+    localparam [3:0] BDEV_VRAM
+    localparam [3:0] BDEV_PORTA
+    localparam [3:0] BDEV_RAND
+    localparam [3:0] BDEV_CLOCK // 8 bit @ 60 Hz = 4min  or  @100Hz=2.5min
+    */
+
     // DEST
     localparam [3:0] TDEV_rega = 0; 
     localparam [3:0] TDEV_regb = 1; 
@@ -58,10 +65,17 @@ package control;
     localparam [3:0] TDEV_uart = 6;
     localparam [3:0] TDEV_ram = 7;
     localparam [3:0] TDEV_halt = 8;
+    localparam [3:0] TDEV_not_used9 = 9;    // use for VRAM
+    localparam [3:0] TDEV_not_used10 = 10;  // use for PORTA
+    localparam [3:0] TDEV_not_used11 = 11;  // use for PORTB
     localparam [3:0] TDEV_not_used = 12;// needed for things like compare where we don't want to overwrite
     localparam [3:0] TDEV_pchitmp = 13; // only load pchitmp
     localparam [3:0] TDEV_pclo= 14;     // only load pclo
     localparam [3:0] TDEV_pc= 15;       // load pclo from instruction and load pchi from pchitmp
+    // eg ROM PAGE / RAM PAGE REGISTERS
+    // ROM page could be a third register PCPAGE - but really the PCHITMP is also a page select so they would be three registers PC8 / PC16 / PC24
+    // MAR would be MAR8 and MAR16 to correlate
+    // ADD AN SPI PORT USING AN 8 BIT BIDIR PORT SETUP AS 5 bits for device select mux upto 32 devices (or 5 devices with no mux), and 3 bits for the MISO/MOSI/SCLK
 
 
     localparam [3:0] CONDITION_A= 0; 

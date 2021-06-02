@@ -42,6 +42,7 @@ module cpu(
     input _RESET_SWITCH,
     input system_clk
 );
+    int cycleCount = 0;
 
     parameter LOG=0;
 
@@ -277,10 +278,13 @@ module cpu(
     int halt_code;
     // neg edge is start of execute
     always @(negedge system_clk) begin
+        cycleCount ++;
+
         if (_halt_in == 0) begin
             halt_code = (CPU.MARHI.Q  << 8) + CPU.MARLO.Q;
 
             // leave space around the code as Verification.scala looks for them to extract the value
+            $display("----------------------------- CYCLES %d",  cycleCount);
             $display("----------------------------- HALTED <%1d h:%04x> <%1d h:%02x> ---------------------------", 
                         halt_code, 16'(halt_code),
                         alu_result_bus, 8'(alu_result_bus));
