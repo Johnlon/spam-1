@@ -295,40 +295,28 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
 
                 s"  $divLoopLabel:",
 
-                s"; asl dividend",
+                s"; asl dividendLo",
                 s"    $TMP1         = [$dividendLo]",
-                s"    [$dividendLo] = $TMP1 A_LSL_B 1",
                 s"    $TMP2         = $TMP1 A_LSR_B 7", // move carried out bit into RHS of byte
-                s"; rol dividend+C    rotate in the shifted out bit",
+                s"    [$dividendLo] = $TMP1 A_LSL_B 1",
+
+                s"; rol dividendHi+C    rotate in the shifted out bit",
                 s"    $TMP1         = [$dividendHi]",
-                s"    $TMP1         = $TMP1 A_LSL_B 1 _S", // sets the flags for the rol remainder block to consume
+                s"    $WORKLO       = $TMP1 A_LSR_B 7", // WORKLO is just a tmp reg
+                s"    $TMP1         = $TMP1 A_LSL_B 1", // sets the flags for the rol remainder block to consume
                 s"    [$dividendHi] = $TMP1 A_PLUS_B $TMP2; add the carry bit",
 
-                s"; rol remainder",
-                s"    PCHITMP = < :${tmpLabel}_2_CARRY",
-                s"    PC      = > :${tmpLabel}_2_CARRY _C",
-                s"    $TMP1        = [$remainderLo]",
-                s"    [$remainderLo] = $TMP1 A_LSL_B 1 _S ; no carry path",
-                s"    PCHITMP = < :${tmpLabel}_2_DONE",
-                s"    PC      = > :${tmpLabel}_2_DONE",
-                s"  ${tmpLabel}_2_CARRY:",
-                s"    $TMP1        = [$remainderLo]",
-                s"    $TMP1        = $TMP1 A_LSL_B 1 _S",
-                s"    [$remainderLo] = $TMP1 A_PLUS_B 1 ; add the carry bit",
-                s"  ${tmpLabel}_2_DONE:",
+                s"; rol remainderLo",
+                s"    $TMP1          = [$remainderLo]",
+                s"    $TMP2          = $TMP1 A_LSR_B 7", // move carried out bit into RHS of byte
+                s"    $TMP1          = $TMP1 A_LSL_B 1", // sets the flags for the rol remainder block to consume
+                s"    [$remainderLo] = $TMP1 A_PLUS_B $WORKLO",
 
-                s"; rol remainder+1",
-                s"    PCHITMP = < :${tmpLabel}_3_CARRY",
-                s"    PC      = > :${tmpLabel}_3_CARRY _C",
-                s"    $TMP1        = [$remainderHi]",
-                s"    [$remainderHi] = $TMP1 A_LSL_B 1 _S ; no carry path",
-                s"    PCHITMP = < :${tmpLabel}_3_DONE",
-                s"    PC      = > :${tmpLabel}_3_DONE",
-                s"  ${tmpLabel}_3_CARRY:",
-                s"    $TMP1        = [$remainderHi]",
-                s"    $TMP1        = $TMP1 A_LSL_B 1 _S",
-                s"    [$remainderHi] = $TMP1 A_PLUS_B 1 ; add the carry bit",
-                s"  ${tmpLabel}_3_DONE:",
+                s"; rol remainderHi",
+                s"    $TMP1          = [$remainderHi]",
+                s"    $TMP1          = $TMP1 A_LSL_B 1", // sets the flags for the rol remainder block to consume
+                s"    [$remainderHi] = $TMP1 A_PLUS_B $TMP2",
+
 
                 s"; lda remainder",
                 s"    $TMP1 = [$remainderLo]",
@@ -369,10 +357,8 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"    [$loopVar] = $TMP1 - 1 _S",
 
                 s"; bne divloop",
-                s"    PCHITMP = < :$endLabel ; equal so continue to next instruction",
-                s"    PC      = > :$endLabel _Z",
                 s"    PCHITMP = < :$divLoopLabel ; not equal so branch",
-                s"    PC      = > :$divLoopLabel",
+                s"    PC      = > :$divLoopLabel ! _Z",
 
                 s"  $endLabel:",
 
