@@ -1,0 +1,11 @@
+program{
+fun main() {
+    uint16 a = 65532;
+    //uint16 b = 2;
+
+    uint16 c = a / 2;
+    halt(c)
+    
+}
+
+}

@@ -4,7 +4,7 @@ if [ -z $chip8_prog ]; then
     exit 1
 fi
 
-./scc.sh  Chip2Emulator.scc $1
+./scc_chip8.sh  Chip2Emulator.scc $1
 if [ $? -ne 0 ]; then
     echo error
     exit 1

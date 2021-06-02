@@ -1,4 +1,4 @@
-./scc.sh  Chip2Emulator.scc test_opcode.ch8
+./scc_chip8.sh  Chip2Emulator.scc test_opcode.ch8
 if [ $? -ne 0 ]; then
     echo error
     exit 1
