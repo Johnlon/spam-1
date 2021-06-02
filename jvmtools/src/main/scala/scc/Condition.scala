@@ -54,7 +54,7 @@ case class ConditionComplex(exprL: BlkCompoundAluExpr, compOp: String, exprR: Bl
           s"; condition : $compOp $exprL $exprR",
           s"; compare hi",
           s"$WORKLO = [:$temporaryVarLabelL + 1]",
-          s"$WORKLO = $WORKLO $SignedComp [:$temporaryVarLabelR + 1] _S", // this op is unimportant as we are dong magnitude
+          s"$WORKLO = $WORKLO $SignedComp [:$temporaryVarLabelR + 1] _S", // this op is unimportant as we are doing magnitude comp
 
           s"; if _GT or LT then is definitive so break ",
           s"PCHITMP = < :$checkLabel",
@@ -113,7 +113,7 @@ case class ConditionComplex(exprL: BlkCompoundAluExpr, compOp: String, exprR: Bl
   }
 }
 
-case class ConsitionSimple(varName: String, compOp: String, konst: Int) extends Block {
+case class ConditionSimple(varName: String, compOp: String, konst: Int) extends Block {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val label = parent.getVarLabel(varName).fqn
 

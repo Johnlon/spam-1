@@ -62,7 +62,9 @@ class StatementParser {
       statementPutsName |
       statementHalt | statementHaltVar |
       statementGetchar |
-      whileCond | whileTrue | ifCond | breakOut | functionCall ^^ {
+      whileCond | whileTrue |
+      ifCond |
+      breakOut | functionCall ^^ {
       s =>
         s
     }
@@ -316,13 +318,13 @@ class StatementParser {
   }
 
   def whileTrue: Parser[Block] = positioned {
-    ("while" ~ "(" ~ "true" ~ ")" ~ "{") ~> statements <~ "}" ^^ {
+    ("while" ~ "(" ~ "true" ~ ")" ~! "{") ~> statements <~ "}" ^^ {
       content => WhileTrue(content)
     }
   }
 
   def whileCond: Parser[Block] = positioned {
-    "while" ~ "(" ~> conditionWithConst ~ ")" ~ "{" ~ statements <~ "}" ^^ {
+    "while" ~ "(" ~> conditionWithConst ~ ")" ~! "{" ~ statements <~ "}" ^^ {
       case cond ~ _ ~ _ ~ content =>
         WhileCond(cond._1, cond._2, content)
     }
@@ -334,9 +336,9 @@ class StatementParser {
     }
   }
 
-  def elseCurlyBlock: Parser[List[Block]] = "else" ~ "{" ~> statements <~ "}"
+  def elseCurlyBlock: Parser[List[Block]] = "else" ~ "{" ~>! statements <~ "}"
 
-  def elseNonCurlyBlock: Parser[List[Block]] = "else" ~> statement ^^ {
+  def elseNonCurlyBlock: Parser[List[Block]] = "else" ~>! statement ^^ {
     b =>
       List(b)
   }
@@ -347,7 +349,7 @@ class StatementParser {
   }
 
   def ifCond: Parser[Block] = positioned {
-    "if" ~ "(" ~> conditionExpr ~ ")" ~ "{" ~ statements ~ "}" ~ opt(elseBlock) ^^ {
+    "if" ~ "(" ~> conditionExpr ~ ")" ~! "{" ~ statements ~ "}" ~! opt(elseBlock) ^^ {
       case cond ~ _ ~ _ ~ content ~ _ ~ elseContent =>
         IfCond(cond._1, cond._2, content, elseContent.getOrElse(Nil))
     }

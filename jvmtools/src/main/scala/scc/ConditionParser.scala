@@ -8,7 +8,7 @@ trait ConditionParser {
   // return the block of code and the name of the flag to add to the jump operation
   def conditionWithConst: Parser[(String, Block)] = name ~ comparison ~ constExpression ^^ {
     case varName ~ compOp ~ konst =>
-      val b = ConsitionSimple(varName, compOp, konst)
+      val b = ConditionSimple(varName, compOp, konst)
 
       val cpuFlag: String = conditionFlags(compOp)
       (cpuFlag, b)

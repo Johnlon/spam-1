@@ -1,19 +1,20 @@
 package terminal
 
+import org.apache.commons.io.input.{Tailer, TailerListener}
+
 import java.awt.Color
 import java.io.{File, FileOutputStream, PrintStream}
 import java.util.concurrent.atomic.AtomicInteger
-import javax.swing.{BorderFactory, JScrollPane}
-import org.apache.commons.io.input.{Tailer, TailerListener}
-
+import javax.swing.BorderFactory
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.swing.ScrollPane.BarPolicy
+import scala.swing._
 import scala.swing.event._
-import scala.swing.{Rectangle, _}
 
 
 object UARTTerminal extends SimpleSwingApplication {
+  var uiapp = new MainFrame()
+
   val replay = true
 
   @volatile var stopped = false
@@ -89,7 +90,6 @@ object UARTTerminal extends SimpleSwingApplication {
   val scrText = new scala.swing.ScrollPane(logPanel)
   scrText.verticalScrollBarPolicy = BarPolicy.Always
 
-
   private def run(): Unit = {
     val listener = new FileListener
     val gotoEnd = !replay
@@ -99,23 +99,30 @@ object UARTTerminal extends SimpleSwingApplication {
   class FileListener extends TailerListener {
     def handle(line: String): Unit = {
 
-      var wasStopped = false
-      while (stopped) {
-        wasStopped = false
-        Thread.sleep(10)
-      }
+      try {
+        var wasStopped = false
+        while (stopped) {
+          wasStopped = false
+          Thread.sleep(10)
+        }
 
-      if (line.trim.length > 0) {
-        println("! " + line)
-        val c = Integer.parseInt(line, 16)
-        val char = c.toChar
-        plot(char)
-      }
+        if (line.trim.nonEmpty) {
+          println("! " + line)
+          val c = Integer.parseInt(line, 16)
+          val char = c.toChar
+          plot(char)
+        }
 
-      if (wasStopped) {
-        Thread.sleep(1000)
-        // if was stopped then don't recover speed immediately
-        // this allows one to quickly press top again to allow app to advance slowly
+        if (wasStopped) {
+          Thread.sleep(1000)
+          // if was stopped then don't recover speed immediately
+          // this allows one to quickly press top again to allow app to advance slowly
+        }
+      } catch {
+        case ex: Exception =>
+          Dialog.showMessage(uiapp, "ERROR : " + ex)
+          ex.printStackTrace()
+          throw ex
       }
     }
 
@@ -135,7 +142,8 @@ object UARTTerminal extends SimpleSwingApplication {
     }
   }
 
-  def top: Frame = new MainFrame {
+  def top: Frame = {
+
     //bounds = new Rectangle(50, 100, 300, 30)
 
     val brefresh = new Button("Reset")
@@ -183,16 +191,17 @@ object UARTTerminal extends SimpleSwingApplication {
       case _ =>
     }
 
-    val buttons = new BoxPanel(Orientation.Horizontal) {
-      contents ++= Seq(brefresh, bpaint, bstop)
-    }
-    contents = new BoxPanel(Orientation.Vertical) {
+    uiapp.contents = new BoxPanel(Orientation.Vertical) {
+      val buttons = new BoxPanel(Orientation.Horizontal) {
+        contents ++= Seq(brefresh, bpaint, bstop)
+      }
+
       contents ++= Seq(buttons, text, logLine, scrText)
     }
 
-    //t.start()
     run()
 
+    uiapp
   }
 
 
@@ -215,7 +224,7 @@ object UARTTerminal extends SimpleSwingApplication {
       h =>
         (0 until width) foreach {
           w =>
-            data(h)(w) = BLANKCHAR
+            drawPixel(w, h, '0', false)
         }
     }
   }
@@ -247,7 +256,7 @@ object UARTTerminal extends SimpleSwingApplication {
       case STATE_DRAW_PIXEL =>
         val yi = y.get()
         val xi = x.get()
-        data(yi)(xi) = c
+        drawPixel(xi, yi, '1', false)
         state = STATE_INIT
       case STATE_DRAW_BYTE =>
         val yi = y.get()
@@ -255,9 +264,9 @@ object UARTTerminal extends SimpleSwingApplication {
         val bits = f"${c.toBinaryString}%8s".replace(' ', '0')
 
         bits.zipWithIndex foreach {
-          case (bit, i) =>
-            val char = if (bit == '1') BLOCKCHAR else BLANKCHAR
-            data(yi)(xi + i) = char
+          case (bit, bitIndex) =>
+            val pixelX = xi + bitIndex
+            drawPixel(pixelX, yi, bit, true)
         }
         state = STATE_INIT
       case STATE_LOG_CHAR =>
@@ -314,6 +323,21 @@ object UARTTerminal extends SimpleSwingApplication {
     }
 
     doRepaint()
+  }
+
+  private def drawPixel(x: Int, y: Int, bit: Char, flip:Boolean) = {
+
+    val existing = data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH)
+
+    val newval = if (flip) {
+      existing == BLANKCHAR
+    } else {
+      existing.equals('1')
+    }
+
+    val pixelImg = if (newval) BLOCKCHAR else BLANKCHAR
+
+    data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH) = pixelImg
   }
 
   def fill(): mutable.Seq[mutable.Buffer[Char]] = {

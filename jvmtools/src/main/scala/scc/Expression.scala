@@ -127,17 +127,17 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
           val thisClause = op match {
             case "+" =>
               List(
-                s"$TMPREG = [:$temporaryVarLabel]",
-                s"[:$temporaryVarLabel] = $TMPREG A_PLUS_B $WORKLO _S",
-                s"$TMPREG = [:$temporaryVarLabel + 1]",
-                s"[:$temporaryVarLabel+1] = $TMPREG A_PLUS_B_PLUS_C $WORKHI"
+                s"$TMP1 = [:$temporaryVarLabel]",
+                s"[:$temporaryVarLabel] = $TMP1 A_PLUS_B $WORKLO _S",
+                s"$TMP1 = [:$temporaryVarLabel + 1]",
+                s"[:$temporaryVarLabel+1] = $TMP1 A_PLUS_B_PLUS_C $WORKHI"
               )
             case "-" =>
               List(
-                s"$TMPREG = [:$temporaryVarLabel]",
-                s"[:$temporaryVarLabel] = $TMPREG A_MINUS_B $WORKLO _S",
-                s"$TMPREG = [:$temporaryVarLabel + 1]",
-                s"[:$temporaryVarLabel+1] = $TMPREG A_MINUS_B_MINUS_C $WORKHI"
+                s"$TMP1 = [:$temporaryVarLabel]",
+                s"[:$temporaryVarLabel] = $TMP1 A_MINUS_B $WORKLO _S",
+                s"$TMP1 = [:$temporaryVarLabel + 1]",
+                s"[:$temporaryVarLabel+1] = $TMP1 A_MINUS_B_MINUS_C $WORKHI"
               )
             case "*" =>
               val resultLo = ":" + scope.assignVarLabel("divisor", IsVar16, TWO_BYTE_STORAGE).fqn
@@ -145,23 +145,23 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
 
               //   val res = ((timeHi(a.l, b.l) + timeLo(a.l, b.h) + timeLo(a.h, b.l)) << 8) + timeLo(a.l, b.l)
               List(
-                s"$TMPREG = [:$temporaryVarLabel]",
-                s"[:$temporaryVarLabel] = $TMPREG *LO $WORKLO", // units:  lo * lo
-                s"$V2 = $TMPREG *HI $WORKLO", // 256's : lo * lo
-                s"$TMPREG = $TMPREG *LO $WORKHI", // 256's : lo * hi
-                s"$V2 = $V2  + $TMPREG",
-                s"$TMPREG = [:$temporaryVarLabel+1]",
-                s"$TMPREG = $TMPREG *LO $WORKLO _S", // 256's : hi * lo
-                s"$V2 = $V2 + $TMPREG",
+                s"$TMP1 = [:$temporaryVarLabel]",
+                s"[:$temporaryVarLabel] = $TMP1 *LO $WORKLO", // units:  lo * lo
+                s"$TMP2 = $TMP1 *HI $WORKLO", // 256's : lo * lo
+                s"$TMP1 = $TMP1 *LO $WORKHI", // 256's : lo * hi
+                s"$TMP2 = $TMP2  + $TMP1",
+                s"$TMP1 = [:$temporaryVarLabel+1]",
+                s"$TMP1 = $TMP1 *LO $WORKLO _S", // 256's : hi * lo
+                s"$TMP2 = $TMP2 + $TMP1",
 
-                s"[:$temporaryVarLabel+1] = $V2"
+                s"[:$temporaryVarLabel+1] = $TMP2"
               )
             case op@("&" | "|" | "^" | "~&" | "~") =>
               List(
-                s"$TMPREG = [:$temporaryVarLabel]",
-                s"[:$temporaryVarLabel] = $TMPREG $op $WORKLO _S",
-                s"$TMPREG = [:$temporaryVarLabel + 1]",
-                s"[:$temporaryVarLabel + 1] = $TMPREG $op $WORKHI"
+                s"$TMP1 = [:$temporaryVarLabel]",
+                s"[:$temporaryVarLabel] = $TMP1 $op $WORKLO _S",
+                s"$TMP1 = [:$temporaryVarLabel + 1]",
+                s"[:$temporaryVarLabel + 1] = $TMP1 $op $WORKHI"
               )
             case ">>" =>
               val shiftLoop = scope.fqnLabelPathUnique("shiftLoop")
@@ -189,16 +189,16 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"$WORKHI = $WORKHI A_MINUS_B_MINUS_C 0",
 
                 s"; do one shift",
-                s"$TMPREG = [:$temporaryVarLabel + 1]",
-                s"$V2 = $TMPREG",
-                s"$V2 = $V2 & 1",
-                s"$V2 = $V2 << 7",
-                s"[:$temporaryVarLabel + 1] = $TMPREG A_LSR_B 1 _S",
+                s"$TMP1 = [:$temporaryVarLabel + 1]",
+                s"$TMP2 = $TMP1",
+                s"$TMP2 = $TMP2 & 1",
+                s"$TMP2 = $TMP2 << 7",
+                s"[:$temporaryVarLabel + 1] = $TMP1 A_LSR_B 1 _S",
 
                 s"; LSR load lo byte and or in the carry",
-                s"$TMPREG = [:$temporaryVarLabel]",
-                s"$TMPREG = $TMPREG A_LSR_B 1",
-                s"[:$temporaryVarLabel] = $TMPREG  | $V2",
+                s"$TMP1 = [:$temporaryVarLabel]",
+                s"$TMP1 = $TMP1 A_LSR_B 1",
+                s"[:$temporaryVarLabel] = $TMP1  | $TMP2",
 
                 s"; loop again",
                 s"PCHITMP = < :$shiftLoop",
@@ -232,17 +232,16 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"$WORKHI = $WORKHI A_MINUS_B_MINUS_C 0",
 
                 s"; do one shift",
-                s"$TMPREG = [:$temporaryVarLabel]",
-                s"$V2 = $TMPREG",
-                s"$V2 = $V2 & %10000000",
-                s"$V2 = $V2 >> 7",
+                s"$TMP1 = [:$temporaryVarLabel]",
+                s"$TMP2 = $TMP1 & %10000000", // move the shifted out bit into the RHS pos
+                s"$TMP2 = $TMP2 >> 7",
 
-                s"[:$temporaryVarLabel] = $TMPREG A_LSL_B 1 _S",
+                s"[:$temporaryVarLabel] = $TMP1 A_LSL_B 1 _S",
 
                 s"; LSR load lo byte and or in the carry",
-                s"$TMPREG = [:$temporaryVarLabel+1]",
-                s"$TMPREG = $TMPREG A_LSL_B 1",
-                s"[:$temporaryVarLabel+1] = $TMPREG  | $V2",
+                s"$TMP1 = [:$temporaryVarLabel+1]",
+                s"$TMP1 = $TMP1 A_LSL_B 1",
+                s"[:$temporaryVarLabel+1] = $TMP1  | $TMP2",
 
                 s"; loop again",
                 s"PCHITMP = < :$shiftLoop",
@@ -273,122 +272,114 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               // https://www.tutorialspoint.com/8085-program-to-divide-two-16-bit-numbers#:~:text=8085%20has%20no%20division%20operation.&text=To%20perform%2016%2Dbit%20division,stored%20at%20FC02%20and%20FC03.
               List(
 
-                s"; MINUS OPERATION",
+                s"; DIVIDE OPERATION",
                 s"; setup input params",
-                s"  $TMPREG = [:$temporaryVarLabel]",
-                s"  [$dividendLo] = $TMPREG",
-                s"  $TMPREG = [:$temporaryVarLabel+1]",
-                s"  [$dividendHi] = $TMPREG",
-                s"  [$divisorLo] = $WORKLO",
-                s"  [$divisorHi] = $WORKHI",
+                s"    $TMP1 = [:$temporaryVarLabel]",
+                s"    [$dividendLo] = $TMP1",
+                s"    $TMP1 = [:$temporaryVarLabel+1]",
+                s"    [$dividendHi] = $TMP1",
+                s"    [$divisorLo] = $WORKLO",
+                s"    [$divisorHi] = $WORKHI",
 
-                s"$divideLabel:",
-                s"; lda #0 -- NO NEED HERE",
+                s"  $divideLabel:",
+                s"; lda #0 -- NO NEED IN SPAM1 IMPL",
 
                 s"; sta remainder",
-                s"  [$remainderLo] = 0",
+                s"    [$remainderLo] = 0",
 
                 s"; sta remainder+1",
-                s"  [$remainderHi] = 0",
+                s"    [$remainderHi] = 0",
 
                 s"; ldx 16",
-                s"  [$loopVar] = 16",
+                s"    [$loopVar] = 16",
 
-                s"$divLoopLabel:",
+                s"  $divLoopLabel:",
 
                 s"; asl dividend",
-                s"  $TMPREG = [$dividendLo]",
-                s"  [$dividendLo] = $TMPREG A_LSL_B 1 _S",
-
-                s"; rol dividend+1    rotate in the shifted out bit",
-                s"  PCHITMP = < :${tmpLabel}_1_CARRY",
-                s"  PC      = > :${tmpLabel}_1_CARRY _C",
-                s"  $TMPREG       = [$dividendHi]",
-                s"  [$dividendHi] = $TMPREG A_LSL_B 1 _S ; no carry path",
-                s"  PCHITMP = < :${tmpLabel}_1_DONE",
-                s"  PC      = > :${tmpLabel}_1_DONE",
-                s"  ${tmpLabel}_1_CARRY:",
-                s"  $TMPREG       = [$dividendHi]",
-                s"  $TMPREG       = $TMPREG A_LSL_B 1 _S",
-                s"  [$dividendHi] = $TMPREG A_PLUS_B 1 ; add the carry bit",
-                s"  ${tmpLabel}_1_DONE:",
+                s"    $TMP1         = [$dividendLo]",
+                s"    [$dividendLo] = $TMP1 A_LSL_B 1",
+                s"    $TMP2         = $TMP1 A_LSR_B 7", // move carried out bit into RHS of byte
+                s"; rol dividend+C    rotate in the shifted out bit",
+                s"    $TMP1         = [$dividendHi]",
+                s"    $TMP1         = $TMP1 A_LSL_B 1 _S", // sets the flags for the rol remainder block to consume
+                s"    [$dividendHi] = $TMP1 A_PLUS_B $TMP2; add the carry bit",
 
                 s"; rol remainder",
-                s"  PCHITMP = < :${tmpLabel}_2_CARRY",
-                s"  PC      = > :${tmpLabel}_2_CARRY _C",
-                s"  $TMPREG        = [$remainderLo]",
-                s"  [$remainderLo] = $TMPREG A_LSL_B 1 _S ; no carry path",
-                s"  PCHITMP = < :${tmpLabel}_2_DONE",
-                s"  PC      = > :${tmpLabel}_2_DONE",
+                s"    PCHITMP = < :${tmpLabel}_2_CARRY",
+                s"    PC      = > :${tmpLabel}_2_CARRY _C",
+                s"    $TMP1        = [$remainderLo]",
+                s"    [$remainderLo] = $TMP1 A_LSL_B 1 _S ; no carry path",
+                s"    PCHITMP = < :${tmpLabel}_2_DONE",
+                s"    PC      = > :${tmpLabel}_2_DONE",
                 s"  ${tmpLabel}_2_CARRY:",
-                s"  $TMPREG        = [$remainderLo]",
-                s"  $TMPREG        = $TMPREG A_LSL_B 1 _S",
-                s"  [$remainderLo] = $TMPREG A_PLUS_B 1 ; add the carry bit",
+                s"    $TMP1        = [$remainderLo]",
+                s"    $TMP1        = $TMP1 A_LSL_B 1 _S",
+                s"    [$remainderLo] = $TMP1 A_PLUS_B 1 ; add the carry bit",
                 s"  ${tmpLabel}_2_DONE:",
 
                 s"; rol remainder+1",
-                s"  PCHITMP = < :${tmpLabel}_3_CARRY",
-                s"  PC      = > :${tmpLabel}_3_CARRY _C",
-                s"  $TMPREG        = [$remainderHi]",
-                s"  [$remainderHi] = $TMPREG A_LSL_B 1 _S ; no carry path",
-                s"  PCHITMP = < :${tmpLabel}_3_DONE",
-                s"  PC      = > :${tmpLabel}_3_DONE",
+                s"    PCHITMP = < :${tmpLabel}_3_CARRY",
+                s"    PC      = > :${tmpLabel}_3_CARRY _C",
+                s"    $TMP1        = [$remainderHi]",
+                s"    [$remainderHi] = $TMP1 A_LSL_B 1 _S ; no carry path",
+                s"    PCHITMP = < :${tmpLabel}_3_DONE",
+                s"    PC      = > :${tmpLabel}_3_DONE",
                 s"  ${tmpLabel}_3_CARRY:",
-                s"  $TMPREG        = [$remainderHi]",
-                s"  $TMPREG        = $TMPREG A_LSL_B 1 _S",
-                s"  [$remainderHi] = $TMPREG A_PLUS_B 1 ; add the carry bit",
+                s"    $TMP1        = [$remainderHi]",
+                s"    $TMP1        = $TMP1 A_LSL_B 1 _S",
+                s"    [$remainderHi] = $TMP1 A_PLUS_B 1 ; add the carry bit",
                 s"  ${tmpLabel}_3_DONE:",
 
                 s"; lda remainder",
-                s"  $TMPREG = [$remainderLo]",
+                s"    $TMP1 = [$remainderLo]",
 
                 s"; sec -  set carry - SBC uses the inverse of the carry bit so SEC is actualll clearing carry",
-                s"  ; NOT_USED = $WORKLO B 0 _S ; clear carry << bit not needed as SPAM has dedicate MINUS without carry in",
+                s"    ; NOT_USED = $WORKLO B 0 _S ; clear carry << bit not needed as SPAM has dedicate MINUS without carry in",
 
                 s"; sbc divisor",
-                s"  $TMPREG = $TMPREG A_MINUS_B [$divisorLo] _S",
+                s"    $TMP1 = $TMP1 A_MINUS_B [$divisorLo] _S",
 
                 s"; tay - WORKHI is Y REG",
-                s"  $WORKHI = $TMPREG",
+                s"    $WORKHI = $TMP1",
 
                 s"; lda remainder+1",
-                s"  $TMPREG = [$remainderHi]",
+                s"    $TMP1 = [$remainderHi]",
 
                 s"; sbc divisor+1",
-                s"  $TMPREG = $TMPREG A_MINUS_B_MINUS_C [$divisorHi] _S",
+                s"    $TMP1 = $TMP1 A_MINUS_B_MINUS_C [$divisorHi] _S",
 
                 s"; bcc skip -  if a cleared carry bit means carry occured, then bcc means skip if carry occured",
-                s"  PCHITMP = < :$skipLabel",
-                s"  PC      = > :$skipLabel _C",
+                s"    PCHITMP = < :$skipLabel",
+                s"    PC      = > :$skipLabel _C",
 
                 s"; sta remainder+1",
-                s"  [$remainderHi] = $TMPREG",
+                s"    [$remainderHi] = $TMP1",
 
                 s"; sty remainder",
-                s"  [$remainderLo] = $WORKHI",
+                s"    [$remainderLo] = $WORKHI",
 
                 s"; inc result",
-                s"  $TMPREG     = [$dividendLo]",
-                s"  [$dividendLo] = $TMPREG + 1",
+                s"    $TMP1     = [$dividendLo]",
+                s"    [$dividendLo] = $TMP1 + 1",
 
-                s"$skipLabel:",
+                s"  $skipLabel:",
 
                 s"; dex",
-                s" $TMPREG    = [$loopVar]",
-                s" [$loopVar] = $TMPREG - 1 _S",
+                s"    $TMP1    = [$loopVar]",
+                s"    [$loopVar] = $TMP1 - 1 _S",
 
                 s"; bne divloop",
-                s"  PCHITMP = < :$endLabel ; equal so continue to next instruction",
-                s"  PC      = > :$endLabel _Z",
-                s"  PCHITMP = < :$divLoopLabel ; not equal so branch",
-                s"  PC      = > :$divLoopLabel",
+                s"    PCHITMP = < :$endLabel ; equal so continue to next instruction",
+                s"    PC      = > :$endLabel _Z",
+                s"    PCHITMP = < :$divLoopLabel ; not equal so branch",
+                s"    PC      = > :$divLoopLabel",
 
-                s"$endLabel:",
+                s"  $endLabel:",
 
-                s"$TMPREG = [$dividendLo]",
-                s"[:$temporaryVarLabel] = $TMPREG",
-                s"$TMPREG = [$dividendHi]",
-                s"[:$temporaryVarLabel+1] = $TMPREG"
+                s"    $TMP1 = [$dividendLo]",
+                s"    [:$temporaryVarLabel] = $TMP1",
+                s"    $TMP1 = [$dividendHi]",
+                s"    [:$temporaryVarLabel+1] = $TMP1"
           )
             case x =>
               sys.error("NOT IMPL ALU OP '" + x + "'")
