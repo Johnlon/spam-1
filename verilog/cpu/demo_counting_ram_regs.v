@@ -65,12 +65,12 @@ module test();
     // SETUP ROM
     task INIT_ROM;
     begin
-    // JLJL
+   
         // RAM[ffaa] = 42h
         `TEXT(counter, "START");
+//POP
         `RAM_DIRECT_EQ_IMMED8(counter, 16'hffaa, 8'h42); 
-    // JLJL
-
+    
         // marlo = 42h
         `DEV_EQ_RAM_DIRECT(counter, marlo, 16'hffaa); 
 

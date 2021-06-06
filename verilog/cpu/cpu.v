@@ -23,6 +23,7 @@
 `include "../ram/ram.v"
 `include "../alu/alu.v"
 `include "../uart/um245r.v"
+`include "../random/random.v"
 
 
 // verilator lint_off ASSIGNDLY
@@ -52,7 +53,8 @@ module cpu(
     tri0 [7:0] abus; // when NA device is selected we don't want Z going into ALU sim as this is not a value so we get X out
     tri0 [7:0] bbus;
     tri [7:0] alu_result_bus;
-    wire [2:0] bbus_dev, abus_dev;
+    wire [2:0] abus_dev;
+    wire [3:0] bbus_dev;
     wire [3:0] targ_dev;
     wire [4:0] alu_op;
     wire [7:0] _registered_flags_czonGLEN;
@@ -123,6 +125,11 @@ module cpu(
         .PCLO(PCLO),
         .PCHI(PCHI)
     );
+
+
+    // RANDOM =============================================================================================
+
+    random rand1( .clk(system_clk), ._OE(_bdev_rand), .Q(bbus));
 
     // RAM =============================================================================================
 
@@ -205,7 +212,8 @@ module cpu(
 
     // OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdR_en === bbus_dev[2]
     // OLD wire #(8) _regfile_rdR_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ; 
-    wire _regfile_rdR_en = bbus_dev[2];
+    wire _regfile_rdR_en;
+    or #(11) regfile_rdR_7432(_regfile_rdR_en , bbus_dev[2], bbus_dev[3]); // TODO WIRE THIS OR IN THE HARDWARE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     // the lower two bits can be used to address the regfile as the regfile is the first four locns
     wire [1:0] regfile_rdL_addr = abus_dev[1:0]; 
@@ -241,7 +249,7 @@ module cpu(
 
     wire [7:0] uart_d;
 
-    um245r #(.LOG(2))  uart ( // DONE
+    um245r #(.LOG(0))  uart ( // DONE
         .D(uart_d),
         .WR(_gated_uart_wr),// Writes data on -ve edge
         ._RD(_adev_uart),	// When goes from high to low then the FIFO data is placed onto D (equates to _OE)
@@ -307,14 +315,16 @@ module cpu(
          reg [4:0] i_aluop;
          reg [3:0] i_target;
          reg [2:0] i_srca;
-         reg [2:0] i_srcb;
+         reg [2:0] i_srcb_lo;
          reg [3:0] i_cond;
          reg i_flag;
          reg i_cmode;
-         reg [1:0] i_nu;
+         reg i_nu;
+         reg i_srcb_hi;
          reg i_amode;
          reg [23:8] i_addr ;
          reg [7:0] i_immed;
+         reg [3:0] i_srcb;
     begin
         import alu_ops::*;
         import control::*;
@@ -322,19 +332,23 @@ module cpu(
         i_aluop = INSTRUCTION[47:43]; 
         i_target = INSTRUCTION[42:39]; 
         i_srca = INSTRUCTION[38:36]; 
-        i_srcb = INSTRUCTION[35:33]; 
+        i_srcb_lo = INSTRUCTION[35:33]; 
         i_cond = INSTRUCTION[32:29]; 
         i_flag = INSTRUCTION[28]; 
         i_cmode = INSTRUCTION[27]; 
-        i_nu   = INSTRUCTION[26:25]; 
+        i_nu   = INSTRUCTION[26]; 
+        i_srcb_hi   = INSTRUCTION[25]; 
         i_amode= INSTRUCTION[24]; 
         i_addr = INSTRUCTION[23:8]; 
         i_immed= INSTRUCTION[7:0]; 
+
+        i_srcb   = {i_srcb_hi, i_srcb_lo};
+
         disasm = $sformatf(
                     "op:(%2d)%-10s", i_aluop, aluopName(i_aluop), 
                     "  t:(%2d)%-6s", i_target, tdevname(i_target), 
                     " a:(%2d)%-8s", i_srca, adevname(i_srca),  
-                    " b:(%2d)%-10s", i_srcb, bdevname(i_srcb),  
+                    " b:(%3d)%-10s", i_srcb, bdevname(i_srcb),  
                     "  cond:(%1d)%2s", i_cond, condname(i_cond),  
                     " setf:(%b)%s", i_flag, (i_flag? "NOSET" : "SET"), 
                     " cmode:(%b)%s", i_cmode, (i_cmode? "INV" : "STD"), 

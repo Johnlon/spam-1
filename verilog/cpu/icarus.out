@@ -1,0 +1,6017 @@
+
+
+//// RUN  and grep for OK to see counter incrementing
+/*
+
+Unit number Time unit Unit number Time unit 
+    0        1 s        -8         10 ns 
+   -1        100 ms     -9         1 ns 
+   -2        10 ms      -10        100 ps 
+   -3        1 ms       -11        10 ps 
+   -4        100 us     -12        1 ps 
+   -5        10 us      -13        100 fs 
+   -6        1 us       -14        10 fs 
+   -7        100 ns     -15        1 fs 
+*/
+
+
+// FIXME: Add random number generator - eg use an unused device as a readonly source - connect it to a 8 bit counter running at an arbitraty speed
+
+// NB..
+// ADDRESSING TERMINOLOGY
+//  IMMEDIATE ADDRESSING = INSTRUCTION CONTAINS THE CONSTANT VALUE DATA TO USE
+// RAM:
+//  DIRECT ADDRESSING = INSTRUCTION CONTAINS THE ADDRESS IN MEMORY OF THE DATA TO USE
+//  REGISTER ADDRESSING = INSTRUCTION CONTAINS THE NAME OF THE REGISTER FROM WHICH TO FETCH THE DATA
+
+//#!/usr/bin/iverilog -Ttyp -Wall -g2012 -gspecify -o test.vvp 
+
+// FIXME MAKE ALL THE tri WIRES tri0
+// verilator lint_off PINMISSING
+// verilator lint_off MULTITOP
+
+/*
+TODO - use an unused istruction bit to invert the condition so "do if DO ready" becomes "do if DO not ready"
+
+take the do_exec through a XOR gate to optionally invert the do_exec signal
+
+use spare gates: (a or b) and (a nand b)  = a XOR b
+https://en.wikipedia.org/wiki/XOR_gate see diagram three mxed gates
+
+better logic ...
+
+    loop:
+        pchitmp = loop
+        pc = loop !DO
+        uart = X
+
+existing logic ...
+
+    loop:
+        pchitmp = prt
+        pc = prt DO
+        pchitmp = loop
+        pc = loop
+    prt:
+        uart = X
+
+
+
+*/
+
+
+
+
+
+`timescale 1ns/1ns
+// verilator lint_off COMBDLY
+
+// regarding approach to delays see https://stackoverflow.com/questions/64083950/why-are-icarus-verilog-specify-times-not-respected/64085508?noredirect=1#comment113337822_64085508
+// where my question is answered arount how to create delays that allow glitches through.
+
+// https://assets.nexperia.com/documents/data-sheet/74HC_HCT151_Q100.pdf
+// The data sheet says this chips glitches during transitions - this shows up in the test
+
+module hct74151(_E, I, S, Y, _Y);
+    parameter LOG=0;
+    output Y, _Y;
+    input [2:0] S;
+    input [7:0] I;
+    input _E;
+
+    // setup timing be delaying the signals according to the data PD then combine them at last minute
+    logic [7:0] Id;
+    logic [2:0] Sd;
+
+    always @*
+        Id <= #(19) I;
+
+    always @*
+        Sd <= #(20) S;
+
+    // according to nexperia _E->_Y is slower than _E->Y
+    logic _Ed, Ed;
+    always @* 
+        _Ed <= #(13) _E;
+    always @* 
+        Ed <= #(18) ! _E;
+
+    // combine
+    wire O =
+        (Sd==0 & Id[0]) ||
+        (Sd==1 & Id[1]) ||
+        (Sd==2 & Id[2]) ||
+        (Sd==3 & Id[3]) ||
+        (Sd==4 & Id[4]) ||
+        (Sd==5 & Id[5]) ||
+        (Sd==6 & Id[6]) ||
+        (Sd==7 & Id[7]);
+
+    // when _E is high then fixed values are assumed otherwise Y follows the selected pin and _Y is the inverse
+    assign Y  = _Ed==0 ? O  : 0;
+    assign _Y = _Ed==0 ? !O : 1;
+
+    if (LOG) always @*
+    begin 
+        $display("%9t %m ", $time, "_E=%1b  I=%8b  S=%1d   Y=%b _Y=%b (_Ed=%b, Ed=%b)", _E, I, S, Y, _Y, _Ed, Ed);
+    end
+
+endmodule
+
+// verilator lint_on COMBDLY
+
+
+// DUAL 2 to 4 line decoder
+// https://books.google.co.uk/books?id=pkW5DwAAQBAJ&pg=PA362&lpg=PA362&dq=verilog+%2274139%22&source=bl&ots=p5Lb0vS6Gc&sig=ACfU3U39tOIUbv0jCeofuICsNqxWo7PJJA&hl=en&sa=X&ved=2ahUKEwjVp6ecno3oAhXEoFwKHdR-BX0Q6AEwAXoECDIQAQ#v=onepage&q=verilog%20%2274139%22&f=false
+
+// see also discussion on delays that tranmit glitches ...
+// https://stackoverflow.com/questions/64083950/why-are-icarus-verilog-specify-times-not-respected/64085508?noredirect=1#comment113337822_64085508
+
+// names and HCT timings from https://assets.nexperia.com/documents/data-sheet/74HC_HCT139.pdf
+`timescale 1ns/1ns
+module hct74139(
+input _Ea, 
+input _Eb, 
+input [1:0] Aa,
+input [1:0] Ab,
+output logic [3:0] _Ya,
+output logic [3:0] _Yb
+); 
+
+    parameter LOG = 0;
+
+    parameter AY_PD = 13;
+    parameter EY_PD = 13;
+
+    function [3:0] f74139(input [1:0] A, input _E); 
+
+        logic [3:0] f74139;
+
+        // data sheet shows Y0-Y1-Y2-Y3 in that order with HH=>1111, HL=>1110, LH=>1101, LL=>0111
+        if (_E == 0) begin 
+            case (A) 
+                // per https://assets.nexperia.com/documents/data-sheet/74HC_HCT139.pdf _Y0 is lsb
+                0: f74139 = 4'b1110;
+                1: f74139 = 4'b1101;
+                2: f74139 = 4'b1011; 
+                3: f74139 = 4'b0111; 
+            endcase
+        end 
+        else
+        if (_E == 1) begin 
+            f74139 = 4'b1111;
+        end
+
+    endfunction
+
+
+    logic _Ea_d;
+    logic _Eb_d;
+    logic [1:0] Aa_d;
+    logic [1:0] Ab_d;
+
+    always @*
+         Aa_d = #(AY_PD) Aa;
+    always @*
+         Ab_d = #(AY_PD) Ab;
+    always @*
+         _Ea_d = #(EY_PD) _Ea;
+    always @*
+         _Eb_d = #(EY_PD) _Eb;
+
+    always @*
+         _Ya = f74139(Aa_d,_Ea_d);
+
+    always @*
+        _Yb = f74139(Ab_d,_Eb_d);
+
+   if (LOG) always @*
+        $display("%9t ", $time, " DEMUX   _Ea=%1b", _Ea, " Aa=%2b", Aa, " _Ya=%4b", _Ya, "  /  _Eb=%1b", _Eb, " Ab=%2b", Ab, " _Yb=%4b", _Yb);
+
+endmodule
+
+
+
+
+
+
+
+// 3-line to 8-line decoder/demultiplexer (inverted outputs)
+// (c) Tim Rudy, GPL3
+
+/* verilator lint_off DECLFILENAME */
+// These timings are similar to 'typical' values for LS series - however MAX can be >2x worse
+// Adjust for HCT? 
+`timescale 1ns/1ns
+module hct74138 #(parameter WIDTH_OUT = 8, WIDTH_IN = $clog2(WIDTH_OUT))
+(
+  input Enable1_bar,
+  input Enable2_bar,
+  input Enable3,
+  input [WIDTH_IN-1:0] A,
+  output [WIDTH_OUT-1:0] Y
+);
+
+// timings according to nexperia seem short https://assets.nexperia.com/documents/data-sheet/74HC_HCT138.pdf
+// these timings are longer https://www.diodes.com/assets/Datasheets/74HCT138.pdf
+// TI is longer still https://www.diodes.com/assets/Datasheets/74HCT138.pdf
+// using longer timings here ...
+specify
+  (Enable1_bar *> Y) = (19); // NEXPERIA 14 // DIODES 19 // TI 18-30
+  (Enable2_bar *> Y) = (19); // NEXPERIA 14 // DIODES 19 // TI 18-30
+  (Enable3 *> Y) = (19); // NEXPERIA 14 // DIODES 19 // TI 18-30
+  (A *> Y) = (17); // NEXPERIA 12 //DIODES 17  // TI 17-32
+endspecify
+  
+//------------------------------------------------//
+reg [WIDTH_OUT-1:0] computed;
+integer i;
+
+always @(*)
+begin
+  for (i = 0; i < WIDTH_OUT; i++)
+  begin
+/* verilator lint_off WIDTH */
+    // BUG FIX - ORIGINAL VERSION OF THIS CODE SKIRTS OVER A being x or z WHICH IS INVALID AND OUTPUTS SHOULDN'T BE VALID
+    // SO EMIT INVALID OUTPUTS WHEN THIS IS THE CASE TO DRAW ATTENTION TO THE PROBLEM
+
+    // a disabled device returns 1 on all pins
+    if (Enable1_bar || Enable2_bar || !Enable3)
+        computed[i] = 1'b1;
+
+    // a device with uncertain enablement returns X on all pins
+    else if ($isunknown(A) || $isunknown(Enable1_bar) || $isunknown(Enable2_bar) || $isunknown(Enable3))
+        computed[i] = 1'bx;
+
+    // a device that is enabled returns a single 0 according to the address
+    else begin
+        // END BUG FIX
+        if (i == A)
+    /* verilator lint_on WIDTH */
+          computed[i] = 1'b0;
+        else
+          computed[i] = 1'b1;
+    end
+  end
+end
+//------------------------------------------------//
+
+assign Y = computed;
+
+endmodule
+/* verilator lint_on DECLFILENAME */
+
+
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
+// verilator lint_off COMBDLY
+
+
+
+
+
+`timescale 1ns/1ns
+
+module hct74245( 
+    input dir,
+    input nOE,
+    inout tri [7:0] A,
+    inout tri [7:0] B
+);
+    parameter NAME="74245";
+    parameter LOG=0;
+    // HCT typical @ 5v according to https://assets.nexperia.com/documents/data-sheet/74HC_HCT245.pdf
+    parameter PD_TRANS=10;
+    parameter PD_DIR=16;
+    parameter PD_OE=16;
+
+    // TRANSMISSION DELAY MODEL
+    logic dir_d;
+    logic nOE_d;
+    
+    logic [7:0] A_d;
+    logic [7:0] B_d;
+
+    assign A= nOE_d ? 8'bzzzzzzzz :dir_d==1?'bzzzzzzzz:B_d;
+    assign B= nOE_d ? 8'bzzzzzzzz :dir_d==0?'bzzzzzzzz:A_d;
+    
+    always @* begin
+        dir_d <= #(PD_DIR) dir;
+        nOE_d <= #(PD_OE) nOE;
+        A_d <= #(PD_TRANS) A;
+        B_d <= #(PD_TRANS) B; 
+    end
+
+    // specify
+    //     (A => B) = (PD_TRANS);
+    //     (B => A) = (PD_TRANS);
+    //     (dir *> A) = (PD_DIR);
+    //     (dir *> B) = (PD_DIR);
+    //     (nOE *> A) = (PD_OE);
+    //     (nOE *> B) = (PD_OE);
+    // endspecify
+
+    // assign A= nOE ? 8'bzzzzzzzz :dir?8'bzzzzzzzz:B;
+    // assign B= nOE ? 8'bzzzzzzzz :dir?A:8'bzzzzzzzz;
+
+    
+    if (LOG) 
+        always @(*) 
+        begin
+            $display("%9t", $time,  " BUF %m (%s) : A=%8b ", NAME, A, "B=%8b ", B, "dir=%1b", dir, " nOE=%1b", nOE);
+        end
+
+endmodule: hct74245
+
+
+
+
+// verilator lint_off WIDTH
+
+
+`timescale 1ns/1ns
+module cast();
+
+    function to1(input IN);
+        to1 = IN;
+    endfunction  
+    function [2:0] to3([2:0] IN);
+        to3 = IN;
+    endfunction  
+    function [3:0] to4([3:0] IN);
+        to4 = IN;
+    endfunction  
+    function [4:0] to5([4:0] IN);
+        to5 = IN;
+    endfunction  
+    function [7:0] to8([7:0] IN);
+        to8 = IN;
+    endfunction  
+    function [15:0] to16([15:0] IN);
+        to16 = IN;
+    endfunction  
+
+    function [7:0] hi8([15:0] IN);
+        hi8 = (IN >> 8) & 8'hff;
+    endfunction  
+
+    function [7:0] lo8([15:0] IN);
+        lo8 = IN & 8'hff;
+    endfunction  
+
+
+
+endmodule
+
+// verilator lint_on WIDTH
+
+
+// verilator lint_off COMBDLY
+// needed because I am using non blocking inside a nonclocked always
+// as per section 4.1 https://www-inst.eecs.berkeley.edu/~cs152/fa06/handouts/CummingsHDLCON1999_BehavioralDelays_Rev1_1.pdf
+// because I'm modelling transport delays
+
+
+
+
+`timescale 1ns/1ns
+
+// timing from AT28C64 EEPROM http://www.farnell.com/datasheets/1469975.pdf
+// verilator lint_off UNOPTFLAT
+
+module rom (A, D, _CS, _OE);
+
+  parameter DWIDTH=8,AWIDTH=16, DEPTH= 1 << AWIDTH;
+  localparam DEFAULT_FILENAME = "";
+  parameter FILENAME = DEFAULT_FILENAME;
+  parameter tACC = 80;
+  parameter tCE = 80;
+  parameter tOE = 70;
+  parameter LOG = 0;
+
+  input  [AWIDTH-1:0] A;
+  input _CS, _OE;
+  output  [DWIDTH-1:0] D;
+
+  reg [DWIDTH-1:0] Mem [0:DEPTH-1];
+
+  reg [DWIDTH-1:0] NoDelay; // for logging
+
+    initial begin
+// verilator lint_off WIDTH
+        if (DEFAULT_FILENAME != FILENAME)
+            $readmemh(FILENAME , Mem);
+// verilator lint_on WIDTH
+    end
+
+    logic  [AWIDTH-1:0] Ad;
+    logic _CSd, _OEd;
+
+    always @(A)
+        NoDelay <= Mem[A];
+
+    always @*
+        Ad <= #(tACC) A;
+
+    always @*
+        _CSd <= #(tCE) _CS;
+
+    always @*
+        _OEd <= #(tOE) _OE;
+
+    /* verilator lint_off ASSIGNDLY */
+      //assign #(tACC) D = (!_CS && !_OE) ? Mem[A] : {DWIDTH{1'bz}};
+      assign D = (!_CSd && !_OEd) ? Mem[Ad] : {DWIDTH{1'bz}};
+    /* verilator lint_on ASSIGNDLY */
+
+    if (0) always @(*) begin
+         $display("%9t ROM %m : Ad=%x A=%x (b%b) D=%2x (b%b) _CS=%1b, _OE=%1b", $time, Ad, A, A, D, D, _CS, _OE);
+    end
+
+endmodule
+
+
+
+
+/* verilator lint_off ASSIGNDLY */
+
+// EG USE M27C322 21bit address x16 data
+
+// TODO TODO TODO - generate rom images for Warren
+
+/// FIXME NEED A BINARY TO BCD OPERATION AS THIS IS HARD - https://www.nandland.com/vhdl/modules/double-dabble.html
+
+// FIXME - need to be able to shift with carry in or do this with an OR/AND operation?
+
+/// EG USING ROM 28C512
+
+
+/// MANY OPS NOT REQUIRED IF R CAN BE IMMEDIATE eg "A+1" is same as "A+immediate 1" as long as both treat carry the same
+/// HMMMM .. But can't do "B+immediate 1" unless instreg is available on A bus too.
+
+//// THIS IS THE MOST RECENT Jun 2020 ALU layout from CSCVon8
+// | 0           | B-1               | A*B (low bits)    | A ROR B       |
+// | A           | __A+B+Cin (0)__   | A*B (high bits)   | A AND B       |
+// | B           | __A-B-Cin (0)__   | A/B               | A OR B        |
+// | -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
+// | -B          | A-B (special)     | A << B            | NOT A         |
+// | A+1         | __A+B+Cin (1)__   | A >> B logical    | NOT B         |
+// | B+1         | __A-B-Cin (1)__   | A >> B arithmetic | A+B (BCD)     |
+// | A-1         | __B-A-Cin (1)__   | A ROL B           | A-B (BCD)     |
+
+// My wiring here is ....
+// | 0           | B-1               | A*B (low bits)    | A RRC B       |
+// | A           | __A+B+Cin (0)__   | A*B (high bits)   | A AND B       |
+// | B           | __A-B-Cin (0)__   | A/B               | A OR B        |
+// | -A          | __B-A-Cin (0)__   | A%B               | A XOR B       |
+// | -B          | A-B signedmag     | A << B            | NOT A         |
+// | A+1         | __A+B+Cin (1)__   | A >> B logical    | NOT B         |
+// | B+1         | __A-B-Cin (1)__   | A >> B arithmetic | A+B (BCD)     |
+// | A-1         | __B-A-Cin (1)__   | A RLC B           | A-B (BCD)     |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Quad 2-input multiplexer
+// https://assets.nexperia.com/documents/data-sheet/74HC_HCT157.pdf
+
+               
+
+
+
+`timescale 1ns/1ns
+
+module hct74157 #(parameter WIDTH=4) (_E, S, I0, I1, Y);
+    input S, _E;
+    input [WIDTH-1:0] I0;
+    input [WIDTH-1:0] I1;
+    output [WIDTH-1:0] Y;
+
+    logic Spd = S;
+    logic _Epd = _E;
+    logic [WIDTH-1:0] I0pd;
+    logic [WIDTH-1:0] I1pd;
+
+/* verilator lint_off COMBDLY */
+    // models "transmission delays"
+    always @* begin
+        Spd <= #(19) S;
+        _Epd <= #(12) _E;
+        I0pd <= #(13) I0;
+        I1pd <= #(13) I1;
+    end
+/* verilator lint_on COMBDLY */
+
+    // 19 is the worst of the PD'
+    assign Y = _Epd? WIDTH'(0) : Spd? I1pd: I0pd;
+
+endmodule
+
+
+
+
+
+// verilator lint_off COMBDLY
+// needed because I am using non blocking inside a nonclocked always
+// as per section 4.1 https://www-inst.eecs.berkeley.edu/~cs152/fa06/handouts/CummingsHDLCON1999_BehavioralDelays_Rev1_1.pdf
+// because I'm modelling transport delays
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
+
+`timescale 1ns/1ns
+
+
+package alu_ops;
+
+    localparam [4:0] OP_0=0; // NOT NEEDED  USE RAM_DIRECT_EQ_IMMED8
+    localparam [4:0] OP_A=1; 
+    localparam [4:0] OP_B=2;
+    localparam [4:0] OP_NEGATE_A=3;  
+    localparam [4:0] OP_NEGATE_B=4;  
+    localparam [4:0] OP_BA_DIV_10=5; // Divide BINARY (NOT BCD)  value A by 10 using B as a carry in remainder (=A+(B*256)/10), if B>9 then remainder was illegal and result is 0 and overflow is set 
+    localparam [4:0] OP_BA_MOD_10=6; // Mod BINARY (NOT BCD)  value A by 10 using B as a carry in remainder (=A+(B*256)%10), if B>9 then remainder was illegal and result is 0 and overflow is set
+    localparam [4:0] OP_B_PLUS_1=7; // needed for X=RAM+1  & doesn't carry in ---- CONSIDER RAM ON BUS A!!!!
+
+    localparam [4:0] OP_B_MINUS_1=8; // needed for X=RAM-1, no carry in ---- CONSIDER RAM ON BUS A!!!!
+    localparam [4:0] OP_A_PLUS_B=9;
+    localparam [4:0] OP_A_MINUS_B=10;
+    localparam [4:0] OP_B_MINUS_A=11;
+    localparam [4:0] OP_A_MINUS_B_SIGNEDMAG=12;
+    localparam [4:0] OP_A_PLUS_B_PLUS_C=13;
+    localparam [4:0] OP_A_MINUS_B_MINUS_C=14;
+    localparam [4:0] OP_B_MINUS_A_MINUS_C=15;
+
+    localparam [4:0] OP_A_TIMES_B_LO=16;
+    localparam [4:0] OP_A_TIMES_B_HI=17;
+    localparam [4:0] OP_A_DIV_B=18; // doesn't use carry remainer in as not enought ALU inputs, sets Overflow if div by zero
+    localparam [4:0] OP_A_MOD_B=19; // doesn't use carry remainer in as not enought ALU inputs, sets Overflow if div by zero
+    localparam [4:0] OP_A_LSL_B=20; // C <- A <- 0
+    localparam [4:0] OP_A_LSR_B=21; // logical shift right - simple bit wise
+    localparam [4:0] OP_A_ASR_B=22; // arith shift right - preserves top bit and fills with top bit as shift right   nb. same as "CMP #80/ROR A" on 6502
+    localparam [4:0] OP_A_RLC_B=23; // Z80 RLC RotateLeftCircular http://z80-heaven.wikidot.com/instructions-set:rlc rather than https://www.masswerk.at/6502/6502_instruction_set.html#ROL as we don't have a carry in to the ROM or external logic
+
+    localparam [4:0] OP_A_RRC_B=24; // Z80 RRC RotateRightCircular rather than https://www.masswerk.at/6502/6502_instruction_set.html#ROR
+    localparam [4:0] OP_A_AND_B=25;
+    localparam [4:0] OP_A_OR_B=26;  
+    localparam [4:0] OP_A_XOR_B=27; // NB XOR can can also synthesise NOT A by setting B to 0xff 
+    localparam [4:0] OP_A_NAND_B=28;  
+    localparam [4:0] OP_NOT_B=29;  // if NOT_A is need then use A XOR 0xff
+    localparam [4:0] OP_A_PLUS_B_BCD=30;  // NOT CARRY IN
+    localparam [4:0] OP_A_MINUS_B_BCD=31;  // NOT CARRY IN , SETS NEGATIVE BIT IF B>A
+
+
+    // returning a bitset is needed when using strobe to print
+    typedef reg[13*8:1] OpName;
+
+    function OpName aluopNameR; input [4:0] opcode;
+        OpName ret;
+        begin
+            case(opcode)
+                 0 : aluopNameR =    "0";
+                 1 : aluopNameR =    "A";
+                 2 : aluopNameR =    "B";
+                 3 : aluopNameR =    "-A";
+                 4 : aluopNameR =    "-B";
+                 5 : aluopNameR =    "AB DIV 10";
+                 6 : aluopNameR =    "AB MOD 10";
+                 7 : aluopNameR =    "B+1";
+
+                 8 : aluopNameR =    "B-1";
+                 9 : aluopNameR =    "A+B";   // CarryIn not considered
+                10 : aluopNameR =    "A-B";   // CarryIn not considered
+                11 : aluopNameR =    "B-A";   // CarryIn not considered
+                12 : aluopNameR =    "A-B signedmag"; // CarryIn not considered
+                13 : aluopNameR =    "A+B+1"; // If CarryIn=N then this op is automatically updated to A+B
+                14 : aluopNameR =    "A-B-1"; // If CarryIn=N then this op is automatically updated to A-B
+                15 : aluopNameR =    "B-A-1"; // If CarryIn=N then this op is automatically updated to B-A
+
+                16 : aluopNameR =    "A*B LO";
+                17 : aluopNameR =    "A*B HI";
+                18 : aluopNameR =    "A DIV B";
+                19 : aluopNameR =    "A MOD B";
+                20 : aluopNameR =    "A LSL B";
+                21 : aluopNameR =    "A LSR B";
+                22 : aluopNameR =    "A ASR B" ;
+                23 : aluopNameR =    "A RLC B";
+
+                24 : aluopNameR =    "A RRC B";
+                25 : aluopNameR =    "A AND B";
+                26 : aluopNameR =    "A OR B";
+                27 : aluopNameR =    "A XOR B"; 
+                28 : aluopNameR =    "A NAND B";
+                29 : aluopNameR =    "NOT B";
+                30 : aluopNameR =    "A+B BCD";
+                31 : aluopNameR =    "A-B BCD";
+                default: begin
+                    $sformat(ret,"??unknown(%b)",opcode);
+                    aluopNameR = ret;
+                end
+            endcase
+        end
+    endfunction
+    
+    function string aluopName; input [4:0] opcode;
+        string ret;
+        begin
+            $sformat(ret,"%-1s",aluopNameR(opcode));
+            aluopName = ret;
+        end
+    endfunction
+
+endpackage
+
+
+
+// verilator lint_off ASSIGNDLY 
+// verilator lint_off UNOPTFLAT 
+// verilator lint_off WIDTH 
+
+// EG USE M27C322 21bit address x16 data
+
+// See also http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt#:~:text=The%20ALU%20doesn't%20know,after%20the%20math%20is%20done.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+`timescale 1ns/1ns
+
+module alu_code #(parameter LOG=0, PD=80) (
+    output [7:0] o,
+
+    output _flag_c,
+    output _flag_z,
+    output _flag_n,
+    output _flag_o,
+    output _flag_eq,
+    output _flag_ne,
+    output _flag_gt,
+    output _flag_lt,
+
+    input  [7:0] a,
+    input  [7:0] b,
+    input  [4:0] alu_op
+);
+    import alu_ops::*;
+
+    logic signed [9:0] c_buf_c;
+
+
+    task set_ctop(c);
+        c_buf_c[9] =c;
+    endtask
+    task set_cbot(c);
+        c_buf_c[0] =c;
+    endtask
+    task set_result([7:0] r);
+        c_buf_c = {1'b0, r, 1'b0};
+    endtask
+    task set_result9([8:0] r);
+        c_buf_c = {r, 1'b0};
+    endtask
+
+    function [7:0] alu_result();
+         alu_result = c_buf_c[8:1];
+    endfunction
+
+    function result_sign();
+         result_sign = c_buf_c[8];
+    endfunction
+
+    function c_top();
+        c_top = c_buf_c[9];
+    endfunction
+
+    function c_bot();
+        c_bot = c_buf_c[0];
+    endfunction
+
+    logic _overflow;
+    logic _force_neg;
+    logic force_pos;
+
+    assign #(PD) o = c_buf_c[8:1];
+    assign #(PD) _flag_c = !c_buf_c[9];
+    assign #(PD) _flag_z = !(c_buf_c[8:1] == 8'b0);
+    assign #(PD) _flag_n = force_pos | (_force_neg & (!c_buf_c[8])); // top bit set indicates negative in signed arith
+    assign #(PD) _flag_o = _overflow;
+    assign #(PD) _flag_eq = !(a == b);    
+    assign #(PD) _flag_ne = !(a != b);  
+
+    // unsigned magnitude comparison of the input values.
+    // if the bytes are eg two complement signed then this will produce incorrect results.
+    // if this is the case then use a subtract operation instead
+    logic unsigned_magnitude=1;
+
+    // cast to signed numbers
+    wire signed [7:0] signed_a = a;
+    wire signed [7:0] signed_b = b;
+    wire signed [7:0] signed_o = o;
+
+    // optionally perform signed/unsigned mag comparison
+    assign #(PD) _flag_gt = unsigned_magnitude ? !(a>b) : !(signed_a > signed_b);
+    assign #(PD) _flag_lt = unsigned_magnitude ? !(a<b) : !(signed_a < signed_b);
+
+    logic [15:0] TimesResult;
+
+    // http://class.ece.iastate.edu/arun/Cpre381/lectures/arithmetic.pdf
+    // pass sign bits in for subtraction overflow
+    // - No overflow when adding a +ve and a -ve number
+    // - No overflow when signs are the same for subtraction (because -- means a +)
+    //- overflow when adding two +ves yields a -ve
+    
+    //- or, subtract a -ve from a +ve and get a -ve
+    //- or, subtract a +ve from a -ve and get a +ve
+    function _subOv(left, right, o);
+        //$display("_subOv l=%b r=%b o=%b", left, right, o);
+        if (left==right) return 1; // signs same subtraction
+        if (!left & right & o) return 0; // pos sub neg eq neg
+        if (left & !right & !o) return 0; // neg sub pos eq pos
+        return 1;
+    endfunction
+
+    // http://class.ece.iastate.edu/arun/Cpre381/lectures/arithmetic.pdf
+    // pass sign bits in for addition overflow
+    // - No overflow when adding a +ve and a -ve number
+    // - No overflow when signs are the same for subtraction (because -- means a +)
+    //- overflow when adding two +ves yields a -ve
+    //- or, adding two -ves gives a +ve
+    //- or, subtract a -ve from a +ve and get a -ve
+    //- or, subtract a +ve from a -ve and get a +ve
+    function _addOv(left, right, o);
+        //$display("_addOv l=%b r=%b o=%b", left, right, o);
+        if (left!=right) return 1; // signs diff 
+        if (left & right & !o) return 0; // pos add neg eq neg
+        if (!left & !right & o) return 0; // neg add pos eq pos
+        return 1;
+    endfunction
+
+    int count;
+
+    //////////////////////////////////////////////////////
+    // ROM PROGRAMMING
+    //////////////////////////////////////////////////////
+
+    always @* begin
+
+        c_buf_c = 'x; // use x to ensure this isn't relied upon unless expicitely set
+        _overflow = 1'b1;
+        _force_neg = 1'b1;
+        force_pos = 1'b0;
+        unsigned_magnitude=1; // select whether a given op will use signed or unsigned arithmetic
+
+        case (alu_op)
+            OP_0: begin // not needed anymore cos immed allows 0 value into ALU
+                set_result(0);
+            end
+            OP_A: begin // this is not the same as "A+0 immediate" because + takes carry into account and what we want is PASSA so maybe call it PASSA?
+                set_result(a);
+            end
+            OP_B: begin // this is not the same as "B+0 immediate" because + takes carry into account and what we want is PASSB so maybe call it PASSB?
+                set_result(b);
+            end
+            OP_NEGATE_A: begin  // eg switches -1 to 255 and 255 to -1
+                set_result(-a); 
+                _overflow = !(a==8'b10000000); // indicates the argument cannot be converted
+            end
+            OP_NEGATE_B: begin 
+                set_result(-b);
+                _overflow = !(b==8'b10000000); // indicates the argument cannot be converted
+            end
+            OP_BA_DIV_10: begin 
+
+                if ( b >= 10 ) begin
+                    _overflow =0;
+                    TimesResult = 0;
+                end
+                else
+                begin
+                    TimesResult = (a + (b*256))/10;
+                end
+                set_result9(8'(TimesResult));
+                //    $display("TR %d/%4h/%b    %10b", TimesResult, TimesResult, TimesResult, c_buf_c);
+            end
+            OP_BA_MOD_10: begin 
+                if ( b >= 10 ) begin
+                    _overflow =0;
+                    TimesResult = 0;
+                end
+                else
+                begin
+                    TimesResult = (a + (b*256))%10;
+                end
+                set_result9(8'(TimesResult));
+            end
+
+            OP_B_PLUS_1: begin 
+                // UNLIKE B_PLUS_A this sets carry but doesn't consume it 
+                // - useful for low byte of a counter where we always want CLC first  
+                // THIS INST USED TO ADD ONE TO IMMED 255 TO ACHIEVE A "SET CARRY" OPERATION
+                set_result9(b + 1);
+                _overflow = _addOv(b[7], 1'b0, result_sign());
+            end
+            ///// 8 ...
+            OP_B_MINUS_1: begin 
+                // UNLIKE B_MINUS_A this sets carry but doesn't consume it 
+                // - useful for low byte of a counter where we always want CLC first  
+                set_result9(b - 1);
+                _overflow = _subOv(b[7], 1'b0, result_sign());
+            end
+
+            // low bank is when CIN=0 or these ops were directly selected
+            OP_A_PLUS_B: begin  
+                set_result9(a + b);
+                _overflow = _addOv(a[7], b[7], o[7]);
+            end
+            OP_A_MINUS_B: begin 
+                set_result9(a - b);
+                _overflow = _subOv(a[7], b[7], o[7]);
+            end
+            OP_B_MINUS_A: begin 
+                set_result9(b - a);
+                _overflow = _subOv(b[7], a[7], o[7]);
+            end
+
+            OP_A_MINUS_B_SIGNEDMAG: begin 
+                set_result9(a - b);
+                unsigned_magnitude=0;
+                _overflow = _subOv(a[7], b[7], o[7]);
+            end
+
+            OP_A_PLUS_B_PLUS_C: begin  // OP ONLY USED WHEN CARRY IS ACTIVE
+                set_result9((a + b) + 1); 
+                _overflow = _addOv(a[7], b[7], o[7]);
+            end
+            OP_A_MINUS_B_MINUS_C: begin // OP ONLY USED WHEN CARRY IS ACTIVE
+                set_result9((a - b) - 1); 
+                _overflow = _subOv(a[7],b[7],o[7]);
+            end
+            OP_B_MINUS_A_MINUS_C: begin // OP ONLY USED WHEN CARRY IS ACTIVE
+                set_result9((b - a) - 1); 
+                _overflow = _subOv(b[7],a[7],o[7]);
+            end
+
+            // 24 .............................................................
+            OP_A_TIMES_B_HI: begin 
+                TimesResult = (a * b);
+                set_result(TimesResult[15:8]);
+            end
+
+            OP_A_TIMES_B_LO: begin 
+                TimesResult = (a * b);
+                set_result9( {(TimesResult[15:8] > 0), TimesResult[7:0] });
+            end
+
+            OP_A_DIV_B: begin 
+                if (b == 0) begin
+                    // div/0
+                    // result will be 0 with overflow
+                    _overflow=0; // force overflow - when div/0
+                    set_ctop(1); // force carry
+                    set_result( 0 );
+                end
+                else
+                begin
+                    set_result( a/ b );
+                end
+            end
+
+            OP_A_MOD_B: begin 
+                if (b == 0) begin
+                    // div/0
+                    // result will be 0 with overflow
+                    _overflow=0; // force overflow - when div/0
+                    set_ctop(1); // force carry
+                    set_result( 0 );
+                end
+                else
+                begin
+                    set_result( a% b );
+                end
+            end
+
+            OP_A_LSL_B: begin  // C <- A <- 0
+                c_buf_c = {a, 1'b0};
+                c_buf_c = c_buf_c << b;
+                _overflow = !(a[7] != result_sign()); // sign bit change - not must use but hey ho
+            end
+
+            OP_A_LSR_B: begin // 0 -> A -> C
+                c_buf_c = {a, 1'b0};
+                c_buf_c = c_buf_c >> b;
+                set_ctop(c_bot()); // move the carry-out bit to the return value position
+                _overflow = !(a[7] != result_sign()); // sign bit change - not must use but hey ho
+            end
+
+            OP_A_ASR_B: begin // Sxxxxxxx -> SSxxxxxx  C=last carry out right
+                c_buf_c = {a[7], a, 1'b0}; // extend the sign bit left
+                c_buf_c = c_buf_c >>> b;
+                set_ctop(c_bot()); // move the carry-out bit to the return value position
+                _overflow = !(a[7] != result_sign()); // sign bit change can't happen unless this code is flawed
+            end
+
+            // C <- A <-   : shifted out value enters other side - last shift ends up in carry out
+            //   |     ^
+            //   -------
+            // https://www.tutorialspoint.com/instruction-type-rlc-in-8085-microprocessor
+            OP_A_RLC_B: begin 
+                //c_buf_c = {a, 1'b0};
+                
+                c_buf_c = {a, 1'bx};
+                set_ctop(0);
+                for (count = 0; count < (b%8); count++) begin
+                    c_buf_c[8:1] = { c_buf_c[7:1], c_buf_c[8]};
+                end
+
+                if (b>0) set_ctop(c_buf_c[1]);
+                _overflow = !(a[7] != result_sign()); // sign bit change - not much use but hey ho
+            end
+
+            //   -> A -> C   : shifted out value enters other side - last shift ends up in carry out
+            //   ^    |
+            //   ------
+            OP_A_RRC_B: begin 
+                //c_buf_c = {1'b0, a, 1'b0};
+                set_ctop(0);
+                c_buf_c = {a, 1'bx};
+                for (count = 0; count < (b%8); count++) begin
+                    c_buf_c[8:1] = { c_buf_c[1], c_buf_c[8:2]};
+                end
+                if (b>0) set_ctop(c_buf_c[8]);
+                _overflow = !(a[7] != result_sign()); // mnot much use
+            end
+
+
+            OP_A_OR_B: begin
+                set_result(a | b);
+            end
+            OP_A_AND_B: begin
+                set_result(a & b);
+            end
+            OP_A_XOR_B: begin
+                set_result(a ^ b);
+            end
+            OP_A_NAND_B: begin
+                set_result(~(a & b));
+            end
+            OP_NOT_B: begin
+                set_result(~b);
+            end
+    
+
+            OP_A_PLUS_B_BCD: begin // DOESNT SUPPORT CARRY IN
+                force_pos = 1;
+
+                
+                
+                
+
+                
+                
+
+                
+                
+
+                set_result9({8'(((((a >>4)*10) + (a & 8'h0f)) + (((b >>4)*10) + (b & 8'h0f)))/100), ((8'(8'(((((a >>4)*10) + (a & 8'h0f)) + (((b >>4)*10) + (b & 8'h0f))) % 100)/10)<<4) | 8'(8'(((((a >>4)*10) + (a & 8'h0f)) + (((b >>4)*10) + (b & 8'h0f))) % 100)%10)) });
+            end
+
+            OP_A_MINUS_B_BCD: begin // DOESNT SUPPORT CARRY IN
+                _force_neg = !(b>a);
+
+                
+                
+                
+
+                
+                
+
+                
+                
+
+                set_result9({8'(!(8'(8'(((a >>4)*10) + (a & 8'h0f)) + (100-8'(((b >>4)*10) + (b & 8'h0f))))/100)), ((8'(8'(8'(8'(((a >>4)*10) + (a & 8'h0f)) + (100-8'(((b >>4)*10) + (b & 8'h0f)))) % 100)/10)<<4) | 8'(8'(8'(8'(((a >>4)*10) + (a & 8'h0f)) + (100-8'(((b >>4)*10) + (b & 8'h0f)))) % 100)%10)) });
+            end
+
+            default: begin
+                c_buf_c = 10'bxzxzxzxzxz;
+                $display("%9t !!!!!!!!!!!!!!!!!!!!!!!!!!!! RANDOM ALU OUT !!!!!!!!!!!!!!!!!!!!!! UNHANDLED alu_op=%5b : alu_op:%-s", $time, alu_op, 
+                        aluopName(alu_op)
+                        );
+            end
+
+        endcase
+    end
+
+
+    if (LOG) 
+    always @(*) 
+        $display("%9t ALU_CODE", $time,
+        " aluop=%-10s (op:%d)", aluopName(alu_op), alu_op, // %1s causes string to lose trailing space
+        " ",
+        " a=%08b (u%-3d/s%-4d/h%-02h) ", a, a, signed_a, a,
+        " b=%08b (u%-3d/s%-4d/h%-02h) ", b, b, signed_b, b,
+        " ",
+        " out=%08b (u%-3d/s%-4d/h%-02h) ", o, o, signed_o, o,
+        " _c%1b",  _flag_c,
+        " _z%1b",  _flag_z,
+        " _n%1b",  _flag_n,
+        " _o%1b",  _flag_o,
+        " _eq%1b", _flag_eq,
+        " _ne%1b", _flag_ne,
+        " _gt%1b", _flag_gt,
+        " _lt%1b", _flag_lt,
+        " ",
+        " u_magnitude=%b ", unsigned_magnitude
+         );
+
+endmodule: alu_code
+
+
+
+// See also carry vs overflow http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt#:~:text=The%20ALU%20doesn't%20know,after%20the%20math%20is%20done.
+
+
+`timescale 1ns/1ns
+
+/* 
+    If Inputs to arithmentic are two's complement then value will be 7 bits plus sign and Overflow is relevant, but ignore Carry
+
+    The comparator outputs GT/LT are only valid for logical values (not twos complement).
+    For contrast: 74AS885 permits selection of logical or arithmetic magnitude comparison https://www.ti.com/lit/ds/symlink/sn74as885.pdf?ts=1592517566383&ref_url=https%253A%252F%252Fwww.google.com%252F
+
+    If I wanted to do a signed magnitude check then I have to do maths. 
+    If do A-B with carry-cleared and then look at the Z and C flags. 
+    
+    Z set means they were equal, 
+    if Overflow is not set and
+    C set means B>A, 
+    Z and C unset means A>B  
+    ... but only as long as O is not set
+    what about -2 and 3 which will become -5 which is not Z and not C
+*/
+
+module alu #(parameter LOG=0, PD=120) (
+    output tri [7:0] result,
+    output tri _flag_c,
+    output tri _flag_z,
+    output tri _flag_n,
+    output tri _flag_o,
+    output tri _flag_gt,
+    output tri _flag_lt,
+    output tri _flag_eq,
+    output tri _flag_ne,
+    input  [7:0] a,
+    input  [7:0] b,
+    input  [4:0] alu_op,
+    input  _flag_c_in
+);
+    import alu_ops::*;
+
+    //////////////////////////////////////////////////////
+    // CARRY-IN LOGIC - EXTERNAL LOGIC
+    //////////////////////////////////////////////////////
+
+    wire aluop_4,aluop_3,aluop_2,aluop_1,aluop_0;
+    assign aluop_4=alu_op[4];
+    assign aluop_3=alu_op[3];
+    assign aluop_2=alu_op[2];
+    assign aluop_1=alu_op[1];
+    assign aluop_0=alu_op[0];
+
+    wire [7:0] _decoded;
+    hct74138 alu_op_decoder(.Enable1_bar(aluop_4), .Enable2_bar(1'b0), .Enable3(aluop_3), .A({aluop_2,aluop_1,aluop_0}), .Y(_decoded) );
+
+    wire _use_cin;
+    and #(8) use_cin_decoder(_use_cin, _decoded[7], _decoded[6],  _decoded[5]); 
+
+    wire flag_c_in;
+    not #(8) hct7404(flag_c_in, _flag_c_in); // inverter
+
+    wire effective_aluop_2;
+    hct74157 #(.WIDTH(1)) effective_bit_sel(._E(1'b0), .S(_use_cin), .I1({aluop_2}), .I0({flag_c_in}), .Y({ effective_aluop_2 })); // decoder
+
+    wire [4:0] alu_op_effective = {aluop_4, aluop_3, effective_aluop_2, aluop_1, aluop_0};
+
+
+    //////////////////////////////////////////////////////
+    // ROM PROGRAMMING
+    // ROM PROGRAMMING
+    // ROM PROGRAMMING
+    //////////////////////////////////////////////////////
+if (1) begin
+    wire [20:0] A = { alu_op_effective, a, b};
+    tri [15:0] D;
+
+    always @* begin
+        if ($isunknown(A)) begin
+            // not a problem unless happening near the exec edge
+            $display("%9t", $time, " GLITCHING ADDRESS Z or X for OP:%5b A:%8b B:%8b /CIN:%1b", alu_op_effective, a, b, _flag_c_in);
+        end
+    end
+
+    rom #(.AWIDTH(21), .DWIDTH(16), .FILENAME("../alu/roms/alu-hex.rom"), .LOG(0)) ALU_ROM(._CS(1'b0), ._OE(1'b0), .A, .D);
+
+    assign { _flag_c, _flag_z, _flag_n, _flag_o, _flag_eq, _flag_ne, _flag_gt, _flag_lt, result} = D;
+
+    if (LOG) 
+    always @(*) 
+        $display("%9t ALU", $time,
+        " aluop_eff=%-1s (op:%d)", aluopName(alu_op_effective), alu_op_effective, 
+        " aluop=%-1s (op:%d)", aluopName(alu_op), alu_op, 
+        "  ",
+        " a=%08b (u%-3d/h%-02h) ", a, a, a,
+        " b=%08b (u%-3d/h%-02h) ", b, b, b,
+        "  ",
+        " address = %021b (d %d, h %04x)", A, A, A,
+        " data = %16b (d %d, h %04x)", D,D,D,
+        "  ",
+        " out=%08b (u%-3d/h%-02h) ", result, result, result,
+        " _c%1b",  _flag_c,
+        " _z%1b",  _flag_z,
+        " _n%1b",  _flag_n,
+        " _o%1b",  _flag_o,
+        " _eq%1b", _flag_eq,
+        " _ne%1b", _flag_ne,
+        " _gt%1b", _flag_gt,
+        " _lt%1b", _flag_lt
+         );
+
+end
+else  
+begin
+    alu_code ALU_CODE( .o(result), ._flag_c, ._flag_z, ._flag_n, ._flag_o, ._flag_eq, ._flag_ne, ._flag_gt, ._flag_lt, .a, .b, .alu_op(alu_op_effective));
+end
+
+if (LOG) 
+    always @(*) 
+        $display("%9t ALU", $time,
+        " aluop_eff=%-10s (op:%d)", aluopName(alu_op_effective), alu_op_effective, 
+        " aluop=%-10s (op:%d)", aluopName(alu_op), alu_op, 
+        "  ",
+        " a=%08b (u%-3d/h%-02h) ", a, a, a,
+        " b=%08b (u%-3d/h%-02h) ", b, b, b,
+        "  ",
+        " out=%08b (u%-3d/h%-02h) ", result, result, result,
+        " _c%1b",  _flag_c,
+        " _z%1b",  _flag_z,
+        " _n%1b",  _flag_n,
+        " _o%1b",  _flag_o,
+        " _eq%1b", _flag_eq,
+        " _ne%1b", _flag_ne,
+        " _gt%1b", _flag_gt,
+        " _lt%1b", _flag_lt
+         );
+
+endmodule: alu
+
+
+// FIXME MAKE ALL THE tri WIRES tri0
+//
+// CONSTANTS AND FUNCTIONS AND MACROS
+//
+
+
+
+
+
+
+
+// unlike an assign this executes instantaneously but not referentially transparent
+
+
+
+
+
+
+
+
+`timescale 1ns/1ns
+
+package control;
+ 
+    // see _addrmode_tuple
+//    localparam _AMODE_NONE=2'b11;
+//    localparam _AMODE_REG=2'b01;
+//    localparam _AMODE_DIR=2'b10;
+
+    // A BUS
+    localparam [2:0] ADEV_rega = 0; 
+    localparam [2:0] ADEV_regb = 1; 
+    localparam [2:0] ADEV_regc = 2; 
+    localparam [2:0] ADEV_regd = 3; 
+    localparam [2:0] ADEV_marlo = 4;
+    localparam [2:0] ADEV_marhi = 5;
+    localparam [2:0] ADEV_uart = 6;
+    localparam [2:0] ADEV_not_used = 7; // use for random number?
+
+    // B BUS
+    localparam [3:0] BDEV_rega = 0; 
+    localparam [3:0] BDEV_regb = 1; 
+    localparam [3:0] BDEV_regc = 2; 
+    localparam [3:0] BDEV_regd = 3; 
+    localparam [3:0] BDEV_marlo = 4;
+    localparam [3:0] BDEV_marhi = 5;
+    localparam [3:0] BDEV_immed = 6; // IMMER READ FROM THE INSTRUCTION
+    localparam [3:0] BDEV_ram = 7;
+    localparam [3:0] BDEV_not_used = 8;
+    localparam [3:0] BDEV_vram = 9;
+    localparam [3:0] BDEV_porta = 10;
+    localparam [3:0] BDEV_rand = 11;
+    localparam [3:0] BDEV_clock = 12; // 8 bit @ 60 Hz = 4min  or  @100Hz=2.5min
+
+    // DEST
+    localparam [3:0] TDEV_rega = 0; 
+    localparam [3:0] TDEV_regb = 1; 
+    localparam [3:0] TDEV_regc = 2; 
+    localparam [3:0] TDEV_regd = 3; 
+    localparam [3:0] TDEV_marlo = 4;
+    localparam [3:0] TDEV_marhi = 5;
+    localparam [3:0] TDEV_uart = 6;
+    localparam [3:0] TDEV_ram = 7;
+    localparam [3:0] TDEV_halt = 8;
+    localparam [3:0] TDEV_not_used9 = 9;    // use for VRAM
+    localparam [3:0] TDEV_not_used10 = 10;  // use for PORTA
+    localparam [3:0] TDEV_not_used11 = 11;  // use for PORTB
+    localparam [3:0] TDEV_not_used = 12;// needed for things like compare where we don't want to overwrite or just use pchitmp for noop writes
+    localparam [3:0] TDEV_pchitmp = 13; // only load pchitmp
+    localparam [3:0] TDEV_pclo= 14;     // only load pclo
+    localparam [3:0] TDEV_pc= 15;       // load pclo from instruction and load pchi from pchitmp
+    // eg ROM PAGE / RAM PAGE REGISTERS
+    // ROM page could be a third register PCPAGE - but really the PCHITMP is also a page select so they would be three registers PC8 / PC16 / PC24
+    // MAR would be MAR8 and MAR16 to correlate
+    // ADD AN SPI PORT USING AN 8 BIT BIDIR PORT SETUP AS 5 bits for device select mux upto 32 devices (or 5 devices with no mux), and 3 bits for the MISO/MOSI/SCLK
+
+
+    localparam [3:0] CONDITION_A= 0; 
+    localparam [3:0] CONDITION_C= 1; 
+    localparam [3:0] CONDITION_Z= 2; 
+    localparam [3:0] CONDITION_O= 3; 
+    localparam [3:0] CONDITION_N= 4; 
+    localparam [3:0] CONDITION_GT=5; 
+    localparam [3:0] CONDITION_LT=6; 
+    localparam [3:0] CONDITION_EQ=7; 
+    localparam [3:0] CONDITION_NE=8; 
+    localparam [3:0] CONDITION_DI=9; 
+    localparam [3:0] CONDITION_DO=10; 
+
+    // ALL
+
+    function string adevname([2:0] dev); 
+    begin
+        case (dev)
+            ADEV_rega: adevname = "REGA";
+            ADEV_regb: adevname = "REGB";
+            ADEV_regc: adevname = "REGC";
+            ADEV_regd: adevname = "REGD";
+            ADEV_marlo: adevname = "MARLO";
+            ADEV_marhi: adevname = "MARHI";
+            ADEV_uart: adevname = "UART";
+            ADEV_not_used: adevname = "NOT_USED";
+            default: begin
+                string n; 
+                $sformat(n,"??(unknown A device %3b)", dev);
+                adevname = n;
+            end
+        endcase
+    end
+    endfunction    
+
+    function string bdevname([3:0] dev); 
+    begin
+        case (dev)
+            BDEV_rega: bdevname = "REGA"; 
+            BDEV_regb: bdevname = "REGB";
+            BDEV_regc: bdevname = "REGC";
+            BDEV_regd: bdevname = "REGD";
+            BDEV_marlo: bdevname = "MARLO";
+            BDEV_marhi: bdevname = "MARHI";
+            BDEV_immed: bdevname = "IMMED";
+            BDEV_ram: bdevname = "RAM";
+            BDEV_not_used: bdevname = "NU";
+            BDEV_vram : bdevname = "VRAM";
+            BDEV_porta : bdevname = "PORTA";
+            BDEV_rand : bdevname = "RAND";
+            BDEV_clock : bdevname = "CLOCK";
+            default: begin
+                string n; 
+                $sformat(n,"??(unknown B device %4b)", dev);
+                bdevname = n;
+            end
+        endcase
+    end
+    endfunction    
+
+    function string tdevname([3:0] tdev); 
+    begin
+        case (tdev)
+            TDEV_rega: tdevname = "REGA"; // 1
+            TDEV_regb: tdevname = "REGB"; // 2
+            TDEV_regc: tdevname = "REGC"; // 3
+            TDEV_regd: tdevname = "REGD"; // 4
+            TDEV_marlo: tdevname = "MARLO";
+            TDEV_marhi: tdevname = "MARHI";
+            TDEV_uart: tdevname = "UART";
+            TDEV_ram: tdevname = "RAM";
+            TDEV_halt: tdevname = "HALT";
+
+            TDEV_not_used9: tdevname = "NOTUSED9";
+            TDEV_not_used10: tdevname = "NOTUSED10";
+            TDEV_not_used11: tdevname = "NOTUSED11";
+            TDEV_not_used: tdevname = "NOTUSED";
+            TDEV_pchitmp: tdevname = "PCHITMP";
+            TDEV_pclo: tdevname = "PCLO";
+            TDEV_pc: tdevname = "PC";
+            default: begin
+                string n; 
+                $sformat(n,"??(unknown T device %4b)", tdev);
+                tdevname = n;
+            end
+        endcase
+    end
+    endfunction    
+
+    function string condname([3:0] cond); 
+    begin
+        case (cond)
+            CONDITION_A: condname = "A";
+            CONDITION_C: condname = "C";
+            CONDITION_Z: condname = "Z";
+            CONDITION_O: condname = "O";
+            CONDITION_N: condname = "N";
+            CONDITION_GT: condname = "GT";
+            CONDITION_LT: condname = "LT";
+            CONDITION_EQ: condname = "EQ";
+            CONDITION_NE: condname = "NE";
+            CONDITION_DI: condname = "DI";
+            CONDITION_DO: condname = "DO";
+            default: begin
+                string n; 
+                $sformat(n,"??(unknown condition %4b)", cond);
+                condname = n;
+            end
+        endcase
+    end
+    endfunction    
+
+    function string amode(bit amodeBit); 
+    begin
+            if (amodeBit == 1) amode = "DIR";
+            else if (amodeBit == 0) amode = "REG";
+            else amode = "???";
+    end
+    endfunction
+
+
+    function string fPhase(phaseFetch, phaseExec); 
+    begin
+            fPhase = (phaseFetch ? "fetch" : phaseExec? "exec": "---");
+    end
+    endfunction
+
+    function string fAddrMode(_addrmode_register); 
+    begin
+            if ($isunknown(_addrmode_register)) 
+                fAddrMode = "unknown";
+            else
+                fAddrMode = _addrmode_register == 0? "REG" : "DIR";
+    end
+    //function string fAddrMode(_addrmode_register, _addrmode_direct); 
+    //begin
+    //        fAddrMode = `DECODE_ADDRMODES;
+    //end
+    endfunction
+
+endpackage: control
+
+import control::*;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //```FN``_TDEV_SEL(not_used)    SEP\
+
+
+
+
+
+
+
+`timescale 1ns/1ns
+
+
+module controller(
+    input [15:0] pc,
+    input [7:0] _flags_czonGLEN,
+    input _flag_di, _flag_do,
+
+    output _addrmode_register,
+    inout tri [15:0] address_bus,
+    inout tri [7:0] bbus,
+
+
+    // selection wires
+
+
+
+
+    
+    output _adev_rega    ,
+    output _adev_regb    ,
+    output _adev_regc    ,
+    output _adev_regd    ,
+    output _adev_marhi    ,
+    output _adev_marlo    ,
+    output _adev_uart    ,
+    output _adev_not_used    ,
+    output _bdev_rega    ,
+    output _bdev_regb    ,
+    output _bdev_regc    ,
+    output _bdev_regd    ,
+    output _bdev_marhi    ,
+    output _bdev_marlo    ,
+    output _bdev_immed    ,
+    output _bdev_ram    ,
+    output _bdev_not_used    ,
+    output _bdev_vram    ,
+    output _bdev_porta    ,
+    output _bdev_rand    ,
+    output _bdev_clock    ,
+    output _rega_in    ,
+    output _regb_in    ,
+    output _regc_in    ,
+    output _regd_in    ,
+    output _marhi_in    ,
+    output _marlo_in    ,
+    output _uart_in    ,
+    output _ram_in    ,
+    output _halt_in    ,
+    output _pc_in    ,
+    output _pchitmp_in    ,
+    output _pclo_in,
+    output [4:0] alu_op,
+    output [2:0] abus_dev,
+    output [3:0] bbus_dev,
+    output [3:0] targ_dev,
+    output _set_flags
+);
+
+    //----------------------------------------------------------------------------------
+    // ROM wiring
+
+    rom #(.AWIDTH(16)) rom_6(._CS(1'b0), ._OE(1'b0), .A(pc)); // DONE
+    rom #(.AWIDTH(16)) rom_5(._CS(1'b0), ._OE(1'b0), .A(pc)); // DONE
+    rom #(.AWIDTH(16)) rom_4(._CS(1'b0), ._OE(1'b0), .A(pc)); // DONE
+    rom #(.AWIDTH(16)) rom_3(._CS(1'b0), ._OE(1'b0), .A(pc)); // DONE
+    rom #(.AWIDTH(16)) rom_2(._CS(1'b0), ._OE(1'b0), .A(pc)); // DONE
+    rom #(.AWIDTH(16)) rom_1(._CS(1'b0), ._OE(1'b0), .A(pc)); // DONE
+   
+    wire [7:0] instruction_6 = rom_6.D; // aliases
+    wire [7:0] instruction_5 = rom_5.D;
+    wire [7:0] instruction_4 = rom_4.D;
+    wire [7:0] instruction_3 = rom_3.D;
+    wire [7:0] instruction_2 = rom_2.D;
+    wire [7:0] instruction_1 = rom_1.D;
+
+    // bussed for logging
+    wire [47:0] instruction = {rom_6.D, rom_5.D, rom_4.D, rom_3.D, rom_2.D, rom_1.D};
+
+
+    // instruction decompose
+    wire [7:0] immed8            = instruction_1; // DONE
+    wire [7:0] direct_address_lo = instruction_2; // DONE
+    wire [7:0] direct_address_hi = instruction_3; // DONR
+    wire amode_bit               = instruction_4[0]; // DONE
+    wire bbus_dev_hi             = instruction_4[1]; // DONE
+    wire unused_bit              = instruction_4[2]; // DONE
+    wire condition_invert_bit    = instruction_4[3];  // +ve logic as it makes the hardware easier using the existing components
+    wire _set_flags_bit          = instruction_4[4]; // DONE
+    wire [2:0] conditionBot      = instruction_4[7:5]; // DONE
+    wire conditionTopBit         = instruction_5[0]; // DONE
+    wire [2:0] bbus_dev_lo       = instruction_5[3:1]; // DONE
+    assign abus_dev              = instruction_5[6:4]; // DONE
+    assign targ_dev              ={instruction_6[2:0],instruction_5[7]}; // DONE
+    assign alu_op                ={instruction_6[7:3]}; // DONE 
+
+    wire [3:0] condition        = { conditionTopBit, conditionBot};
+
+    assign bbus_dev              = {bbus_dev_hi, bbus_dev_lo};
+
+    //----------------------------------------------------------------------------------
+    // condition logic
+
+    // bus the flags
+    wire [7:0] _flags_hi = {
+            5'b0,
+            _flag_do, //DO
+            _flag_di, // DI
+            _flags_czonGLEN[0]  // NE
+            };
+
+    wire [7:0] _flags_lo = {
+            _flags_czonGLEN[1], // EQ
+            _flags_czonGLEN[2], // LT
+            _flags_czonGLEN[3], // GT
+            _flags_czonGLEN[4], // n
+            _flags_czonGLEN[5], // o
+            _flags_czonGLEN[6], // z
+            _flags_czonGLEN[7], // Carry
+            1'b0}; // Always
+
+
+    // need inverse of this signal so select the other mux
+    wire _conditionTopBit;
+    nand #(8) ic7400_c(_conditionTopBit, conditionTopBit, conditionTopBit); // as inverter - DONE
+
+    // organises two 8-to-1 multiplexers as a 16-1 multiulexer
+    hct74151 #(.LOG(0)) condition_mux_lo(._E(conditionTopBit),  .S(conditionBot), .I(_flags_lo)); // DONE
+    hct74151 #(.LOG(0)) condition_mux_hi(._E(_conditionTopBit), .S(conditionBot), .I(_flags_hi)); // DONE
+
+    // We are using _Y so the _Y will go high if the selected flag input is low (ie flat is set).
+    // Also, at any moment one of the two mux's is disabled and its _Y will be high.
+    // So the result state is always determined by whether active mux.
+    // If the selected flag is set (ie low) then both mux's will be emitting a high and therefore the result will be a low.
+    // On the other hand if the selected flag is unset (high) then the active mux will be emitting a low and the nand will return a high
+    wire _condition_met; // set to low when the execution condition is met
+    nand #(9) ic7400_d(_condition_met, condition_mux_lo._Y, condition_mux_hi._Y);  // DONE
+
+
+    //----------------------------------------------------------------------------------
+    // execution control logic
+
+    wire _do_exec, do_exec, set_flags_bit;
+
+    // The following three lines are the same as an OR as shown below however by using XOR (inverter) and Nand I can avoid the need for an OR gate chip and avoid an IC
+    //   or #(9) ic7432_a(_set_flags, _set_flags_bit, _do_exec); 
+    // enable flag update when both _set_flags_bit is active low and _do_exec is active low
+    xor #(9) ic7486_b(do_exec, _do_exec, 1'b1); // use xor as inverter
+    xor #(9) ic7486_d(set_flags_bit, _set_flags_bit, 1'b1); // use xor as inverter
+    nand #(9) ic7400_b(_set_flags, set_flags_bit, do_exec); // use nand
+
+    // When condition_invert_bit is active high then the conditional exec logic is reversed.
+    // eg when "invert" is inactive "DO" means execute only if DO flag is set, 
+    // but when "invert" is active "DO" means execute only if DO flag is not set.
+    // This new feature means the NE output of the ALU is redundant as the same can be achieved using 
+    // using EQ but with the condition invert enabled.
+    xor #(9) ic7486_c(_do_exec, _condition_met, condition_invert_bit); // use xor as conditional inverter 
+
+    //----------------------------------------------------------------------------------
+    // address mode logic
+
+    // when amode_bit is low this signals as enable REG mode active low
+    assign _addrmode_register = amode_bit; // low = reg  // DONE
+
+    // when amode_bit is high then this signals as enable DIR mode active low
+    wire _addrmode_direct; 
+    nand #(9) ic7400_a(_addrmode_direct, amode_bit, amode_bit);  // INVERT - DONE
+
+    //----------------------------------------------------------------------------------
+    // alu input device selection
+
+    // device decoders
+    hct74138 abus_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(abus_dev[2:0])); // DONE
+
+    hct74138 bbus_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(1'b0), .Enable1_bar(bbus_dev[3]), .A(bbus_dev[2:0])); // DONE
+    hct74138 bbus_dev_16_demux(.Enable3(bbus_dev[3]), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(bbus_dev[2:0])); // DONE
+
+
+    hct74138 targ_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(_do_exec), .Enable1_bar(targ_dev[3]), .A(targ_dev[2:0])); // DONE
+    hct74138 targ_dev_16_demux(.Enable3(targ_dev[3]), .Enable2_bar(_do_exec), .Enable1_bar(1'b0),        .A(targ_dev[2:0])); // DONE
+    
+    //----------------------------------------------------------------------------------
+    // hookup the imediate values and direct address lines to the bus output buffers
+
+    hct74245 rom_bbus_buf(.A(immed8), .B(bbus), .nOE(_bdev_immed), .dir(1'b1));  // DONE
+    hct74245 rom_addbbuslo_buf(.A(direct_address_lo), .B(address_bus[7:0]),  .nOE(_addrmode_direct), .dir(1'b1));  // DONE
+    hct74245 rom_addbbushi_buf(.A(direct_address_hi), .B(address_bus[15:8]), .nOE(_addrmode_direct), .dir(1'b1)); // DONE
+    
+    //----------------------------------------------------------------------------------
+    // hookup all the signals from the decoders to the output wires
+
+    // control lines for device selection
+    wire [7:0] adev_sel = {abus_dev_08_demux.Y};
+    wire [15:0] bdev_sel = {bbus_dev_16_demux.Y, bbus_dev_08_demux.Y};
+    wire [15:0] tdev_sel = {targ_dev_16_demux.Y, targ_dev_08_demux.Y};
+
+    // define the functions to hookup the lines
+    
+    
+    
+    
+    // apply the functions to the lines
+    
+    assign _adev_rega = adev_sel[ADEV_rega]    ;
+    assign _adev_regb = adev_sel[ADEV_regb]    ;
+    assign _adev_regc = adev_sel[ADEV_regc]    ;
+    assign _adev_regd = adev_sel[ADEV_regd]    ;
+    assign _adev_marhi = adev_sel[ADEV_marhi]    ;
+    assign _adev_marlo = adev_sel[ADEV_marlo]    ;
+    assign _adev_uart = adev_sel[ADEV_uart]    ;
+    assign _adev_not_used = adev_sel[ADEV_not_used]    ;
+    assign _bdev_rega = bdev_sel[BDEV_rega]    ;
+    assign _bdev_regb = bdev_sel[BDEV_regb]    ;
+    assign _bdev_regc = bdev_sel[BDEV_regc]    ;
+    assign _bdev_regd = bdev_sel[BDEV_regd]    ;
+    assign _bdev_marhi = bdev_sel[BDEV_marhi]    ;
+    assign _bdev_marlo = bdev_sel[BDEV_marlo]    ;
+    assign _bdev_immed = bdev_sel[BDEV_immed]    ;
+    assign _bdev_ram = bdev_sel[BDEV_ram]    ;
+    assign _bdev_not_used = bdev_sel[BDEV_not_used]    ;
+    assign _bdev_vram = bdev_sel[BDEV_vram]    ;
+    assign _bdev_porta = bdev_sel[BDEV_porta]    ;
+    assign _bdev_rand = bdev_sel[BDEV_rand]    ;
+    assign _bdev_clock = bdev_sel[BDEV_clock]    ;
+    assign _rega_in   = tdev_sel[TDEV_rega]    ;
+    assign _regb_in   = tdev_sel[TDEV_regb]    ;
+    assign _regc_in   = tdev_sel[TDEV_regc]    ;
+    assign _regd_in   = tdev_sel[TDEV_regd]    ;
+    assign _marhi_in   = tdev_sel[TDEV_marhi]    ;
+    assign _marlo_in   = tdev_sel[TDEV_marlo]    ;
+    assign _uart_in   = tdev_sel[TDEV_uart]    ;
+    assign _ram_in   = tdev_sel[TDEV_ram]    ;
+    assign _halt_in   = tdev_sel[TDEV_halt]    ;
+    assign _pc_in   = tdev_sel[TDEV_pc]    ;
+    assign _pchitmp_in   = tdev_sel[TDEV_pchitmp]    ;
+    assign _pclo_in   = tdev_sel[TDEV_pclo];
+
+
+endmodule
+
+
+
+
+// verilator lint_on ASSIGNDLY
+// verilator lint_on ASSIGNDLY
+// verilator lint_on MULTITOP
+// see also ../../docs/reset_timings_waveform.json
+// verilator lint_off UNOPTFLAT 
+
+
+
+// Dual D flip-flop with set and clear; positive-edge-triggered
+// Timings from https://assets.nexperia.com/documents/data-sheet/74HC_HCT74.pdf
+
+// Corrected based on - https://raw.githubusercontent.com/TimRudy/ice-chips-verilog/master/source-7400/7474.v
+// 
+// TimRudy version doesn't match datasheet
+// - the clear/preset should be async (see note below)
+// - clear/preset should be not be edge sensitive (see note below)
+// - when clear/preset are both set then Q and Qb are both 1
+
+// Tim Rudy's version has these compromises.
+//      Note: Note: _SD is synchronous, not asynchronous as specified in datasheet for this device,
+//      in order to meet requirements for FPGA circuit design (see IceChips Technical Notes)
+
+`timescale 1ns/1ns
+module hct7474 #(parameter BLOCKS = 2, DELAY_RISE = 18, DELAY_FALL = 18, LOG = 0, NAME = "7474FF")
+(
+  input [BLOCKS-1:0] _SD,
+  input [BLOCKS-1:0] _RD,
+  input [BLOCKS-1:0] D,
+  input [BLOCKS-1:0] CP,
+  output [BLOCKS-1:0] Q,
+  output [BLOCKS-1:0] _Q
+);
+
+//------------------------------------------------//
+reg [BLOCKS-1:0] Q_current;
+reg [BLOCKS-1:0] Qb_current;
+reg [BLOCKS-1:0] _SD_previous;
+reg [BLOCKS-1:0] Q_defined = 0;
+
+if (LOG) 
+    always @* 
+        $display("%9t ", $time, "%m  CP=%1b D=%1b _SD=%1b _RD=%1b  =>  Q=%1b _Q=%1b", CP,D,_SD, _RD, Q, _Q);
+
+//if (LOG) always @* $display("%8d ", $time, "%s CP=%1b D=%1b _SD=%1b  _RD=%1b  Q=%1b  _Q=%1b (Qc=%1b, _Qc=%1b)", NAME, CP,D,_SD, _RD, Q, _Q, Q_current, Qb_current);
+
+generate
+  genvar i;
+  for (i = 0; i < BLOCKS; i = i + 1)
+  begin: gen_blocks
+    always @(posedge CP[i])
+    begin
+      if (_RD[i] && _SD[i])
+      begin
+        if (LOG>1) $display("%9t", $time, " %s CLOCK IN DATA Q=%1b", NAME, D);
+        Q_defined[i] = 1'b1;
+
+        Q_current[i] = D[i];
+        Qb_current[i] = !D[i];
+      end
+        else
+        begin
+        if (LOG>1) $display("%9t", $time, " %s CLOCK IN DISABLED BY CLEAR or PRESET", NAME);
+        end
+    end
+
+    always @(_RD[i] or _SD[i])
+    begin
+      if (!_RD[i] && !_SD[i])
+        begin
+            if (LOG>1) $display("%9t", $time, " %s FORCE Q=_Q=1", NAME);
+            Q_current[i] = 1'b1;
+            Qb_current[i] = 1'b1;
+        end
+      else if (!_RD[i])
+        begin
+            if (LOG>1) $display("%9t", $time, " %s Q=0", NAME);
+            Q_defined[i] = 1'b1;
+
+            Q_current[i] = 1'b0;
+            Qb_current[i] = 1'b1;
+        end
+      else if (!_SD[i])
+        begin
+            if (LOG>1) $display("%9t", $time, " %s Q=1", NAME);
+            Q_defined[i] = 1'b1;
+
+            Q_current[i] = 1'b1;
+            Qb_current[i] = 1'b0;
+        end
+      else //
+        begin
+            if (!Q_defined[i]) begin
+                if (LOG) $display("%9t", $time, " %s Q=X NOT CLEAR AND NOT PRESET", NAME);
+                // no value has been defined - realistically a random value would be settled on, we'll use X
+                Q_current[i] = 1'bx;
+                Qb_current[i] = 1'bx;
+            end
+            else
+                if (LOG>1) $display("%9t", $time, " %s Q=%1b - HOLD", NAME, Q_current);
+        end
+      end
+  end
+endgenerate
+//------------------------------------------------//
+
+assign #(DELAY_RISE, DELAY_FALL) Q = Q_current;
+assign #(DELAY_RISE, DELAY_FALL) _Q = Qb_current;
+
+endmodule
+
+
+
+
+`timescale 1ns/1ns
+
+// "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
+module reset(
+    input _RESET_SWITCH, // HOLD LO FOR RESET
+    input system_clk,
+    
+    output _mrNeg,    // stays low for two cycles - clears later - goes high on the 1st negative edge after the positive edge that cleared _mrPos
+    output phase_exec,  // phase clock - stops in low state during reset - so stops in the fetch phase which is the required initial phase
+    output _phase_exec  // phase clock - stops in high state during reset - so stops in the fetch phase which is the required initial phase
+);
+    parameter LOG=0;
+
+    wire _Qnotused;
+    wire _mrPos;
+
+    hct7474 #(.BLOCKS(1), .LOG(0)) resetff1(
+          ._SD(1'b1),
+          ._RD(_RESET_SWITCH),
+          .D(1'b1),
+          .CP(system_clk), 
+          .Q(_mrPos),
+          ._Q(_Qnotused)
+        );
+
+
+    // _reset_pc is same as MR however it clears on the neg edge so that the PC can reset on the previous +ve edge
+    wire _system_clk;
+    nand #(8) nand1(_system_clk, system_clk); 
+
+    hct7474 #(.BLOCKS(1), .LOG(0)) resetff2(
+          ._SD(1'b1),
+          ._RD(_mrPos), // wont set back to H until after _mrPos clears
+          .D(1'd1),
+          .CP(_system_clk), // resets on the -ve edge after _mrPos is released
+          .Q(_mrNeg),
+          ._Q()
+        );
+
+    // H/W uses 74132 SCHMITT NAND
+    nand #(10) nand2(phase_exec , system_clk , _mrPos); 
+    nand #(10) nand3(_phase_exec , phase_exec); 
+
+endmodule 
+ 
+
+ 
+/*
+    FOR 100% CORRECT OPERATION THE REGISTER MUST LATCH BEFORE THE _WE GOES LOW OTHERWISE THERE'S
+    A WINDOW FOR ERROR WHERE THE PREVIOUS UNRELATED VALUE OF THE INPUT REGISTER GETS WRITTEN
+    TO THE REG AND FLOWS THRU IF READING THE SAME LOCATION AND THIS MAY IMPACT DOWNSTREAM COMPONENTS.
+    REALISTICALLY IF THE DELTA ON 
+*/
+
+
+
+/* 4x8 dual port register file
+* latches write data on postive edge, all other inputs remain async.
+ */
+
+//`include "../74423/hct74423.v"
+
+
+
+
+/* 4x8 dual port register file
+ */
+
+// https://media.digikey.com/pdf/Data%20Sheets/NXP%20PDFs/74HC(T)670.pdf
+// active low enable inputs
+
+// NOTE:
+// MIN _WE pulsewidth = 20ns   : http://www.ti.com/lit/ds/schs195c/schs195c.pdf?ts=1588009560263
+// MIN _WE pulsewidth = 9-18ns : https://media.digikey.com/pdf/Data%20Sheets/NXP%20PDFs/74HC(T)670.pdf
+
+`timescale 1ns/1ns
+module hct74670 (input _wr_en,
+                 input [1:0] wr_addr,
+                 input [3:0] wr_data,
+                 input _rd_en,
+                 input [1:0] rd_addr,
+                 output [3:0] rd_data);
+    
+    parameter LOG=0;
+
+    localparam PD_RE_TO_Q=18;
+    localparam PD_A_TO_Q=21;
+    localparam PD_D_TO_Q=27;
+    localparam PD_WE_TO_Q=28;
+
+// verilator lint_off UNOPTFLAT
+    // Register file storage
+    reg [3:0] registers[3:0];
+    reg [3:0] tmp_data;
+
+// verilator lint_on UNOPTFLAT
+
+    // necessary to make it possible to set an initial value into REGA so that I can do   NAME=0   
+    // or any other operation without X into an ALU input causing an X on the output
+    initial begin
+        if (LOG) $display("INITIALISING EMPTY REGISTER %m FILE TO VALUES [0,1,2,3]");
+        registers[0] = 0;
+        registers[1] = 1;
+        registers[2] = 2;
+        registers[3] = 3;
+    end
+      
+    reg [3:0] out_val;
+    
+    specify
+        (_rd_en *> rd_data)  = PD_RE_TO_Q;
+        (_wr_en *> rd_data)  = PD_WE_TO_Q;
+        (rd_addr *> rd_data) = PD_A_TO_Q;
+        (wr_data => rd_data) = PD_D_TO_Q;
+    endspecify
+    
+    // write to register file
+    always @* begin
+        if (!_wr_en) begin
+            registers[wr_addr] = wr_data;
+        end
+    end
+
+    always @(registers[0]) begin
+            if (LOG) $display("%9t ", $time, ": 74670 setting reg[0]  <= ", registers[0], " : %m");
+    end
+    always @(registers[1]) begin
+            if (LOG) $display("%9t ", $time, ": 74670 setting reg[1]  <= ", registers[1], " : %m");
+    end
+    always @(registers[2]) begin
+            if (LOG) $display("%9t ", $time, ": 74670 setting reg[2]  <= ", registers[2], " : %m");
+    end
+    always @(registers[3]) begin
+            if (LOG) $display("%9t ", $time, ": 74670 setting reg[3]  <= ", registers[3], " : %m");
+    end
+        
+        
+    // reading from register file
+    always_comb
+    // always @(*)  << this gives warning: ./hct74670.v:32: warning: @* is sensitive to all 4 words in array 'registers'.
+    begin
+        out_val = registers[rd_addr];
+    end
+    
+    assign rd_data = _rd_en ? 4'bz : out_val;
+    
+endmodule
+`timescale 1ns/1ns
+
+module registerFile #(parameter LOG=0) (
+                    input _wr_en, 
+                    input [1:0] wr_addr,
+                    input [7:0] wr_data,
+
+                    input _rdL_en,
+                    input [1:0] rdL_addr,
+                    output [7:0] rdL_data,
+
+                    input _rdR_en,
+                    input [1:0] rdR_addr,
+                    output [7:0] rdR_data
+	    );
+
+    
+    wire [3:0] wr_data_hi, wr_data_lo;
+// verilator lint_off UNOPTFLAT
+    wire [3:0] rdL_data_hi, rdL_data_lo, rdR_data_hi, rdR_data_lo;
+// verilator lint_on UNOPTFLAT
+
+    assign {wr_data_hi, wr_data_lo} = wr_data;
+    assign rdL_data                 = {rdL_data_hi, rdL_data_lo};
+    assign rdR_data                 = {rdR_data_hi, rdR_data_lo};
+
+    hct74670 #(.LOG(0)) bankL_lo(
+        _wr_en,
+        wr_addr,
+        wr_data_lo,
+        _rdL_en,
+        rdL_addr,
+        rdL_data_lo
+    );
+    hct74670 #(.LOG(0)) bankL_hi(
+        _wr_en,
+        wr_addr,
+        wr_data_hi,
+        _rdL_en,
+        rdL_addr,
+        rdL_data_hi
+    );
+    
+    hct74670 #(.LOG(0)) bankR_lo(
+        _wr_en,
+        wr_addr,
+        wr_data_lo,
+        _rdR_en,
+        rdR_addr,
+        rdR_data_lo
+    );
+    hct74670 #(.LOG(0)) bankR_hi(
+        _wr_en,
+        wr_addr,
+        wr_data_hi,
+        _rdR_en,
+        rdR_addr,
+        rdR_data_hi
+    );
+    
+    if (LOG) always @(negedge _wr_en) begin 
+        $display("%9t REGFILE : BEGIN WRITE _wr_en=%1b,  write[%d]=%-3d     _rdX_en=%1b, X[%d]=>%-3d    _rdY_en=%1b, Y[%d]=>%-3d" , $time, 
+                    _wr_en, wr_addr, wr_data, 
+                    _rdL_en, rdL_addr, rdL_data, 
+                    _rdL_en, rdR_addr, rdR_data);
+    end
+    if (LOG) always @(posedge _wr_en) begin 
+        $display("%9t REGFILE : END WRITE _wr_en=%1b,  write[%d]=%-3d     _rdX_en=%1b, X[%d]=>%-3d    _rdY_en=%1b, Y[%d]=>%-3d" , $time, 
+                    _wr_en, wr_addr, wr_data, 
+                    _rdL_en, rdL_addr, rdL_data, 
+                    _rdL_en, rdR_addr, rdR_data);
+    end
+
+    // only need to bind to L or R as they have the same value
+    if (LOG) always @(   
+                    _wr_en//, wr_addr, wr_data, 
+                    //_rdL_en, rdL_addr, rdL_data, 
+                    //_rdL_en, rdR_addr, rdR_data
+    ) begin
+        $display("%9t ", $time, "REGFILE : _wr_en=%1b", //,  write[%d]=%-3d     _rdX_en=%1b, X[%d]=>%-3d    _rdY_en=%1b, Y[%d]=>%-3d" , 
+                    _wr_en//, wr_addr, wr_data, 
+                    //_rdL_en, rdL_addr, rdL_data, 
+                    //_rdL_en, rdR_addr, rdR_data
+                    );
+    end
+
+
+    if (LOG) always @(   
+                bankR_hi.registers[0] or bankR_lo.registers[0] or
+                bankR_hi.registers[1] or bankR_lo.registers[1] or
+                bankR_hi.registers[2] or bankR_lo.registers[2] or
+                bankR_hi.registers[3] or bankR_lo.registers[3]
+    ) begin
+        $display("%9t ", $time, "REGFILE : DATA UPDATE A=%-3d(h%-2x)   B=%-3d(h%-2x)   C=%-3d(h%-2x)   D=%-3d(h%-2x)", 
+                get(0), get(0), 
+                get(1), get(1), 
+                get(2), get(2), 
+                get(3), get(3));
+    end
+
+
+    
+    function [7:0] get([1:0] r);
+        get = {bankL_hi.registers[r], bankL_lo.registers[r]};
+    endfunction
+
+
+endmodule
+
+
+
+
+
+/* Timings from https://assets.nexperia.com/documents/data-sheet/74HC_HCT574.pdf
+ * */
+`timescale 1ns/1ns
+module hct74574 (
+input CLK,
+input _OE,        // negative enable
+input [7:0] D,
+output [7:0] Q
+);
+    parameter LOG=0;
+    parameter SETUP_TIME=12;
+    parameter PD_CLK_Q=15;
+    parameter PD_OE_Q=19;
+
+    reg [7:0] dSetup;
+    reg [7:0] dCurrent;
+
+    // setup time 
+    assign #(SETUP_TIME) dSetup = D;
+    
+    specify
+        (CLK *> Q) = (PD_CLK_Q);
+        (_OE *> Q) = (PD_OE_Q);
+    endspecify
+
+    always @(posedge CLK) begin
+//        if (LOG) $display("%9t", $time, " REGISTER %m   CLK=+ve _OE=%1b dCurrent=%08b D=%08b Q=%08b", _OE, dCurrent, D, Q);
+        dCurrent <= dSetup;
+    end
+
+    always @(Q) begin
+        if (LOG) $display("%9t", $time, " REGISTER %m   updated Q=%08b   data=%08b", Q, dCurrent);
+    end
+
+    assign Q = _OE ? 8'bz: dCurrent;
+    
+endmodule
+
+
+`timescale 1ns/1ns
+module syncRegisterFile #(parameter LOG=0, PulseWidth=100) (
+    	input clk,
+
+        input _wr_en, 
+        input [1:0] wr_addr,
+        input [7:0] wr_data,
+
+        input _rdL_en,
+        input [1:0] rdL_addr,
+        output [7:0] rdL_data,
+
+        input _rdR_en,
+        input [1:0] rdR_addr,
+        output [7:0] rdR_data
+);
+    logic [31:0] binding_for_tests;
+    assign binding_for_tests = {
+                {regFile.bankL_hi.registers[0] , regFile.bankL_lo.registers[0]} ,
+                {regFile.bankL_hi.registers[1] , regFile.bankL_lo.registers[1]} ,
+                {regFile.bankL_hi.registers[2] , regFile.bankL_lo.registers[2]} ,
+                {regFile.bankL_hi.registers[3] , regFile.bankL_lo.registers[3]} };
+
+    
+    function [7:0] get([1:0] r);
+        get = regFile.get(r);
+    endfunction
+
+	wire [7:0] wr_data_latched;
+
+    hct74574 #(.LOG(0)) input_register( .D(wr_data), .Q(wr_data_latched), .CLK(clk), ._OE(1'b0)); // registers data on clk +ve & _pulse goes low slightly later.
+
+
+    registerFile #(.LOG(LOG)) regFile (
+        ._wr_en(_wr_en),
+        .wr_addr,
+        .wr_data(wr_data_latched),
+        ._rdL_en,
+        .rdL_addr,
+        .rdL_data,
+        ._rdR_en,
+        .rdR_addr,
+        .rdR_data
+    );
+
+/*
+    if (LOG) always @(posedge clk) begin
+        $display("%9t ", $time, "REGFILE : REGISTERED input data %08b", wr_data);
+    end
+*/
+
+/*
+    if (LOG) always @(*) begin
+        //$display("%9t ", $time, "REGFILE-S : ARGS : _wr_en=%1b _pulse=%1b write[%d]=%d     _rdX_en=%1b X[%d]=>%d    _rdY_en=%1b Y[%d]=>%d   (preletch=%d)  _MR=%1b" ,
+         //    _wr_en, _pulse, wr_addr, wr_data, _rdL_en, rdL_addr, rdL_data, _rdL_en, rdR_addr, rdR_data, wr_data_latched, _MR);
+
+        if (!_wr_en) $display("%9t ", $time, "REGFILE : UPDATING write[%d] = %d", wr_addr, wr_data_latched);
+    end
+
+    if (LOG) always @(posedge _wr_en) begin
+        $display("%9t ", $time, "REGFILE : LATCHED write[%d]=%d", wr_addr, wr_data_latched);
+    end
+*/
+
+    
+endmodule
+
+
+
+
+
+// ADVANCE ON +CLK
+
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
+// verilator lint_off PINMISSING
+
+
+
+
+
+// assertion macro used in tests - is there a built for this??
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Format ...
+    FAILED Line 82   : expected 'xxxxxxxx'
+                     : but got  '00010001'
+*/
+
+
+
+
+
+
+
+
+/* Format ...
+     1122  Line:82    FAILED: actual '00010001' != 'xxxxxxxx' expected,   (d17!=dx)(h11!=hxx)  : rdA_data != B
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// never returns
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+`timescale 1ns/1ns
+
+module dummy;
+    initial 
+        $write("");
+endmodule
+
+ 
+
+
+// based on https://raw.githubusercontent.com/TimRudy/ice-chips-verilog/master/source-7400/74377.v
+// timings from https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf
+
+// Octal D flip-flop with enable
+
+`timescale 1ns/1ns
+
+module hct74377 #(parameter WIDTH = 8, LOG = 0)
+(
+  input _EN,
+  input CP,
+  input [WIDTH-1:0] D,
+  output [WIDTH-1:0] Q
+);
+
+parameter [WIDTH-1:0] UNDEF = {(WIDTH/4){4'bzxxz}};
+reg [WIDTH-1:0] Q_current=UNDEF;
+
+always @(posedge CP)
+begin
+  if (!_EN) begin
+    if (LOG)  $display("%9t", $time, " REGISTER %m   ASSIGNING D=%08b to Q_current", D);
+    Q_current = D;
+  end
+end
+
+if (LOG)
+  always @(Q) begin
+      $display("%9t", $time, " REGISTER %m   OUTPUT CHANGE CP=%1b _EN=%1b D=%08b Q=%08b (Q_current=%08b)", CP, _EN, D, Q, Q_current);
+  end
+
+assign #14 Q = Q_current;
+
+function isUndef();
+    isUndef = (Q === UNDEF);
+endfunction
+
+endmodule
+
+
+
+
+
+// counts on the +ve edge
+// low at PE disables counting and enables par load on next +ve clock
+// low on MR sets counter to 0 on next +ve clock - overrides all other controls
+
+// Hate the TI docs, so changed naming to... https://assets.nexperia.com/documents/data-sheet/74HC_HCT163.pdf
+// 4 bit fully synchronous binary counter, parallel loadable
+// HCT timings
+`timescale 1ns/1ns
+
+module hct74163
+(
+  input CP,       // clock
+  input _MR,      // master reset
+  input CEP,       // count enable input
+  input CET,       // count enable carry input
+  input _PE,        // parallel enable
+  input [3:0] D,   // 4-bit parallel input
+
+  output [3:0] Q,  // Parallel outputs
+  output TC         // terminal count output
+);
+
+parameter NAME="74163";
+
+// Timing from HCT https://assets.nexperia.com/documents/data-sheet/74HC_HCT163.pdf
+specify
+  (CP *> Q) = (20);
+  (CP *> TC) = (25);
+  (CET *> TC) = (14);
+endspecify
+
+reg [3:0] count;
+
+if (0) always @* begin
+    $display(
+        "%9t ", $time,
+        "%s   ", NAME,
+        " CP=%1b", CP,
+        " _MR=%1b", _MR,
+        " Q=%4b", Q,
+        "       %m" 
+    );
+end
+
+always @(posedge CP)
+begin
+  if (~_MR)
+  begin
+    count <= 4'b0000;
+  end
+  else if (~_PE)
+  begin
+    count <= D;
+  end
+  else if (CEP & CET)
+  begin
+    count <= count + 1;
+  end
+end
+
+assign #20 Q = count;
+assign #25 TC = (count == 4'b1111) & CET;
+
+// set a default "random" but recognizable value
+initial begin
+    count=4'bxxxx;
+end
+
+
+endmodule
+
+
+
+`timescale 1ns/1ns
+
+module pc(
+    input clk,
+    input _MR,
+    input _pchitmp_in,  // load tmp
+    input _pclo_in,     // load lo
+    input _pc_in,       // load hi and lo
+    input [7:0] D,
+
+    output [7:0] PCLO,
+    output [7:0] PCHI
+);
+
+parameter LOG = 0;
+
+wire [7:0] PCHITMP;
+
+hct74377 PCHiTmpReg(
+  .D, .Q(PCHITMP), .CP(clk), ._EN(_pchitmp_in)
+);
+
+// _load_pclo is synchronous and must be held low DURING a +ve clk
+// In the hardware this 7408 is shared with the logic in the clock circuit.
+wire _load_pclo;
+and #11 and7408( _load_pclo , _pclo_in , _pc_in);
+
+// see applications here https://www.ti.com/lit/ds/symlink/sn54ls161a-sp.pdf?ts=1599773093420&ref_url=https%253A%252F%252Fwww.google.com%252F
+// see ripple mode approach - CEP/CET can be tied high because _PE overrides those and so they can be left enabled.
+// feed of TC->CET chains the count enable as per the data sheet for > 4 bits counting.
+
+// cascaded as per http://upgrade.kongju.ac.kr/data/ttl/74163.html
+// naming from https://www.ti.com/lit/ds/symlink/sn74f163a.pdf
+hct74163 PCLO_3_0
+(
+  .CP(clk),
+  ._MR(_MR),
+  .CEP(1'b1),
+  .CET(1'b1),
+  ._PE(_load_pclo),
+  .D(D[3:0])
+);
+hct74163 PCLO_7_4
+(
+  .CP(clk),
+  ._MR(_MR),
+  .CEP(1'b1),
+  .CET(PCLO_3_0.TC),
+  ._PE(_load_pclo),
+  .D(D[7:4])
+);
+
+hct74163 PCHI_3_0
+(
+  .CP(clk),
+  ._MR(_MR),
+  .CEP(1'b1),
+  .CET(PCLO_7_4.TC),
+  ._PE(_pc_in),
+  .D(PCHITMP[3:0])
+);
+hct74163 PCHI_7_4
+(
+  .CP(clk),
+  ._MR(_MR),
+  .CEP(1'b1),
+  .CET(PCHI_3_0.TC),
+  ._PE(_pc_in),
+  .D(PCHITMP[7:4])
+);
+
+assign PCLO = {PCLO_7_4.Q, PCLO_3_0.Q};
+assign PCHI = {PCHI_7_4.Q, PCHI_3_0.Q};
+
+// for logging
+wire [15:0] pcval = {PCHI, PCLO};
+
+if (LOG) always @(posedge clk)
+begin
+  if (~_MR)
+  begin
+    $display("%9t ", $time, "PC RESET ");
+  end
+    else
+  begin
+    $display("%9t ", $time, "PC TICK _MR=%1b ", _MR);
+  end
+end
+
+if (LOG) always @(*) begin
+  $display("%9t ", $time, "PC       ",
+      "PC=%2x:%2x PCHITMP=%2x ",
+      PCHI, PCLO, PCHITMP,
+      "clk=%1b ",  clk, 
+      "_MR=%1b ",  _MR, 
+      " _pclo_in=%1b _pc_in=%1b _load_pclo=%1b _pchitmp_in=%1b     Din=%8b ",
+      _pclo_in, _pc_in, _load_pclo, _pchitmp_in, D 
+      );
+end
+// verilator lint_on ASSIGNDLY
+// verilator lint_on STMTDLY
+// verilator lint_on PINMISSING
+
+endmodule :pc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
+// verilator lint_off COMBDLY
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
+// verilator lint_off UNOPTFLAT
+
+
+/* octal d-type transparent latch.
+ Same model as 74373 but with timings from HCT573
+ 
+ LE = H is transparent
+ _OE = H is Z
+ 
+ Timings have are for 74HCT573
+ https://assets.nexperia.com/documents/data-sheet/74HC_HCT573.pdf
+ https://assets.nexperia.com/documents/data-sheet/74HC_HCT373.pdf
+ */
+
+`timescale 1ns/1ns
+module hct74573 (
+    input LE, // transparent when high 
+    input _OE,
+	input [7:0] D,
+    output [7:0] Q
+);
+    parameter LOG=0;
+
+    reg [7:0] data;
+    
+    specify
+    (D => Q) = (17);
+    (LE *> Q) = (15);
+    (_OE *> Q) = (18);
+    endspecify
+    
+    always @(D or LE)
+        if (LE)
+        begin 
+            data = D;
+        end
+    
+    assign Q = _OE ? 8'bz : data;
+
+    if (LOG) always @* 
+        $display("%09t ", $time, 
+                " LE=%1b", LE,
+                " _OE=%1b", _OE,
+                " D=%8b", D,
+                " Q=%8b", D,
+                "%m");
+        
+    
+endmodule: hct74573
+
+
+// verilator lint_off UNOPTFLAT 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// verilator lint_off COMBDLY
+// needed because I am using non blocking inside a nonclocked always
+// as per section 4.1 https://www-inst.eecs.berkeley.edu/~cs152/fa06/handouts/CummingsHDLCON1999_BehavioralDelays_Rev1_1.pdf
+// because I'm modelling transport delays
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Consistent with AS6C1008, 6116 and 62256 RAM 
+// Chip enable lines not included in the interface - AS6C1008 has +ve and -ve CE lines, wherea 62256 for example has only one CE line
+
+`timescale 1ns/1ns
+
+// verilator lint_off UNOPTFLAT
+module ram(_OE, _WE, A, D);
+
+    input _OE, _WE;
+    input [AWIDTH-1:0] A;
+    inout tri [DWIDTH-1:0] D;
+
+    // sadly verilator barfs with the other values so just for linting set them lower
+    // depth is # elements
+    parameter DWIDTH=8,AWIDTH=16, DEPTH= 1 << AWIDTH;
+    parameter LOG=0;
+    parameter UNDEFINED_VALUE=4'bxzzx;
+
+    parameter [DWIDTH-1:0] UNDEF = {(DWIDTH/$bits(UNDEFINED_VALUE)){UNDEFINED_VALUE}}; // repeat xzzx as many times as needed to fill up DWIDTH
+    parameter [DWIDTH-1:0] HIZ = {DWIDTH{1'bz}};
+
+    reg [DWIDTH-1:0] Mem [0:DEPTH-1];
+    wire [DWIDTH-1:0] delayedMemRead;
+
+    // I'm using AS6C1008-55PIN - https://www.alliancememory.com/wp-content/uploads/pdf/AS6C1008feb2007.pdf
+    localparam tAA = 55; // names from AS6C1008
+    localparam tOW = 5;
+    localparam tWHZ = 20;  
+    localparam tOHZ = 20;
+    localparam tOLZ = 5;
+
+    // (rise time, fall time)
+    wire #(tOW, tWHZ) _delayedWE = _WE;
+    wire #(tOHZ, tOLZ) _delayedOE = _OE;
+    wire [AWIDTH-1:0] delayedA;
+    assign #(tAA) delayedA = A;
+
+    assign delayedMemRead = Mem[delayedA];
+
+    //assign D=!_delayedWE? HIZ: _delayedOE ? HIZ: Mem[delayedA];
+    assign D=!_delayedWE? HIZ: _delayedOE ? HIZ: delayedMemRead;
+
+    //assign D=!_WE? HIZ: _OE? HIZ: Mem[A];
+
+  if (LOG) begin
+    always @(negedge _WE) begin
+        //if (!_OE) $display("%9t ", $time, "RAM : END READ _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, Mem[0], Mem[1], Mem[2]);
+        $display("%9t ", $time, "RAM : BEGIN WRITE _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, Mem[0], Mem[1], Mem[2]);
+    end
+    always @(posedge _WE) begin
+        $display("%9t ", $time, "RAM : END WRITE   _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, Mem[0], Mem[1], Mem[2]);
+        //if (!_OE) $display("%9t ", $time, "RAM : BEGIN READ _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, Mem[0], Mem[1], Mem[2]);
+    end
+
+    always @(negedge _OE) begin
+        if (_WE) $display("%9t ", $time, "RAM : BEGIN READ _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, Mem[0], Mem[1], Mem[2]);
+    end
+
+    always @(posedge _OE) begin
+        if (_WE) $display("%9t ", $time, "RAM : END READ   _OE=%1b _WE=%1b A=%04x D=%8b m0=%8b m1=%8b m2=%8b", _OE, _WE, A, D, Mem[0], Mem[1], Mem[2]);
+    end
+end
+
+  if (LOG) begin
+    always @(*) begin
+        // NOTE: AS6C1008, 6116 and 62256 RAM datasheet says _WE overrides _OE but I want to detect this unexpected situation
+        if (!_WE && !_OE) begin
+           $display("%9t", $time, " ALERT - RAM _OE and _WE simultaneously - WRITE WINS - RAM[0x%04x]=%08b", A, D );
+        end
+    end
+  end
+
+//  if (LOG)
+    always @(Mem[A]) begin
+        if (!_WE) $display("%9t ", $time, "RAM : UPDATE - RAM[0x%04x]=%08b(%1d)     Mem[A]=%02h", A, D, D , Mem[A]);
+    end
+
+  if (LOG) 
+  always @(delayedA) begin
+     $display("%9t ", $time, "RAM : DETAIL _OE=%1b _delayedOE=%1b _WE=%1b _delayedWE=%1b A=%04x delayedA=%04h D=%8b m0=%8b m1=%8b m2=%8b", 
+                    _OE, _delayedOE, _WE, _delayedWE, A, delayedA, D, Mem[0], Mem[1], Mem[2]);
+  end
+
+  always @(_WE or _OE or D or A or delayedA)
+  begin
+     if (!_WE) begin
+        Mem[A] = D;
+        if (LOG) $display("%9t ", $time, "RAM : WRITE - RAM[0x%04x]=%08b     Mem[A]=%02h", A, D , Mem[A]);
+     end
+     else if (!_OE) begin
+        if (LOG) $display("%9t ", $time, "RAM : READ - D=%08b  A=%04h  delayed : %08d=RAM[0x%04x]", D, A, delayedMemRead, delayedA);
+
+        //if (LOG && (Mem[delayedA] === UNDEF)) begin
+        if (LOG && $isunknown(delayedMemRead)) begin
+           $display("%9t", $time, " RAM ALERT - READING UNINITIALISED VALUE AT RAM[delayed 0x%04x]=%08b A=%04h", delayedA, delayedMemRead, A );
+        end
+     end
+  end
+
+  integer i;
+  initial begin
+
+    for(i=0;i<DEPTH;i=i+1) begin
+       Mem[i]=UNDEF;
+    end
+
+  end
+
+endmodule
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// UART Verilog for https://www.ftdichip.com/Support/Documents/DataSheets/Modules/DS_UM245R.pdf
+// see also https://hackaday.io/project/166922-spam-1-8-bit-cpu-with-a-tool-chain-twist/log/176325-interactive-verilog-um245r-uart
+
+/* verilator lint_off ASSIGNDLY */
+/* verilator lint_off STMTDLY */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+`timescale 1ns/1ns
+
+
+
+
+module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80, PRINTMODE=2, LOG=0, CONTROL_FILE="uart.control", EXIT_ON_BAD_TIMING=0)  (
+    inout [7:0] D,    // Input data
+    input WR,        // Writes data on -ve edge
+    input _RD,        // When goes from high to low then the FIFO data is placed onto D (equates to _OE)
+ 
+    output _TXE,        // When high do NOT write data using WR, when low write data by strobing WR
+    output _RXF        // When high to NOT read from D, when low then data is available to read by strobing RD low
+);
+
+function string strip;
+    input string str;
+    begin
+        strip = str;
+        if (str.len() > 0) begin
+            if (str[str.len()-1] == 10) begin
+                strip = str.substr(0, str.len()-2); 
+            end
+        end
+    end
+endfunction
+
+
+string uart_control_file;
+initial begin
+    if (! $value$plusargs("uart_control_file=%s", uart_control_file)) begin
+        uart_control_file = CONTROL_FILE;
+    end
+end
+
+string uart_out_file;
+initial begin
+    if (! $value$plusargs("uart_out_file=%s", uart_out_file)) begin
+        uart_out_file="uart.out";
+    end
+end
+
+
+
+logic _MR=0; // master reset
+
+// Hardware testing demonstrates that if a read starts but no data has been received since the last read ended then the next receive will immediately update the data lines.
+// This is only possible of course if one starts a read before RXF has gone low again to signal that new data is ready.
+logic immedBusUpdateOnNextReceive=1; 
+
+integer fOut=0, fControl, c, r, txLength, tDelta;
+
+localparam MAX_LINE_LENGTH=255;
+reg [8*MAX_LINE_LENGTH:0] line; /* Line of text read from file */ 
+reg _TXE_SUPPRESS; // purpose is actually to suppress readiness
+reg _RXF_SUPPRESS; // purpose is actually to suppress readiness
+
+string strInput = "";
+integer iInput;
+
+localparam BUFFER_SIZE=255;
+
+byte rxBuf[BUFFER_SIZE]; // Line of text read from file 
+int totalBytesReceived = 0; // next place to write
+int totalBytesRead = 0; // next place to read
+
+int REPORTING_INTERVAL=1000;
+integer cycle_count=0;
+
+wire #T11 unreadDataAvailable = totalBytesRead < totalBytesReceived;
+wire spaceIsAvailable = (totalBytesReceived - totalBytesRead) < BUFFER_SIZE;
+
+reg [7:0] Drx = 'x;
+
+if (LOG>1)
+    always @* begin
+    $display("%9t UART:", $time, 
+        " D=%8b", D, " WR=%1b", WR, " _RD=%1b", _RD, 
+        " _RXF=%1b", _RXF, 
+        " _TXE=%1b", _TXE, 
+        " Drx=%8b", Drx,
+        " BYTES_READ=%-3d", totalBytesRead,
+        " BYTES_RECV=%-3d", totalBytesReceived,
+        " RPOS=%-3d", totalBytesRead % BUFFER_SIZE,
+        " WPOS=%-3d", totalBytesReceived % BUFFER_SIZE,
+        " DAVAIL=%1b", unreadDataAvailable,
+        " _TXE_SUPPRESS=%1b", _TXE_SUPPRESS, 
+        " _RXF_SUPPRESS=%1b", _RXF_SUPPRESS
+        );
+
+    end
+
+integer tx_count=0;
+
+assign _TXE = !(fOut != 0 && _TXE_SUPPRESS && tx_count > 0 && _MR);
+
+//assign #T6 _RXF = !(unreadDataAvailable && _RXF_SUPPRESS && _MR);
+assign  _RXF = !(unreadDataAvailable && _RXF_SUPPRESS && _MR);
+
+assign #T3 D= _RD? 8'bzzzzzzzz: totalBytesReceived > 0 ? Drx : 8'bxzxzxzxz; // xzxzxzxz is a distinctive signal that we're reading uninitialised data
+
+function [7:0] printable([7:0] c);
+    if (PRINTMODE==1) begin
+        if (c == 0) return 32;
+        else if ($isunknown(c)) return 32; 
+        else if (c < 32 && c != 12 && c != 13) return 32; // allow CR/LF
+        else if (c >= 128) return 32;
+    end
+    if (PRINTMODE==2) begin
+        if (c == 0) return 32;
+        else if ($isunknown(c)) return 32; 
+        else if (c < 32 ) return 32; 
+        else if (c >= 128) return 32;
+    end
+    return c;
+endfunction
+
+/*
+    Transmit only valid when _TXE is low.
+    Transmit occurs when WR goes low.
+*/
+always @(negedge WR) begin
+    if (_MR) begin
+        if (_TXE) begin
+            $display("%9t ", $time, "UART: ATTEMPT TRANSMITTING %8b WHEN NOT READY", D);
+            $error("%9t ", $time, "UART: ERROR WR set low while _TXE not ready - Transmit ignored");
+            if (EXIT_ON_BAD_TIMING == 1) $finish_and_return(1);;
+        end
+        else
+        begin
+            // FIXME - DOUBLE CHECK THE HARDWARE - WHAT DOES IT DO IF WR IS BROUGHT LOW WHEN _TXE NOT READY - IS IT IGNORED?
+
+
+            $display("%9t ", $time, "UART: TRANSMITTING [h:%02x] [c:%c] [b:%08b] [d:%1d]", D, printable(D), D, D);
+        //    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING h%02x (b=%08b)", D, D, D);
+
+            $fwrite(fOut, "%02x\n", D);
+            $fflush(fOut);
+
+            #T11 // -WR to _TXE inactive delay
+            if (LOG>1) $display("%9t ", $time, "UART: TX NOT READY");
+            _TXE_SUPPRESS=0; 
+
+            tx_count --;
+            if (tx_count < 0) begin
+                $error("%9t ", $time, "UART: ERROR tx_count went negative");
+                if (EXIT_ON_BAD_TIMING == 1) $finish_and_return(1);;
+            end
+
+            #T12 // min inactity period
+            if (LOG>1) $display("%9t ", $time, "UART: inactive period ends");
+            _TXE_SUPPRESS=1;
+        end
+
+    end
+end
+
+/*
+    Transmit only valid when _TXE is low.
+    Transmit occurs when WR goes low.
+*/
+if (LOG) always @*  begin
+    $display("%9t ", $time, "UART: _RD %1b _RXF %1b", _RD, _RXF);
+end
+
+always @(negedge _RD) begin
+    if (_MR) begin
+        if (_RXF) begin
+                $display("%9t ", $time, "UART: ERROR _RD low while _RXF not ready");
+                if (EXIT_ON_BAD_TIMING == 1) $finish_and_return(1);;
+        end
+
+        if (! unreadDataAvailable) begin
+                $display("%9t ", $time, "UART: ERROR _RD low while data not available");
+                if (EXIT_ON_BAD_TIMING == 1) $finish_and_return(1);;
+        end
+
+        // JL if (LOG>1) $display("%9t ", $time, "UART: READING AT %-d", totalBytesRead);
+        // JL Drx = rxBuf[totalBytesRead%BUFFER_SIZE];
+
+        if (LOG) $display("%9t ", $time, "UART: READING   %02x (%c) from buffer at pos %1d", Drx, printable(Drx), totalBytesRead);
+    //    if (LOG) $display("%9t ", $time, "UART: RECEIVED   %02x from serial at pos %-d", Drx, Drx, totalBytesRead);
+    end
+end
+
+logic _RD_prev;
+
+always @(posedge _RD) begin
+    if (_MR && !_RD_prev) begin
+        if (_RXF) begin
+                $display("%9t ", $time, "UART: ERROR _RD going high while _RXF not ready");
+                if (EXIT_ON_BAD_TIMING == 1) $finish_and_return(1);;
+        end
+
+
+        // FIXME: OUGHT TO BE T4 or T5 - CHECK OTHER TIMINGS
+        #(T5) // -WR to _TXE inactive delay
+        if (LOG>1) $display("%9t ", $time, "UART: RX NOT READY");
+        _RXF_SUPPRESS=0;
+
+        // only advance the read position at the END of the read otherwise _RXF goes high too early
+        if (totalBytesRead < totalBytesReceived) begin
+            if (LOG>1) $display("%9t ", $time, "UART: ADVANCING READ POS FROM %3d", totalBytesRead);
+            totalBytesRead++;
+        end else begin
+            if (LOG>1) $display("%9t ", $time, "UART: NOT ADVANCING READ POS FROM %3d BECAUSE AT END OF BUFFER - will return last thing received", totalBytesRead);
+            immedBusUpdateOnNextReceive=1;
+        end
+
+        Drx = rxBuf[totalBytesRead%BUFFER_SIZE];
+        if (LOG>1) $display("%9t ", $time, "UART: BUFFER BYTE=%8b AT %-d", Drx, totalBytesRead);
+
+        #(T6) // min inactity period
+        if (LOG>1) $display("%9t ", $time, "UART: RX INACTIVE PERIOD ENDS");
+        _RXF_SUPPRESS=1;
+
+    end
+end
+
+always @*
+    _RD_prev = _RD;
+
+
+
+initial 
+    begin : file_block 
+    $timeformat(-9, 0, "ns", 6); 
+
+    // gather inital value of _RD - it might be x
+    _RD_prev = _RD;
+
+    // fill buffer with garbage - rxBuf is type byte so can't be XZ
+    for(int i=0; i<BUFFER_SIZE; i++) begin
+        rxBuf[i] = 0;
+    end
+
+    _RXF_SUPPRESS=0; // suppressed/
+    _TXE_SUPPRESS=0;
+
+    #50 // arbitrary delay before device is available
+    $display("%9t UART: RESET END",$time);
+    _MR=1;
+    _TXE_SUPPRESS=1; // unsuppressed
+    _RXF_SUPPRESS=1;
+    #50
+
+    if (1) begin
+        $display("%9t ", $time, "UART: opening %s", uart_control_file);
+
+        fControl = $fopenr(uart_control_file); 
+
+        //fControl = $fopenr("/dev/stdin"); 
+        if (fControl == 0) // If error opening file 
+        begin
+                $error("%9t ERROR ", $time, "failed opening file %s", uart_control_file);
+                $finish_and_return(1);;
+                disable file_block; // Just quit 
+        end
+
+        $display("%9t ", $time, "UART: opening %s", uart_out_file);
+
+        fOut = $fopen(uart_out_file, "w+"); 
+
+        //fOut = $fopen("/dev/stdout", "w+"); 
+        if (fOut == 0) // If error opening file 
+        begin
+                $error("%9t ERROR ", $time, "failed opening file %s", uart_out_file);
+                $finish_and_return(1);;
+                disable file_block; // Just quit 
+        end
+
+        $display("%9t ", $time, "UART: files are open");
+
+        while (fControl != 0)  
+        begin
+            c = $fgetc(fControl); 
+
+            if (c != 32'hFFFF_FFFF) 
+            begin 
+            //        cycle_count=1;
+                    /* Check the first character for comment */ 
+                    if (c == "/") // just skip
+                    begin 
+                        line="";
+                        r = $fgets(line, fControl); 
+                        strInput = strip(line);
+
+                        $display("%9t ", $time, "UART: CONTROL /%s", strInput);
+                    end
+
+                    // x - read a hex value, r read a de value
+                    if (c == "x" || c == "r") // pass string back to simulatiom
+                    begin
+                        line="";
+                        r = $fgets(line, fControl); 
+                        strInput = strip(line);
+
+                        if (c == "x") begin
+                            r = $sscanf(strInput, "%02x", iInput);
+                            if (r == 0) begin
+                                $display("%9t ", $time, "UART: CONTROL RX: '%s' can't convert %s from hex", strInput, strInput);
+                            end
+                            $sformat(strInput, "%c", iInput);
+                        end
+
+                        if (LOG>1)
+                        $display("%9t ", $time, "UART: CONTROL RX: '%s' into ringpos=%3d totalBytesReceived=%3d, spaceIsAvailable=%1b", 
+                                                                strInput, totalBytesReceived%BUFFER_SIZE, totalBytesReceived, spaceIsAvailable);
+
+                        for (int p=0; p<strInput.len() && spaceIsAvailable; p++) begin
+                            $display("%9t ", $time, "UART: FILL BUFFER[%1d] = %2x",  totalBytesReceived%BUFFER_SIZE, strInput[p]);
+                            rxBuf[totalBytesReceived%BUFFER_SIZE] = strInput[p];
+                            totalBytesReceived++;
+                        end
+                        if (! spaceIsAvailable)
+                            $display("%9t ", $time, "UART: CONTROL RECEIVE BUFFER NOW FULL");
+
+                        if (immedBusUpdateOnNextReceive) begin
+                            if (LOG>1) $display("%9t ", $time, "UART: CONTROL POS FROM %3d BECAUSE AT END OF BUFFER", totalBytesRead);
+                            Drx = rxBuf[totalBytesRead%BUFFER_SIZE];
+                        end
+
+                        if (LOG>1) 
+                            $display("%9t ", $time, "UART: CONTROL RECEIVE totalBytesReceived %3d, totalBytesRead=%3d", totalBytesReceived, totalBytesRead);
+                    end
+                    
+                    if (c == "t") // permit simulation to transmit N chars
+                    begin
+                        txLength=0;
+
+                        line="";
+                        r = $fgets(line, fControl);  // consumes the line ending and space chars 
+                        r = $sscanf(line,"%d\n", txLength); 
+
+                        if (LOG>1) $display("%9t ", $time, "UART: CONTROL TX: waiting for %1d chars", txLength);
+                        tx_count = txLength;
+                    end
+                    
+                    if (c == "#") // sleep N ns
+                    begin
+                        tDelta=0;
+                        line="";
+                        r = $fgets(line, fControl);  // consumes the line ending and space chars 
+                        r = $sscanf(line,"%d\n", tDelta); 
+
+                        if (LOG>1) $display("%9t ", $time, "UART: CONTROL #%1d delay begin", tDelta);
+                        #tDelta 
+
+                        if (LOG>1) $display("%9t ", $time, "UART: CONTROL #%1d delay end", tDelta);
+                    end
+
+                    if (c == "q") // quit
+                    begin
+                        r = $fgets(line, fControl);  // consumes the line ending and space chars 
+                        $display("%9t ", $time, "UART: CONTROL QUIT");
+                        $finish_and_return(0);;
+                    end
+
+                    if (c == "\n") // quit
+                    begin
+                        $display("%9t ", $time, "");
+                    end
+
+            end
+            else
+            begin
+                // allow time to advance
+                #10000
+                cycle_count++;
+                if (cycle_count > REPORTING_INTERVAL) begin
+                    $display("UART - read nothing for %d iterations", REPORTING_INTERVAL);
+                    REPORTING_INTERVAL= 10000;
+                    cycle_count=0;
+                end
+
+            end
+        end // while
+    end
+end // initial
+
+endmodule
+
+
+
+
+
+// modelled around a 74HCT593 8 bit counter
+
+`timescale 1ns/1ns
+module random (
+    input clk,
+    input _OE,
+    output [7:0] Q
+);
+    reg [7:0] val = 0;
+    initial begin
+        $monitor("%d", val);
+    end
+
+    assign Q = _OE ? 8'bz: val;
+
+    always @(posedge clk) begin
+        val <= #27 $random;
+    end
+
+endmodule
+
+
+
+
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
+
+`timescale 1ns/1ns
+
+
+
+
+
+typedef reg[200:0][7:0] string_bits;
+typedef reg[15:0] reg16;
+
+// "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
+module cpu(
+    input _RESET_SWITCH,
+    input system_clk
+);
+    int cycleCount = 0;
+
+    parameter LOG=0;
+
+    localparam tPD_7486=14;
+    
+    tri0 [15:0] address_bus;
+    tri0 [7:0] abus; // when NA device is selected we don't want Z going into ALU sim as this is not a value so we get X out
+    tri0 [7:0] bbus;
+    tri [7:0] alu_result_bus;
+    wire [2:0] abus_dev;
+    wire [3:0] bbus_dev;
+    wire [3:0] targ_dev;
+    wire [4:0] alu_op;
+    wire [7:0] _registered_flags_czonGLEN;
+    wire _flag_di;
+    wire _flag_do;
+    wire _set_flags;
+
+    wire _mrPC;
+
+    wire _phase_exec;
+    wire phase_exec;
+
+    reset RESET(
+        .system_clk,
+        ._RESET_SWITCH,
+        ._phase_exec(_phase_exec), //?? not used
+        .phase_exec(phase_exec),
+        ._mrNeg(_mrPC)
+    );
+
+
+
+    // CONTROL ===========================================================================================
+    wire _addrmode_register;
+
+    // selection wires
+    
+    
+    
+
+    
+    wire _adev_rega    ;
+    wire _adev_regb    ;
+    wire _adev_regc    ;
+    wire _adev_regd    ;
+    wire _adev_marhi    ;
+    wire _adev_marlo    ;
+    wire _adev_uart    ;
+    wire _adev_not_used    ;
+    wire _bdev_rega    ;
+    wire _bdev_regb    ;
+    wire _bdev_regc    ;
+    wire _bdev_regd    ;
+    wire _bdev_marhi    ;
+    wire _bdev_marlo    ;
+    wire _bdev_immed    ;
+    wire _bdev_ram    ;
+    wire _bdev_not_used    ;
+    wire _bdev_vram    ;
+    wire _bdev_porta    ;
+    wire _bdev_rand    ;
+    wire _bdev_clock    ;
+    wire _rega_in    ;
+    wire _regb_in    ;
+    wire _regc_in    ;
+    wire _regd_in    ;
+    wire _marhi_in    ;
+    wire _marlo_in    ;
+    wire _uart_in    ;
+    wire _ram_in    ;
+    wire _halt_in    ;
+    wire _pc_in    ;
+    wire _pchitmp_in    ;
+    wire _pclo_in;
+
+    
+    
+    
+
+    wire [7:0] PCHI, PCLO; // output of PC
+    wire [15:0] pc_addr = {PCHI, PCLO}; 
+
+    // ROM =============================================================================================
+    controller ctrl( // DONE
+        .pc(pc_addr),
+        ._flags_czonGLEN(_registered_flags_czonGLEN),
+        ._flag_di, ._flag_do,
+
+        ._addrmode_register, 
+        
+    ._adev_rega    ,
+    ._adev_regb    ,
+    ._adev_regc    ,
+    ._adev_regd    ,
+    ._adev_marhi    ,
+    ._adev_marlo    ,
+    ._adev_uart    ,
+    ._adev_not_used    ,
+    ._bdev_rega    ,
+    ._bdev_regb    ,
+    ._bdev_regc    ,
+    ._bdev_regd    ,
+    ._bdev_marhi    ,
+    ._bdev_marlo    ,
+    ._bdev_immed    ,
+    ._bdev_ram    ,
+    ._bdev_not_used    ,
+    ._bdev_vram    ,
+    ._bdev_porta    ,
+    ._bdev_rand    ,
+    ._bdev_clock    ,
+    ._rega_in    ,
+    ._regb_in    ,
+    ._regc_in    ,
+    ._regd_in    ,
+    ._marhi_in    ,
+    ._marlo_in    ,
+    ._uart_in    ,
+    ._ram_in    ,
+    ._halt_in    ,
+    ._pc_in    ,
+    ._pchitmp_in    ,
+    ._pclo_in,
+        .address_bus,
+        .bbus,
+        .alu_op,
+        .bbus_dev, .abus_dev, .targ_dev,
+        ._set_flags
+    );
+
+    
+
+    // PROGRAM COUNTER ======================================================================================
+
+    // PC reset is sync with +ve edge of clock
+    pc #(.LOG(0))  PC ( // DONE
+        .clk(system_clk),
+        ._MR(_mrPC),
+        ._pc_in(_pc_in),  // load both
+        ._pclo_in(_pclo_in), // load lo
+        ._pchitmp_in(_pchitmp_in), // load tmp
+        .D(alu_result_bus),
+
+        .PCLO(PCLO),
+        .PCHI(PCHI)
+    );
+
+
+    // RANDOM =============================================================================================
+
+    random rand1( .clk(system_clk), ._OE(_bdev_rand), .Q(bbus));
+
+    // RAM =============================================================================================
+
+// verilator lint_off PINMISSING
+    wire #(8) _gated_ram_in = _phase_exec | _ram_in; // DONE - THIS IS ON THE RAM BOARD
+    //OK to leave _OE enabled all the time as ram data sheet says WE override it
+    ram #(.AWIDTH(16), .LOG(0), .UNDEFINED_VALUE(1'b0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // DONE
+// verilator lint_on PINMISSING
+    
+
+    // verilator complains about tristate
+    hct74245 ram_alubus_buf(.A(alu_result_bus), .B(ram64.D), .nOE(_ram_in), .dir(1'b1)); // DONE
+
+    hct74245 ram_bbus_buf(.A(bbus), .B(ram64.D), .nOE(_bdev_ram), .dir(1'b0)); // DONE
+
+    // MAR =============================================================================================
+// verilator lint_off PINMISSING
+    // clocks data in as we enter phase exec - on the +ve edge - so use positive logic phase_exec here
+    hct74377 #(.LOG(0)) MARLO(._EN(_marlo_in), .CP(phase_exec), .D(alu_result_bus));   // DONE  
+    hct74377 #(.LOG(0)) MARHI(._EN(_marhi_in), .CP(phase_exec), .D(alu_result_bus)); // DONE
+// verilator lint_on PINMISSING
+
+    hct74245 marlo_abus_buf(.A(MARLO.Q), .B(abus), .nOE(_adev_marlo), .dir(1'b1)); // DONE
+    hct74245 marlo_bbus_buf(.A(MARLO.Q), .B(bbus), .nOE(_bdev_marlo), .dir(1'b1)); // DONE
+
+    hct74245 marhi_abus_buf(.A(MARHI.Q), .B(abus), .nOE(_adev_marhi), .dir(1'b1)); // DONE
+    hct74245 marhi_bbus_buf(.A(MARHI.Q), .B(bbus), .nOE(_bdev_marhi), .dir(1'b1)); // DONE
+
+    hct74245 #(.LOG(0)) marhi_addbbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .nOE(_addrmode_register), .dir(1'b1)); // DONE
+    hct74245 #(.LOG(0)) marlo_addbbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register), .dir(1'b1)); // DONE
+
+    // ALU ==============================================================================================
+    wire _flag_c_out, _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out;
+    wire _flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne;
+
+	alu #(.LOG(0)) Alu( // DONE
+        .result(alu_result_bus), 
+        .a(abus),
+        .b(bbus),
+        .alu_op(alu_op),
+        ._flag_c_in(_flag_c),
+        ._flag_c(_flag_c_out),
+        ._flag_z(_flag_z_out),
+        ._flag_o(_flag_o_out),
+        ._flag_n(_flag_n_out),
+        ._flag_gt(_flag_gt_out),
+        ._flag_lt(_flag_lt_out),
+        ._flag_eq(_flag_eq_out),
+        ._flag_ne(_flag_ne_out)
+    );
+
+    wire gated_flags_clk;
+    nor #(9) ic7486_gating_a( gated_flags_clk , _phase_exec , _set_flags); // FIXME : NOT IMPLEMENTED YET
+
+    wire [7:0] alu_flags_czonGLEN = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
+
+    hct74574 #(.LOG(LOG)) status_register_czonGLEN( .D(alu_flags_czonGLEN), // DONE
+                                       .Q(_registered_flags_czonGLEN),
+                                        .CLK(gated_flags_clk), 
+                                        ._OE(1'b0)); 
+
+    assign {_flag_c, _flag_z, _flag_o, _flag_n, _flag_gt, _flag_lt, _flag_eq, _flag_ne} = _registered_flags_czonGLEN;
+
+    // REGISTER FILE =====================================================================================
+    // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
+    // NOTE !!!! THIS CODE USES _phase_exec AS THE REGFILE GATING MEANING _WE IS LOW ONLY ON SECOND PHASE OF CLOCK - THIS PREVENTS A SPURIOUS WRITE TO REGFILE FROM IT'S INPUT LATCH
+    wire _regfile_in, gated_regfile_in_tmp, _gated_regfile_in;
+
+    and #(11) ic7421_regfile_in(_regfile_in , _rega_in , _regb_in , _regc_in , _regd_in); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+
+    // NOTE targ regX_in lines are gated with do_exec in the controller but we still need to gate with _phase_exec as we only want them enabled in the late phase as they are latches
+    // IMPL OF ... _gated_regfile_in = _phase_exec | _regfile_in;
+    // wire #(8) _gated_regfile_in = _phase_exec | _regfile_in; // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    nor #(tPD_7486) ic7486_gating_b(gated_regfile_in_tmp , _phase_exec , _regfile_in); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    nor #(tPD_7486) ic7486_gating_c(_gated_regfile_in , gated_regfile_in_tmp); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+
+    // OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdL_en === abus_dev[2]
+    // OLD wire #(8) _regfile_rdL_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ; 
+    wire _regfile_rdL_en = abus_dev[2]; 
+
+    // OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdR_en === bbus_dev[2]
+    // OLD wire #(8) _regfile_rdR_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ; 
+    wire _regfile_rdR_en;
+    or #(11) regfile_rdR_7432(_regfile_rdR_en , bbus_dev[2], bbus_dev[3]); // TODO WIRE THIS OR IN THE HARDWARE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    // the lower two bits can be used to address the regfile as the regfile is the first four locns
+    wire [1:0] regfile_rdL_addr = abus_dev[1:0]; 
+    wire [1:0] regfile_rdR_addr = bbus_dev[1:0];
+    wire [1:0] regfile_wr_addr = targ_dev[1:0];
+
+    if (LOG) begin
+        always @* $display("regfile _gated_regfile_in = ", _gated_regfile_in, " wr addr  ", regfile_wr_addr, " in : a=%b b=%b c=%b d=%b " , _rega_in , _regb_in , _regc_in , _regd_in);
+        always @* $display("regfile _regfile_rdL_en   = ", _regfile_rdL_en, " rd addr  ", regfile_rdL_addr, " in : a=%b b=%b c=%b d=%b " , _adev_rega , _adev_regb , _adev_regc , _adev_regd);
+        always @* $display("regfile _regfile_rdR_en   = ", _regfile_rdR_en, " rd addr  ", regfile_rdR_addr, " in : a=%b b=%b c=%b d=%b " , _bdev_rega , _bdev_regb , _bdev_regc , _bdev_regd);
+    end
+
+
+    // clocks data in as we enter phase exec - on the +ve edge - so use positive logic phase_exec here
+    syncRegisterFile #(.LOG(1)) regFile(
+        .clk(phase_exec),               // clock only on the execute phase edge otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
+        ._wr_en(_gated_regfile_in),     // only enabled for write during the execute phase by which time the write address select lines are stable
+        .wr_addr(regfile_wr_addr),
+        .wr_data(alu_result_bus),
+        
+        ._rdL_en(_regfile_rdL_en),
+        .rdL_addr(regfile_rdL_addr),
+        .rdL_data(abus),
+        
+        ._rdR_en(_regfile_rdR_en),
+        .rdR_addr(regfile_rdR_addr),
+        .rdR_data(bbus)
+    );
+
+
+    // UART =============================================================
+    wire #(10) _gated_uart_wr = _uart_in | _phase_exec;   // DONE sync clock data into uart - must occur AFTER uart_alubuf_buf has been enabled
+
+    wire [7:0] uart_d;
+
+    um245r #(.LOG(0))  uart ( // DONE
+        .D(uart_d),
+        .WR(_gated_uart_wr),// Writes data on -ve edge
+        ._RD(_adev_uart),	// When goes from high to low then the FIFO data is placed onto D (equates to _OE)
+        ._TXE(_flag_do),	// When high do NOT write data using WR, when low write data by strobing WR
+        ._RXF(_flag_di)		// When high to NOT read from D, when low then data is available to read by strobing RD low
+      );
+
+    hct74245 uart_alubus_buf(.A(alu_result_bus), .B(uart_d), .nOE(_uart_in), .dir(1'b1)); // DONE
+    hct74245 uart_abus_buf(.A(uart_d), .B(abus), .nOE(_adev_uart), .dir(1'b1)); // DONE
+
+
+
+    always @(pc_addr) begin
+        if ($isunknown(pc_addr)) begin // just check leftmost but as this is part of the op and is mandatory
+            $display ("%9t ", $time,  "CPU ERROR");
+            $error("CPU : ERROR - UNKNOWN PC %4h", pc_addr); 
+            $finish_and_return(1);;
+        end
+        if ($isunknown(ctrl.rom_6.Mem[pc_addr][7])) begin // just check leftmost but as this is part of the op and is mandatory
+            $display ("%9t ", $time,  "CPU ERROR");
+            $error("CPU : END OF PROGRAM - NO CODE FOUND AT PC %4h = %8b", pc_addr, ctrl.rom_6.Mem[pc_addr][7]); 
+//            `FINISH_AND_RETURN(1);
+        end
+    end
+    always @(negedge system_clk) begin
+        if (_mrPC && $isunknown(alu_result_bus)) begin // just check leftmost but as this is part of the op and is mandatory
+            $display ("%9t ", $time,  "CPU ERROR");
+            $error("CPU : ERROR - ALU RESULT BUS UNDEFINED AT EXECUTE = %8b", alu_result_bus); 
+            //`FINISH_AND_RETURN(1);
+        end
+    end
+
+
+    int halt_code;
+    // neg edge is start of execute
+    always @(negedge system_clk) begin
+        cycleCount ++;
+
+        if (_halt_in == 0) begin
+            halt_code = (CPU.MARHI.Q  << 8) + CPU.MARLO.Q;
+
+            // leave space around the code as Verification.scala looks for them to extract the value
+            $display("----------------------------- CYCLES %d",  cycleCount);
+            $display("----------------------------- HALTED <%1d h:%04x> <%1d h:%02x> ---------------------------", 
+                        halt_code, 16'(halt_code),
+                        alu_result_bus, 8'(alu_result_bus));
+            $finish();
+        end
+    end
+
+    function string disasmCur();
+        string msg;
+    begin
+        disasmCur = $sformatf( " PC=%1d _do_exec=%1d   %s", 
+                ctrl.PC.pcval,
+                ctrl._do_exec,
+                disasm(ctrl.instruction) 
+            );
+    end
+    endfunction
+
+    function string disasm([47:0] INSTRUCTION);
+         reg [4:0] i_aluop;
+         reg [3:0] i_target;
+         reg [2:0] i_srca;
+         reg [2:0] i_srcb_lo;
+         reg [3:0] i_cond;
+         reg i_flag;
+         reg i_cmode;
+         reg i_nu;
+         reg i_srcb_hi;
+         reg i_amode;
+         reg [23:8] i_addr ;
+         reg [7:0] i_immed;
+         reg [3:0] i_srcb;
+    begin
+        import alu_ops::*;
+        import control::*;
+
+        i_aluop = INSTRUCTION[47:43]; 
+        i_target = INSTRUCTION[42:39]; 
+        i_srca = INSTRUCTION[38:36]; 
+        i_srcb_lo = INSTRUCTION[35:33]; 
+        i_cond = INSTRUCTION[32:29]; 
+        i_flag = INSTRUCTION[28]; 
+        i_cmode = INSTRUCTION[27]; 
+        i_nu   = INSTRUCTION[26]; 
+        i_srcb_hi   = INSTRUCTION[25]; 
+        i_amode= INSTRUCTION[24]; 
+        i_addr = INSTRUCTION[23:8]; 
+        i_immed= INSTRUCTION[7:0]; 
+
+        i_srcb   = {i_srcb_hi, i_srcb_lo};
+
+        disasm = $sformatf(
+                    "op:(%2d)%-10s", i_aluop, aluopName(i_aluop), 
+                    "  t:(%2d)%-6s", i_target, tdevname(i_target), 
+                    " a:(%2d)%-8s", i_srca, adevname(i_srca),  
+                    " b:(%3d)%-10s", i_srcb, bdevname(i_srcb),  
+                    "  cond:(%1d)%2s", i_cond, condname(i_cond),  
+                    " setf:(%b)%s", i_flag, (i_flag? "NOSET" : "SET"), 
+                    " cmode:(%b)%s", i_cmode, (i_cmode? "INV" : "STD"), 
+                    " amode:(%1b)%s", i_amode, (i_amode?  "DIR": "REG"), 
+                    " addr:(%1d)%04x", i_addr, i_addr, 
+                    " immed:(%1d)%02x", i_immed, i_immed
+        ); 
+    end 
+    endfunction
+
+
+endmodule : cpu
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// PSEUDO ASSEMBLER
+
+
+
+
+
+
+
+
+// Instruction populates the ROM and adds a text version of the instruction to the CODE array
+
+
+// in the same order as the instruction layout - args as numeric values already cast to correct size
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// in the same order as the instruction layout - args as numeric values 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// in same order as instruction - symbolic args
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// does autocounting
+
+
+
+
+
+// in the same order as the instruction layout - args as numeric values already cast to correct size
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// sumbolic - in the order old scripts use
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// always sets the flags
+
+
+
+
+
+
+
+
+
+// fixed
+
+
+
+
+
+
+
+
+
+
+
+// prep jump sourcing the PCHI from the immed8
+
+// jump sourcing the PCLO from the immed8
+
+// conditional jump sourcing the PCLO from the immed8
+
+// conditional jump sourcing the PCLO from the immed8
+
+
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// !!!!!!!! PCHITMP MUST ALWAYS BE UNCONDITIONAL OTHERWISE RISK THAT CONTROL LINE LIKE DI/DO MIGHT GO HIGH BETWEEN THE PCHITMP AND PC INSTRUCTIONS...
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+
+
+
+
+
+//  `JMP_UNCONDITIONAL_PCHITMP_IMMED(INST, ADDRESS_LONG >>  8) \
+//  `JMP_IMMED(INST+1, ADDRESS_LONG & 8'hff)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// verilator lint_off ASSIGNDLY
+// verilator lint_off STMTDLY
+
+//`timescale 1ns/1ns
+`timescale 1ns/1ns
+
+
+
+
+
+
+module test();
+
+    import alu_ops::*;
+
+// SNIPPED TO INCLUDE IN BODY OF MODULE
+// adds this label to dumpfile and logging
+
+/* verilator lint_off UNUSED */
+reg [80:0][7:0] label;
+//string label;
+
+
+    
+
+
+
+
+/* verilator lint_on UNUSED */
+
+    localparam SETTLE_TOLERANCE=50; // perhaps not needed now with new control logic impl
+
+    // CLOCK ===================================================================================
+    localparam TCLK=390;   // clock cycle
+
+    // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
+    logic _RESET_SWITCH;
+
+    logic clk=0;
+
+/*
+    always begin
+       #TCLK clk = !clk;
+    end
+*/
+
+    cpu CPU(_RESET_SWITCH, clk);
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // TESTS ===========================================================================================
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    
+
+    localparam MAX_PC=100;
+    
+    string_bits CODE [MAX_PC];
+    string CODE_NUM [MAX_PC];
+    string TEMP_STRING;
+    string_bits CODE_TEXT [MAX_PC];
+    //string_bits CODE [MAX_PC];
+
+    integer ADD_ONE;
+    
+    
+    integer WAIT_UART_OUT;
+
+    // SETUP ROM
+    integer icount;
+    task INIT_ROM;
+    begin
+
+         icount = 0;
+        // A = 0, carry set
+        
+        
+    
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    { CPU.ctrl.rom_6.Mem[icount], CPU.ctrl.rom_5.Mem[icount], CPU.ctrl.rom_4.Mem[icount], CPU.ctrl.rom_3.Mem[icount], CPU.ctrl.rom_2.Mem[icount], CPU.ctrl.rom_1.Mem[icount] } = {
+         (cast.to5(alu_ops::OP_B_PLUS_1)),
+         (cast.to4(control::TDEV_rega)),
+         (cast.to3(control::ADEV_not_used)),
+         (cast.to3(control::BDEV_immed[2:0])),
+         (cast.to4(control::CONDITION_A)),
+         (cast.to1(1'b0)),
+         (cast.to1(1'b0)),
+         1'bz,
+         (cast.to1(control::BDEV_immed[3])),
+         (cast.to1(1'b0)),
+         (cast.to16(1'bz)),
+         (cast.to8(255)) };
+        $sformat(TEMP_STRING, "aluop:%x  target:%x  a:%x  b:%x  cond:%x setf:%x cmode:%x amode:%x immed8:%x addr:%x",
+                    cast.to5(alu_ops::OP_B_PLUS_1), cast.to4(control::TDEV_rega), cast.to3(control::ADEV_not_used), ((cast.to1(control::BDEV_immed[3]) << 3) + cast.to3(control::BDEV_immed[2:0])), cast.to4(control::CONDITION_A), cast.to1(1'b0), cast.to1(1'b0), cast.to1(1'b0), cast.to8(255), cast.to16(1'bz));
+        $display("ASSEMBLED : ", TEMP_STRING);
+        CODE_NUM[icount] = TEMP_STRING;;;
+        CODE[icount] = "rega=not_used(B_PLUS_1)immed  cond=A setf=`SET_FLAGS amode=`NA_AMODE cmode=`CM_STD immed8=255 addr=1'bz";;
+        icount++;;
+        // B = 1, carry persisted
+        
+        
+    
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    { CPU.ctrl.rom_6.Mem[icount], CPU.ctrl.rom_5.Mem[icount], CPU.ctrl.rom_4.Mem[icount], CPU.ctrl.rom_3.Mem[icount], CPU.ctrl.rom_2.Mem[icount], CPU.ctrl.rom_1.Mem[icount] } = {
+         (cast.to5(alu_ops::OP_B_PLUS_1)),
+         (cast.to4(control::TDEV_regb)),
+         (cast.to3(control::ADEV_not_used)),
+         (cast.to3(control::BDEV_immed[2:0])),
+         (cast.to4(control::CONDITION_C)),
+         (cast.to1(1'b1)),
+         (cast.to1(1'b0)),
+         1'bz,
+         (cast.to1(control::BDEV_immed[3])),
+         (cast.to1(1'b0)),
+         (cast.to16(1'bz)),
+         (cast.to8(1)) };
+        $sformat(TEMP_STRING, "aluop:%x  target:%x  a:%x  b:%x  cond:%x setf:%x cmode:%x amode:%x immed8:%x addr:%x",
+                    cast.to5(alu_ops::OP_B_PLUS_1), cast.to4(control::TDEV_regb), cast.to3(control::ADEV_not_used), ((cast.to1(control::BDEV_immed[3]) << 3) + cast.to3(control::BDEV_immed[2:0])), cast.to4(control::CONDITION_C), cast.to1(1'b1), cast.to1(1'b0), cast.to1(1'b0), cast.to8(1), cast.to16(1'bz));
+        $display("ASSEMBLED : ", TEMP_STRING);
+        CODE_NUM[icount] = TEMP_STRING;;;
+        CODE[icount] = "regb=not_used(B_PLUS_1)immed  cond=C setf=`NA_FLAGS amode=`NA_AMODE cmode=`CM_STD immed8=1 addr=1'bz";;
+        icount++;;
+        // B = 2, carry persisted
+        
+        
+    
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    { CPU.ctrl.rom_6.Mem[icount], CPU.ctrl.rom_5.Mem[icount], CPU.ctrl.rom_4.Mem[icount], CPU.ctrl.rom_3.Mem[icount], CPU.ctrl.rom_2.Mem[icount], CPU.ctrl.rom_1.Mem[icount] } = {
+         (cast.to5(alu_ops::OP_B_PLUS_1)),
+         (cast.to4(control::TDEV_regb)),
+         (cast.to3(control::ADEV_not_used)),
+         (cast.to3(control::BDEV_regb[2:0])),
+         (cast.to4(control::CONDITION_C)),
+         (cast.to1(1'b1)),
+         (cast.to1(1'b0)),
+         1'bz,
+         (cast.to1(control::BDEV_regb[3])),
+         (cast.to1(1'b0)),
+         (cast.to16(1'bz)),
+         (cast.to8(1)) };
+        $sformat(TEMP_STRING, "aluop:%x  target:%x  a:%x  b:%x  cond:%x setf:%x cmode:%x amode:%x immed8:%x addr:%x",
+                    cast.to5(alu_ops::OP_B_PLUS_1), cast.to4(control::TDEV_regb), cast.to3(control::ADEV_not_used), ((cast.to1(control::BDEV_regb[3]) << 3) + cast.to3(control::BDEV_regb[2:0])), cast.to4(control::CONDITION_C), cast.to1(1'b1), cast.to1(1'b0), cast.to1(1'b0), cast.to8(1), cast.to16(1'bz));
+        $display("ASSEMBLED : ", TEMP_STRING);
+        CODE_NUM[icount] = TEMP_STRING;;;
+        CODE[icount] = "regb=not_used(B_PLUS_1)regb  cond=C setf=`NA_FLAGS amode=`NA_AMODE cmode=`CM_STD immed8=1 addr=1'bz";;
+        icount++;;
+        // B = 3, carry persisted
+        
+        
+    
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    { CPU.ctrl.rom_6.Mem[icount], CPU.ctrl.rom_5.Mem[icount], CPU.ctrl.rom_4.Mem[icount], CPU.ctrl.rom_3.Mem[icount], CPU.ctrl.rom_2.Mem[icount], CPU.ctrl.rom_1.Mem[icount] } = {
+         (cast.to5(alu_ops::OP_B_PLUS_1)),
+         (cast.to4(control::TDEV_regb)),
+         (cast.to3(control::ADEV_not_used)),
+         (cast.to3(control::BDEV_regb[2:0])),
+         (cast.to4(control::CONDITION_C)),
+         (cast.to1(1'b1)),
+         (cast.to1(1'b0)),
+         1'bz,
+         (cast.to1(control::BDEV_regb[3])),
+         (cast.to1(1'b0)),
+         (cast.to16(1'bz)),
+         (cast.to8(1)) };
+        $sformat(TEMP_STRING, "aluop:%x  target:%x  a:%x  b:%x  cond:%x setf:%x cmode:%x amode:%x immed8:%x addr:%x",
+                    cast.to5(alu_ops::OP_B_PLUS_1), cast.to4(control::TDEV_regb), cast.to3(control::ADEV_not_used), ((cast.to1(control::BDEV_regb[3]) << 3) + cast.to3(control::BDEV_regb[2:0])), cast.to4(control::CONDITION_C), cast.to1(1'b1), cast.to1(1'b0), cast.to1(1'b0), cast.to8(1), cast.to16(1'bz));
+        $display("ASSEMBLED : ", TEMP_STRING);
+        CODE_NUM[icount] = TEMP_STRING;;;
+        CODE[icount] = "regb=not_used(B_PLUS_1)regb  cond=C setf=`NA_FLAGS amode=`NA_AMODE cmode=`CM_STD immed8=1 addr=1'bz";;
+        icount++;;
+        // C = 2, carry cleared
+        
+        
+    
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    { CPU.ctrl.rom_6.Mem[icount], CPU.ctrl.rom_5.Mem[icount], CPU.ctrl.rom_4.Mem[icount], CPU.ctrl.rom_3.Mem[icount], CPU.ctrl.rom_2.Mem[icount], CPU.ctrl.rom_1.Mem[icount] } = {
+         (cast.to5(alu_ops::OP_B_PLUS_1)),
+         (cast.to4(control::TDEV_regc)),
+         (cast.to3(control::ADEV_not_used)),
+         (cast.to3(control::BDEV_immed[2:0])),
+         (cast.to4(control::CONDITION_C)),
+         (cast.to1(1'b0)),
+         (cast.to1(1'b0)),
+         1'bz,
+         (cast.to1(control::BDEV_immed[3])),
+         (cast.to1(1'b0)),
+         (cast.to16(1'bz)),
+         (cast.to8(2)) };
+        $sformat(TEMP_STRING, "aluop:%x  target:%x  a:%x  b:%x  cond:%x setf:%x cmode:%x amode:%x immed8:%x addr:%x",
+                    cast.to5(alu_ops::OP_B_PLUS_1), cast.to4(control::TDEV_regc), cast.to3(control::ADEV_not_used), ((cast.to1(control::BDEV_immed[3]) << 3) + cast.to3(control::BDEV_immed[2:0])), cast.to4(control::CONDITION_C), cast.to1(1'b0), cast.to1(1'b0), cast.to1(1'b0), cast.to8(2), cast.to16(1'bz));
+        $display("ASSEMBLED : ", TEMP_STRING);
+        CODE_NUM[icount] = TEMP_STRING;;;
+        CODE[icount] = "regc=not_used(B_PLUS_1)immed  cond=C setf=`SET_FLAGS amode=`NA_AMODE cmode=`CM_STD immed8=2 addr=1'bz";;
+        icount++;;
+
+        // carry is clear at the moment 
+        // carry flag should not be set by these two instructions because second instruction doesn't execute
+        
+        
+    
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    { CPU.ctrl.rom_6.Mem[icount], CPU.ctrl.rom_5.Mem[icount], CPU.ctrl.rom_4.Mem[icount], CPU.ctrl.rom_3.Mem[icount], CPU.ctrl.rom_2.Mem[icount], CPU.ctrl.rom_1.Mem[icount] } = {
+         (cast.to5(alu_ops::OP_B)),
+         (cast.to4(control::TDEV_rega)),
+         (cast.to3(control::ADEV_not_used)),
+         (cast.to3(control::BDEV_immed[2:0])),
+         (cast.to4(control::CONDITION_A)),
+         (cast.to1(1'b0)),
+         (cast.to1(1'b0)),
+         1'bz,
+         (cast.to1(control::BDEV_immed[3])),
+         (cast.to1(1'b0)),
+         (cast.to16(1'bz)),
+         (cast.to8(255)) };
+        $sformat(TEMP_STRING, "aluop:%x  target:%x  a:%x  b:%x  cond:%x setf:%x cmode:%x amode:%x immed8:%x addr:%x",
+                    cast.to5(alu_ops::OP_B), cast.to4(control::TDEV_rega), cast.to3(control::ADEV_not_used), ((cast.to1(control::BDEV_immed[3]) << 3) + cast.to3(control::BDEV_immed[2:0])), cast.to4(control::CONDITION_A), cast.to1(1'b0), cast.to1(1'b0), cast.to1(1'b0), cast.to8(255), cast.to16(1'bz));
+        $display("ASSEMBLED : ", TEMP_STRING);
+        CODE_NUM[icount] = TEMP_STRING;;;
+        CODE[icount] = "rega=not_used(B)immed  cond=A setf=`SET_FLAGS amode=`NA_AMODE cmode=`CM_STD immed8=255 addr=1'bz";;
+        icount++;;
+        
+        
+    
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    { CPU.ctrl.rom_6.Mem[icount], CPU.ctrl.rom_5.Mem[icount], CPU.ctrl.rom_4.Mem[icount], CPU.ctrl.rom_3.Mem[icount], CPU.ctrl.rom_2.Mem[icount], CPU.ctrl.rom_1.Mem[icount] } = {
+         (cast.to5(alu_ops::OP_B_PLUS_1)),
+         (cast.to4(control::TDEV_regb)),
+         (cast.to3(control::ADEV_not_used)),
+         (cast.to3(control::BDEV_immed[2:0])),
+         (cast.to4(control::CONDITION_C)),
+         (cast.to1(1'b0)),
+         (cast.to1(1'b0)),
+         1'bz,
+         (cast.to1(control::BDEV_immed[3])),
+         (cast.to1(1'b0)),
+         (cast.to16(1'bz)),
+         (cast.to8(255)) };
+        $sformat(TEMP_STRING, "aluop:%x  target:%x  a:%x  b:%x  cond:%x setf:%x cmode:%x amode:%x immed8:%x addr:%x",
+                    cast.to5(alu_ops::OP_B_PLUS_1), cast.to4(control::TDEV_regb), cast.to3(control::ADEV_not_used), ((cast.to1(control::BDEV_immed[3]) << 3) + cast.to3(control::BDEV_immed[2:0])), cast.to4(control::CONDITION_C), cast.to1(1'b0), cast.to1(1'b0), cast.to1(1'b0), cast.to8(255), cast.to16(1'bz));
+        $display("ASSEMBLED : ", TEMP_STRING);
+        CODE_NUM[icount] = TEMP_STRING;;;
+        CODE[icount] = "regb=not_used(B_PLUS_1)immed  cond=C setf=`SET_FLAGS amode=`NA_AMODE cmode=`CM_STD immed8=255 addr=1'bz";;
+        icount++;; // should NOT update carry bit !!
+
+        
+    
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    { CPU.ctrl.rom_6.Mem[icount], CPU.ctrl.rom_5.Mem[icount], CPU.ctrl.rom_4.Mem[icount], CPU.ctrl.rom_3.Mem[icount], CPU.ctrl.rom_2.Mem[icount], CPU.ctrl.rom_1.Mem[icount] } = {
+         (cast.to5(alu_ops::OP_B)),
+         (cast.to4(control::TDEV_halt)),
+         (cast.to3(control::ADEV_not_used)),
+         (cast.to3(control::BDEV_immed[2:0])),
+         (cast.to4(control::CONDITION_A)),
+         (cast.to1(1'b1)),
+         (cast.to1(1'b0)),
+         1'bz,
+         (cast.to1(control::BDEV_immed[3])),
+         (cast.to1(1'b0)),
+         (cast.to16(1'bz)),
+         (cast.to8(255)) };
+        $sformat(TEMP_STRING, "aluop:%x  target:%x  a:%x  b:%x  cond:%x setf:%x cmode:%x amode:%x immed8:%x addr:%x",
+                    cast.to5(alu_ops::OP_B), cast.to4(control::TDEV_halt), cast.to3(control::ADEV_not_used), ((cast.to1(control::BDEV_immed[3]) << 3) + cast.to3(control::BDEV_immed[2:0])), cast.to4(control::CONDITION_A), cast.to1(1'b1), cast.to1(1'b0), cast.to1(1'b0), cast.to8(255), cast.to16(1'bz));
+        $display("ASSEMBLED : ", TEMP_STRING);
+        CODE_NUM[icount] = TEMP_STRING;;;
+        CODE[icount] = "halt=not_used(B)immed  cond=A setf=`NA_FLAGS amode=`NA_AMODE cmode=`CM_STD immed8=255 addr=1'bz";;; 
+            
+    end
+    endtask : INIT_ROM
+
+    initial begin
+        //$timeformat(-3, 0, "ms", 10);
+
+        INIT_ROM();
+
+        //`DISPLAY("init : _RESET_SWITCH=0")
+        _RESET_SWITCH = 0;
+        clk=0;
+        #1000
+       
+if (CPU._mrPC !== '0) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU._mrPC != '0", 107, CPU._mrPC, '0, CPU._mrPC, '0, CPU._mrPC, '0);
+  $finish_and_return(1);
+end;
+       
+if (CPU.pc_addr !== 'x) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.pc_addr != 'x", 108, CPU.pc_addr, 'x, CPU.pc_addr, 'x, CPU.pc_addr, 'x);
+  $finish_and_return(1);
+end; 
+       
+        _RESET_SWITCH = 1;
+       clk = 1; // high fetch phase - +ve clk reset _mr
+       #TCLK;
+       
+if (CPU._mrPC !== '0) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU._mrPC != '0", 113, CPU._mrPC, '0, CPU._mrPC, '0, CPU._mrPC, '0);
+  $finish_and_return(1);
+end;
+       
+if (CPU.pc_addr !== 0) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.pc_addr != 0", 114, CPU.pc_addr, 0, CPU.pc_addr, 0, CPU.pc_addr, 0);
+  $finish_and_return(1);
+end; 
+       
+if (CPU.status_register_czonGLEN.Q[7] !== 'x) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.status_register_czonGLEN.Q[7] != 'x", 115, CPU.status_register_czonGLEN.Q[7], 'x, CPU.status_register_czonGLEN.Q[7], 'x, CPU.status_register_czonGLEN.Q[7], 'x);
+  $finish_and_return(1);
+end;
+
+       clk = 0; // low = execute phase
+       #TCLK
+       
+if (CPU._mrPC !== 1) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU._mrPC != 1", 119, CPU._mrPC, 1, CPU._mrPC, 1, CPU._mrPC, 1);
+  $finish_and_return(1);
+end;
+       
+if (CPU.pc_addr !== 0) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.pc_addr != 0", 120, CPU.pc_addr, 0, CPU.pc_addr, 0, CPU.pc_addr, 0);
+  $finish_and_return(1);
+end; 
+       
+if (CPU.status_register_czonGLEN.Q !== 8'b00111010) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.status_register_czonGLEN.Q != 8'b00111010", 121, CPU.status_register_czonGLEN.Q, 8'b00111010, CPU.status_register_czonGLEN.Q, 8'b00111010, CPU.status_register_czonGLEN.Q, 8'b00111010);
+  $finish_and_return(1);
+end; // 255 rolled over to 0
+       
+if (CPU.regFile.get(0) !== 8'd00) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(0) != 8'd00", 122, CPU.regFile.get(0), 8'd00, CPU.regFile.get(0), 8'd00, CPU.regFile.get(0), 8'd00);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(1) !== 8'h11) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(1) != 8'h11", 123, CPU.regFile.get(1), 8'h11, CPU.regFile.get(1), 8'h11, CPU.regFile.get(1), 8'h11);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(2) !== 8'h22) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(2) != 8'h22", 124, CPU.regFile.get(2), 8'h22, CPU.regFile.get(2), 8'h22, CPU.regFile.get(2), 8'h22);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(3) !== 8'h33) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(3) != 8'h33", 125, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33);
+  $finish_and_return(1);
+end; // default vals of reg
+
+
+       clk = 1; // +ve updates PC
+       #TCLK
+       
+if (CPU.pc_addr !== 1) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.pc_addr != 1", 130, CPU.pc_addr, 1, CPU.pc_addr, 1, CPU.pc_addr, 1);
+  $finish_and_return(1);
+end; 
+
+       clk = 0;
+       #TCLK
+       
+if (CPU.pc_addr !== 1) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.pc_addr != 1", 134, CPU.pc_addr, 1, CPU.pc_addr, 1, CPU.pc_addr, 1);
+  $finish_and_return(1);
+end; 
+       
+if (CPU.status_register_czonGLEN.Q !== 8'b00111010) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.status_register_czonGLEN.Q != 8'b00111010", 135, CPU.status_register_czonGLEN.Q, 8'b00111010, CPU.status_register_czonGLEN.Q, 8'b00111010, CPU.status_register_czonGLEN.Q, 8'b00111010);
+  $finish_and_return(1);
+end; // Flags not overwritten
+       
+if (CPU.regFile.get(0) !== 8'd00) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(0) != 8'd00", 136, CPU.regFile.get(0), 8'd00, CPU.regFile.get(0), 8'd00, CPU.regFile.get(0), 8'd00);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(1) !== 8'h02) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(1) != 8'h02", 137, CPU.regFile.get(1), 8'h02, CPU.regFile.get(1), 8'h02, CPU.regFile.get(1), 8'h02);
+  $finish_and_return(1);
+end; 
+       
+if (CPU.regFile.get(2) !== 8'h22) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(2) != 8'h22", 138, CPU.regFile.get(2), 8'h22, CPU.regFile.get(2), 8'h22, CPU.regFile.get(2), 8'h22);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(3) !== 8'h33) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(3) != 8'h33", 139, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33);
+  $finish_and_return(1);
+end; // default vals of reg
+
+       clk = 1;
+       #TCLK
+       
+if (CPU.pc_addr !== 2) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.pc_addr != 2", 143, CPU.pc_addr, 2, CPU.pc_addr, 2, CPU.pc_addr, 2);
+  $finish_and_return(1);
+end; 
+
+       clk = 0;
+       #TCLK
+       
+if (CPU.pc_addr !== 2) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.pc_addr != 2", 147, CPU.pc_addr, 2, CPU.pc_addr, 2, CPU.pc_addr, 2);
+  $finish_and_return(1);
+end; 
+       
+if (CPU.status_register_czonGLEN.Q !== 8'b00111010) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.status_register_czonGLEN.Q != 8'b00111010", 148, CPU.status_register_czonGLEN.Q, 8'b00111010, CPU.status_register_czonGLEN.Q, 8'b00111010, CPU.status_register_czonGLEN.Q, 8'b00111010);
+  $finish_and_return(1);
+end; // Flags not overwritten
+       
+if (CPU.regFile.get(0) !== 8'd00) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(0) != 8'd00", 149, CPU.regFile.get(0), 8'd00, CPU.regFile.get(0), 8'd00, CPU.regFile.get(0), 8'd00);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(1) !== 8'h03) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(1) != 8'h03", 150, CPU.regFile.get(1), 8'h03, CPU.regFile.get(1), 8'h03, CPU.regFile.get(1), 8'h03);
+  $finish_and_return(1);
+end; 
+       
+if (CPU.regFile.get(2) !== 8'h22) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(2) != 8'h22", 151, CPU.regFile.get(2), 8'h22, CPU.regFile.get(2), 8'h22, CPU.regFile.get(2), 8'h22);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(3) !== 8'h33) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(3) != 8'h33", 152, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33);
+  $finish_and_return(1);
+end; // default vals of reg
+
+       clk = 1;
+       #TCLK
+       
+if (CPU.pc_addr !== 3) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.pc_addr != 3", 156, CPU.pc_addr, 3, CPU.pc_addr, 3, CPU.pc_addr, 3);
+  $finish_and_return(1);
+end; 
+
+       clk = 0;
+       #TCLK
+       
+if (CPU.status_register_czonGLEN.Q !== 8'b00111010) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.status_register_czonGLEN.Q != 8'b00111010", 160, CPU.status_register_czonGLEN.Q, 8'b00111010, CPU.status_register_czonGLEN.Q, 8'b00111010, CPU.status_register_czonGLEN.Q, 8'b00111010);
+  $finish_and_return(1);
+end; // Flags not overwritten
+       
+if (CPU.regFile.get(0) !== 8'd00) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(0) != 8'd00", 161, CPU.regFile.get(0), 8'd00, CPU.regFile.get(0), 8'd00, CPU.regFile.get(0), 8'd00);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(1) !== 8'h04) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(1) != 8'h04", 162, CPU.regFile.get(1), 8'h04, CPU.regFile.get(1), 8'h04, CPU.regFile.get(1), 8'h04);
+  $finish_and_return(1);
+end; 
+       
+if (CPU.regFile.get(2) !== 8'h22) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(2) != 8'h22", 163, CPU.regFile.get(2), 8'h22, CPU.regFile.get(2), 8'h22, CPU.regFile.get(2), 8'h22);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(3) !== 8'h33) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(3) != 8'h33", 164, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33);
+  $finish_and_return(1);
+end; // default vals of reg
+
+       clk = 1;
+       #TCLK
+       
+if (CPU.pc_addr !== 4) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.pc_addr != 4", 168, CPU.pc_addr, 4, CPU.pc_addr, 4, CPU.pc_addr, 4);
+  $finish_and_return(1);
+end; 
+
+       clk = 0;
+       #TCLK
+       
+if (CPU.status_register_czonGLEN.Q !== 8'b11111010) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.status_register_czonGLEN.Q != 8'b11111010", 172, CPU.status_register_czonGLEN.Q, 8'b11111010, CPU.status_register_czonGLEN.Q, 8'b11111010, CPU.status_register_czonGLEN.Q, 8'b11111010);
+  $finish_and_return(1);
+end; // Flags ARE overwritten
+       
+if (CPU.regFile.get(0) !== 8'd00) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(0) != 8'd00", 173, CPU.regFile.get(0), 8'd00, CPU.regFile.get(0), 8'd00, CPU.regFile.get(0), 8'd00);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(1) !== 8'h04) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(1) != 8'h04", 174, CPU.regFile.get(1), 8'h04, CPU.regFile.get(1), 8'h04, CPU.regFile.get(1), 8'h04);
+  $finish_and_return(1);
+end; 
+       
+if (CPU.regFile.get(2) !== 8'h03) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(2) != 8'h03", 175, CPU.regFile.get(2), 8'h03, CPU.regFile.get(2), 8'h03, CPU.regFile.get(2), 8'h03);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(3) !== 8'h33) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(3) != 8'h33", 176, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33);
+  $finish_and_return(1);
+end; // default vals of reg
+
+        // pair of ops - second op shouldn't update the flags !!
+       clk = 1;
+       #TCLK
+       
+if (CPU.pc_addr !== 5) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.pc_addr != 5", 181, CPU.pc_addr, 5, CPU.pc_addr, 5, CPU.pc_addr, 5);
+  $finish_and_return(1);
+end; 
+
+       clk = 0;
+       #TCLK
+       
+if (CPU.status_register_czonGLEN.Q !== 8'b11101010) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.status_register_czonGLEN.Q != 8'b11101010", 185, CPU.status_register_czonGLEN.Q, 8'b11101010, CPU.status_register_czonGLEN.Q, 8'b11101010, CPU.status_register_czonGLEN.Q, 8'b11101010);
+  $finish_and_return(1);
+end; // Flags ARE overwritten
+       
+if (CPU.regFile.get(0) !== 8'd255) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(0) != 8'd255", 186, CPU.regFile.get(0), 8'd255, CPU.regFile.get(0), 8'd255, CPU.regFile.get(0), 8'd255);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(1) !== 8'h04) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(1) != 8'h04", 187, CPU.regFile.get(1), 8'h04, CPU.regFile.get(1), 8'h04, CPU.regFile.get(1), 8'h04);
+  $finish_and_return(1);
+end; 
+       
+if (CPU.regFile.get(2) !== 8'h03) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(2) != 8'h03", 188, CPU.regFile.get(2), 8'h03, CPU.regFile.get(2), 8'h03, CPU.regFile.get(2), 8'h03);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(3) !== 8'h33) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(3) != 8'h33", 189, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33);
+  $finish_and_return(1);
+end; // default vals of reg
+
+       clk = 1;
+       #TCLK
+       
+if (CPU.pc_addr !== 6) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.pc_addr != 6", 193, CPU.pc_addr, 6, CPU.pc_addr, 6, CPU.pc_addr, 6);
+  $finish_and_return(1);
+end; 
+
+       clk = 0;
+       #TCLK
+       
+if (CPU.status_register_czonGLEN.Q !== 8'b11101010) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.status_register_czonGLEN.Q != 8'b11101010", 197, CPU.status_register_czonGLEN.Q, 8'b11101010, CPU.status_register_czonGLEN.Q, 8'b11101010, CPU.status_register_czonGLEN.Q, 8'b11101010);
+  $finish_and_return(1);
+end; // Flags ARE overwritten
+       
+if (CPU.regFile.get(0) !== 8'd255) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(0) != 8'd255", 198, CPU.regFile.get(0), 8'd255, CPU.regFile.get(0), 8'd255, CPU.regFile.get(0), 8'd255);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(1) !== 8'h04) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(1) != 8'h04", 199, CPU.regFile.get(1), 8'h04, CPU.regFile.get(1), 8'h04, CPU.regFile.get(1), 8'h04);
+  $finish_and_return(1);
+end; 
+       
+if (CPU.regFile.get(2) !== 8'h03) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(2) != 8'h03", 200, CPU.regFile.get(2), 8'h03, CPU.regFile.get(2), 8'h03, CPU.regFile.get(2), 8'h03);
+  $finish_and_return(1);
+end; // default vals of reg
+       
+if (CPU.regFile.get(3) !== 8'h33) begin
+  $display("%9t ", $time, " Line:%-5d FAILED: actual '%b' != '%b' expected,   (d%1d!=d%1d)(h%2h!=h%2h)  : CPU.regFile.get(3) != 8'h33", 201, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33, CPU.regFile.get(3), 8'h33);
+  $finish_and_return(1);
+end; // default vals of reg
+
+        // halt
+       clk = 1;
+       #TCLK
+       clk = 0;
+       #TCLK
+
+
+        $error("SHOULD HAVE HALTED");
+       $finish_and_return(1);;
+
+    end
+
+   // $timeformat [(unit_number, precision, suffix, min_width )] ;
+    task DUMP;
+         //   DUMP_OP;
+            
+
+            $display ("%9t ", $time,  "DUMP  ", " phase_exec=%1d", CPU.phase_exec);
+            $display ("%9t ", $time,  "DUMP  ", " PC=%1d (0x%4h) PCHItmp=%d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
+            $display ("%9t ", $time,  "DUMP  ", " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
+            $display ("%9t ", $time,  "DUMP  ", " addrmode=%1s", control::fAddrMode(CPU._addrmode_register),
+                " addbbus=0x%4x", CPU.address_bus);
+            $display ("%9t ", $time,  "DUMP  ", " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
+            $display ("%9t ", $time,  "DUMP  ", " immed8=%08b", CPU.ctrl.immed8);
+            $display ("%9t ", $time,  "DUMP  ", " ram=%08b", CPU.ram64.D);
+            $display ("%9t ", $time,  "DUMP  ", " tdev=%5b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
+                " adev=%4b(%s)", CPU.abus_dev, control::adevname(CPU.abus_dev),
+                " bdev=%4b(%s)", CPU.bbus_dev,control::bdevname(CPU.bbus_dev),
+                " alu_op=%5b(%s)", CPU.alu_op, aluopName(CPU.alu_op)
+            );            
+            $display ("%9t ", $time,  "DUMP  ", " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
+            $display ("%9t ", $time,  "DUMP  ", " ALUFLAGS czonGLEN=%8b ", CPU.alu_flags_czonGLEN);
+            $display ("%9t ", $time,  "DUMP  ", " FLAGSREG czonGLEN=%8b gated_flags_clk=%1b", CPU.status_register_czonGLEN.Q, CPU.gated_flags_clk);
+            $display ("%9t ", $time,  "DUMP  ", " FLAGS _flag_do=%b _flag_di=%b", CPU._flag_do, CPU._flag_di);
+            $display ("%9t ", $time,  "DUMP  ", " condition=%02d(%1s) _do_exec=%b _set_flags=%b", CPU.ctrl.condition, control::condname(CPU.ctrl.condition), CPU.ctrl._do_exec, CPU._set_flags);
+            $display ("%9t ", $time,  "DUMP  ", " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);
+            $display ("%9t ", $time,  "DUMP  ", "  REGA:%08b", CPU.regFile.get(0),
+                 "  REGB:%08b", CPU.regFile.get(1),
+                 "  REGC:%08b", CPU.regFile.get(2),
+                 "  REGD:%08b", CPU.regFile.get(3)
+                 );
+
+            
+            
+            
+            $display("%9t", $time, " DUMP   WIRES ", 
+    " _adev_rega=%1b", CPU._adev_rega    ,
+    " _adev_regb=%1b", CPU._adev_regb    ,
+    " _adev_regc=%1b", CPU._adev_regc    ,
+    " _adev_regd=%1b", CPU._adev_regd    ,
+    " _adev_marhi=%1b", CPU._adev_marhi    ,
+    " _adev_marlo=%1b", CPU._adev_marlo    ,
+    " _adev_uart=%1b", CPU._adev_uart    ,
+    " _adev_not_used=%1b", CPU._adev_not_used    ,
+    " _bdev_rega=%1b", CPU._bdev_rega    ,
+    " _bdev_regb=%1b", CPU._bdev_regb    ,
+    " _bdev_regc=%1b", CPU._bdev_regc    ,
+    " _bdev_regd=%1b", CPU._bdev_regd    ,
+    " _bdev_marhi=%1b", CPU._bdev_marhi    ,
+    " _bdev_marlo=%1b", CPU._bdev_marlo    ,
+    " _bdev_immed=%1b", CPU._bdev_immed    ,
+    " _bdev_ram=%1b", CPU._bdev_ram    ,
+    " _bdev_not_used=%1b", CPU._bdev_not_used    ,
+    " _bdev_vram=%1b", CPU._bdev_vram    ,
+    " _bdev_porta=%1b", CPU._bdev_porta    ,
+    " _bdev_rand=%1b", CPU._bdev_rand    ,
+    " _bdev_clock=%1b", CPU._bdev_clock    ,
+    " _rega_in=%1b",  CPU._rega_in    ,
+    " _regb_in=%1b",  CPU._regb_in    ,
+    " _regc_in=%1b",  CPU._regc_in    ,
+    " _regd_in=%1b",  CPU._regd_in    ,
+    " _marhi_in=%1b",  CPU._marhi_in    ,
+    " _marlo_in=%1b",  CPU._marlo_in    ,
+    " _uart_in=%1b",  CPU._uart_in    ,
+    " _ram_in=%1b",  CPU._ram_in    ,
+    " _halt_in=%1b",  CPU._halt_in    ,
+    " _pc_in=%1b",  CPU._pc_in    ,
+    " _pchitmp_in=%1b",  CPU._pchitmp_in    ,
+    " _pclo_in=%1b",  CPU._pclo_in);
+    endtask 
+
+    always @* begin
+        if (_RESET_SWITCH)  
+            $display("\n%9t RESET SWITCH RELEASE   _RESET_SWITCH=%1b  ======================================================================\n", $time, _RESET_SWITCH); 
+        else      
+            $display("\n%9t RESET SWITCH SET       _RESET_SWITCH=%1b  ======================================================================\n", $time, _RESET_SWITCH); 
+    end
+
+    always @* begin
+        if (CPU._mrPC)  
+            $display("\n%9t PC RESET RELEASE   _mrPC=%1b  ======================================================================\n", $time, CPU._mrPC); 
+        else      
+            $display("\n%9t PC RESET SET       _mrPC=%1b  ======================================================================\n", $time, CPU._mrPC); 
+    end
+
+    integer pcval;
+    assign pcval={CPU.PCHI, CPU.PCLO};
+
+    string_bits currentCode; // create field so it can appear in dump file
+
+    always @( posedge CPU.phase_exec ) begin
+       $display ("%9t ", $time,  "PHASE_EXEC +ve");
+       $display ("%9t ", $time,  "DUMP  ", " ALUFLAGS czonGLEN=%8b ", CPU.alu_flags_czonGLEN);
+       $display ("%9t ", $time,  "DUMP  ", " FLAGSREG czonGLEN=%8b gated_flags_clk=%1b", CPU.status_register_czonGLEN.Q, CPU.gated_flags_clk);
+       $display ("%9t ", $time,  "DUMP  ", " FLAGS _flag_do=%b _flag_di=%b", CPU._flag_do, CPU._flag_di);
+       $display ("%9t ", $time,  "DUMP  ", " condition=%02d(%1s) _do_exec=%b _set_flags=%b", CPU.ctrl.condition, control::condname(CPU.ctrl.condition), CPU.ctrl._do_exec, CPU._set_flags);
+        //CPU.ctrl.dump;
+       $display ("%9t ", $time,  "EXECUTE....");
+    end
+    always @( negedge CPU.phase_exec ) begin
+       $display ("%9t ", $time,  "PHASE_EXEC -ve");
+       DUMP();
+    end
+
+    int clk_count =0;
+    always @(CPU.PCHI or CPU.PCLO) begin
+        $display("");
+        $display("%9t ", $time, "INCREMENTED PC=%1d ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", {CPU.PCHI, CPU.PCLO});
+        currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
+        $display ("%9t ", $time,  "OPERATION %1d ", clk_count, ": %1s", currentCode);
+        clk_count ++;
+    end
+
+    task DUMP_OP;
+        $display ("%9t ", $time,  "DUMP  ", ": OPERATION: %11s        PC=%4h", currentCode,pcval);
+        $display ("%9t ", $time,  "DUMP  ", ": PC    : %04h", pcval);
+        $display ("%9t ", $time,  "DUMP  ", ": ROM 1 : %02h     %8b", CPU.ctrl.instruction_1, CPU.ctrl.instruction_1);
+        $display ("%9t ", $time,  "DUMP  ", ": ROM 2 : %02h     %8b", CPU.ctrl.instruction_2, CPU.ctrl.instruction_2);
+        $display ("%9t ", $time,  "DUMP  ", ": ROM 3 : %02h     %8b", CPU.ctrl.instruction_3, CPU.ctrl.instruction_3);
+        $display ("%9t ", $time,  "DUMP  ", ": ROM 4 : %02h     %8b", CPU.ctrl.instruction_4, CPU.ctrl.instruction_4);
+        $display ("%9t ", $time,  "DUMP  ", ": ROM 5 : %02h     %8b", CPU.ctrl.instruction_5, CPU.ctrl.instruction_5);
+        $display ("%9t ", $time,  "DUMP  ", ": ROM 6 : %02h     %8b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_6);
+    endtask
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// CONSTRAINTS
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+    always @(*) begin
+        if (CPU._mrPC && CPU.phase_exec && CPU.ctrl.instruction_6 === 'x) begin
+            #1
+            //DUMP;
+            $display("rom value instruction_6", CPU.ctrl.instruction_6); 
+            $error("ERROR END OF PROGRAM - PROGRAM BYTE = XX "); 
+            $finish_and_return(1);;
+        end
+    end
+
+
+endmodule : test

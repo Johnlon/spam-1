@@ -28,33 +28,36 @@
 `define TEXT(LOCN,TXT)    CODE_TEXT[LOCN] = TXT;
 
 // in the same order as the instruction layout - args as numeric values already cast to correct size
-`define INSTRUCTION_NN(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, CMODE, AMODE, ADDRESS, IMMED) \
+`define INSTRUCTION_NN(LOCN, ALUOP, TARGET, SRCA, SRCB_LO, CONDITION, FLAG_CTL, CMODE, SRCB_HI, AMODE, ADDRESS, IMMED) \
     `ROM(LOCN) = { \
          (ALUOP), \
          (TARGET), \
          (SRCA), \
-         (SRCB), \
+         (SRCB_LO), \
          (CONDITION), \
          (FLAG_CTL), \
          (CMODE),  \
-         2'bz, \
+         1'bz, \
+         (SRCB_HI), \
          (AMODE), \
          (ADDRESS), \
          (IMMED) }; \
         $sformat(TEMP_STRING, "aluop:%x  target:%x  a:%x  b:%x  cond:%x setf:%x cmode:%x amode:%x immed8:%x addr:%x", \
-                    ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, CMODE, AMODE, IMMED, ADDRESS); \
+                    ALUOP, TARGET, SRCA, ((SRCB_HI << 3) + SRCB_LO), CONDITION, FLAG_CTL, CMODE, AMODE, IMMED, ADDRESS); \
+        $display("ASSEMBLED : ", TEMP_STRING);\
         CODE_NUM[LOCN] = TEMP_STRING;
 
 // in the same order as the instruction layout - args as numeric values 
-`define INSTRUCTION_N(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, CMODE, AMODE, ADDRESS, IMMED) \
+`define INSTRUCTION_N(LOCN, ALUOP, TARGET, SRCA, SRCB_LO, CONDITION, FLAG_CTL, CMODE, SRCB_HI, AMODE, ADDRESS, IMMED) \
     `INSTRUCTION_NN(LOCN, \
          cast.to5(ALUOP), \
          cast.to4(TARGET), \
          cast.to3(SRCA), \
-         cast.to3(SRCB), \
+         cast.to3(SRCB_LO), \
          cast.to4(CONDITION), \
          cast.to1(FLAG_CTL), \
          cast.to1(CMODE), \
+         cast.to1(SRCB_HI), \
          cast.to1(AMODE), \
          cast.to16(ADDRESS), \
          cast.to8(IMMED) );
@@ -65,10 +68,11 @@
          `toALUOP(ALUOP), \
          `toTDEV(TARGET), \
          `toADEV(SRCA), \
-         `toBDEV(SRCB), \
+         `toBDEV(SRCB)[2:0], \
          `COND(CONDITION), \
          FLAG_CTL, \
          CMODE, \
+         `toBDEV(SRCB)[3], \
          AMODE, \
          ADDRESS, \
          IMMED ); \
@@ -86,11 +90,12 @@
          wire i_aluop = INSTRUCTION[47:43]; \
          wire i_target = INSTRUCTION[42:39]; \
          wire i_srca = INSTRUCTION[38:36]; \
-         wire i_srcb = INSTRUCTION[35:33]; \
+         wire i_srcb_lo = INSTRUCTION[35:33]; \
          wire i_cond = INSTRUCTION[32:29]; \
          wire i_flag = INSTRUCTION[28]; \
          wire i_cmode = INSTRUCTION[27]; \
-         wire i_nu   = INSTRUCTION[26:25]; \
+         wire i_nu   = INSTRUCTION[26]; \
+         wire i_srcb_hi = INSTRUCTION[25]; \
          wire i_amode= INSTRUCTION[24]; \
          wire i_addr = INSTRUCTION[23:8]; \
          wire i_immed= INSTRUCTION[7:0]; \
@@ -98,7 +103,7 @@
                     aluopname(i_aluop), \
                     tdevname(i_target), \
                     adevname(i_srca), \
-                    bdevname(i_srcb), \
+                    bdevname((i_srcb_hi << 3) + i_srcb_lo), \
                     condname(i_cond), \
                     (i_flag "NOSET" : "SET"), \
                     (i_cmode "INV" : "STD"), \
@@ -108,15 +113,16 @@
     }
 
 
-// in the order old scripts use
+// sumbolic - in the order old scripts use
 `define INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
     `INSTRUCTION_N(LOCN, \
          `toALUOP(ALUOP), \
          `toTDEV(TARGET), \
          `toADEV(SRCA), \
-         `toBDEV(SRCB), \
+         `toBDEV(SRCB)[2:0], \
          `COND(CONDITION), \
          FLAG_CTL, \
+         `toBDEV(SRCB)[3], \
          AMODE, \
          ADDRESS, \
          IMMED ); \

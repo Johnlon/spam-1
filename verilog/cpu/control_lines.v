@@ -38,22 +38,19 @@ package control;
     localparam [2:0] ADEV_not_used = 7; // use for random number?
 
     // B BUS
-    localparam [2:0] BDEV_rega = 0; 
-    localparam [2:0] BDEV_regb = 1; 
-    localparam [2:0] BDEV_regc = 2; 
-    localparam [2:0] BDEV_regd = 3; 
-    localparam [2:0] BDEV_marlo = 4;
-    localparam [2:0] BDEV_marhi = 5;
-    localparam [2:0] BDEV_immed = 6; // IMMER READ FROM THE INSTRUCTION
-    localparam [2:0] BDEV_ram = 7;
-    localparam [2:0] BDEV_not_used = BDEV_rega;
-
-    /*
-    localparam [3:0] BDEV_VRAM
-    localparam [3:0] BDEV_PORTA
-    localparam [3:0] BDEV_RAND
-    localparam [3:0] BDEV_CLOCK // 8 bit @ 60 Hz = 4min  or  @100Hz=2.5min
-    */
+    localparam [3:0] BDEV_rega = 0; 
+    localparam [3:0] BDEV_regb = 1; 
+    localparam [3:0] BDEV_regc = 2; 
+    localparam [3:0] BDEV_regd = 3; 
+    localparam [3:0] BDEV_marlo = 4;
+    localparam [3:0] BDEV_marhi = 5;
+    localparam [3:0] BDEV_immed = 6; // IMMER READ FROM THE INSTRUCTION
+    localparam [3:0] BDEV_ram = 7;
+    localparam [3:0] BDEV_not_used = 8;
+    localparam [3:0] BDEV_vram = 9;
+    localparam [3:0] BDEV_porta = 10;
+    localparam [3:0] BDEV_rand = 11;
+    localparam [3:0] BDEV_clock = 12; // 8 bit @ 60 Hz = 4min  or  @100Hz=2.5min
 
     // DEST
     localparam [3:0] TDEV_rega = 0; 
@@ -68,7 +65,7 @@ package control;
     localparam [3:0] TDEV_not_used9 = 9;    // use for VRAM
     localparam [3:0] TDEV_not_used10 = 10;  // use for PORTA
     localparam [3:0] TDEV_not_used11 = 11;  // use for PORTB
-    localparam [3:0] TDEV_not_used = 12;// needed for things like compare where we don't want to overwrite
+    localparam [3:0] TDEV_not_used = 12;// needed for things like compare where we don't want to overwrite or just use pchitmp for noop writes
     localparam [3:0] TDEV_pchitmp = 13; // only load pchitmp
     localparam [3:0] TDEV_pclo= 14;     // only load pclo
     localparam [3:0] TDEV_pc= 15;       // load pclo from instruction and load pchi from pchitmp
@@ -112,20 +109,25 @@ package control;
     end
     endfunction    
 
-    function string bdevname([2:0] dev); 
+    function string bdevname([3:0] dev); 
     begin
         case (dev)
-            BDEV_rega: bdevname = "REGA/NU"; 
+            BDEV_rega: bdevname = "REGA"; 
             BDEV_regb: bdevname = "REGB";
             BDEV_regc: bdevname = "REGC";
             BDEV_regd: bdevname = "REGD";
             BDEV_marlo: bdevname = "MARLO";
             BDEV_marhi: bdevname = "MARHI";
-            BDEV_immed: bdevname = "IMMED/NU";
+            BDEV_immed: bdevname = "IMMED";
             BDEV_ram: bdevname = "RAM";
+            BDEV_not_used: bdevname = "NU";
+            BDEV_vram : bdevname = "VRAM";
+            BDEV_porta : bdevname = "PORTA";
+            BDEV_rand : bdevname = "RAND";
+            BDEV_clock : bdevname = "CLOCK";
             default: begin
                 string n; 
-                $sformat(n,"??(unknown B device %3b)", dev);
+                $sformat(n,"??(unknown B device %4b)", dev);
                 bdevname = n;
             end
         endcase
@@ -145,6 +147,9 @@ package control;
             TDEV_ram: tdevname = "RAM";
             TDEV_halt: tdevname = "HALT";
 
+            TDEV_not_used9: tdevname = "NOTUSED9";
+            TDEV_not_used10: tdevname = "NOTUSED10";
+            TDEV_not_used11: tdevname = "NOTUSED11";
             TDEV_not_used: tdevname = "NOTUSED";
             TDEV_pchitmp: tdevname = "PCHITMP";
             TDEV_pclo: tdevname = "PCLO";
@@ -198,7 +203,10 @@ package control;
 
     function string fAddrMode(_addrmode_register); 
     begin
-            fAddrMode = _addrmode_register == 0? "REG" : "DIR";
+            if ($isunknown(_addrmode_register)) 
+                fAddrMode = "unknown";
+            else
+                fAddrMode = _addrmode_register == 0? "REG" : "DIR";
     end
     //function string fAddrMode(_addrmode_register, _addrmode_direct); 
     //begin
@@ -228,6 +236,11 @@ import control::*;
     ```FN``_BDEV_SEL(marlo)    SEP\
     ```FN``_BDEV_SEL(immed)    SEP\
     ```FN``_BDEV_SEL(ram)    SEP\
+    ```FN``_BDEV_SEL(not_used)    SEP\
+    ```FN``_BDEV_SEL(vram)    SEP\
+    ```FN``_BDEV_SEL(porta)    SEP\
+    ```FN``_BDEV_SEL(rand)    SEP\
+    ```FN``_BDEV_SEL(clock)    SEP\
     ```FN``_TDEV_SEL(rega)    SEP\
     ```FN``_TDEV_SEL(regb)    SEP\
     ```FN``_TDEV_SEL(regc)    SEP\

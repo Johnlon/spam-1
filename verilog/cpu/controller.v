@@ -65,7 +65,8 @@ module controller(
 
     `CONTROL_WIRES(OUT, `COMMA),
     output [4:0] alu_op,
-    output [2:0] bbus_dev, abus_dev,
+    output [2:0] abus_dev,
+    output [3:0] bbus_dev,
     output [3:0] targ_dev,
     output _set_flags
 );
@@ -96,17 +97,20 @@ module controller(
     wire [7:0] direct_address_lo = instruction_2; // DONE
     wire [7:0] direct_address_hi = instruction_3; // DONR
     wire amode_bit               = instruction_4[0]; // DONE
-    wire [1:0] unused_bits       = instruction_4[2:1]; // DONE
+    wire bbus_dev_hi             = instruction_4[1]; // DONE
+    wire unused_bit              = instruction_4[2]; // DONE
     wire condition_invert_bit    = instruction_4[3];  // +ve logic as it makes the hardware easier using the existing components
     wire _set_flags_bit          = instruction_4[4]; // DONE
     wire [2:0] conditionBot      = instruction_4[7:5]; // DONE
     wire conditionTopBit         = instruction_5[0]; // DONE
-    assign bbus_dev              = instruction_5[3:1]; // DONE
+    wire [2:0] bbus_dev_lo       = instruction_5[3:1]; // DONE
     assign abus_dev              = instruction_5[6:4]; // DONE
     assign targ_dev              ={instruction_6[2:0],instruction_5[7]}; // DONE
     assign alu_op                ={instruction_6[7:3]}; // DONE 
 
     wire [3:0] condition        = { conditionTopBit, conditionBot};
+
+    assign bbus_dev              = {bbus_dev_hi, bbus_dev_lo};
 
     //----------------------------------------------------------------------------------
     // condition logic
@@ -180,8 +184,11 @@ module controller(
     // alu input device selection
 
     // device decoders
-    hct74138 bbus_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(bbus_dev[2:0])); // DONE
     hct74138 abus_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(abus_dev[2:0])); // DONE
+
+    hct74138 bbus_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(1'b0), .Enable1_bar(bbus_dev[3]), .A(bbus_dev[2:0])); // DONE
+    hct74138 bbus_dev_16_demux(.Enable3(bbus_dev[3]), .Enable2_bar(1'b0), .Enable1_bar(1'b0), .A(bbus_dev[2:0])); // DONE
+
 
     hct74138 targ_dev_08_demux(.Enable3(1'b1),        .Enable2_bar(_do_exec), .Enable1_bar(targ_dev[3]), .A(targ_dev[2:0])); // DONE
     hct74138 targ_dev_16_demux(.Enable3(targ_dev[3]), .Enable2_bar(_do_exec), .Enable1_bar(1'b0),        .A(targ_dev[2:0])); // DONE
@@ -198,7 +205,7 @@ module controller(
 
     // control lines for device selection
     wire [7:0] adev_sel = {abus_dev_08_demux.Y};
-    wire [7:0] bdev_sel = {bbus_dev_08_demux.Y};
+    wire [15:0] bdev_sel = {bbus_dev_16_demux.Y, bbus_dev_08_demux.Y};
     wire [15:0] tdev_sel = {targ_dev_16_demux.Y, targ_dev_08_demux.Y};
 
     // define the functions to hookup the lines

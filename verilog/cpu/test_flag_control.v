@@ -76,19 +76,21 @@ module test();
     end 
 
     initial begin
+/*
         CPU.PC.PCHI_7_4.count = 1;
         CPU.PC.PCHI_3_0.count = 4'ha;
         CPU.PC.PCLO_7_4.count = 4'hf;
         CPU.PC.PCLO_3_0.count = 0;
         #1000
+*/
         
         //$timeformat(-3, 0, "ms", 10);
 
 
         INIT_ROM();
+        _RESET_SWITCH = 0;
         #1000
 
-        _RESET_SWITCH = 0;
         #1000
         clk=0;
         #10000
@@ -107,7 +109,7 @@ module test();
        `Equals(CPU.pc_addr, 0); 
        `Equals(CPU._phase_exec, 0); 
        `Equals(CPU._flag_c, 1); 
-       `Equals(CPU.MARLO.Q, 254); 
+       `Equals(CPU.MARLO.Q, 8'd254); 
        `Equals(CPU.MARHI.Q, CPU.MARHI.UNDEF); 
 
         // exec marhi load
@@ -240,18 +242,19 @@ module test();
 
    // $timeformat [(unit_number, precision, suffix, min_width )] ;
     task DUMP;
-         //   DUMP_OP;
+            //DUMP_OP;
             `define DD $display ("%9t ", $time,  "DUMP  ", 
 
             `DD " phase_exec=%1b", CPU.phase_exec);
+            `DD " disasm=%s", CPU.disasmCur());
             `DD " PC=%1d (0x%4h) PCHItmp=%d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", CPU.ctrl.instruction_6, CPU.ctrl.instruction_5, CPU.ctrl.instruction_4, CPU.ctrl.instruction_3, CPU.ctrl.instruction_2, CPU.ctrl.instruction_1);
             `DD " amode=%1s", control::fAddrMode(CPU._addrmode_register), " addbbus=0x%4x", CPU.address_bus);
             `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  CPU.ctrl.rom_6.D, CPU.ctrl.rom_5.D, CPU.ctrl.rom_4.D, CPU.ctrl.rom_3.D, CPU.ctrl.rom_2.D, CPU.ctrl.rom_1.D);
             `DD " immed8=%08b", CPU.ctrl.immed8);
             `DD " ram=%08b", CPU.ram64.D);
-            `DD " tdev=%5b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
-                " adev=%4b(%s)", CPU.abus_dev, control::adevname(CPU.abus_dev),
+            `DD " tdev=%4b(%s)", CPU.targ_dev, control::tdevname(CPU.targ_dev),
+                " adev=%3b(%s)", CPU.abus_dev, control::adevname(CPU.abus_dev),
                 " bdev=%4b(%s)", CPU.bbus_dev,control::bdevname(CPU.bbus_dev),
                 " alu_op=%5b(%s)", CPU.alu_op, aluopName(CPU.alu_op)
             );            
@@ -301,8 +304,9 @@ module test();
         //CPU.ctrl.dump;
        $display ("%9t ", $time,  "EXECUTE....");
     end
+
     always @( negedge CPU.phase_exec ) begin
-       $display ("%9t ", $time,  "PHASE_EXEC -ve");
+       $display ("%9t ", $time,  "PHASE_EXEC exit");
        DUMP();
     end
 
@@ -312,6 +316,7 @@ module test();
         $display("%9t ", $time, "INCREMENTED PC=%1d ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", {CPU.PCHI, CPU.PCLO});
         currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
         $display ("%9t ", $time,  "OPERATION %1d ", clk_count, ": %1s", currentCode);
+        $display ("%9t ", $time,  "OPERATION %1d ", clk_count, ": %1s", CODE_NUM[pcval]);
         clk_count ++;
     end
 
