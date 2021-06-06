@@ -75,17 +75,20 @@ trait Lines {
       val sAluop = bits("aluop", aluop.id.toBinaryString, 5)
       val sTDev = bits("tdev", tdev.id.toBinaryString, 4)
       val sADev = bits("adev", adev.id.toBinaryString, 3)
-      val sBDev = bits("bdev", bdev.id.toBinaryString, 3)
+      val sBDev = bits("bdev", bdev.id.toBinaryString, 4)
       val sFlags = bits("control", bitString(condition.map(_.cond).getOrElse(Control._A)), 5)
       val sCondMode = condition.map(_.mode).getOrElse(ConditionMode.Standard).bit
-      val sNU = bits("nu", "", 2) // TODO: USE ONE OF THESE TO EXTEND EITHER THE A or B DEV FOR RAND/FOR PORTS/FOR READ VIDEO RAM/FOR TIMER
+      val sNU = bits("nu", "", 1) // TODO: USE ONE OF THESE TO EXTEND EITHER THE A or B DEV FOR RAND/FOR PORTS/FOR READ VIDEO RAM/FOR TIMER
       val sAddrMode = if (amode == DIRECT) "1" else "0"
       val sAddress = bits("address", address.getVal.map(_.toBinaryString).getOrElse(""), 16)
       val sImmed = bits("immed", immed.getVal.map { v =>
         v.value & 0xff
       }.map(_.toBinaryString).getOrElse(""), 8)
 
-      val i = sAluop + sTDev + sADev + sBDev + sFlags + sCondMode + sNU + sAddrMode + sAddress + sImmed
+      val sBDevLo = sBDev.takeRight(3);
+      val sBDevHi = sBDev.take(1);
+
+      val i = sAluop + sTDev + sADev + sBDevLo + sFlags + sCondMode + sNU + sBDevHi + sAddrMode + sAddress + sImmed
       if (i.length != 48) throw new RuntimeException(s"sw error: expected 48 bits but got ${i.size} in '${i}''")
 
       val list = i.grouped(8).toList

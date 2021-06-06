@@ -299,17 +299,18 @@ program {
                 // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Cxkk
                 // Vx = Random AND __NN
                 // TODO : IMPLEMENT RANDOM
-                uint16 rand = 1;
+                uint16 rand = random();
                 registers[_X__] = rand & __NN;
                 
 
             } else if (N___ == $D000) {
                 // draw glyph identified by Index reg at position X/Y with height N
-// TODO !!!!! NEED TO DETECT IF THE WRITE TOGGLES A BIT 
+// TODO - as per https://tobiasvl.github.io/blog/write-a-chip-8-emulator/#dxyn-display
+// TODO  BUG !!!!! NEED TO DETECT IF THE WRITE TOGGLES A BIT
+// ALSO - record v15 flip bit
 // See     val signalOverwrite = flip && existingBitSet
 // ... IN THE ALL SCALA IMPL
 // NEED TO MAINTAIN A SCREEN BUFF     60x40=2.5k
-// 
 
                 uint16 xpos = registers[_X__];
                 uint16 ypos = registers[__Y_];

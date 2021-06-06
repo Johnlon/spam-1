@@ -26,6 +26,18 @@ trait ExpressionParser {
       BlkConst(konst)
   }
 
+  def blkGetchar: Parser[Block] = positioned {
+    "getchar" ~ "(" ~ ")" ^^ {
+      _ => Getchar()
+    }
+  }
+
+  def blkRandom: Parser[Block] = positioned {
+    "random()" ^^ {
+      _ => Random()
+    }
+  }
+
   def blkCompoundAluExpr: Parser[BlkCompoundAluExpr] = blkExpr ~ ((aluOp ~ blkExpr) *) ^^ {
     case leftExpr ~ otherExpr =>
       val o = otherExpr map {
@@ -34,7 +46,7 @@ trait ExpressionParser {
       BlkCompoundAluExpr(leftExpr, o)
   }
 
-  def factor: Parser[Block] = statementGetchar | blkArrayElement | blkConst | blkName
+  def factor: Parser[Block] = blkRandom | blkGetchar | blkArrayElement | blkConst | blkName
 
   def blkExpr: Parser[Block] = factor | "(" ~> blkCompoundAluExpr <~ ")"
 }

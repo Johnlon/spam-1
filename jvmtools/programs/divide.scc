@@ -1,12 +1,13 @@
 program{
-fun main() {
-    //uint16 a = 65532;
-    uint16 a = 256;
-    //uint16 b = 2;
+    fun main() {
+        uint16 a = 384;
+        uint16 c = a / 3;
+        if (c == 128) {
+            // pass
+            halt(c)
+        }
 
-    uint16 c = a / 2;
-    halt(c)
-    
-}
+        // fail
+    }
 
 }

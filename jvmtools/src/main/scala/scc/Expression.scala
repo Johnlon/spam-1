@@ -281,7 +281,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
 
                 s"; if both are 8 bit then use direct ALU op",
                 s"    PCHITMP = < :$longMethod",
-                s"    PC      = > :$longMethod ! _Z", // FLAG WAS SET ABOVE divisor=HI
+                s"    PC      = > :$longMethod ! _Z", // assumes Z FLAG WAS SET ABOVE divisor=HI
                 s"    $TMP1   =   [$dividendHi] _S",
                 s"    PCHITMP = < :$longMethod",
                 s"    PC      = > :$longMethod ! _Z",

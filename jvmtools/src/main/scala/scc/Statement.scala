@@ -502,6 +502,7 @@ case class PutcharVar(varName: String) extends Block(nestedName = s"putcharVar_$
   }
 }
 
+// TODO Change the loop to use negative logic and save 2 instructions
 case class Getchar() extends Block(nestedName = s"getchar_") {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val labelWait = parent.fqnLabelPathUnique("wait")
@@ -515,6 +516,16 @@ case class Getchar() extends Block(nestedName = s"getchar_") {
          |PC = >:$labelWait
          |$labelReceive:
          |$WORKLO = UART
+         |$WORKHI = 0
+         |""")
+  }
+}
+
+case class Random() extends Block(nestedName = s"random_") {
+  override def gen(depth: Int, parent: Scope): List[String] = {
+    split(
+      s"""
+         |$WORKLO = RAND
          |$WORKHI = 0
          |""")
   }

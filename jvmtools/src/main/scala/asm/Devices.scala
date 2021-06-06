@@ -16,10 +16,7 @@ trait Devices {
   sealed trait BOnlyDevice extends BExpression with E
 
   object BOnlyDevice {
-
-    import BDevice._
-
-    def values: Seq[BOnlyDevice] = Seq(IMMED, RAM)
+    def values: Seq[BOnlyDevice] = BDevice.values.collect{ case b: BOnlyDevice => b}
   }
 
   sealed class BDevice private(val id: Int) extends BExpression with E
@@ -30,7 +27,7 @@ trait Devices {
       values.find(c => c.id == id).getOrElse(throw new RuntimeException("unknown BDevice " + id))
     }
 
-    def values: Seq[BDevice] = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, IMMED, RAM, NU)
+    def values: Seq[BDevice] = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, IMMED, RAM, NU, VRAM, PORTA, RAND, CLOCK)
 
     object REGA extends BDevice(0)
 
@@ -47,8 +44,12 @@ trait Devices {
     object IMMED extends BDevice(6) with BOnlyDevice
 
     object RAM extends BDevice(7) with BOnlyDevice
+    object NU extends BDevice(8)
 
-    object NU extends BDevice(REGA.id)
+    object VRAM extends BDevice(9) with BOnlyDevice
+    object PORTA extends BDevice(10) with BOnlyDevice
+    object RAND extends BDevice(11) with BOnlyDevice
+    object CLOCK extends BDevice(12) with BOnlyDevice
 
   }
 

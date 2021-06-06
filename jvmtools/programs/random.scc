@@ -1,0 +1,7 @@
+program{
+    fun main() {
+        uint16 a = random();
+        halt(a)
+    }
+
+}

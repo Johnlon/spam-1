@@ -123,11 +123,12 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     val op = fromBin(sitr, 5)
     val t = fromBin(sitr, 4)
     val a = fromBin(sitr, 3)
-    val b = fromBin(sitr, 3)
+    val bLo = fromBin(sitr, 3)
     val cond = fromBin(sitr, 4)
     val f = fromBin(sitr, 1)
     val condmode = if (fromBin(sitr, 1) == 1) ConditionMode.Invert else ConditionMode.Standard
-    sitr.take(2).mkString("")
+    sitr.take(1).mkString("")
+    val bHi = fromBin(sitr, 1)
     val m = if (fromBin(sitr, 1) == 1) AddressMode.DIRECT else AddressMode.REGISTER
     val addr = fromBin(sitr, 16)
     val immed = fromBin(sitr, 8)
@@ -136,7 +137,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
       AluOp.valueOf(op),
       TDevice.valueOf(t),
       ADevice.valueOf(a),
-      BDevice.valueOf(b),
+      BDevice.valueOf(bHi << 3 + bLo),
       Control.valueOf(cond, f),
       m,
       condmode,

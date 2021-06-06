@@ -61,7 +61,6 @@ class StatementParser {
       statementPutcharVarOptimisation | statementPutcharConstOptimisation | stmtPutcharGeneral |
       statementPutsName |
       statementHalt | statementHaltVar |
-      statementGetchar |
       whileCond | whileTrue |
       ifCond |
       breakOut | functionCall ^^ {
@@ -270,12 +269,6 @@ class StatementParser {
   def statementPutsName: Parser[Block] = positioned {
     "puts" ~ "(" ~> name <~ ")" ^^ {
       varName => Puts(varName)
-    }
-  }
-
-  def statementGetchar: Parser[Block] = positioned {
-    "getchar" ~ "(" ~ ")" ^^ {
-      _ => Getchar()
     }
   }
 

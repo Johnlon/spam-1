@@ -4,7 +4,7 @@ import org.apache.commons.io.input.{Tailer, TailerListener}
 
 import java.awt.Color
 import java.io.{File, FileOutputStream, PrintStream}
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import javax.swing.BorderFactory
 import scala.collection.mutable
 import scala.swing.ScrollPane.BarPolicy
@@ -12,12 +12,29 @@ import scala.swing._
 import scala.swing.event._
 
 
+sealed trait TerminalIOState
+
+object STATE_INIT extends TerminalIOState // next is a direct op like "RIGHT", or a signal to start a two byte binary value op like DRAW
+
+object STATE_SETX extends TerminalIOState
+
+object STATE_SETY extends TerminalIOState
+
+object STATE_DRAW_PIXEL extends TerminalIOState
+
+object STATE_DRAW_BYTE extends TerminalIOState
+
+object STATE_LOG_CHAR extends TerminalIOState
+
+object STATE_LOG_BYTE extends TerminalIOState
+
 object UARTTerminal extends SimpleSwingApplication {
   var uiapp = new MainFrame()
 
   val replay = true
 
-  @volatile var stopped = false
+  @volatile var stopped = true
+  val step = new AtomicLong(0);
 
   val uartOut = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.out"
   val uartControl = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.control"
@@ -30,6 +47,7 @@ object UARTTerminal extends SimpleSwingApplication {
 
   val BLANKCHAR = '.'
   val BLANK = BLANKCHAR.toString
+  //val BLOCKCHAR = '#'
   val BLOCKCHAR = 0x2588.toChar // '#'
 
   var x = new AtomicInteger(0)
@@ -56,21 +74,6 @@ object UARTTerminal extends SimpleSwingApplication {
   val DO_ORIGIN: Char = 15
   val DO_CENTRE: Char = 16
 
-  sealed trait TerminalIOState
-
-  object STATE_INIT extends TerminalIOState // next is a direct op like "RIGHT", or a signal to start a two byte binary value op like DRAW
-  object STATE_SETX extends TerminalIOState
-
-  object STATE_SETY extends TerminalIOState
-
-  object STATE_DRAW_PIXEL extends TerminalIOState
-
-  object STATE_DRAW_BYTE extends TerminalIOState
-
-  object STATE_LOG_CHAR extends TerminalIOState
-
-  object STATE_LOG_BYTE extends TerminalIOState
-
   var state: TerminalIOState = STATE_INIT
 
   var data: mutable.Seq[mutable.Buffer[Char]] = fill()
@@ -93,21 +96,35 @@ object UARTTerminal extends SimpleSwingApplication {
   private def run(): Unit = {
     val listener = new FileListener
     val gotoEnd = !replay
-    Tailer.create(new File(uartOut), listener, 0, gotoEnd, false, 1000)
+    val tailer = Tailer.create(new File(uartOut), listener, 0, gotoEnd, false, 1000)
+
   }
 
   class FileListener extends TailerListener {
+    var count = 0;
     def handle(line: String): Unit = {
 
+//      plot(GOTO_SETX_STATE)
+//      plot(0)
+//      plot(GOTO_SETY_STATE)
+//      plot(0)
+//      plot(GOTO_DRAW_BYTE_STATE)
+//      plot(0xaa)
+
+      if (count == 3118) {
+        println("==")
+      }
       try {
         var wasStopped = false
-        while (stopped) {
-          wasStopped = false
+        while (stopped && step.get() == 0) {
+          wasStopped = true
           Thread.sleep(10)
         }
+        if (step.get() > 0) step.decrementAndGet()
 
         if (line.trim.nonEmpty) {
-          println("! " + line)
+          count+=1
+          println(count + " ! " + line)
           val c = Integer.parseInt(line, 16)
           val char = c.toChar
           plot(char)
@@ -142,6 +159,8 @@ object UARTTerminal extends SimpleSwingApplication {
     }
   }
 
+  val labelChar = new Label("")
+
   def top: Frame = {
 
     //bounds = new Rectangle(50, 100, 300, 30)
@@ -149,10 +168,12 @@ object UARTTerminal extends SimpleSwingApplication {
     val brefresh = new Button("Reset")
     val bpaint = new Button("Paint")
     val bstop = new Button("Stop")
+    val bstep = new Button("Step")
+    val breplay = new Button("Replay")
 
     plot(DO_CENTRE)
 
-    listenTo(text.keys, brefresh, bpaint, bstop)
+    listenTo(text.keys, brefresh, bpaint, bstop, bstep, breplay)
 
     val uartCtrl = new PrintStream(new FileOutputStream(uartControl, true))
 
@@ -165,6 +186,16 @@ object UARTTerminal extends SimpleSwingApplication {
       println("sent " + c)
     }
 
+    def updateStopButton() = {
+      if (stopped) {
+        bstop.background = Color.RED
+      } else {
+        bstop.background = Color.WHITE
+      }
+    }
+
+    updateStopButton()
+
     reactions += {
       case ButtonClicked(b) if b == brefresh =>
         data = fill()
@@ -175,6 +206,12 @@ object UARTTerminal extends SimpleSwingApplication {
 
       case ButtonClicked(b) if b == bstop =>
         stopped = !stopped
+        updateStopButton()
+      case ButtonClicked(b) if b == breplay =>
+      // not implemented yet
+
+      case ButtonClicked(b) if b == bstep =>
+        step.incrementAndGet()
 
       case KeyPressed(_, c, _, _) if c == Key.Left =>
         send(DO_LEFT)
@@ -193,10 +230,13 @@ object UARTTerminal extends SimpleSwingApplication {
 
     uiapp.contents = new BoxPanel(Orientation.Vertical) {
       val buttons = new BoxPanel(Orientation.Horizontal) {
-        contents ++= Seq(brefresh, bpaint, bstop)
+        contents ++= Seq(brefresh, bpaint, bstop, bstep, breplay)
+      }
+      val label = new BoxPanel(Orientation.Horizontal) {
+        contents ++= Seq(labelChar)
       }
 
-      contents ++= Seq(buttons, text, logLine, scrText)
+      contents ++= Seq(buttons, label, text, logLine, scrText)
     }
 
     run()
@@ -244,25 +284,36 @@ object UARTTerminal extends SimpleSwingApplication {
     logLine.text += f"$c%02x"
   }
 
+  def report(s: String, c: Char) = {
+    labelChar.text = s + " D[" + c.toInt + "] " + "H[" + c.toHexString + "] " + "C[" + c + "] B[" + c.toBinaryString + "]"
+  }
+
+  def report(s: String) = {
+    labelChar.text = s
+  }
 
   def plot(c: Char): Unit = synchronized {
     state match {
       case STATE_SETX =>
+        report("SETTING X", c)
         x.set(c)
         state = STATE_INIT
       case STATE_SETY =>
+        report("SETTING Y", c)
         y.set(c)
         state = STATE_INIT
       case STATE_DRAW_PIXEL =>
         val yi = y.get()
         val xi = x.get()
-        drawPixel(xi, yi, '1', false)
+        report(s"DRAW PIXEL AT X=$xi Y=$yi", c)
+        drawPixel(xi, yi, c, false)
         state = STATE_INIT
       case STATE_DRAW_BYTE =>
         val yi = y.get()
         val xi = x.get()
         val bits = f"${c.toBinaryString}%8s".replace(' ', '0')
 
+        report(s"DRAW BYTE AT X=$xi Y=$yi Bits=$bits", c)
         bits.zipWithIndex foreach {
           case (bit, bitIndex) =>
             val pixelX = xi + bitIndex
@@ -270,9 +321,11 @@ object UARTTerminal extends SimpleSwingApplication {
         }
         state = STATE_INIT
       case STATE_LOG_CHAR =>
+        report(s"LOG CHAR", c)
         log(c)
         state = STATE_INIT
       case STATE_LOG_BYTE =>
+        report(s"LOG BYTE", c)
         logByte(c)
         state = STATE_INIT
       case STATE_INIT =>
@@ -282,38 +335,52 @@ object UARTTerminal extends SimpleSwingApplication {
             // useful for resynchronisation - emitting two "0" bytes in sequence should push system into NONE_STATE
             // first byte either completes an existing SET/DRAW or it hits this DO_NONE_STATE noop
             state = STATE_INIT
+            report(s"STATE=$state")
           case GOTO_SETX_STATE =>
             state = STATE_SETX
+            report(s"STATE=$state")
           case GOTO_SETY_STATE =>
             state = STATE_SETY
+            report(s"STATE=$state")
           case GOTO_DRAW_PIXEL_STATE =>
             state = STATE_DRAW_PIXEL
+            report(s"STATE=$state")
           case GOTO_DRAW_BYTE_STATE =>
             state = STATE_DRAW_BYTE
+            report(s"STATE=$state")
           case GOTO_LOG_CHAR_STATE =>
             state = STATE_LOG_CHAR
+            report(s"STATE=$state")
           case GOTO_LOG_BYTE_STATE =>
             state = STATE_LOG_BYTE
+            report(s"STATE=$state")
 
           // FOLLOWING COMMANDS ARE ONE BYTE SEQ
           case DO_CLEAR =>
+            report(s"DO CLEAR")
             clearScreen()
           case DO_ORIGIN =>
+            report(s"DO ORIGIN")
             y.set(0)
             x.set(0)
           case DO_CENTRE =>
+            report(s"DO CENTRE")
             y.set(height / 2)
             x.set(width / 2)
           case DO_UP =>
+            report(s"DO UP")
             y.decrementAndGet()
             y.set(Math.max(0, y.get()))
           case DO_DOWN =>
+            report(s"DO DOWN")
             y.incrementAndGet()
             y.set(Math.min(height - 1, y.get()))
           case DO_LEFT =>
+            report(s"DO LEFT")
             x.decrementAndGet()
             x.set(Math.max(0, x.get()))
           case DO_RIGHT =>
+            report(s"DO RIGHT")
             x.incrementAndGet()
             if (x.get() >= width) {
               x.set(0)
@@ -325,19 +392,32 @@ object UARTTerminal extends SimpleSwingApplication {
     doRepaint()
   }
 
-  private def drawPixel(x: Int, y: Int, bit: Char, flip:Boolean) = {
+  private def drawPixel(x: Int, y: Int, bit: Char, flip: Boolean) = {
 
-    val existing = data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH)
+    if (x < width) {
+      /* FIXME
+      do not draw off side of screen ...
+      https://tobiasvl.github.io/blog/write-a-chip-8-emulator/#dxyn-display
+      */
 
-    val newval = if (flip) {
-      existing == BLANKCHAR
-    } else {
-      existing.equals('1')
+      if (bit != '0' && bit != '1') {
+        sys.error("bit must be 0 or 1 but was '" + bit + "'")
+      }
+
+      val existing = data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH)
+
+      //    val newval = if (flip) {
+      //      existing == BLANKCHAR
+      //    } else {
+      //      existing.equals('1')
+      //    }
+
+      val char = if (bit == '1') BLOCKCHAR else BLANKCHAR
+
+      val pixelImg = char // if (newval) BLOCKCHAR else BLANKCHAR
+
+      data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH) = pixelImg
     }
-
-    val pixelImg = if (newval) BLOCKCHAR else BLANKCHAR
-
-    data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH) = pixelImg
   }
 
   def fill(): mutable.Seq[mutable.Buffer[Char]] = {

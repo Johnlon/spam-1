@@ -28,3 +28,4 @@ build/
 verilog/assembler/bin
 verilog/assembler/antlr
 verilog/assembler/.vscode
+*.out
