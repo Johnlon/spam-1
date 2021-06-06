@@ -43,7 +43,17 @@ cd $(dirname $(readlink -f $TEST))
 filename=$(basename $TEST)
 rootname=$(basename $filename .v)
 
-$iverilog $VVPEXTRA  -Ttyp -Wall -g2012 -gspecify -grelative-include -o $rootname.vvp  $filename 
+FLAGS="$VVPEXTRA  -Ttyp -Wall -g2012 -gspecify -grelative-include "
+
+# just run preprocessor and leave on disk for inspection if theres an error in the following full blown compile step
+$iverilog $FLAGS -E -o icarus.out  $filename 
+if [ $? != 0 ] ; then
+    echo ERROR exit code iverilog macro processing
+    exit 1
+fi
+
+# full blown compile
+$iverilog $FLAGS -o $rootname.vvp  $filename 
 if [ $? != 0 ] ; then
     echo ERROR exit code iverilog
     exit 1
