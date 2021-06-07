@@ -228,7 +228,7 @@ module cpu(
 
 
     // clocks data in as we enter phase exec - on the +ve edge - so use positive logic phase_exec here
-    syncRegisterFile #(.LOG(1)) regFile(
+    syncRegisterFile #(.LOG(0)) regFile(
         .clk(phase_exec),               // clock only on the execute phase edge otherwise we will clock in results during fetch and decode and act more like a combinatorial circuit
         ._wr_en(_gated_regfile_in),     // only enabled for write during the execute phase by which time the write address select lines are stable
         .wr_addr(regfile_wr_addr),

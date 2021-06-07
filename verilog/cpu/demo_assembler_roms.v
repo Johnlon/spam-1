@@ -178,7 +178,7 @@ endfunction
         begin 
             $display("%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
             if (CPU.ctrl._do_exec == 0) begin
-                $display("%9t", $time, " EXECUTING ..."); 
+                //$display("%9t", $time, " EXECUTING ..."); 
             end
             else
             begin
@@ -186,7 +186,7 @@ endfunction
             end
 
             data = `ROM(pc);
-            $display(">>>> CODE[%d] : %-s" , pc, CPU.disasm(data));
+            //$display(">>>> CODE[%d] : %-s" , pc, CPU.disasm(data));
 
 
             //$display("\n%9t", $time, " DECOMPILE %s", CPU.ctrl.decode(1).display()); 

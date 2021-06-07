@@ -72,7 +72,7 @@ end
     end
   end
 
-//  if (LOG)
+  if (LOG)
     always @(Mem[A]) begin
         if (!_WE) $display("%9t ", $time, "RAM : UPDATE - RAM[0x%04x]=%08b(%1d)     Mem[A]=%02h", A, D, D , Mem[A]);
     end
