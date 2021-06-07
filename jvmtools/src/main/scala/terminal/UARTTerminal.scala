@@ -4,6 +4,7 @@ import org.apache.commons.io.input.{Tailer, TailerListener}
 
 import java.awt.Color
 import java.io.{File, FileOutputStream, PrintStream}
+import java.lang.Thread.sleep
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import javax.swing.BorderFactory
 import scala.collection.mutable
@@ -93,23 +94,31 @@ object UARTTerminal extends SimpleSwingApplication {
   val scrText = new scala.swing.ScrollPane(logPanel)
   scrText.verticalScrollBarPolicy = BarPolicy.Always
 
-  private def run(): Unit = {
-    val listener = new FileListener
-    val gotoEnd = !replay
-    val tailer = Tailer.create(new File(uartOut), listener, 0, gotoEnd, false, 1000)
+  var tailer : Tailer = null
 
+  private def run(): Unit = {
+    val gotoEnd = !replay
+    startTailer(gotoEnd)
+  }
+
+  private def startTailer(gotoEnd: Boolean) = {
+    if (tailer!=null) tailer.stop()
+
+    val listener = new FileListener
+    tailer = Tailer.create(new File(uartOut), listener, 0, gotoEnd, false, 1000)
   }
 
   class FileListener extends TailerListener {
     var count = 0;
+
     def handle(line: String): Unit = {
 
-//      plot(GOTO_SETX_STATE)
-//      plot(0)
-//      plot(GOTO_SETY_STATE)
-//      plot(0)
-//      plot(GOTO_DRAW_BYTE_STATE)
-//      plot(0xaa)
+      //      plot(GOTO_SETX_STATE)
+      //      plot(0)
+      //      plot(GOTO_SETY_STATE)
+      //      plot(0)
+      //      plot(GOTO_DRAW_BYTE_STATE)
+      //      plot(0xaa)
 
       if (count == 3118) {
         println("==")
@@ -123,7 +132,7 @@ object UARTTerminal extends SimpleSwingApplication {
         if (step.get() > 0) step.decrementAndGet()
 
         if (line.trim.nonEmpty) {
-          count+=1
+          count += 1
           println(count + " ! " + line)
           val c = Integer.parseInt(line, 16)
           val char = c.toChar
@@ -208,7 +217,7 @@ object UARTTerminal extends SimpleSwingApplication {
         stopped = !stopped
         updateStopButton()
       case ButtonClicked(b) if b == breplay =>
-      // not implemented yet
+        startTailer(false)
 
       case ButtonClicked(b) if b == bstep =>
         step.incrementAndGet()
@@ -394,17 +403,16 @@ object UARTTerminal extends SimpleSwingApplication {
 
   private def drawPixel(x: Int, y: Int, bit: Char, flip: Boolean) = {
 
+    /* do not draw off side of screen ...
+    https://tobiasvl.github.io/blog/write-a-chip-8-emulator/#dxyn-display
+    */
     if (x < width) {
-      /* FIXME
-      do not draw off side of screen ...
-      https://tobiasvl.github.io/blog/write-a-chip-8-emulator/#dxyn-display
-      */
 
       if (bit != '0' && bit != '1') {
         sys.error("bit must be 0 or 1 but was '" + bit + "'")
       }
 
-      val existing = data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH)
+//      val existing = data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH)
 
       //    val newval = if (flip) {
       //      existing == BLANKCHAR
@@ -414,9 +422,9 @@ object UARTTerminal extends SimpleSwingApplication {
 
       val char = if (bit == '1') BLOCKCHAR else BLANKCHAR
 
-      val pixelImg = char // if (newval) BLOCKCHAR else BLANKCHAR
+  //    val pixelImg = char // if (newval) BLOCKCHAR else BLANKCHAR
 
-      data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH) = pixelImg
+      data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH) = char
     }
   }
 
