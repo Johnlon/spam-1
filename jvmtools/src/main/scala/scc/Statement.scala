@@ -487,16 +487,12 @@ case class PutChar(block: Block) extends Block(nestedName = "putcharGeneral") {
 case class PutcharVar(varName: String) extends Block(nestedName = s"putcharVar_${varName}_") {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val labelWait = parent.fqnLabelPathUnique("wait")
-    val labelTransmit = parent.fqnLabelPathUnique("transmit")
     val varLocn = parent.getVarLabel(varName).fqn
     split(
       s"""
          |$labelWait:
-         |PCHITMP = <:$labelTransmit
-         |PC = >:$labelTransmit _DO
          |PCHITMP = <:$labelWait
-         |PC = >:$labelWait
-         |$labelTransmit:
+         |PC = >:$labelWait ! _DO
          |UART = [:$varLocn]
          |""")
   }
@@ -506,15 +502,11 @@ case class PutcharVar(varName: String) extends Block(nestedName = s"putcharVar_$
 case class Getchar() extends Block(nestedName = s"getchar_") {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val labelWait = parent.fqnLabelPathUnique("wait")
-    val labelReceive = parent.fqnLabelPathUnique("receive")
     split(
       s"""
          |$labelWait:
-         |PCHITMP = <:$labelReceive
-         |PC = >:$labelReceive _DI
          |PCHITMP = <:$labelWait
-         |PC = >:$labelWait
-         |$labelReceive:
+         |PC = >:$labelWait ! _DI
          |$WORKLO = UART
          |$WORKHI = 0
          |""")
@@ -585,7 +577,6 @@ case class WhileCond(flagToCheck: String, conditionBlock: Block, content: List[B
   override def gen(depth: Int, parent: Scope): List[String] = {
 
     val labelCheck = parent.toFqLabelPath("CHECK")
-    val labelBody = parent.toFqLabelPath("BODY")
     val labelAfter = parent.toFqLabelPath("AFTER")
 
     val condStatements = conditionBlock.expr(depth + 1, parent) // IMPORTANT TO USE THE PARENT DIRECTLY HERE AS THE CONDITION VAR IS DEFINED IN THE SURROUNDING CONTEXT
@@ -595,11 +586,9 @@ case class WhileCond(flagToCheck: String, conditionBlock: Block, content: List[B
         condStatements ++
         split(
           s"""
-             |PCHITMP = <:$labelBody
-             |PC = >:$labelBody $flagToCheck
+             |; skip to end if condition NOT met
              |PCHITMP = <:$labelAfter
-             |PC = >:$labelAfter
-             |$labelBody:
+             |PC = >:$labelAfter ! $flagToCheck
                """)
     }
 
