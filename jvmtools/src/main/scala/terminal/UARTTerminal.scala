@@ -94,7 +94,7 @@ object UARTTerminal extends SimpleSwingApplication {
   val scrText = new scala.swing.ScrollPane(logPanel)
   scrText.verticalScrollBarPolicy = BarPolicy.Always
 
-  var tailer : Tailer = null
+  var tailer: Tailer = null
 
   private def run(): Unit = {
     val gotoEnd = !replay
@@ -102,7 +102,7 @@ object UARTTerminal extends SimpleSwingApplication {
   }
 
   private def startTailer(gotoEnd: Boolean) = {
-    if (tailer!=null) tailer.stop()
+    if (tailer != null) tailer.stop()
 
     val listener = new FileListener
     tailer = Tailer.create(new File(uartOut), listener, 0, gotoEnd, false, 1000)
@@ -133,7 +133,7 @@ object UARTTerminal extends SimpleSwingApplication {
 
         if (line.trim.nonEmpty) {
           count += 1
-          println(count + " ! " + line)
+          println("" + count + " ! " + line)
           val c = Integer.parseInt(line, 16)
           val char = c.toChar
           plot(char)
@@ -401,6 +401,8 @@ object UARTTerminal extends SimpleSwingApplication {
     doRepaint()
   }
 
+  var countChar = 'a';
+
   private def drawPixel(x: Int, y: Int, bit: Char, flip: Boolean) = {
 
     /* do not draw off side of screen ...
@@ -412,7 +414,7 @@ object UARTTerminal extends SimpleSwingApplication {
         sys.error("bit must be 0 or 1 but was '" + bit + "'")
       }
 
-//      val existing = data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH)
+      //      val existing = data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH)
 
       //    val newval = if (flip) {
       //      existing == BLANKCHAR
@@ -420,9 +422,15 @@ object UARTTerminal extends SimpleSwingApplication {
       //      existing.equals('1')
       //    }
 
-      val char = if (bit == '1') BLOCKCHAR else BLANKCHAR
+      //val char = if (bit == '1') BLOCKCHAR else BLANKCHAR
+      val char = if (bit == '1') {
+        countChar = (countChar + 1).asInstanceOf[Char]
+        countChar
+      }
+      else BLANKCHAR
 
-  //    val pixelImg = char // if (newval) BLOCKCHAR else BLANKCHAR
+      if (countChar > 'z') countChar = '0'
+      //    val pixelImg = char // if (newval) BLOCKCHAR else BLANKCHAR
 
       data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH) = char
     }
@@ -431,7 +439,8 @@ object UARTTerminal extends SimpleSwingApplication {
   def fill(): mutable.Seq[mutable.Buffer[Char]] = {
     (0 until height).map {
       d =>
-        (BLANK * width).toBuffer
+        //(BLANK * width).toBuffer
+        ("-" * width).toBuffer
     }.toBuffer
   }
 

@@ -26,9 +26,10 @@ todo:
 
 package scc
 
-import java.nio.file.{Files, Paths}
 import asm.{AluOp, EnumParserOps}
 
+import java.math.BigInteger
+import java.nio.file.{Files, Paths}
 import java.util.Objects
 import scala.language.postfixOps
 import scala.util.parsing.combinator.JavaTokenParsers
@@ -216,7 +217,36 @@ class StatementParser {
       }
     }
 
-  def dataSource: Parser[Seq[Byte]] = dataSourceFile | dataSourceString | dataSourceBytes
+  def dataSourceHexFile: Parser[Seq[Byte]] =
+    "hexfile(" ~> stringValue <~ ")" ^^ {
+      fileName => {
+        if (fileName.trim.length == 0) {
+          sys.error("illegal datasource:   hexfile(<blank or null>)")
+        }
+        val path = Paths.get(fileName)
+        val str = try {
+          Files.readString(path).replaceAll("(?m)\\s", "")
+        } catch {
+          case ex: Throwable =>
+            sys.error("can't read data source '"
+              + fileName
+              + "' (path:" + path.toFile.getPath + ", abs:" + path.toFile.getAbsolutePath + ") \n" + ex.getMessage)
+        }
+        val b = try {
+          str.grouped(2).map( i => Integer.parseInt(i, 16).toByte).toSeq
+        } catch {
+          case ex: Throwable =>
+            sys.error("can't decode data source '"
+              + fileName
+              + "' (path:" + path.toFile.getPath + ", abs:" + path.toFile.getAbsolutePath + ")\n" + ex.getMessage)
+        }
+
+        b.foreach(x => println("I: "+ x.toInt))
+        b
+      }
+    }
+
+  def dataSource: Parser[Seq[Byte]] = dataSourceFile | dataSourceHexFile | dataSourceString | dataSourceBytes
 
   /*
   STRING:     STR     "ABC\n\0\u0000"
@@ -362,7 +392,7 @@ class StatementParser {
     }
   }
 
-  def program: Parser[Program] = "program" ~ "{" ~> ((statementUInt16EqExpr | lineComment | blockComment | functionDef) +) <~ "}" ^^ {
+  def program: Parser[Program] = "program" ~ "{" ~> ((statementUInt16EqExpr | statementVarData | statementVarDataLocated | lineComment | blockComment | functionDef) +) <~ "}" ^^ {
     fns => Program(fns)
   }
 

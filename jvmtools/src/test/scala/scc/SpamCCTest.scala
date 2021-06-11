@@ -905,7 +905,7 @@ class SpamCCTest {
   }
 
   @Test
-  def valEqVarTimes(): Unit = {
+  def valEqVarTimesConst(): Unit = {
 
     val lines =
       """
@@ -924,6 +924,55 @@ class SpamCCTest {
     compile(lines, verbose = true, outputCheck = {
       str =>
         checkTransmittedL('d', str, List(upper.toString, lower.toString))
+    })
+  }
+
+  @Test
+  def valEqVarTimesVar(): Unit = {
+
+    val lines =
+      """
+        |fun main() {
+        | uint16 x = 503;
+        | uint16 y = 2;
+        | uint16 a = x * y; // alu expr
+        | putchar(a>>8)
+        | putchar(a)
+        |}
+        |""".stripMargin
+
+    val expected = 503 * 2
+    val upper = expected >> 8
+    val lower = expected & 0xff
+
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+        checkTransmittedL('d', str, List(upper.toString, lower.toString))
+    })
+  }
+
+  @Test // BROKEN
+  def valEqGlobalVar(): Unit = {
+
+    val lines =
+      """
+        |uint16 g = $1234; //  this variable is initialised on each call to this block so is effectively stack-like
+        |// FIXME - "g" never gets initialised as the initialisation code sits between the top of the program and the beginning of main and it jumps straight to main.
+        |
+        |
+        |fun main() {
+        |   uint16 z = $1234; //  this variable is initialised on each call to this block so is effectively stack-like
+        |   var screen = [6: [1 2]]; // TODO - this array is effectively in global storage  as the contents persist between calls and are not reinitialised
+        |   uint16 a = g;
+        |   putchar(a>>8)
+        |   putchar(a)
+        | }
+        |}
+        |""".stripMargin
+
+    compile(lines, verbose = true, quiet = false, outputCheck = {
+      str =>
+        checkTransmittedL('d', str, List("12", "34"))
     })
   }
 

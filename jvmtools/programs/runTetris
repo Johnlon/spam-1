@@ -4,7 +4,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-../../verilog/spamcc_sim.sh  1000 ../../verilog/cpu/demo_assembler_roms.v Chip2Emulator.scc.asm.rom
+../../verilog/spamcc_sim.sh  2000 ../../verilog/cpu/demo_assembler_roms.v Chip2Emulator.scc.asm.rom
 if [ $? -ne 0 ]; then
     echo error
     exit 1

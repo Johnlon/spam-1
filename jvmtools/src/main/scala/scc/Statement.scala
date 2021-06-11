@@ -356,6 +356,7 @@ case class Halt(haltCode: Int)
     List(
       s"MARHI = " + ((haltCode >> 8) & 0xff),
       s"MARLO = " + (haltCode & 0xff),
+      s"; Halt = Const =  code 1",
       s"HALT = 1"
     )
   }
@@ -363,7 +364,7 @@ case class Halt(haltCode: Int)
 
 case class HaltVar(srcVarName: String)
 
-  extends Block(nestedName = s"haltVar_${srcVarName}_") {
+extends Block(nestedName = s"haltVar_${srcVarName}_") {
 
   override def gen(depth: Int, parent: Scope): List[String] = {
 
@@ -372,6 +373,7 @@ case class HaltVar(srcVarName: String)
     List(
       s"MARHI = [:$srcFqn + 1]",
       s"MARLO = [:$srcFqn]",
+      s"; Halt = Var =  code 2",
       s"HALT = 2"
     )
   }

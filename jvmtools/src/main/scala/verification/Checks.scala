@@ -38,6 +38,7 @@ object Checks {
 
   def checkTransmittedL(selector: Char, str: List[String], expected: List[String]): Unit = {
     val actual = extractTransmitted(selector, str)
+    println("TRANSMITTED : '" + actual + "'")
     assertEquals(expected, actual)
   }
 

@@ -118,7 +118,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
 
           val scope = parent.pushScope("CHAIN"+ idx + "_" + iii)
           
-          // clause caled here is expected to drop it's result into WORKLO/WORKHI
+          // clause called here is expected to drop it's result into WORKLO/WORKHI
           val expressionValueClause = b.expr(depth + 1, scope)
 
           val label = s"; concatenate clause ${idx + 1} to ram [:$temporaryVarLabel] <= $op $b"

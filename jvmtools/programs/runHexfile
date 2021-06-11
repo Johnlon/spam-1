@@ -1,3 +1,5 @@
+
+## NEED TO EDIT THE CHIP 8 EMUL TO USE THE HEXFILE FUCTION TO MAKE THIS WORK 
 ./scc_chip8.sh  Chip2Emulator.scc hexfile
 if [ $? -ne 0 ]; then
     echo error
