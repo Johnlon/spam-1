@@ -4,7 +4,6 @@ import org.apache.commons.io.input.{Tailer, TailerListener}
 
 import java.awt.Color
 import java.io.{File, FileOutputStream, PrintStream}
-import java.lang.Thread.sleep
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import javax.swing.BorderFactory
 import scala.collection.mutable
@@ -12,6 +11,28 @@ import scala.swing.ScrollPane.BarPolicy
 import scala.swing._
 import scala.swing.event._
 
+object UARTTerminalStates {
+
+  // valid in NONE_STATE
+  val GOTO_INIT_STATE: Char = 0
+  val GOTO_SETX_STATE: Char = 1 // switch state
+  val GOTO_SETY_STATE: Char = 2 // switch state
+  val GOTO_DRAW_PIXEL_STATE: Char = 3 // switch state
+  val GOTO_DRAW_BYTE_STATE: Char = 4 // switch state
+  val GOTO_LOG_CHAR_STATE: Char = 5 // switch state
+  val GOTO_LOG_BYTE_STATE: Char = 6 // switch state
+  val DO_CLEAR: Char = 10
+  val DO_UP: Char = 11
+  val DO_DOWN: Char = 12
+  val DO_LEFT: Char = 13
+  val DO_RIGHT: Char = 14
+  val DO_ORIGIN: Char = 15
+  val DO_CENTRE: Char = 16
+  val GOTO_LOG_OPCODE: Char = 17
+  val GOTO_LOG_STRING: Char = 18
+
+}
+import UARTTerminalStates._
 
 sealed trait TerminalIOState
 
@@ -28,6 +49,14 @@ object STATE_DRAW_BYTE extends TerminalIOState
 object STATE_LOG_CHAR extends TerminalIOState
 
 object STATE_LOG_BYTE extends TerminalIOState
+
+object STATE_LOG_OPCODE1 extends TerminalIOState
+
+object STATE_LOG_OPCODE2 extends TerminalIOState
+
+object STATE_LOG_STRING_START extends TerminalIOState
+
+object STATE_LOG_STRING_WRITE extends TerminalIOState
 
 object UARTTerminal extends SimpleSwingApplication {
   var uiapp = new MainFrame()
@@ -58,22 +87,6 @@ object UARTTerminal extends SimpleSwingApplication {
   val K_DOWN: Char = 'D'
   val K_LEFT: Char = 'L'
   val K_RIGHT: Char = 'R'
-
-  // valid in NONE_STATE
-  val GOTO_INIT_STATE: Char = 0
-  val GOTO_SETX_STATE: Char = 1 // switch state
-  val GOTO_SETY_STATE: Char = 2 // switch state
-  val GOTO_DRAW_PIXEL_STATE: Char = 3 // switch state
-  val GOTO_DRAW_BYTE_STATE: Char = 4 // switch state
-  val GOTO_LOG_CHAR_STATE: Char = 5 // switch state
-  val GOTO_LOG_BYTE_STATE: Char = 6 // switch state
-  val DO_CLEAR: Char = 10
-  val DO_UP: Char = 11
-  val DO_DOWN: Char = 12
-  val DO_LEFT: Char = 13
-  val DO_RIGHT: Char = 14
-  val DO_ORIGIN: Char = 15
-  val DO_CENTRE: Char = 16
 
   var state: TerminalIOState = STATE_INIT
 
@@ -189,8 +202,10 @@ object UARTTerminal extends SimpleSwingApplication {
     uartCtrl.print(f"t100000\n")
     uartCtrl.flush()
 
-    def send(c: Char): Unit = {
+    def send(c: Char, sendDelay: Boolean = true): Unit = {
       uartCtrl.print(f"x${c.toInt}%02X\n")
+      if (sendDelay) uartCtrl.print(f"#\n")
+
       uartCtrl.flush()
       println("sent " + c)
     }
@@ -205,6 +220,31 @@ object UARTTerminal extends SimpleSwingApplication {
 
     updateStopButton()
 
+    val hexpad: Map[scala.swing.event.Key.Value , Char] = Map(
+      Key.Key0 -> 0,
+      Key.Key1 -> 1,
+      Key.Key2 -> 2,
+      Key.Key3 -> 3,
+      Key.Key4 -> 4,
+      Key.Key5 -> 5,
+      Key.Key6 -> 6,
+      Key.Key7 -> 7,
+      Key.Key8 -> 8,
+      Key.Key9 -> 9,
+      Key.A -> 10,
+      Key.B -> 11,
+      Key.C -> 12,
+      Key.D -> 12,
+      Key.E -> 14,
+      Key.F -> 15,
+      // map the arrow keys to a WASD-like set - see keypad numbering https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
+      // games may us other keys
+      Key.Up -> 5,
+      Key.Down -> 8,
+      Key.Left -> 7,
+      Key.Right -> 9,
+      Key.Space -> 0,
+    )
     reactions += {
       case ButtonClicked(b) if b == brefresh =>
         data = fill()
@@ -212,28 +252,24 @@ object UARTTerminal extends SimpleSwingApplication {
 
       case ButtonClicked(b) if b == bpaint =>
         doRepaint()
-
       case ButtonClicked(b) if b == bstop =>
         stopped = !stopped
         updateStopButton()
       case ButtonClicked(b) if b == breplay =>
         startTailer(false)
-
       case ButtonClicked(b) if b == bstep =>
         step.incrementAndGet()
 
-      case KeyPressed(_, c, _, _) if c == Key.Left =>
-        send(DO_LEFT)
-        send('#')
-      case KeyPressed(_, c, _, _) if c == Key.Right =>
-        send(DO_RIGHT)
-        send('#')
-      case KeyPressed(_, c, _, _) if c == Key.Up =>
-        send(DO_UP)
-        send('#')
-      case KeyPressed(_, c, _, _) if c == Key.Down =>
-        send(DO_DOWN)
-        send('#')
+//      case KeyPressed(_, c, _, _) if c == Key.Left =>
+//        send(K_LEFT)
+//      case KeyPressed(_, c, _, _) if c == Key.Right =>
+//        send(K_RIGHT)
+//      case KeyPressed(_, c, _, _) if c == Key.Up =>
+//        send(K_UP)
+//      case KeyPressed(_, c, _, _) if c == Key.Down =>
+//        send(K_DOWN)
+      case KeyPressed(_, c, _, _) if hexpad.keySet.contains(c) =>
+        send(hexpad.get(c).get)
       case _ =>
     }
 
@@ -293,6 +329,15 @@ object UARTTerminal extends SimpleSwingApplication {
     logLine.text += f"$c%02x"
   }
 
+  def logOpcode(opcode1: Int, opcode2: Int) = {
+    logLine.text += f"OPCODE $opcode1%02x$opcode2%02x"
+  }
+
+  def logString(str: String) = {
+    logLine.text += str
+  }
+
+
   def report(s: String, c: Char) = {
     labelChar.text = s + " D[" + c.toInt + "] " + "H[" + c.toHexString + "] " + "C[" + c + "] B[" + c.toBinaryString + "]"
   }
@@ -300,6 +345,10 @@ object UARTTerminal extends SimpleSwingApplication {
   def report(s: String) = {
     labelChar.text = s
   }
+
+  var opcode1 = 0
+  var logStringRemaining = 0
+  var logString = ""
 
   def plot(c: Char): Unit = synchronized {
     state match {
@@ -337,6 +386,29 @@ object UARTTerminal extends SimpleSwingApplication {
         report(s"LOG BYTE", c)
         logByte(c)
         state = STATE_INIT
+      case STATE_LOG_OPCODE1 =>
+        report(s"LOG OPCODE1", c)
+        opcode1 = c;
+        state = STATE_LOG_OPCODE2
+      case STATE_LOG_OPCODE2 =>
+        report(s"LOG OPCODE2", c)
+        logOpcode(opcode1, c)
+        state = STATE_INIT
+      case STATE_LOG_STRING_START =>
+        report(s"LOG STRING START", c)
+        logStringRemaining = c
+        state = STATE_LOG_STRING_WRITE
+      case STATE_LOG_STRING_WRITE =>
+        logString = logString + c
+        logStringRemaining -= 1
+
+        report(s"LOG STRING WRITE " + logStringRemaining, c)
+        if (logStringRemaining == 0) {
+          report(s"WRITING " + logString)
+          logString(logString)
+          logString = ""
+          state = STATE_INIT
+        }
       case STATE_INIT =>
         c match {
           // FOLLOWING INIT CODES SIGNAL START OF 2 BYTE SEQ
@@ -362,6 +434,14 @@ object UARTTerminal extends SimpleSwingApplication {
             report(s"STATE=$state")
           case GOTO_LOG_BYTE_STATE =>
             state = STATE_LOG_BYTE
+            report(s"STATE=$state")
+
+          case GOTO_LOG_OPCODE =>
+            state = STATE_LOG_OPCODE1
+            report(s"STATE=$state")
+
+          case GOTO_LOG_STRING =>
+            state = STATE_LOG_STRING_START
             report(s"STATE=$state")
 
           // FOLLOWING COMMANDS ARE ONE BYTE SEQ

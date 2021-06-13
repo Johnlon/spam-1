@@ -1,1 +1,2 @@
-gradlew --project-cache-dir c:\tmp\gradlecache %*
+rem gradlew --project-cache-dir c:\tmp\gradlecache %*
+error

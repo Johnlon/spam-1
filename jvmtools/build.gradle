@@ -23,22 +23,24 @@ java {
     targetCompatibility = JavaVersion.VERSION_11
 }
 
+println("DIR " + project.buildDir)
+
 dependencies {
 
-    testCompile 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
-    compile 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+    implementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
 
     implementation 'org.scala-lang:scala-library:2.13.3'
 
-    compile group: "org.scala-lang.modules", name: "scala-parser-combinators_2.13", version: "1.1.2"
+    implementation group: "org.scala-lang.modules", name: "scala-parser-combinators_2.13", version: "1.1.2"
 
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.3'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.3'
-    compile group: 'org.apache.commons', name: 'commons-text', version: '1.9'
-    compile group: 'org.scala-lang.modules', name: 'scala-swing_2.13', version: '3.0.0'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.3'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.3'
+    implementation group: 'org.apache.commons', name: 'commons-text', version: '1.9'
+    implementation group: 'org.scala-lang.modules', name: 'scala-swing_2.13', version: '3.0.0'
 
     // tailer
-    compile group: 'commons-io', name: 'commons-io', version: '2.6'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.6'
 
 
 }
@@ -49,7 +51,7 @@ jar {
     }
 
     from {
-        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
 

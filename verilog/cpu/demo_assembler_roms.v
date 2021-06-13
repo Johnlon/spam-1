@@ -164,7 +164,7 @@ endfunction
         if (LOG) $display("\n%9t", $time, " END OF EXECUTE VALUES"); 
         if (LOG > 0) DUMP; 
 
-       // if (LOG) 
+        if (LOG) 
         $display("\n%9t", $time, " CLK GOING HIGH  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ INSTRUCTION %1d\n", icount); 
         clk = 1;
 
@@ -174,7 +174,7 @@ endfunction
     task CLK_DN; 
     begin
         opcount ++;
-       // if (LOG) 
+        if (LOG) 
         begin 
             $display("%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
             if (CPU.ctrl._do_exec == 0) begin
@@ -279,7 +279,7 @@ endfunction
     always @(CPU.PCHI or CPU.PCLO) begin
         currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
         currentCodeText = string_bits'(CODE_TEXT[pcval]);
-        $display("%9t ", $time, "CYCLES %d : INCREMENTED PC=%1d    INSTRUCTION: %1s", opcount, {CPU.PCHI, CPU.PCLO}, currentCode);
+        if (LOG) $display("%9t ", $time, "CYCLES %d : INCREMENTED PC=%1d    INSTRUCTION: %1s", opcount, {CPU.PCHI, CPU.PCLO}, currentCode);
 
         //if (currentCodeText != "") $display("%9t ", $time, "COMMENT: %1s", currentCodeText);
 
@@ -424,12 +424,6 @@ endfunction
                 $finish();
             end
         end
-    end
-
-
-    always @( * )
-    begin
-        $display("%9t", $time, " OK MARHI:MARLO = %2h:%2h = %1d", CPU.MARHI.Q, CPU.MARLO.Q, (256*CPU.MARHI.Q)+ CPU.MARLO.Q);
     end
 
 endmodule : test

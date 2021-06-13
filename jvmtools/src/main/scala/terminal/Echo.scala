@@ -8,8 +8,8 @@ object Echo extends App {
     """
       |fun main() {
       |  while(true) {
-      |   var g = getchar();
-      |   putchar(g)
+      |   var g = waituart();
+      |   putuart(g)
       |  }
       |}
       |""".stripMargin

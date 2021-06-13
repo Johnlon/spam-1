@@ -317,12 +317,14 @@ initial
                             $sformat(strInput, "%c", iInput);
                         end
 
+                        $display("%9t ", $time, "UART: RECEIVED '%s'", strInput);
+
                         if (LOG>1)
                         $display("%9t ", $time, "UART: CONTROL RX: '%s' into ringpos=%3d totalBytesReceived=%3d, spaceIsAvailable=%1b", 
                                                                 strInput, totalBytesReceived%BUFFER_SIZE, totalBytesReceived, spaceIsAvailable);
 
                         for (int p=0; p<strInput.len() && spaceIsAvailable; p++) begin
-                            $display("%9t ", $time, "UART: FILL BUFFER[%1d] = %2x",  totalBytesReceived%BUFFER_SIZE, strInput[p]);
+                            if (LOG) $display("%9t ", $time, "UART: FILL BUFFER[%1d] = %2x",  totalBytesReceived%BUFFER_SIZE, strInput[p]);
                             rxBuf[totalBytesReceived%BUFFER_SIZE] = strInput[p];
                             totalBytesReceived++;
                         end

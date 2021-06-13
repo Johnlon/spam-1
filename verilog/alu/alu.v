@@ -117,7 +117,7 @@ if (1) begin
     wire [20:0] A = { alu_op_effective, a, b};
     tri [15:0] D;
 
-    always @* begin
+    if (LOG) always @* begin
         if ($isunknown(A)) begin
             // not a problem unless happening near the exec edge
             $display("%9t", $time, " GLITCHING ADDRESS Z or X for OP:%5b A:%8b B:%8b /CIN:%1b", alu_op_effective, a, b, _flag_c_in);

@@ -21,13 +21,14 @@ todo:
    maybe restrict signs to the ops??
 
  */
-// TODO: Add some traps for stupid errors like putchar("...") which I wasted loads of time on
+// TODO: Add some traps for stupid errors like putuart("...") which I wasted loads of time on
 
 package scc
 
 import org.apache.commons.text.StringEscapeUtils
 import scc.Program.RootEndLabel
 import scc.SpamCC.{MAIN_LABEL, TWO_BYTE_STORAGE, intTo2xBytes, split}
+import terminal.{UARTTerminalStates, UARTTerminal}
 
 import scala.collection.mutable
 import scala.language.postfixOps
@@ -434,10 +435,9 @@ case class Puts(varName: String)
   }
 }
 
-case class PutChar(block: Block) extends Block(nestedName = "putcharGeneral") {
+case class Putuart(block: Block) extends Block(nestedName = "putuartGeneral") {
   override def gen(depth: Int, parent: Scope): Seq[String] = {
     val labelWait = parent.fqnLabelPathUnique("wait")
-    val labelTransmit = parent.fqnLabelPathUnique("transmit")
 
     // leaves result in $V1
     val stmts: Seq[String] = block.expr(depth + 1, parent)
@@ -445,11 +445,8 @@ case class PutChar(block: Block) extends Block(nestedName = "putcharGeneral") {
     stmts ++ split(
       s"""
          |$labelWait:
-         |PCHITMP = <:$labelTransmit
-         |PC = >:$labelTransmit _DO
          |PCHITMP = <:$labelWait
-         |PC = >:$labelWait
-         |$labelTransmit:
+         |PC = >:$labelWait ! _DO
          |UART = $WORKLO
          |""")
   }
@@ -457,6 +454,40 @@ case class PutChar(block: Block) extends Block(nestedName = "putcharGeneral") {
   override def dump(depth: Int): List[(Int, String)] =
     List(
       (depth, this.getClass.getSimpleName + "(")
+    ) ++ block.dump(depth + 1) ++
+      List((depth, ")"))
+}
+
+case class Putfuart(code: Char, block: Block) extends Block(nestedName = "putfuartGeneral") {
+  override def gen(depth: Int, parent: Scope): Seq[String] = {
+    val labelWait1 = parent.fqnLabelPathUnique("wait1")
+    val labelWait2 = parent.fqnLabelPathUnique("wait2")
+
+    // leaves result in $V1
+    val stmts: Seq[String] = block.expr(depth + 1, parent)
+
+    // see
+    val uartTerminalCtrl = code match {
+      case 'X' => UARTTerminalStates.GOTO_LOG_BYTE_STATE
+      case 'C' => UARTTerminalStates.GOTO_LOG_CHAR_STATE
+    }
+
+    stmts ++ split(
+      s"""
+         |$labelWait1:
+         |PCHITMP = <:$labelWait1
+         |PC = >:$labelWait1 ! _DO
+         |UART = ${uartTerminalCtrl.toInt}
+         |$labelWait2:
+         |PCHITMP = <:$labelWait2
+         |PC = >:$labelWait2 ! _DO
+         |UART = $WORKLO
+         |""")
+  }
+
+  override def dump(depth: Int): List[(Int, String)] =
+    List(
+      (depth, this.getClass.getSimpleName + s"( '$code', ")
     ) ++ block.dump(depth + 1) ++
       List((depth, ")"))
 }
@@ -486,7 +517,7 @@ case class PutChar(block: Block) extends Block(nestedName = "putcharGeneral") {
 //      }
 //  }
 
-case class PutcharVar(varName: String) extends Block(nestedName = s"putcharVar_${varName}_") {
+case class PutuartVar(varName: String) extends Block(nestedName = s"putuartVar_${varName}_") {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val labelWait = parent.fqnLabelPathUnique("wait")
     val varLocn = parent.getVarLabel(varName).fqn
@@ -500,8 +531,7 @@ case class PutcharVar(varName: String) extends Block(nestedName = s"putcharVar_$
   }
 }
 
-// TODO Change the loop to use negative logic and save 2 instructions
-case class Getchar() extends Block(nestedName = s"getchar_") {
+case class Waituart() extends Block(nestedName = s"waituart_") {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val labelWait = parent.fqnLabelPathUnique("wait")
     split(
@@ -511,6 +541,23 @@ case class Getchar() extends Block(nestedName = s"getchar_") {
          |PC = >:$labelWait ! _DI
          |$WORKLO = UART
          |$WORKHI = 0
+         |""")
+  }
+}
+
+
+case class Getuart() extends Block(nestedName = s"getuart_") {
+  override def gen(depth: Int, parent: Scope): List[String] = {
+    val labelSkip = parent.fqnLabelPathUnique("end")
+    split(
+      s"""
+         |$WORKLO = 0
+         |$WORKHI = 1
+         |PCHITMP = <:$labelSkip
+         |PC = >:$labelSkip ! _DI
+         |$WORKLO = UART
+         |$WORKHI = 0
+         |$labelSkip:
          |""")
   }
 }
@@ -525,7 +572,7 @@ case class Random() extends Block(nestedName = s"random_") {
   }
 }
 
-case class PutcharConst(konst: Int) extends Block(nestedName = s"putcharConst_${konst}_") {
+case class PutuartConst(konst: Int) extends Block(nestedName = s"putuartConst_${konst}_") {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val labelWait = parent.fqnLabelPathUnique("wait")
     split(

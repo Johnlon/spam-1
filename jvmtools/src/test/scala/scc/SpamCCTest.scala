@@ -4,6 +4,7 @@ import java.io.{File, FileOutputStream}
 import org.junit.jupiter.api.Assertions.{assertEquals, fail}
 import org.junit.jupiter.api.MethodOrderer.MethodName
 import org.junit.jupiter.api.{Test, TestMethodOrder}
+import terminal.UARTTerminalStates._
 import verification.Checks._
 import verification.HaltedException
 import verification.Verification._
@@ -134,10 +135,10 @@ class SpamCCTest {
         | uint16 a255= s[255];
         | uint16 a256 = s[256];
         | uint16 a338 = s[337];
-        | putchar(a0)
-        | putchar(a255)
-        | putchar(a256)
-        | putchar(a338)
+        | putuart(a0)
+        | putuart(a255)
+        | putuart(a256)
+        | putuart(a338)
         |
         |}
         |""".stripMargin
@@ -281,14 +282,14 @@ class SpamCCTest {
         |
         | // $4142 >> 1 => 20A1
         | // $A1 = 161 dec
-        | putchar(a >> 1)
+        | putuart(a >> 1)
         |
         | uint16 b = a >> 1;
-        | putchar(b) // 161
+        | putuart(b) // 161
         |
         | // $4142 & $ff => 42 => 66 dec
-        | putchar(a) // should be 66
-        | putchar(a & $ff )
+        | putuart(a) // should be 66
+        | putuart(a & $ff )
         |
         |}
         |
@@ -311,12 +312,12 @@ class SpamCCTest {
         |
         | uint16 a = $4142;
         |
-        | putchar(a)
-        | putchar(a >> 0)
-        | putchar(a >> 1)
-        | putchar(a >> 8)
-        | putchar(a >> 9)
-        | putchar(a >> 16)
+        | putuart(a)
+        | putuart(a >> 0)
+        | putuart(a >> 1)
+        | putuart(a >> 8)
+        | putuart(a >> 9)
+        | putuart(a >> 16)
         |
         |}
         |
@@ -340,27 +341,27 @@ class SpamCCTest {
         | uint16 b = %1001;
 
         | if ( (b<<1) == %00010010 ) {
-        |   putchar('=')
+        |   putuart('=')
         | }
         | if ( (b<<8) == %0000100100000000 ) {
-        |   putchar('=')
+        |   putuart('=')
         | }
         |
-        | putchar( b << 0 )
-        | putchar( b << 1 )
-        | putchar( b << 2 )
-        | putchar( b << 3 )
-        | putchar( b << 4 )
-        | putchar( b << 7 )
-        | putchar( b << 8 )
+        | putuart( b << 0 )
+        | putuart( b << 1 )
+        | putuart( b << 2 )
+        | putuart( b << 3 )
+        | putuart( b << 4 )
+        | putuart( b << 7 )
+        | putuart( b << 8 )
         |
         | uint16 c = b << 12;
         | if ( (b<<12) == %1001000000000000 ) {
-        |   putchar('=')
+        |   putuart('=')
         | }
         |
         | // double check value was preserved
-        | putchar( c >> 12 )
+        | putuart( c >> 12 )
         |
         |}
         |
@@ -385,19 +386,19 @@ class SpamCCTest {
         |
         | uint16 a = $ABCD;
         |
-        | putchar(a & $f0)
-        | putchar(a & $0f)
-        | putchar( (a>> 8) & $f0)
-        | putchar( a>> 12)
-        | putchar( (a>> 8) & $0f)
+        | putuart(a & $f0)
+        | putuart(a & $0f)
+        | putuart( (a>> 8) & $f0)
+        | putuart( a>> 12)
+        | putuart( (a>> 8) & $0f)
         |
         | if ( (a & $f000) == $a000 ) {
-        |   putchar( '=' )
+        |   putuart( '=' )
         | }
         |
         | if ( (a & $f000) == $a001 ) {
         |   // not expected to go here
-        |   putchar( '!' )
+        |   putuart( '!' )
         | }
         |
         |}
@@ -421,23 +422,23 @@ class SpamCCTest {
         | uint16 a = 2;
         |
         | if (a>2) {
-        |   putchar(1)
+        |   putuart(1)
         | } else {
         |   if (a<2) {
-        |     putchar(2)
+        |     putuart(2)
         |   }
         |   else { // ==
-        |     putchar(3)
+        |     putuart(3)
         |   }
         | }
         |
         | if (a>2) {
-        |   putchar(1)
+        |   putuart(1)
         | } else if (a<2) {
-        |     putchar(2)
+        |     putuart(2)
         | }
         | else { // ==
-        |     putchar(3)
+        |     putuart(3)
         | }
         |}
         |
@@ -462,53 +463,53 @@ class SpamCCTest {
         | a = a + $1010;
         |
         | if (a>$1110) {
-        |   putchar(1)
+        |   putuart(1)
         | } else
         |   if (a<$1110) {
-        |     putchar(2)
+        |     putuart(2)
         |   }
         |   else { // ==
-        |     putchar(3)
+        |     putuart(3)
         |   }
         |
         |
         | if (a>$1010) {
-        |   putchar(11)
+        |   putuart(11)
         | } else
         |   if (a<$1010) {
-        |     putchar(12)
+        |     putuart(12)
         |   } else { // ==
-        |     putchar(13)
+        |     putuart(13)
         |   }
         |
         |
         | if (a>$1210) {
-        |   putchar(21)
+        |   putuart(21)
         | } else if (a<$1210) {
-        |   putchar(22)
+        |   putuart(22)
         | } else { // ==
-        |   putchar(23)
+        |   putuart(23)
         | }
         |
         |
         | // comparing lower byte
         | if (a>$1101) {
-        |   putchar(31)
+        |   putuart(31)
         | } else {
         |   if (a<$1101) {
-        |     putchar(32)
+        |     putuart(32)
         |   } else { // ==
-        |     putchar(33)
+        |     putuart(33)
         |   }
         | }
         |
         | if (a>$1120) {
-        |   putchar(41)
+        |   putuart(41)
         | } else {
         |   if (a<$1120) {
-        |     putchar(42)
+        |     putuart(42)
         |   } else { // ==
-        |     putchar(43)
+        |     putuart(43)
         |   }
         | }
         |
@@ -516,15 +517,15 @@ class SpamCCTest {
         | uint16 b=$1000;
         |
         | if ( a == (b+$110) ) {
-        |  putchar('=')
+        |  putuart('=')
         | }
         |
         | if ( a != (b+$110) ) {
-        |  putchar('~')
+        |  putuart('~')
         | }
         |
         | if ( a != b ) {
-        |  putchar('!')
+        |  putuart('!')
         | }
         |
         |}
@@ -652,15 +653,15 @@ class SpamCCTest {
         |fun other() {
         | uint16 a=100;
         | uint16 b=200;
-        | putchar(a)
-        | putchar(b)
+        | putuart(a)
+        | putuart(b)
         |}
         |fun main() {
         | uint16 a=1;
         | uint16 b=2;
         | other()
-        | putchar(a)
-        | putchar(b)
+        | putuart(a)
+        | putuart(b)
         |}
         |""".stripMargin
 
@@ -694,22 +695,22 @@ class SpamCCTest {
         |  uint16 e = a + (b/2);
         |
         |  // should print 'A'
-        |  putchar(a)
+        |  putuart(a)
         |  // should print 'B'
-        |  putchar(b)
+        |  putuart(b)
         |  // should print 'C'
-        |  putchar(c)
+        |  putuart(c)
         |  // should print 'D'
-        |  putchar(d)
+        |  putuart(d)
         |  // should print 'b'
-        |  putchar(e)
+        |  putuart(e)
         |
         |  // should shift left twice to become the '@' char
         |  a = %00010000;
         |  b = 2;
         |  uint16 at = a A_LSL_B b;
         |  // should print '@'
-        |  putchar(at)
+        |  putuart(at)
         |}
         |""".stripMargin
 
@@ -730,7 +731,7 @@ class SpamCCTest {
       """fun main() {
         |  uint16 a = 64;
         |  uint16 b = 1 + (a + 3);
-        |  putchar(b)
+        |  putuart(b)
         |}
         |""".stripMargin
 
@@ -741,25 +742,25 @@ class SpamCCTest {
   }
 
   @Test
-  def putcharUsingConditionInvert(): Unit = {
+  def putuartUsingConditionInvert(): Unit = {
     /*
     * Purpose of this test doing a validation by comparing the code is to double check that the more efficient condition invert bit is being employed
     *
     * Previous logic was ..
     *
-    * root_function_main_putcharConst_65____LABEL_wait_1:
-    * PCHITMP = <:root_function_main_putcharConst_65____LABEL_transmit_2
-    * PC = >:root_function_main_putcharConst_65____LABEL_transmit_2 _DO
-    * PCHITMP = <:root_function_main_putcharConst_65____LABEL_wait_1
-    * PC = >:root_function_main_putcharConst_65____LABEL_wait_1
-    * root_function_main_putcharConst_65____LABEL_transmit_2:
+    * root_function_main_putuartConst_65____LABEL_wait_1:
+    * PCHITMP = <:root_function_main_putuartConst_65____LABEL_transmit_2
+    * PC = >:root_function_main_putuartConst_65____LABEL_transmit_2 _DO
+    * PCHITMP = <:root_function_main_putuartConst_65____LABEL_wait_1
+    * PC = >:root_function_main_putuartConst_65____LABEL_wait_1
+    * root_function_main_putuartConst_65____LABEL_transmit_2:
     * UART = 65
     *
     * New logic is ....
     *
-    * root_function_main_putcharConst_65____LABEL_wait_1:
-    * PCHITMP = <:root_function_main_putcharConst_65____LABEL_wait_1
-    * PC = >:root_function_main_putcharConst_65____LABEL_wait_1 ! _DO
+    * root_function_main_putuartConst_65____LABEL_wait_1:
+    * PCHITMP = <:root_function_main_putuartConst_65____LABEL_wait_1
+    * PC = >:root_function_main_putuartConst_65____LABEL_wait_1 ! _DO
     * UART = 65
     *
     * Saving two instructions and simpler logic.
@@ -768,7 +769,7 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        |  putchar('A')
+        |  putuart('A')
         |}
         |""".stripMargin
 
@@ -785,9 +786,9 @@ class SpamCCTest {
         |PC = > :ROOT________main_start
         |       ROOT________main_start:
         |       root_function_main___LABEL_START:
-        |              root_function_main_putcharConst_65____LABEL_wait_1:
-        |              PCHITMP = <:root_function_main_putcharConst_65____LABEL_wait_1
-        |              PC = >:root_function_main_putcharConst_65____LABEL_wait_1 ! _DO
+        |              root_function_main_putuartConst_65____LABEL_wait_1:
+        |              PCHITMP = <:root_function_main_putuartConst_65____LABEL_wait_1
+        |              PC = >:root_function_main_putuartConst_65____LABEL_wait_1 ! _DO
         |              UART = 65
         |       PCHITMP = <:root_end
         |       PC = >:root_end
@@ -798,16 +799,16 @@ class SpamCCTest {
   }
 
   @Test
-  def putchar(): Unit = {
+  def putuart(): Unit = {
 
     val lines =
       """
         |fun main() {
-        |  putchar(65)
-        |  putchar('B')
+        |  putuart(65)
+        |  putuart('B')
         |  uint16 c=67;
-        |  putchar(c)
-        |  putchar(c+1)
+        |  putuart(c)
+        |  putuart(c+1)
         |}
         |""".stripMargin
 
@@ -817,13 +818,13 @@ class SpamCCTest {
   }
 
   @Test
-  def getchar(): Unit = {
+  def waituart(): Unit = {
 
     val lines =
       """
         |fun main() {
-        |  uint16 g = getchar();
-        |  putchar(g)
+        |  uint16 g = waituart();
+        |  putuart(g)
         |}
         |""".stripMargin
 
@@ -843,21 +844,21 @@ class SpamCCTest {
         | uint16 b=1024;
         |
         | uint16 a1 = b>1;
-        | putchar(a1) // true
+        | putuart(a1) // true
         |
         | uint16 a2= b==0;
-        | putchar(a2) // false
+        | putuart(a2) // false
         |
         | uint16 a3= b==1;
-        | putchar(a3) // false
+        | putuart(a3) // false
         |
         | uint16 a4= b==1024;
-        | putchar(a4) // true
+        | putuart(a4) // true
         |
         | // compare b==(a+24)
         | uint16 a5=1000;
         | uint16 a6= b==(a5+24);
-        | putchar(a6) // true
+        | putuart(a6) // true
         |
         |}
         |""".stripMargin
@@ -876,7 +877,7 @@ class SpamCCTest {
         |fun main() {
         | uint16 a='a';
         | uint16 c = a + 2;
-        | putchar(c)
+        | putuart(c)
         |}
         |""".stripMargin
 
@@ -894,7 +895,7 @@ class SpamCCTest {
         |fun main() {
         | uint16 c='c';
         | uint16 a = c - 2;
-        | putchar(a)
+        | putuart(a)
         |}
         |""".stripMargin
 
@@ -912,8 +913,8 @@ class SpamCCTest {
         |fun main() {
         | uint16 s = 503;
         | uint16 a = s * 2; // alu expr
-        | putchar(a>>8)
-        | putchar(a)
+        | putuart(a>>8)
+        | putuart(a)
         |}
         |""".stripMargin
 
@@ -936,8 +937,8 @@ class SpamCCTest {
         | uint16 x = 503;
         | uint16 y = 2;
         | uint16 a = x * y; // alu expr
-        | putchar(a>>8)
-        | putchar(a)
+        | putuart(a>>8)
+        | putuart(a)
         |}
         |""".stripMargin
 
@@ -964,8 +965,8 @@ class SpamCCTest {
         |   uint16 z = $1234; //  this variable is initialised on each call to this block so is effectively stack-like
         |   var screen = [6: [1 2]]; // TODO - this array is effectively in global storage  as the contents persist between calls and are not reinitialised
         |   uint16 a = g;
-        |   putchar(a>>8)
-        |   putchar(a)
+        |   putuart(a>>8)
+        |   putuart(a)
         | }
         |}
         |""".stripMargin
@@ -986,7 +987,7 @@ class SpamCCTest {
         | uint16 a=8; // const expr
         |
         | uint16 res = a / 3; // alu expr
-        | putchar(res)
+        | putuart(res)
         |}
         |""".stripMargin
 
@@ -1015,9 +1016,9 @@ class SpamCCTest {
          | uint16 i1 = x - (10*xDiv10);
          |
          | uint16 bcd = (i100 * 100) + (i10 * 10) + i1;
-         | putchar(i100)
-         | putchar(i10)
-         | putchar(i1)
+         | putuart(i100)
+         | putuart(i10)
+         | putuart(i1)
          |}
          |""".stripMargin
 
@@ -1035,22 +1036,22 @@ class SpamCCTest {
       """
         |fun main() {
         | uint16 a=1>0;
-        | putchar(a)
+        | putuart(a)
         |
         | a=0>1;
-        | putchar(a)
+        | putuart(a)
         |
         | a=0==1;
-        | putchar(a)
+        | putuart(a)
         |
         | a=1==1;
-        | putchar(a)
+        | putuart(a)
         |
         | a=%1010 & %1100;
-        | putchar(a)
+        | putuart(a)
 
         | a=%1010 | %1100;
-        | putchar(a)
+        | putuart(a)
         |}
         |""".stripMargin
 
@@ -1069,7 +1070,7 @@ class SpamCCTest {
         | uint16 a=1260;
         | while(a>1250) {
         |   a=a-1;
-        |   putchar(a-1250)
+        |   putuart(a-1250)
         | }
         |}
         |""".stripMargin
@@ -1096,7 +1097,7 @@ class SpamCCTest {
         |   if (a>10) {
         |     break
         |   }
-        |   putchar(a)
+        |   putuart(a)
         |
         | }
         |
@@ -1106,7 +1107,7 @@ class SpamCCTest {
         |   if (a==0) {
         |     break
         |   }
-        |   putchar(a)
+        |   putuart(a)
         |
         | }
         |}
@@ -1129,10 +1130,10 @@ class SpamCCTest {
         | // FN COMMENT
         | uint16 d = a1;
         | //d = a2;
-        | putchar(d)
-        | putchar(a2)
-        | putchar(a3)
-        | putchar(a4)
+        | putuart(d)
+        | putuart(a2)
+        | putuart(a3)
+        | putuart(a4)
         |
         | // ascii 33 dec
         | a1 = '!';
@@ -1147,7 +1148,7 @@ class SpamCCTest {
         | print(arg1, arg2+arg1, 63, arg1+4)
         |
         | // CALLING PUT CHAR OF OUT VALUE
-        | putchar(arg1)
+        | putuart(arg1)
         |
         |}
         |
@@ -1180,7 +1181,7 @@ class SpamCCTest {
         |fun main() {
         | uint16 arg1 = 'A';
         | depth1(arg1)
-        | putchar(arg1)
+        | putuart(arg1)
         |}
         |
         |// END  COMMAND
@@ -1202,7 +1203,7 @@ class SpamCCTest {
         |//  export uint16 s = 'A';
         |
         |fun main() {
-        | //putchar(a)
+        | //putuart(a)
         | /*
         | commented
         | out
@@ -1322,10 +1323,10 @@ class SpamCCTest {
         |
         | // print values so we can test correct values selected
         | uint16 d = 3;
-        | putchar(ac)
-        | putchar(bc)
-        | putchar(string[2])
-        | putchar(string[d])
+        | putuart(ac)
+        | putuart(bc)
+        | putuart(string[2])
+        | putuart(string[d])
         |}
         |""".stripMargin
 
@@ -1347,13 +1348,13 @@ class SpamCCTest {
         | string[1] = '!';
         |
         | // define string
-        | putchar(string[0])
-        | putchar(string[1])
-        | putchar(string[2])
+        | putuart(string[0])
+        | putuart(string[1])
+        | putuart(string[2])
         |
         | // this expression creates further temp vars in addition to those created on string[1] assign above - code gen is expected to generate unique names (INDEX_LO/HI)
         | string[1] = string[1] + 2;
-        | putchar(string[1])
+        | putuart(string[1])
         |}
         |""".stripMargin
 
@@ -1374,7 +1375,7 @@ class SpamCCTest {
         | uint16 idx = 0;
         | uint16 c = string[idx];
         | while (c != 0) {
-        |   putchar(c)
+        |   putuart(c)
         |   idx = idx + 1;
         |   c = string[idx];
         | }
@@ -1401,31 +1402,31 @@ class SpamCCTest {
          |
          |  uint16 b = 2;
          |  while ( b > 0 ) {
-         |   putchar(${DO_RIGHT.toInt})
-         |   putchar( a )
+         |   putuart(${DO_RIGHT.toInt})
+         |   putuart( a )
          |   b = b - 1;
          |  }
          |  b = 2;
          |  while ( b > 0 ) {
-         |   putchar(${DO_DOWN.toInt})
-         |   putchar( a )
+         |   putuart(${DO_DOWN.toInt})
+         |   putuart( a )
          |   b = b - 1;
          |  }
          |  b = 2;
          |  while ( b > 0 ) {
-         |   putchar(${DO_LEFT.toInt})
-         |   putchar( a )
+         |   putuart(${DO_LEFT.toInt})
+         |   putuart( a )
          |   b = b - 1;
          |  }
          |
          |  b = 2;
          |  while ( b > 0 ) {
-         |   putchar(${DO_UP.toInt})
-         |   putchar( a )
+         |   putuart(${DO_UP.toInt})
+         |   putuart( a )
          |   b = b - 1;
          |  }
-         |  putchar(${DO_RIGHT.toInt})
-         |  putchar(${DO_DOWN.toInt})
+         |  putuart(${DO_RIGHT.toInt})
+         |  putuart(${DO_DOWN.toInt})
          |
          |  loop = loop + 1;
          | }

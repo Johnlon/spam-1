@@ -21,7 +21,7 @@ todo:
    maybe restrict signs to the ops??
 
  */
-// TODO: Add some traps for stupid errors like putchar("...") which I wasted loads of time on
+// TODO: Add some traps for stupid errors like putuart("...") which I wasted loads of time on
 // TODO while(some expr) is needed
 
 package scc
@@ -59,7 +59,8 @@ class StatementParser {
       statementLetVarEqVar |
       statementLetVarEqExpr |
       statementLetStringIndexEqExpr |
-      statementPutcharVarOptimisation | statementPutcharConstOptimisation | stmtPutcharGeneral |
+      statementPutuartVarOptimisation | statementPutuartConstOptimisation | stmtPutuartGeneral |
+      stmtPutfuartGeneral |
       statementPutsName |
       statementHalt | statementHaltVar |
       whileCond | whileTrue |
@@ -302,22 +303,32 @@ class StatementParser {
     }
   }
 
-  def statementPutcharConstOptimisation: Parser[Block] = positioned {
-    "putchar" ~ "(" ~> constExpression <~ ")" ^^ {
-      konst => PutcharConst(konst)
+  def statementPutuartConstOptimisation: Parser[Block] = positioned {
+    "putuart" ~ "(" ~> constExpression <~ ")" ^^ {
+      konst => PutuartConst(konst)
     }
   }
 
 
-  def statementPutcharVarOptimisation: Parser[Block] = positioned {
-    "putchar" ~ "(" ~> name <~ ")" ^^ {
-      varName: String => PutcharVar(varName)
+  def statementPutuartVarOptimisation: Parser[Block] = positioned {
+    "putuart" ~ "(" ~> name <~ ")" ^^ {
+      varName: String => PutuartVar(varName)
     }
   }
 
-  def stmtPutcharGeneral: Parser[Block] = positioned {
-    "putchar" ~ "(" ~> blkCompoundAluExpr <~ ")" ^^ {
-      block => PutChar(block)
+  def stmtPutuartGeneral: Parser[Block] = positioned {
+    "putuart" ~ "(" ~> blkCompoundAluExpr <~ ")" ^^ {
+      block => Putuart(block)
+    }
+  }
+
+  def fmtChar: Parser[Char] = "[CBX]".r ^^ {
+    str => str.head
+  }
+
+  def stmtPutfuartGeneral: Parser[Block] = positioned {
+    "putfuart" ~ "(" ~> fmtChar ~ ", " ~ blkCompoundAluExpr <~ ")" ^^ {
+      case code ~ _ ~  block => Putfuart(code, block)
     }
   }
 

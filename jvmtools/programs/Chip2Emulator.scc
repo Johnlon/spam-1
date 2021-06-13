@@ -1,3 +1,4 @@
+
 program {
 
 
@@ -23,6 +24,8 @@ program {
         uint16 DO_RIGHT = 14;
         uint16 DO_ORIGIN = 15;
         uint16 DO_CENTRE = 16;
+        uint16 GOTO_LOG_OPCODE = 17;
+        uint16 GOTO_LOG_STRING = 18;
 
         uint16 SCREEN_HEIGHT = 32;
         uint16 SCREEN_WIDTH = 64;
@@ -75,43 +78,112 @@ program {
         uint16 stackPtr = 0;
 
         // reset by sending this twice
-        putchar(GOTO_INIT_STATE)
-        putchar(GOTO_INIT_STATE)
+        putuart(GOTO_INIT_STATE)
+        putuart(GOTO_INIT_STATE)
 
-        putchar(GOTO_LOG_CHAR_STATE)
-        putchar('G')
-        putchar(GOTO_LOG_CHAR_STATE)
-        putchar('O')
-        putchar(GOTO_LOG_CHAR_STATE)
-        putchar('\n')
+        putuart(GOTO_LOG_STRING)
+        putuart(3)
+        putuart('G')
+        putuart('O')
+        putuart('\n')
+
+        uint16 keyDown = $100;
 
         while (true) {
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('V')
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('6')
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(registers[6])
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('V')
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('0')
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(registers[0])
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('V')
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('f')
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(registers[15])
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('\n')
-
-
             uint16 opcodehi = memory[pc];
             uint16 opcodelo = memory[pc + 1];
-
             uint16 opcode = (opcodehi << 8) + opcodelo;
+            uint16 keyLast = getuart(); // no key = x100 otherwise 0-255
+
+            if (keyLast != $100) {
+                keyDown = keyLast;
+            }
+
+        putfuart(X, pc>>8)
+        putfuart(X, pc)
+        putfuart(C, ':')
+        putfuart(C, 32)
+        putfuart(X, opcodehi)
+        putfuart(X, opcodelo)
+        putfuart(C, 32)
+
+        putfuart(C, 'K')
+        putfuart(C, ':')
+        putfuart(X, keyDown >> 8)
+        putfuart(X, keyDown)
+        putfuart(C, 32)
+            
+        putfuart(C, 'I')
+        putfuart(C, ':')
+        putfuart(X, index>>8)
+        putfuart(X, index)
+        putfuart(C, 32)
+
+        putfuart(C, '0')
+        putfuart(C, ':')
+        putfuart(X, registers[0])
+        putfuart(C, 32)
+        putfuart(C, '1')
+        putfuart(C, ':')
+        putfuart(X, registers[1])
+        putfuart(C, 32)
+        putfuart(C, '2')
+        putfuart(C, ':')
+        putfuart(X, registers[2])
+        putfuart(C, 32)
+        putfuart(C, '3')
+        putfuart(C, ':')
+        putfuart(X, registers[3])
+        putfuart(C, 32)
+        putfuart(C, '4')
+        putfuart(C, ':')
+        putfuart(X, registers[4])
+        putfuart(C, 32)
+        putfuart(C, '5')
+        putfuart(C, ':')
+        putfuart(X, registers[5])
+        putfuart(C, 32)
+        putfuart(C, '6')
+        putfuart(C, ':')
+        putfuart(X, registers[6])
+        putfuart(C, 32)
+        putfuart(C, '7')
+        putfuart(C, ':')
+        putfuart(X, registers[7])
+        putfuart(C, 32)
+        putfuart(C, '8')
+        putfuart(C, ':')
+        putfuart(X, registers[8])
+        putfuart(C, 32)
+        putfuart(C, '9')
+        putfuart(C, ':')
+        putfuart(X, registers[9])
+        putfuart(C, 32)
+        putfuart(C, 'A')
+        putfuart(C, ':')
+        putfuart(X, registers[10])
+        putfuart(C, 32)
+        putfuart(C, 'B')
+        putfuart(C, ':')
+        putfuart(X, registers[11])
+        putfuart(C, 32)
+        putfuart(C, 'C')
+        putfuart(C, ':')
+        putfuart(X, registers[12])
+        putfuart(C, 32)
+        putfuart(C, 'D')
+        putfuart(C, ':')
+        putfuart(X, registers[13])
+        putfuart(C, 32)
+        putfuart(C, 'E')
+        putfuart(C, ':')
+        putfuart(X, registers[14])
+        putfuart(C, 32)
+        putfuart(C, 'F')
+        putfuart(C, ':')
+        putfuart(X, registers[15])
+        putfuart(C, 32)
+
 
             uint16 N___ = opcode & $f000;
             uint16 _NNN = opcode & $0fff;
@@ -123,88 +195,13 @@ program {
             uint16 x = registers[_X__];
             uint16 y = registers[__Y_];
 
-/*
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar('P')
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar('C')
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar(':')
-            putchar(GOTO_LOG_BYTE_STATE)
-            putchar(pc>>8)
-            putchar(GOTO_LOG_BYTE_STATE)
-            putchar(pc)
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar(32)
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar(32)
-*/
-
-            // log op
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar('O')
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar('P')
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar(':')
-            putchar(GOTO_LOG_BYTE_STATE)
-            putchar(opcodehi)
-            putchar(GOTO_LOG_BYTE_STATE)
-            putchar(opcodelo)
-/*
-            // log space
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar(32)
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar(32)
-
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar('X')
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar(':')
-            // emit register num
-            putchar(GOTO_LOG_BYTE_STATE)
-            putchar(_X__)
-            // emit register val
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar('=')
-            putchar(GOTO_LOG_BYTE_STATE)
-            putchar(x)
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar(32)
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar(32)
-
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar('Y')
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar(':')
-            putchar(GOTO_LOG_BYTE_STATE)
-            putchar(__Y_)
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar('=')
-            putchar(GOTO_LOG_BYTE_STATE)
-            putchar(y)
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar(32)
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar(32)
-
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar('I')
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar(':')
-            putchar(GOTO_LOG_BYTE_STATE)
-            putchar(index>>8)
-            putchar(GOTO_LOG_BYTE_STATE)
-            putchar(index)
-*/
-            putchar(GOTO_LOG_CHAR_STATE)
-            putchar('\n')
-
             if (opcode == $00e0) {
                 // draw
-                putchar(DO_CLEAR)
+                putuart(DO_CLEAR)
+
+        putfuart(C, 'C')
+        putfuart(C, 'L')
+        putfuart(C, 'S')
 
             } else if (opcode == $00ee) { // DONE
                 // ReturnSub
@@ -215,15 +212,37 @@ program {
                 uint16 addrHi = stack[stackPtr];
                 pc = (addrHi << 8) + addrLo;
 
+        putfuart(C, 'R')
+        putfuart(C, 'T')
+        putfuart(C, 'S')
+
             } else if (opcodehi == $00) {
                 // obsolete machine jump
+        putfuart(C, 'O')
+        putfuart(C, 'B')
+        putfuart(C, 'S')
 
             } else if (N___ == $1000) {  // DONE
                 // jump to nnn
                 pc = _NNN - 2; // subtract 2 as there is an auto increment at end of loop
-                //putchar(GOTO_INIT_STATE)
+        putfuart(C, 'J')
+        putfuart(C, 'M')
+        putfuart(C, 'P')
+        putfuart(C, 32)
+        putfuart(X, _NNN>>8)
+        putfuart(X, _NNN)
+
             } else if (N___ == $2000) {  // DONE
-                // done using test_opcode.ch8
+        putfuart(C, 'C')
+        putfuart(C, 'A')
+        putfuart(C, 'L')
+        putfuart(C, 'L')
+        putfuart(C, 32)
+        putfuart(X, _NNN>>8)
+        putfuart(X, _NNN)
+                // CALL _NNN
+                // tested using test_opcode.ch8
+
                 // store into stack
                 uint16 addrLo = pc & $ff;
                 uint16 addrHi = pc >> 8;
@@ -238,64 +257,170 @@ program {
 
             } else if (N___ == $3000) {  // DONE
                 // skip if X eq N
+        putfuart(C, 'S')
+        putfuart(C, 'K')
+        putfuart(C, 'I')
+        putfuart(C, 'P')
+        putfuart(C, 32)
+        putfuart(C, 'X')
+        putfuart(C, '=')
+        putfuart(C, 'N')
+        putfuart(C, 32)
+        putfuart(X, x)
+        putfuart(C, '=')
+        putfuart(X, __NN)
+        putfuart(C, 32)
 
-                if (registers[_X__] == __NN) {
+                if (x == __NN) {
                     pc = pc + 2;
+        putfuart(C, 'Y')
+                } else {
+        putfuart(C, 'N')
                 }
-
-                //putchar(GOTO_INIT_STATE)
 
             } else if (N___ == $4000) {  // DONE
                 // skip if X ne N
+        putfuart(C, 'S')
+        putfuart(C, 'K')
+        putfuart(C, 'I')
+        putfuart(C, 'P')
+        putfuart(C, 32)
+        putfuart(C, 'X')
+        putfuart(C, '!')
+        putfuart(C, '=')
+        putfuart(C, 'N')
+        putfuart(C, 32)
+        putfuart(X, x)
+        putfuart(C, '=')
+        putfuart(X, __NN)
+        putfuart(C, 32)
 
-                if (registers[_X__] != __NN) {
+
+                if (x != __NN) {
                     pc = pc + 2;
+        putfuart(C, 'Y')
+                } else {
+        putfuart(C, 'N')
                 }
-
-                //putchar(GOTO_INIT_STATE)
+    
 
             } else if (N___ == $5000) {  // DONE
                 // skip if X eq Y
+        putfuart(C, 'S')
+        putfuart(C, 'K')
+        putfuart(C, 'I')
+        putfuart(C, 'P')
+        putfuart(C, 32)
+        putfuart(C, 'X')
+        putfuart(C, '=')
+        putfuart(C, 'Y')
+        putfuart(C, 32)
+        putfuart(X, x)
+        putfuart(C, '=')
+        putfuart(X, y)
+        putfuart(C, 32)
+
                 if (___N != 0) {
                     halt(opcode)
                 }
-                if (registers[_X__] == registers[__Y_]) {
+                if (x == y) {
                     pc = pc + 2;
+        putfuart(C, 'Y')
+                } else {
+        putfuart(C, 'N')
                 }
 
-                //putchar(GOTO_INIT_STATE)
-
             } else if (N___ == $6000) { // DONE
+                // VX=__NN
                 registers[_X__] = __NN;
+        putfuart(C, 'V')
+        putfuart(X, _X__)
+        putfuart(C, '=')
+        putfuart(C, 'N')
+        putfuart(C, 32)
+        putfuart(X, __NN)
+
             } else if (N___ == $7000) { // DONE
-                registers[_X__] = registers[_X__] + __NN;
+                // VX=VX+__NN
+                registers[_X__] = x + __NN;
+        putfuart(C, 'V')
+        putfuart(X, _X__)
+        putfuart(C, '=')
+        putfuart(C, 'X')
+        putfuart(C, '+')
+        putfuart(C, 'N')
+        putfuart(C, 32)
+        putfuart(X, x)
+        putfuart(C, '+')
+        putfuart(X, __NN)
+
             } else if (N___ == $8000) {
                 if (___N == 0) {
                     registers[_X__] = y;
+        putfuart(C, 'V')
+        putfuart(X, _X__)
+        putfuart(C, '=')
+        putfuart(C, 'Y')
+        putfuart(C, 32)
+        putfuart(X, y)
+
                 } else if (___N == 1) {
                     registers[_X__] = x | y;
+
+        putfuart(C, 'V')
+        putfuart(X, _X__)
+        putfuart(C, '=')
+        putfuart(C, 'X')
+        putfuart(C, '|')
+        putfuart(C, 'Y')
+        putfuart(C, 32)
+        putfuart(X, x)
+        putfuart(C, '|')
+        putfuart(X, y)
+
                 } else if (___N == 2) {
                     registers[_X__] = x & y;
                 } else if (___N == 3) {
                     registers[_X__] = x ^ y;
                 } else if (___N == 4) {
                     //AddXPlusYCarry
+
                     uint16 result = x + y;
-                    registers[_X__] = result & $ff;
+                    registers[_X__] = result;
+
+        putfuart(C, 'V')
+        putfuart(X, _X__)
+        putfuart(C, '=')
+        putfuart(C, 'X')
+        putfuart(C, '+')
+        putfuart(C, 'Y')
+        putfuart(C, 32)
+        putfuart(X, x)
+        putfuart(C, '+')
+        putfuart(X, y)
+        putfuart(C, '=')
+        putfuart(X, result)
+        putfuart(C, 32)
+        putfuart(C, 'C')
+
                     if (result > $ff) {
                         registers[15] = 1;
                     } else {
                         registers[15] = 0;
                     }
+        putfuart(X, registers[15])
+
                 } else if (___N == 5) {
                     // XEqXMinusY
                     if (x < y) {
+                        // active low
                         registers[15] = 0;
                     } else {
                         registers[15] = 1;
                     }
                     registers[_X__] = x - y;
                 } else if (___N == 6) {
+                    // X = X >> 1
                     if ((x & 1) != 0) {
                         registers[15] = 1;
                     } else {
@@ -303,7 +428,9 @@ program {
                     }
                     registers[_X__] = x >> 1;
                 } else if (___N == 7) {
+                    // X = Y - X with carry
                     if (x > y) {
+                        // active low
                         registers[15] = 0;
                     } else {
                         registers[15] = 1;
@@ -311,25 +438,50 @@ program {
                     registers[_X__] = y - x;
 
                 } else if (___N == $e) {
+                    // X = X << 1
                     if ((x & % 10000000) != 0) {
                         registers[15] = 1;
                     } else {
                         registers[15] = 0;
                     }
                     registers[_X__] = x << 1;
+        putfuart(C, 'V')
+        putfuart(X, _X__)
+        putfuart(C, '=')
+        putfuart(C, 'X')
+        putfuart(C, '<')
+        putfuart(C, '<')
+        putfuart(C, '1')
+        putfuart(C, 32)
+        putfuart(C, '=')
+        putfuart(X, registers[_X__])
+
+                } else {
+                    // not impl F0xx
+                    halt(opcode)
                 }
             } else if (N___ == $9000) {
                 // ADDED VIA test_opcode.ch8
                 if (___N == 0) {
-                    // SkipIfXNeY(opS, _X__, __Y_)
+                    // skipIfXNeY(opS, _X__, __Y_)
                     if (x != y) {
                         pc = pc + 2;
                     }
+                } else {
+                    // not impl F0xx
+                    halt(opcode)
                 }
             } else if (N___ == $A000) { // DONE
                 // set index
-                //putchar('I')
+                //putuart('I')
                 index = _NNN;
+        putfuart(C, 'I')
+        putfuart(C, '=')
+        putfuart(C, 'N')
+        putfuart(C, 32)
+        putfuart(C, '=')
+        putfuart(X, index>>8)
+        putfuart(X, index)
 
             } else if (N___ == $C000) { // DONE
                 // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Cxkk
@@ -338,16 +490,44 @@ program {
                 uint16 rand = random();
                 registers[_X__] = rand & __NN;
                 
+        putfuart(C, 'V')
+        putfuart(X, _X__)
+        putfuart(C, '=')
+        putfuart(C, 'R')
+        putfuart(C, 'N')
+        putfuart(C, 'D')
+        putfuart(C, '&')
+        putfuart(C, 'N')
+        putfuart(C, 32)
+        putfuart(X, rand)
+        putfuart(C, '&')
+        putfuart(X, __NN)
+        putfuart(C, '=')
+        putfuart(X, registers[_X__])
 
             } else if (N___ == $D000) {
                 // draw glyph identified by Index reg at position X/Y with height N
 // as per https://tobiasvl.github.io/blog/write-a-chip-8-emulator/#dxyn-display
 // TODO - NEED TO MAINTAIN A SCREEN BUFF     60x40=2.5k
 
-                uint16 xpos = registers[_X__];
-                uint16 ypos = registers[__Y_];
+                uint16 xpos = x;
+                uint16 ypos = y;
 
                 uint16 ycount = 0;
+
+        putfuart(C, 'D')
+        putfuart(C, 'R')
+        putfuart(C, 'A')
+        putfuart(C, 'W')
+        putfuart(C, 32)
+        putfuart(C, 'X')
+        putfuart(X, x)
+        putfuart(C, 32)
+        putfuart(C, 'Y')
+        putfuart(X, y)
+        putfuart(C, 32)
+        putfuart(C, 'N')
+        putfuart(X, ___N)
 
                 while (true) { // TODO - make while take an expr
 
@@ -379,79 +559,12 @@ program {
                     uint16 newScreen = screenRow ^ glyphRow;
                     uint16 impact = screenRow & glyphRow;
 
-/*
-                    uint16 r = (ycount+ypos) * SCREEN_WIDTH;
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('@')
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(r >> 8)
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(r)
-*/
-
-/*
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('R')
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(rowStart>>8)
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(rowStart)
-
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('P')
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(pixelPos>>8)
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(pixelPos)
-
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('X')
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(xpos)
-
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('Y')
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(ypos)
-
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('S')
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(screenRow)
-
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('G')
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(glyphRow)
-
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('N')
-                    putchar(GOTO_LOG_BYTE_STATE)
-                    putchar(newScreen)
-
-                    putchar(GOTO_LOG_CHAR_STATE)
-                    putchar('\n')
-*/
-                    putchar(GOTO_SETX_STATE)
-                    putchar(xpos)
-                    putchar(GOTO_SETY_STATE)
-                    putchar(ypos + ycount)
-                    putchar(GOTO_DRAW_BYTE_STATE)
-                    putchar(newScreen)
-
-
-/*
-                    // Do not update screen memory where sprite is wrapping rows
-                    screen[pixelPos+0] = (newScreen&128)>>7;
-                    screen[pixelPos+1] = (newScreen&64)>>6;
-                    screen[pixelPos+2] = (newScreen&32)>>5;
-                    screen[pixelPos+3] = (newScreen&16)>>4;
-                    screen[pixelPos+4] = (newScreen&8)>>3;
-                    screen[pixelPos+5] = (newScreen&4)>>2;
-                    screen[pixelPos+6] = (newScreen&2)>>1;
-                    screen[pixelPos+7] = (newScreen&1);
-
-*/
+                    putuart(GOTO_SETX_STATE)
+                    putuart(xpos)
+                    putuart(GOTO_SETY_STATE)
+                    putuart(ypos + ycount)
+                    putuart(GOTO_DRAW_BYTE_STATE)
+                    putuart(newScreen)
 
 
                     if (pixelPos < rowLimit) {
@@ -487,18 +600,61 @@ program {
                 }
 
             } else if (N___ == $E000) {
-/*
-ExA1 - SKNP Vx
-Skip next instruction if key with the value of Vx is not pressed.
-Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
-*/
-                // TODO IMPL KEYPRESS IO FROM UART??? GETCHAR?
-                uint16 keyUp = registers[_X__];
+                if (__NN == $A1) {
+    /*
+    ExA1 - SKNP Vx
+    Skip next instruction if key with the value of Vx is not pressed.
+    Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
+    */
+                    // TODO IMPL KEYPRESS IO FROM UART??? GETCHAR?
+                    uint16 key = x;
 
-                // FIXME
-                uint16 rand = random();
-                if (rand > 128) {
-                     pc = pc + 2;
+
+        putfuart(C, 'S')
+        putfuart(C, 'K')
+        putfuart(C, 'I')
+        putfuart(C, 'P')
+        putfuart(C, 32)
+        putfuart(C, '!')
+        putfuart(C, 'K')
+        putfuart(C, 'E')
+        putfuart(C, 'Y')
+        putfuart(C, 32)
+        putfuart(X, key)
+        putfuart(C, 32)
+
+                    if (keyDown != key) {
+                         pc = pc + 2;
+        putfuart(C, 'Y')
+                    } else {
+        putfuart(C, 'N')
+                    }
+                } else if (__NN == $9E) {
+                    // skip; if key x is pressed
+                    uint16 key = x;
+
+
+        putfuart(C, 'S')
+        putfuart(C, 'K')
+        putfuart(C, 'I')
+        putfuart(C, 'P')
+        putfuart(C, 32)
+        putfuart(C, 'K')
+        putfuart(C, 'E')
+        putfuart(C, 'Y')
+        putfuart(C, 32)
+        putfuart(X, key)
+
+                    if (keyDown == key) {
+                         pc = pc + 2;
+        putfuart(C, 'Y')
+                    } else {
+        putfuart(C, 'N')
+                    }
+
+                } else {
+                    // not impl F0xx
+                    halt(opcode)
                 }
 
 
@@ -515,11 +671,26 @@ Checks the keyboard, and if the key corresponding to the value of Vx is currentl
                         registers[_X__] = random();
                     }
 
+        putfuart(C, 'V')
+        putfuart(X, _X__)
+        putfuart(C, '=')
+        putfuart(C, 'D')
+        putfuart(C, 'T')
+        putfuart(C, '=')
+        putfuart(X, registers[_X__])
+
                 } else if (__NN == $15) {
                     // SET DELAY TIMER
                     // TODO WORK OUT HOW MANY CYCLES FOR 60 Hz
                     // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx15
                     uint16 DT = registers[_X__];
+        putfuart(C, 'D')
+        putfuart(C, 'T')
+        putfuart(C, '=')
+        putfuart(C, 'V')
+        putfuart(X, _X__)
+        putfuart(C, '=')
+        putfuart(X, x)
 
                 } else if (__NN == $18) {
                     // SET SOUND TIMER
@@ -527,19 +698,36 @@ Checks the keyboard, and if the key corresponding to the value of Vx is currentl
                     // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx18
                     uint16 ST = registers[_X__];
 
+                } else if (__NN == $1E) {
+                    // INDEX += REG[X]
+                    // set carry if index exceeds mem size of 4096
+                    uint16 oldI = index;
+                    index = index + x;                  
+                    if (index > 4095) {
+                        registers[15] = 1;
+                    } else {
+                        registers[15] = 0;
+                    }
+        putfuart(C, 'I')
+        putfuart(C, '=')
+        putfuart(C, 'I')
+        putfuart(C, '+')
+        putfuart(C, 'V')
+        putfuart(X, _X__)
+        putfuart(C, 32)
+        putfuart(X, oldI>>8)
+        putfuart(X, oldI)
+        putfuart(C, '+')
+        putfuart(X, x)
+        putfuart(C, '=')
+        putfuart(X, index>>8)
+        putfuart(X, index)
+        putfuart(C, 32)
+        putfuart(C, 'C')
+        putfuart(X, registers[15])
+
                 } else if (__NN == $29) {
                     uint16 ch = registers[_X__];
-/*
-                    uint16 offset = 0;
-
-                    // !!!!! NEED TO IMPL MULTIPLY => LOOP FOR NOW
-                    //uint16 offset = ch * FontCharWidth;
-                    while (ch > 0) {
-                        offset = offset + FontCharWidth;
-                        ch = ch - 1;
-                    }
-*/
-                    // use multiply 
                     uint16 offset = ch * FontCharWidth;
 
                     uint16 locn = FontMemAddress + offset;
@@ -571,48 +759,8 @@ Checks the keyboard, and if the key corresponding to the value of Vx is currentl
                 } else if (__NN == $65) {
                     uint16 i = 0;
 
-
-//                    putchar(GOTO_LOG_CHAR_STATE)
-//                    putchar('$')
-//                    putchar(GOTO_LOG_CHAR_STATE)
-//                    putchar('6')
-//                    putchar(GOTO_LOG_CHAR_STATE)
-//                    putchar('5')
-//                    putchar(GOTO_LOG_CHAR_STATE)
-//                    putchar(':')
-//                    putchar(GOTO_LOG_BYTE_STATE)
-//                    putchar(x)
-//                    putchar(GOTO_LOG_CHAR_STATE)
-//                    putchar('\n')
-
                     while (true) {
                         registers[i] = memory[index + i];
-
- //                       putchar(GOTO_LOG_CHAR_STATE)
- //                       putchar('V')
- //                       putchar(GOTO_LOG_BYTE_STATE)
- //                       putchar(i)
- //                       putchar(GOTO_LOG_CHAR_STATE)
- //                       putchar('=')
- //                       putchar(GOTO_LOG_BYTE_STATE)
- //                       putchar(registers[i])
- //                       putchar(GOTO_LOG_CHAR_STATE)
- //                       putchar(32)
- //                       putchar(GOTO_LOG_CHAR_STATE)
- //                       putchar(32)
-//
- //                       putchar(GOTO_LOG_CHAR_STATE)
- //                       putchar('M')
-  //                      putchar(GOTO_LOG_BYTE_STATE)
-   //                     putchar((index+i) >> 8)
-   //                     putchar(GOTO_LOG_BYTE_STATE)
-   //                     putchar(index+i)
-   //                     putchar(GOTO_LOG_CHAR_STATE)
-   //                     putchar('=')
-   //                     putchar(GOTO_LOG_BYTE_STATE)
-   //                     putchar(memory[index + i])
-   //                     putchar(GOTO_LOG_CHAR_STATE)
-   //                     putchar('\n')
 
                         i = i + 1;
                         if (i > _X__) {
@@ -623,16 +771,6 @@ Checks the keyboard, and if the key corresponding to the value of Vx is currentl
                     //       index = if (LoadStoreBehaviour == Legacy) (st.index + xReg.ubyte + 1) else st.index
 
 
-                } else if (__NN == $1E) {
-                    // INDEX += REG[X]
-                    // set carry if index exceeds mem size of 4096
-                    index = index + x;                  
-                    if (index > 4095) {
-                        registers[15] = 1;
-                    } else {
-                        registers[15] = 0;
-                    }
-
                 } else {
                     // not impl F0xx
                     halt(opcode)
@@ -641,6 +779,8 @@ Checks the keyboard, and if the key corresponding to the value of Vx is currentl
                 // not impl top level
                 halt(opcode)
             }
+
+            putfuart(C, '\n')
 
             pc = pc + 2;
         }
