@@ -1,3 +1,4 @@
+# 4 rotate, 5 left, 6 right, 7 drop
 
 echo 't100000' >  /home/john/OneDrive/simplecpu/verilog/cpu/uart.control
 echo >  /home/john/OneDrive/simplecpu/verilog/cpu/uart.out

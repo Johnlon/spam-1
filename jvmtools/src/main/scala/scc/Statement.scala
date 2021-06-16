@@ -470,6 +470,7 @@ case class Putfuart(code: Char, block: Block) extends Block(nestedName = "putfua
     val uartTerminalCtrl = code match {
       case 'X' => UARTTerminalStates.GOTO_LOG_BYTE_STATE
       case 'C' => UARTTerminalStates.GOTO_LOG_CHAR_STATE
+      case 'B' => UARTTerminalStates.GOTO_LOG_BIN_STATE
     }
 
     stmts ++ split(

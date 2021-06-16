@@ -4,7 +4,7 @@ import org.apache.commons.io.input.{Tailer, TailerListener}
 
 import java.awt.Color
 import java.io.{File, FileOutputStream, PrintStream}
-import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
+import java.util.concurrent.atomic.AtomicInteger
 import javax.swing.BorderFactory
 import scala.collection.mutable
 import scala.swing.ScrollPane.BarPolicy
@@ -30,9 +30,11 @@ object UARTTerminalStates {
   val DO_CENTRE: Char = 16
   val GOTO_LOG_OPCODE: Char = 17
   val GOTO_LOG_STRING: Char = 18
+  val GOTO_LOG_BIN_STATE: Char = 19 // switch state
 
 }
-import UARTTerminalStates._
+
+import terminal.UARTTerminalStates._
 
 sealed trait TerminalIOState
 
@@ -47,6 +49,8 @@ object STATE_DRAW_PIXEL extends TerminalIOState
 object STATE_DRAW_BYTE extends TerminalIOState
 
 object STATE_LOG_CHAR extends TerminalIOState
+
+object STATE_LOG_BIN extends TerminalIOState
 
 object STATE_LOG_BYTE extends TerminalIOState
 
@@ -64,7 +68,7 @@ object UARTTerminal extends SimpleSwingApplication {
   val replay = true
 
   @volatile var stopped = true
-  val step = new AtomicLong(0);
+  var nextInst = new AtomicInteger(0)
 
   val uartOut = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.out"
   val uartControl = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.control"
@@ -138,19 +142,29 @@ object UARTTerminal extends SimpleSwingApplication {
       }
       try {
         var wasStopped = false
-        while (stopped && step.get() == 0) {
+
+        while (stopped && nextInst.get() == 0) {
           wasStopped = true
           Thread.sleep(10)
         }
-        if (step.get() > 0) step.decrementAndGet()
 
+        var gotCR = false
         if (line.trim.nonEmpty) {
           count += 1
-          println("" + count + " ! " + line)
           val c = Integer.parseInt(line, 16)
           val char = c.toChar
+          if (char == '\n') gotCR = true
+          if (char == '\r') gotCR = true
           plot(char)
         }
+
+        if (gotCR) {
+          if (nextInst.get() > 0) nextInst.decrementAndGet()
+          while (stopped && nextInst.get() == 0) {
+            Thread.sleep(100)
+          }
+        }
+
 
         if (wasStopped) {
           Thread.sleep(1000)
@@ -190,12 +204,12 @@ object UARTTerminal extends SimpleSwingApplication {
     val brefresh = new Button("Reset")
     val bpaint = new Button("Paint")
     val bstop = new Button("Stop")
-    val bstep = new Button("Step")
+    val bnext = new Button("Next")
     val breplay = new Button("Replay")
 
     plot(DO_CENTRE)
 
-    listenTo(text.keys, brefresh, bpaint, bstop, bstep, breplay)
+    listenTo(text.keys, brefresh, bpaint, bstop, bnext, breplay)
 
     val uartCtrl = new PrintStream(new FileOutputStream(uartControl, true))
 
@@ -220,7 +234,7 @@ object UARTTerminal extends SimpleSwingApplication {
 
     updateStopButton()
 
-    val hexpad: Map[scala.swing.event.Key.Value , Char] = Map(
+    val hexpad: Map[scala.swing.event.Key.Value, Char] = Map(
       Key.Key0 -> 0,
       Key.Key1 -> 1,
       Key.Key2 -> 2,
@@ -239,17 +253,19 @@ object UARTTerminal extends SimpleSwingApplication {
       Key.F -> 15,
       // map the arrow keys to a WASD-like set - see keypad numbering https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
       // games may us other keys
-      Key.Up -> 5,
-      Key.Down -> 8,
-      Key.Left -> 7,
-      Key.Right -> 9,
-      Key.Space -> 0,
+      Key.Up -> 4,
+      Key.Down -> 7,
+      Key.Left -> 5,
+      Key.Right -> 6,
+      Key.Space -> 32,
     )
     reactions += {
       case ButtonClicked(b) if b == brefresh =>
         data = fill()
         doRepaint()
 
+      case ButtonClicked(b) if b == bnext =>
+        nextInst.incrementAndGet()
       case ButtonClicked(b) if b == bpaint =>
         doRepaint()
       case ButtonClicked(b) if b == bstop =>
@@ -257,25 +273,15 @@ object UARTTerminal extends SimpleSwingApplication {
         updateStopButton()
       case ButtonClicked(b) if b == breplay =>
         startTailer(false)
-      case ButtonClicked(b) if b == bstep =>
-        step.incrementAndGet()
 
-//      case KeyPressed(_, c, _, _) if c == Key.Left =>
-//        send(K_LEFT)
-//      case KeyPressed(_, c, _, _) if c == Key.Right =>
-//        send(K_RIGHT)
-//      case KeyPressed(_, c, _, _) if c == Key.Up =>
-//        send(K_UP)
-//      case KeyPressed(_, c, _, _) if c == Key.Down =>
-//        send(K_DOWN)
       case KeyPressed(_, c, _, _) if hexpad.keySet.contains(c) =>
-        send(hexpad.get(c).get)
+        send(hexpad(c))
       case _ =>
     }
 
     uiapp.contents = new BoxPanel(Orientation.Vertical) {
       val buttons = new BoxPanel(Orientation.Horizontal) {
-        contents ++= Seq(brefresh, bpaint, bstop, bstep, breplay)
+        contents ++= Seq(brefresh, bpaint, bstop, bnext, breplay)
       }
       val label = new BoxPanel(Orientation.Horizontal) {
         contents ++= Seq(labelChar)
@@ -327,6 +333,10 @@ object UARTTerminal extends SimpleSwingApplication {
 
   def logByte(c: Char): Unit = {
     logLine.text += f"$c%02x"
+  }
+
+  def logBin(c: Char): Unit = {
+    logLine.text += ("00000000" + c.toBinaryString).takeRight(8)
   }
 
   def logOpcode(opcode1: Int, opcode2: Int) = {
@@ -386,6 +396,10 @@ object UARTTerminal extends SimpleSwingApplication {
         report(s"LOG BYTE", c)
         logByte(c)
         state = STATE_INIT
+      case STATE_LOG_BIN =>
+        report(s"LOG BIN", c)
+        logBin(c)
+        state = STATE_INIT
       case STATE_LOG_OPCODE1 =>
         report(s"LOG OPCODE1", c)
         opcode1 = c;
@@ -431,6 +445,9 @@ object UARTTerminal extends SimpleSwingApplication {
             report(s"STATE=$state")
           case GOTO_LOG_CHAR_STATE =>
             state = STATE_LOG_CHAR
+            report(s"STATE=$state")
+          case GOTO_LOG_BIN_STATE =>
+            state = STATE_LOG_BIN
             report(s"STATE=$state")
           case GOTO_LOG_BYTE_STATE =>
             state = STATE_LOG_BYTE
@@ -494,23 +511,14 @@ object UARTTerminal extends SimpleSwingApplication {
         sys.error("bit must be 0 or 1 but was '" + bit + "'")
       }
 
-      //      val existing = data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH)
-
-      //    val newval = if (flip) {
-      //      existing == BLANKCHAR
-      //    } else {
-      //      existing.equals('1')
-      //    }
-
-      //val char = if (bit == '1') BLOCKCHAR else BLANKCHAR
-      val char = if (bit == '1') {
-        countChar = (countChar + 1).asInstanceOf[Char]
-        countChar
-      }
-      else BLANKCHAR
+      val char = if (bit == '1') BLOCKCHAR else BLANKCHAR
+//      val char = if (bit == '1') {
+//        countChar = (countChar + 1).asInstanceOf[Char]
+//        countChar
+//      }
+//      else BLANKCHAR
 
       if (countChar > 'z') countChar = '0'
-      //    val pixelImg = char // if (newval) BLOCKCHAR else BLANKCHAR
 
       data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH) = char
     }

@@ -1,4 +1,3 @@
-
 program {
 
 
@@ -31,7 +30,7 @@ program {
         uint16 SCREEN_WIDTH = 64;
 
         // 32*64=screen size
-        var screen = [2*32*64: [0]];
+        var screen = [2 * 32 * 64: [0]];
 
 
         // 16 x 8 bits
@@ -76,6 +75,7 @@ program {
         uint16 pc = PC_INIT;
         uint16 index = 0;
         uint16 stackPtr = 0;
+        uint16 countI = 0;
 
         // reset by sending this twice
         putuart(GOTO_INIT_STATE)
@@ -87,103 +87,120 @@ program {
         putuart('O')
         putuart('\n')
 
-        uint16 keyDown = $100;
+        uint16 keyDown = $100; // 32 = no key pressed
+        uint16 DT = 0;
+
+        uint16 hackCount = 0;
+        uint16 LOG = 1;
 
         while (true) {
+            countI = countI+1;
+
             uint16 opcodehi = memory[pc];
             uint16 opcodelo = memory[pc + 1];
             uint16 opcode = (opcodehi << 8) + opcodelo;
             uint16 keyLast = getuart(); // no key = x100 otherwise 0-255
 
-            if (keyLast != $100) {
+            if (keyLast == $100) {
+                // no change
+            } else if (keyLast == 32) {
+                keyDown = $100; // no key pressed
+            } else {
                 keyDown = keyLast;
             }
+            if (LOG > 0) {
+                putfuart(X, countI >> 8)
+                putfuart(X, countI)
+                putfuart(C, ':')
+                putfuart(C, 32)
 
-        putfuart(X, pc>>8)
-        putfuart(X, pc)
-        putfuart(C, ':')
-        putfuart(C, 32)
-        putfuart(X, opcodehi)
-        putfuart(X, opcodelo)
-        putfuart(C, 32)
+                putfuart(X, pc >> 8)
+                putfuart(X, pc)
+                putfuart(C, ':')
+                putfuart(C, 32)
+                putfuart(X, opcodehi)
+                putfuart(X, opcodelo)
+                putfuart(C, 32)
 
-        putfuart(C, 'K')
-        putfuart(C, ':')
-        putfuart(X, keyDown >> 8)
-        putfuart(X, keyDown)
-        putfuart(C, 32)
-            
-        putfuart(C, 'I')
-        putfuart(C, ':')
-        putfuart(X, index>>8)
-        putfuart(X, index)
-        putfuart(C, 32)
+/*
+                putfuart(C, 'K')
+                putfuart(C, ':')
+                putfuart(X, keyDown >> 8)
+                putfuart(X, keyDown)
+                putfuart(C, 32)
 
-        putfuart(C, '0')
-        putfuart(C, ':')
-        putfuart(X, registers[0])
-        putfuart(C, 32)
-        putfuart(C, '1')
-        putfuart(C, ':')
-        putfuart(X, registers[1])
-        putfuart(C, 32)
-        putfuart(C, '2')
-        putfuart(C, ':')
-        putfuart(X, registers[2])
-        putfuart(C, 32)
-        putfuart(C, '3')
-        putfuart(C, ':')
-        putfuart(X, registers[3])
-        putfuart(C, 32)
-        putfuart(C, '4')
-        putfuart(C, ':')
-        putfuart(X, registers[4])
-        putfuart(C, 32)
-        putfuart(C, '5')
-        putfuart(C, ':')
-        putfuart(X, registers[5])
-        putfuart(C, 32)
-        putfuart(C, '6')
-        putfuart(C, ':')
-        putfuart(X, registers[6])
-        putfuart(C, 32)
-        putfuart(C, '7')
-        putfuart(C, ':')
-        putfuart(X, registers[7])
-        putfuart(C, 32)
-        putfuart(C, '8')
-        putfuart(C, ':')
-        putfuart(X, registers[8])
-        putfuart(C, 32)
-        putfuart(C, '9')
-        putfuart(C, ':')
-        putfuart(X, registers[9])
-        putfuart(C, 32)
-        putfuart(C, 'A')
-        putfuart(C, ':')
-        putfuart(X, registers[10])
-        putfuart(C, 32)
-        putfuart(C, 'B')
-        putfuart(C, ':')
-        putfuart(X, registers[11])
-        putfuart(C, 32)
-        putfuart(C, 'C')
-        putfuart(C, ':')
-        putfuart(X, registers[12])
-        putfuart(C, 32)
-        putfuart(C, 'D')
-        putfuart(C, ':')
-        putfuart(X, registers[13])
-        putfuart(C, 32)
-        putfuart(C, 'E')
-        putfuart(C, ':')
-        putfuart(X, registers[14])
-        putfuart(C, 32)
-        putfuart(C, 'F')
-        putfuart(C, ':')
-        putfuart(X, registers[15])
-        putfuart(C, 32)
+                putfuart(C, 'I')
+                putfuart(C, ':')
+                putfuart(X, index >> 8)
+                putfuart(X, index)
+                putfuart(C, 32)
 
+                putfuart(C, '0')
+                putfuart(C, ':')
+                putfuart(X, registers[0])
+                putfuart(C, 32)
+                putfuart(C, '1')
+                putfuart(C, ':')
+                putfuart(X, registers[1])
+                putfuart(C, 32)
+                putfuart(C, '2')
+                putfuart(C, ':')
+                putfuart(X, registers[2])
+                putfuart(C, 32)
+                putfuart(C, '3')
+                putfuart(C, ':')
+                putfuart(X, registers[3])
+                putfuart(C, 32)
+                putfuart(C, '4')
+                putfuart(C, ':')
+                putfuart(X, registers[4])
+                putfuart(C, 32)
+                putfuart(C, '5')
+                putfuart(C, ':')
+                putfuart(X, registers[5])
+                putfuart(C, 32)
+                putfuart(C, '6')
+                putfuart(C, ':')
+                putfuart(X, registers[6])
+                putfuart(C, 32)
+                putfuart(C, '7')
+                putfuart(C, ':')
+                putfuart(X, registers[7])
+                putfuart(C, 32)
+                putfuart(C, '8')
+                putfuart(C, ':')
+                putfuart(X, registers[8])
+                putfuart(C, 32)
+                putfuart(C, '9')
+                putfuart(C, ':')
+                putfuart(X, registers[9])
+                putfuart(C, 32)
+                putfuart(C, 'A')
+                putfuart(C, ':')
+                putfuart(X, registers[10])
+                putfuart(C, 32)
+                putfuart(C, 'B')
+                putfuart(C, ':')
+                putfuart(X, registers[11])
+                putfuart(C, 32)
+                putfuart(C, 'C')
+                putfuart(C, ':')
+                putfuart(X, registers[12])
+                putfuart(C, 32)
+                putfuart(C, 'D')
+                putfuart(C, ':')
+                putfuart(X, registers[13])
+                putfuart(C, 32)
+                putfuart(C, 'E')
+                putfuart(C, ':')
+                putfuart(X, registers[14])
+                putfuart(C, 32)
+                putfuart(C, 'F')
+                putfuart(C, ':')
+                putfuart(X, registers[15])
+                putfuart(C, 32)
+*/
+            }
 
             uint16 N___ = opcode & $f000;
             uint16 _NNN = opcode & $0fff;
@@ -198,11 +215,11 @@ program {
             if (opcode == $00e0) {
                 // draw
                 putuart(DO_CLEAR)
-
-        putfuart(C, 'C')
-        putfuart(C, 'L')
-        putfuart(C, 'S')
-
+                if (LOG > 0) {
+                    putfuart(C, 'C')
+                    putfuart(C, 'L')
+                    putfuart(C, 'S')
+                }
             } else if (opcode == $00ee) { // DONE
                 // ReturnSub
                 // return by pulling address off stack
@@ -211,45 +228,46 @@ program {
                 stackPtr = stackPtr - 1;
                 uint16 addrHi = stack[stackPtr];
                 pc = (addrHi << 8) + addrLo;
-
-        putfuart(C, 'R')
-        putfuart(C, 'T')
-        putfuart(C, 'S')
-
+                if (LOG > 0) {
+                    putfuart(C, 'R')
+                    putfuart(C, 'T')
+                    putfuart(C, 'S')
+                }
             } else if (opcodehi == $00) {
                 // obsolete machine jump
-        putfuart(C, 'O')
-        putfuart(C, 'B')
-        putfuart(C, 'S')
-
+                if (LOG > 0) {
+                    putfuart(C, 'O')
+                    putfuart(C, 'B')
+                    putfuart(C, 'S')
+                }
             } else if (N___ == $1000) {  // DONE
                 // jump to nnn
                 pc = _NNN - 2; // subtract 2 as there is an auto increment at end of loop
-        putfuart(C, 'J')
-        putfuart(C, 'M')
-        putfuart(C, 'P')
-        putfuart(C, 32)
-        putfuart(X, _NNN>>8)
-        putfuart(X, _NNN)
-
+                if (LOG > 0) {
+                    putfuart(C, 'J')
+                    putfuart(C, 'M')
+                    putfuart(C, 'P')
+                    putfuart(C, 32)
+                    putfuart(X, _NNN >> 8)
+                    putfuart(X, _NNN)
+                }
             } else if (N___ == $2000) {  // DONE
-        putfuart(C, 'C')
-        putfuart(C, 'A')
-        putfuart(C, 'L')
-        putfuart(C, 'L')
-        putfuart(C, 32)
-        putfuart(X, _NNN>>8)
-        putfuart(X, _NNN)
+                if (LOG > 0) {
+                    putfuart(C, 'C')
+                    putfuart(C, 'A')
+                    putfuart(C, 'L')
+                    putfuart(C, 'L')
+                    putfuart(C, 32)
+                    putfuart(X, _NNN >> 8)
+                    putfuart(X, _NNN)
+                }
                 // CALL _NNN
                 // tested using test_opcode.ch8
 
                 // store into stack
-                uint16 addrLo = pc & $ff;
-                uint16 addrHi = pc >> 8;
-
-                stack[stackPtr] = addrHi;
+                stack[stackPtr] = pc >> 8;
                 stackPtr = stackPtr + 1;
-                stack[stackPtr] = addrLo;
+                stack[stackPtr] = pc & $ff;
                 stackPtr = stackPtr + 1;
 
                 // do jump
@@ -257,158 +275,175 @@ program {
 
             } else if (N___ == $3000) {  // DONE
                 // skip if X eq N
-        putfuart(C, 'S')
-        putfuart(C, 'K')
-        putfuart(C, 'I')
-        putfuart(C, 'P')
-        putfuart(C, 32)
-        putfuart(C, 'X')
-        putfuart(C, '=')
-        putfuart(C, 'N')
-        putfuart(C, 32)
-        putfuart(X, x)
-        putfuart(C, '=')
-        putfuart(X, __NN)
-        putfuart(C, 32)
+                if (LOG > 0) {
+                    putfuart(C, 'S')
+                    putfuart(C, 'K')
+                    putfuart(C, 'I')
+                    putfuart(C, 'P')
+                    putfuart(C, 32)
+                    putfuart(C, 'V')
+                    putfuart(X, _X__)
+                    putfuart(C, '=')
+                    putfuart(C, 'N')
+                    putfuart(C, 32)
+                    putfuart(X, x)
+                    putfuart(C, '=')
+                    putfuart(X, __NN)
+                }
 
                 if (x == __NN) {
                     pc = pc + 2;
-        putfuart(C, 'Y')
-                } else {
-        putfuart(C, 'N')
                 }
 
             } else if (N___ == $4000) {  // DONE
                 // skip if X ne N
-        putfuart(C, 'S')
-        putfuart(C, 'K')
-        putfuart(C, 'I')
-        putfuart(C, 'P')
-        putfuart(C, 32)
-        putfuart(C, 'X')
-        putfuart(C, '!')
-        putfuart(C, '=')
-        putfuart(C, 'N')
-        putfuart(C, 32)
-        putfuart(X, x)
-        putfuart(C, '=')
-        putfuart(X, __NN)
-        putfuart(C, 32)
-
-
+                if (LOG > 0) {
+                    putfuart(C, 'S')
+                    putfuart(C, 'K')
+                    putfuart(C, 'I')
+                    putfuart(C, 'P')
+                    putfuart(C, 32)
+                    putfuart(C, 'V')
+                    putfuart(X, _X__)
+                    putfuart(C, '!')
+                    putfuart(C, '=')
+                    putfuart(C, 'N')
+                    putfuart(C, 32)
+                    putfuart(X, x)
+                    putfuart(C, '!')
+                    putfuart(C, '=')
+                    putfuart(X, __NN)
+                }
                 if (x != __NN) {
                     pc = pc + 2;
-        putfuart(C, 'Y')
-                } else {
-        putfuart(C, 'N')
                 }
-    
-
             } else if (N___ == $5000) {  // DONE
                 // skip if X eq Y
-        putfuart(C, 'S')
-        putfuart(C, 'K')
-        putfuart(C, 'I')
-        putfuart(C, 'P')
-        putfuart(C, 32)
-        putfuart(C, 'X')
-        putfuart(C, '=')
-        putfuart(C, 'Y')
-        putfuart(C, 32)
-        putfuart(X, x)
-        putfuart(C, '=')
-        putfuart(X, y)
-        putfuart(C, 32)
-
+                if (LOG > 0) {
+                    putfuart(C, 'S')
+                    putfuart(C, 'K')
+                    putfuart(C, 'I')
+                    putfuart(C, 'P')
+                    putfuart(C, 32)
+                    putfuart(C, 'V')
+                    putfuart(X, _X__)
+                    putfuart(C, '=')
+                    putfuart(C, 'V')
+                    putfuart(X, __Y_)
+                    putfuart(C, 32)
+                    putfuart(X, x)
+                    putfuart(C, '=')
+                    putfuart(X, y)
+                }
                 if (___N != 0) {
                     halt(opcode)
                 }
                 if (x == y) {
                     pc = pc + 2;
-        putfuart(C, 'Y')
-                } else {
-        putfuart(C, 'N')
                 }
 
             } else if (N___ == $6000) { // DONE
                 // VX=__NN
                 registers[_X__] = __NN;
-        putfuart(C, 'V')
-        putfuart(X, _X__)
-        putfuart(C, '=')
-        putfuart(C, 'N')
-        putfuart(C, 32)
-        putfuart(X, __NN)
+                if (LOG > 0) {
+                    putfuart(C, 'V')
+                    putfuart(X, _X__)
+                    putfuart(C, '=')
+                    putfuart(X, __NN)
+                }
 
             } else if (N___ == $7000) { // DONE
                 // VX=VX+__NN
                 registers[_X__] = x + __NN;
-        putfuart(C, 'V')
-        putfuart(X, _X__)
-        putfuart(C, '=')
-        putfuart(C, 'X')
-        putfuart(C, '+')
-        putfuart(C, 'N')
-        putfuart(C, 32)
-        putfuart(X, x)
-        putfuart(C, '+')
-        putfuart(X, __NN)
-
+                if (LOG > 0) {
+                    putfuart(C, 'V')
+                    putfuart(X, _X__)
+                    putfuart(C, '+')
+                    putfuart(C, '=')
+                    putfuart(C, 'N')
+                    putfuart(C, 32)
+                    putfuart(X, x)
+                    putfuart(C, '+')
+                    putfuart(X, __NN)
+                    putfuart(C, '=')
+                    putfuart(X, registers[_X__])
+                }
             } else if (N___ == $8000) {
                 if (___N == 0) {
                     registers[_X__] = y;
-        putfuart(C, 'V')
-        putfuart(X, _X__)
-        putfuart(C, '=')
-        putfuart(C, 'Y')
-        putfuart(C, 32)
-        putfuart(X, y)
-
+                    if (LOG > 0) {
+                        putfuart(C, 'V')
+                        putfuart(X, _X__)
+                        putfuart(C, '=')
+                        putfuart(C, 'V')
+                        putfuart(X, __Y_)
+                        putfuart(C, 32)
+                        putfuart(C, '=')
+                        putfuart(X, y)
+                    }
                 } else if (___N == 1) {
                     registers[_X__] = x | y;
-
-        putfuart(C, 'V')
-        putfuart(X, _X__)
-        putfuart(C, '=')
-        putfuart(C, 'X')
-        putfuart(C, '|')
-        putfuart(C, 'Y')
-        putfuart(C, 32)
-        putfuart(X, x)
-        putfuart(C, '|')
-        putfuart(X, y)
-
+                    if (LOG > 0) {
+                        putfuart(C, 'V')
+                        putfuart(X, _X__)
+                        putfuart(C, '|')
+                        putfuart(C, '=')
+                        putfuart(C, 'V')
+                        putfuart(X, __Y_)
+                        putfuart(C, 32)
+                        putfuart(X, x)
+                        putfuart(C, '|')
+                        putfuart(C, '=')
+                        putfuart(X, y)
+                        putfuart(C, '=')
+                        putfuart(X, registers[_X__])
+                    }
                 } else if (___N == 2) {
                     registers[_X__] = x & y;
+                    if (LOG > 0) {
+                        putfuart(C, 'V')
+
+                        putfuart(X, _X__)
+                        putfuart(C, '&')
+                        putfuart(C, '=')
+                        putfuart(C, 'V')
+                        putfuart(X, __Y_)
+                        putfuart(C, 32)
+                        putfuart(X, x)
+                        putfuart(C, '&')
+                        putfuart(C, '=')
+                        putfuart(X, y)
+                        putfuart(C, '=')
+                        putfuart(X, registers[_X__])
+                    }
                 } else if (___N == 3) {
                     registers[_X__] = x ^ y;
                 } else if (___N == 4) {
                     //AddXPlusYCarry
-
                     uint16 result = x + y;
                     registers[_X__] = result;
-
-        putfuart(C, 'V')
-        putfuart(X, _X__)
-        putfuart(C, '=')
-        putfuart(C, 'X')
-        putfuart(C, '+')
-        putfuart(C, 'Y')
-        putfuart(C, 32)
-        putfuart(X, x)
-        putfuart(C, '+')
-        putfuart(X, y)
-        putfuart(C, '=')
-        putfuart(X, result)
-        putfuart(C, 32)
-        putfuart(C, 'C')
-
+                    if (LOG > 0) {
+                        putfuart(C, 'V')
+                        putfuart(X, _X__)
+                        putfuart(C, '+')
+                        putfuart(C, '=')
+                        putfuart(C, 'V')
+                        putfuart(X, __Y_)
+                        putfuart(C, 32)
+                        putfuart(X, x)
+                        putfuart(C, '+')
+                        putfuart(X, y)
+                        putfuart(C, '=')
+                        putfuart(X, result)
+                        putfuart(C, 32)
+                        putfuart(C, 'C')
+                    }
                     if (result > $ff) {
                         registers[15] = 1;
                     } else {
                         registers[15] = 0;
                     }
-        putfuart(X, registers[15])
+                    putfuart(X, registers[15])
 
                 } else if (___N == 5) {
                     // XEqXMinusY
@@ -445,17 +480,17 @@ program {
                         registers[15] = 0;
                     }
                     registers[_X__] = x << 1;
-        putfuart(C, 'V')
-        putfuart(X, _X__)
-        putfuart(C, '=')
-        putfuart(C, 'X')
-        putfuart(C, '<')
-        putfuart(C, '<')
-        putfuart(C, '1')
-        putfuart(C, 32)
-        putfuart(C, '=')
-        putfuart(X, registers[_X__])
 
+                    if (LOG > 0) {
+                        putfuart(C, 'V')
+                        putfuart(X, _X__)
+                        putfuart(C, '<')
+                        putfuart(C, '<')
+                        putfuart(C, '1')
+                        putfuart(C, 32)
+                        putfuart(C, '=')
+                        putfuart(X, registers[_X__])
+                    }
                 } else {
                     // not impl F0xx
                     halt(opcode)
@@ -473,70 +508,99 @@ program {
                 }
             } else if (N___ == $A000) { // DONE
                 // set index
-                //putuart('I')
                 index = _NNN;
-        putfuart(C, 'I')
-        putfuart(C, '=')
-        putfuart(C, 'N')
-        putfuart(C, 32)
-        putfuart(C, '=')
-        putfuart(X, index>>8)
-        putfuart(X, index)
 
+                if (LOG > 0) {
+                    putfuart(C, 'I')
+                    putfuart(C, '=')
+                    putfuart(X, index >> 8)
+                    putfuart(X, index)
+                }
             } else if (N___ == $C000) { // DONE
                 // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Cxkk
                 // Vx = Random AND __NN
-                // TODO : IMPLEMENT RANDOM
-                uint16 rand = random();
-                registers[_X__] = rand & __NN;
-                
-        putfuart(C, 'V')
-        putfuart(X, _X__)
-        putfuart(C, '=')
-        putfuart(C, 'R')
-        putfuart(C, 'N')
-        putfuart(C, 'D')
-        putfuart(C, '&')
-        putfuart(C, 'N')
-        putfuart(C, 32)
-        putfuart(X, rand)
-        putfuart(C, '&')
-        putfuart(X, __NN)
-        putfuart(C, '=')
-        putfuart(X, registers[_X__])
 
+                //uint16 rand = random();
+                // hack
+                uint16 rand = 4;
+
+                registers[_X__] = rand & __NN;
+
+                if (LOG > 0) {
+                    putfuart(C, 'V')
+                    putfuart(X, _X__)
+                    putfuart(C, '=')
+                    putfuart(C, 'R')
+                    putfuart(C, 'N')
+                    putfuart(C, 'D')
+                    putfuart(C, '&')
+                    putfuart(C, 'N')
+                    putfuart(C, 32)
+                    putfuart(X, rand)
+                    putfuart(C, '&')
+                    putfuart(X, __NN)
+                    putfuart(C, '=')
+                    putfuart(X, registers[_X__])
+                }
             } else if (N___ == $D000) {
                 // draw glyph identified by Index reg at position X/Y with height N
 // as per https://tobiasvl.github.io/blog/write-a-chip-8-emulator/#dxyn-display
 // TODO - NEED TO MAINTAIN A SCREEN BUFF     60x40=2.5k
+
+                /*
+                if (hackCount == 0) {
+                    registers[0] = $25;
+                    hackCount = hackCount + 1;
+                } else if (hackCount == 1) {
+                    registers[1] = $1;
+                    hackCount = hackCount + 1;
+                }
+                */
 
                 uint16 xpos = x;
                 uint16 ypos = y;
 
                 uint16 ycount = 0;
 
-        putfuart(C, 'D')
-        putfuart(C, 'R')
-        putfuart(C, 'A')
-        putfuart(C, 'W')
-        putfuart(C, 32)
-        putfuart(C, 'X')
-        putfuart(X, x)
-        putfuart(C, 32)
-        putfuart(C, 'Y')
-        putfuart(X, y)
-        putfuart(C, 32)
-        putfuart(C, 'N')
-        putfuart(X, ___N)
+                if (LOG > 0) {
+                    putfuart(C, 'D')
+                    putfuart(C, 'R')
+                    putfuart(C, 'A')
+                    putfuart(C, 'W')
+                    putfuart(C, 32)
+                    putfuart(C, 'X')
+                    putfuart(C, '=')
+                    putfuart(C, 'V')
+                    putfuart(X, _X__)
+                    putfuart(C, '=')
+                    putfuart(X, x)
+                    putfuart(C, 32)
+                    putfuart(C, 'Y')
+                    putfuart(C, '=')
+                    putfuart(C, 'V')
+                    putfuart(X, __Y_)
+                    putfuart(C, '=')
+                    putfuart(X, y)
+                    putfuart(C, 32)
+                    putfuart(C, 'N')
+                    putfuart(C, '=')
+                    putfuart(X, ___N)
+                }
+                // no collision yet
+                registers[15] = 0;
 
                 while (true) { // TODO - make while take an expr
 
-                    // TODO THIS DOESN@T WORK ... POSSIBLY 3 vars doesn't work?
-                    // uint16 rowStart = (ycount+ypos)*SCREEN_WIDTH;
+                    uint16 rowStart = (ycount + ypos) * 64; // SCREEN_WIDTH;
+                    uint16 pixelPos = rowStart + xpos;
+                    uint16 rowLimit = rowStart + SCREEN_WIDTH;
 
-                    uint16 rowStart = (ycount+ypos)*64; // SCREEN_WIDTH;
-                    uint16 pixelPos = rowStart+ xpos; 
-                    uint16 rowLimit = rowStart+ SCREEN_WIDTH;
+/*
+        putfuart(C, '\n')
+        putfuart(C, '>')
+        putfuart(X, ycount)
+        putfuart(C, 32)
+*/
 
                     if (ycount >= ___N) {
                         break
@@ -545,44 +609,54 @@ program {
                     uint16 glyphRow = memory[index + ycount];
 
                     // g0 is leftmost on screen
-                    uint16 s7 = screen[pixelPos]  ;
-                    uint16 s6 = screen[pixelPos+1];
-                    uint16 s5 = screen[pixelPos+2];
-                    uint16 s4 = screen[pixelPos+3];
-                    uint16 s3 = screen[pixelPos+4];
-                    uint16 s2 = screen[pixelPos+5];
-                    uint16 s1 = screen[pixelPos+6];
-                    uint16 s0 = screen[pixelPos+7];
+                    uint16 s7 = screen[pixelPos];
+                    uint16 s6 = screen[pixelPos + 1];
+                    uint16 s5 = screen[pixelPos + 2];
+                    uint16 s4 = screen[pixelPos + 3];
+                    uint16 s3 = screen[pixelPos + 4];
+                    uint16 s2 = screen[pixelPos + 5];
+                    uint16 s1 = screen[pixelPos + 6];
+                    uint16 s0 = screen[pixelPos + 7];
 
-                    uint16 screenRow = (s7<<7) | (s6<<6) | (s5<<5) | (s4<<4) | (s3<<3) | (s2<<2) | (s1<<1) | s0; 
+                    uint16 screenRow = (s7 << 7) | (s6 << 6) | (s5 << 5) | (s4 << 4) | (s3 << 3) | (s2 << 2) | (s1 << 1) | s0;
 
                     uint16 newScreen = screenRow ^ glyphRow;
                     uint16 impact = screenRow & glyphRow;
+                    uint16 yy = ypos + ycount;
 
                     putuart(GOTO_SETX_STATE)
                     putuart(xpos)
                     putuart(GOTO_SETY_STATE)
-                    putuart(ypos + ycount)
+                    putuart(yy)
                     putuart(GOTO_DRAW_BYTE_STATE)
                     putuart(newScreen)
 
+/*
+        putfuart(X, yy)
+        putfuart(C, 32)
+        putfuart(B, glyphRow)
+        putfuart(C, 32)
+        putfuart(B, screenRow)
+        putfuart(C, 32)
+        putfuart(B, newScreen)
+*/
 
                     if (pixelPos < rowLimit) {
-                        screen[pixelPos+0] = (newScreen&128)>>7;
-                        if ((pixelPos+1) < rowLimit) {
-                            screen[pixelPos+1] = (newScreen&64)>>6;
-                            if ((pixelPos+2) < rowLimit) {
-                                screen[pixelPos+2] = (newScreen&32)>>5;
-                                if ((pixelPos+3) < rowLimit) {
-                                    screen[pixelPos+3] = (newScreen&16)>>4;
-                                    if ((pixelPos+4) < rowLimit) {
-                                        screen[pixelPos+4] = (newScreen&8)>>3;
-                                        if ((pixelPos+5) < rowLimit) {
-                                            screen[pixelPos+5] = (newScreen&4)>>2;
-                                            if ((pixelPos+6) < rowLimit) {
-                                                screen[pixelPos+6] = (newScreen&2)>>1;
-                                                if ((pixelPos+7) < rowLimit) {
-                                                    screen[pixelPos+7] = (newScreen&1);
+                        screen[pixelPos + 0] = (newScreen & 128) >> 7;
+                        if ((pixelPos + 1) < rowLimit) {
+                            screen[pixelPos + 1] = (newScreen & 64) >> 6;
+                            if ((pixelPos + 2) < rowLimit) {
+                                screen[pixelPos + 2] = (newScreen & 32) >> 5;
+                                if ((pixelPos + 3) < rowLimit) {
+                                    screen[pixelPos + 3] = (newScreen & 16) >> 4;
+                                    if ((pixelPos + 4) < rowLimit) {
+                                        screen[pixelPos + 4] = (newScreen & 8) >> 3;
+                                        if ((pixelPos + 5) < rowLimit) {
+                                            screen[pixelPos + 5] = (newScreen & 4) >> 2;
+                                            if ((pixelPos + 6) < rowLimit) {
+                                                screen[pixelPos + 6] = (newScreen & 2) >> 1;
+                                                if ((pixelPos + 7) < rowLimit) {
+                                                    screen[pixelPos + 7] = (newScreen & 1);
                                                 }
                                             }
                                         }
@@ -592,7 +666,7 @@ program {
                         }
                     }
 
-                    if (impact!=0) {
+                    if (impact != 0) {
                         registers[15] = 1;
                     }
 
@@ -601,56 +675,53 @@ program {
 
             } else if (N___ == $E000) {
                 if (__NN == $A1) {
-    /*
-    ExA1 - SKNP Vx
-    Skip next instruction if key with the value of Vx is not pressed.
-    Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
-    */
+                    /*
+                    ExA1 - SKNP Vx
+                    Skip next instruction if key with the value of Vx is not pressed.
+                    Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
+                    */
                     // TODO IMPL KEYPRESS IO FROM UART??? GETCHAR?
                     uint16 key = x;
 
-
-        putfuart(C, 'S')
-        putfuart(C, 'K')
-        putfuart(C, 'I')
-        putfuart(C, 'P')
-        putfuart(C, 32)
-        putfuart(C, '!')
-        putfuart(C, 'K')
-        putfuart(C, 'E')
-        putfuart(C, 'Y')
-        putfuart(C, 32)
-        putfuart(X, key)
-        putfuart(C, 32)
+                    if(LOG>0) {
+                        putfuart(C, 'S')
+                        putfuart(C, 'K')
+                        putfuart(C, 'I')
+                        putfuart(C, 'P')
+                        putfuart(C, 32)
+                        putfuart(C, '!')
+                        putfuart(C, 'K')
+                        putfuart(C, 'E')
+                        putfuart(C, 'Y')
+                        putfuart(C, 32)
+                        putfuart(X, key)
+                        putfuart(C, 32)
+                    }
 
                     if (keyDown != key) {
-                         pc = pc + 2;
-        putfuart(C, 'Y')
-                    } else {
-        putfuart(C, 'N')
+                        pc = pc + 2;
                     }
                 } else if (__NN == $9E) {
                     // skip; if key x is pressed
                     uint16 key = x;
 
-
-        putfuart(C, 'S')
-        putfuart(C, 'K')
-        putfuart(C, 'I')
-        putfuart(C, 'P')
-        putfuart(C, 32)
-        putfuart(C, 'K')
-        putfuart(C, 'E')
-        putfuart(C, 'Y')
-        putfuart(C, 32)
-        putfuart(X, key)
+                    if(LOG>0) {
+                        putfuart(C, 'S')
+                        putfuart(C, 'K')
+                        putfuart(C, 'I')
+                        putfuart(C, 'P')
+                        putfuart(C, 32)
+                        putfuart(C, 'K')
+                        putfuart(C, 'E')
+                        putfuart(C, 'Y')
+                        putfuart(C, 32)
+                        putfuart(X, key)
+                        putfuart(C, 32)
+                    }
 
                     if (keyDown == key) {
-                         pc = pc + 2;
-        putfuart(C, 'Y')
-                    } else {
-        putfuart(C, 'N')
-                    }
+                        pc = pc + 2;
+                     }
 
                 } else {
                     // not impl F0xx
@@ -663,35 +734,40 @@ program {
                     // GET DELAY TIMER
                     // TODO WORK OUT HOW MANY CYCLES FOR 60 Hz
                     // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx07
-                    registers[_X__] = 0;
+                    registers[_X__] = DT;
 
-                    // FIXME - hack so it's sometimes non zero
-                    uint16 rand = random();
-                    if (rand > 128) {
-                        registers[_X__] = random();
+                    // FIXME - hack so it's Counts down somehow
+                    if (DT > 0) {
+                        DT = DT / 2;
                     }
 
-        putfuart(C, 'V')
-        putfuart(X, _X__)
-        putfuart(C, '=')
-        putfuart(C, 'D')
-        putfuart(C, 'T')
-        putfuart(C, '=')
-        putfuart(X, registers[_X__])
-
+                    if(LOG>0) {
+                        putfuart(C, 'V')
+                        putfuart(X, _X__)
+                        putfuart(C, '=')
+                        putfuart(C, 'D')
+                        putfuart(C, 'T')
+                        putfuart(C, '=')
+                        putfuart(X, registers[_X__])
+                    }
                 } else if (__NN == $15) {
                     // SET DELAY TIMER
                     // TODO WORK OUT HOW MANY CYCLES FOR 60 Hz
                     // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx15
-                    uint16 DT = registers[_X__];
-        putfuart(C, 'D')
-        putfuart(C, 'T')
-        putfuart(C, '=')
-        putfuart(C, 'V')
-        putfuart(X, _X__)
-        putfuart(C, '=')
-        putfuart(X, x)
+                    DT = registers[_X__];
 
+                    // FIXME  HACK
+                    DT = 0;
+
+                    if(LOG>0) {
+                        putfuart(C, 'D')
+                        putfuart(C, 'T')
+                        putfuart(C, '=')
+                        putfuart(C, 'V')
+                        putfuart(X, _X__)
+                        putfuart(C, '=')
+                        putfuart(X, DT)
+                    }
                 } else if (__NN == $18) {
                     // SET SOUND TIMER
                     // TODO WORK OUT HOW MANY CYCLES FOR 60 Hz
@@ -702,30 +778,30 @@ program {
                     // INDEX += REG[X]
                     // set carry if index exceeds mem size of 4096
                     uint16 oldI = index;
-                    index = index + x;                  
+                    index = index + x;
                     if (index > 4095) {
                         registers[15] = 1;
                     } else {
                         registers[15] = 0;
                     }
-        putfuart(C, 'I')
-        putfuart(C, '=')
-        putfuart(C, 'I')
-        putfuart(C, '+')
-        putfuart(C, 'V')
-        putfuart(X, _X__)
-        putfuart(C, 32)
-        putfuart(X, oldI>>8)
-        putfuart(X, oldI)
-        putfuart(C, '+')
-        putfuart(X, x)
-        putfuart(C, '=')
-        putfuart(X, index>>8)
-        putfuart(X, index)
-        putfuart(C, 32)
-        putfuart(C, 'C')
-        putfuart(X, registers[15])
-
+                    if(LOG>0) {
+                        putfuart(C, 'I')
+                        putfuart(C, '+')
+                        putfuart(C, '=')
+                        putfuart(C, 'V')
+                        putfuart(X, _X__)
+                        putfuart(C, 32)
+                        putfuart(X, oldI >> 8)
+                        putfuart(X, oldI)
+                        putfuart(C, '+')
+                        putfuart(X, x)
+                        putfuart(C, '=')
+                        putfuart(X, index >> 8)
+                        putfuart(X, index)
+                        putfuart(C, 32)
+                        putfuart(C, 'C')
+                        putfuart(X, registers[15])
+                    }
                 } else if (__NN == $29) {
                     uint16 ch = registers[_X__];
                     uint16 offset = ch * FontCharWidth;
@@ -733,6 +809,17 @@ program {
                     uint16 locn = FontMemAddress + offset;
                     index = locn;
 
+                    if(LOG>0) {
+                        putfuart(C, 'S')
+                        putfuart(C, 'P')
+                        putfuart(C, 'R')
+                        putfuart(C, 'I')
+                        putfuart(C, 'T')
+                        putfuart(C, 'E')
+                        putfuart(C, 32)
+                        putfuart(X, index >> 8)
+                        putfuart(X, index)
+                    }
                 } else if (__NN == $33) {
                     // BCD conversion
                     uint16 i100 = x / 100;
@@ -741,10 +828,25 @@ program {
                     uint16 i1 = x - (10 * xDiv10);
 
                     memory[index] = i100;
-                    memory[index+1] = i10;
-                    memory[index+2] = i1;
+                    memory[index + 1] = i10;
+                    memory[index + 2] = i1;
 
+                    if(LOG>0) {
+                        putfuart(C, 'B')
+                        putfuart(C, 'C')
+                        putfuart(C, 'D')
+                        putfuart(C, 32)
+                        putfuart(X, x)
+                    }
                 } else if (__NN == $55) {
+                    if(LOG>0) {
+                        putfuart(C, 'P')
+                        putfuart(C, 'U')
+                        putfuart(C, 'S')
+                        putfuart(C, 'H')
+                        putfuart(C, 32)
+                        putfuart(X, _X__)
+                    }
                     uint16 i = 0;
                     while (true) {
                         memory[index + i] = registers[i];
@@ -757,8 +859,15 @@ program {
                     // NB THERE IS AN OPTIONAL LEGACY STEP HERE THAT SOME PROGS MIGHT RELY ON
                     //       index = if (LoadStoreBehaviour == Legacy) (st.index + xReg.ubyte + 1) else st.index
                 } else if (__NN == $65) {
-                    uint16 i = 0;
+                    if(LOG>0) {
+                        putfuart(C, 'P')
+                        putfuart(C, 'O')
+                        putfuart(C, 'P')
+                        putfuart(C, 32)
+                        putfuart(X, _X__)
+                    }
 
+                    uint16 i = 0;
                     while (true) {
                         registers[i] = memory[index + i];
 
@@ -780,7 +889,9 @@ program {
                 halt(opcode)
             }
 
-            putfuart(C, '\n')
+            if (LOG>0) {
+                putfuart(C, '\n')
+            }
 
             pc = pc + 2;
         }
