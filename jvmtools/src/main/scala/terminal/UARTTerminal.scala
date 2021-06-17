@@ -183,7 +183,7 @@ object UARTTerminal extends SimpleSwingApplication {
 
     override def fileNotFound(): Unit = {
       //      println("file not found")
-      Thread.sleep(1000)
+      Thread.sleep(100)
     }
 
     override def fileRotated(): Unit = {
@@ -381,7 +381,7 @@ object UARTTerminal extends SimpleSwingApplication {
         val xi = x.get()
         val bits = f"${c.toBinaryString}%8s".replace(' ', '0')
 
-        report(s"DRAW BYTE AT X=$xi Y=$yi Bits=$bits", c)
+        report(s"DRAW BYTE AT X=$xi Y=$yi Bits=$bits")
         bits.zipWithIndex foreach {
           case (bit, bitIndex) =>
             val pixelX = xi + bitIndex
@@ -498,8 +498,6 @@ object UARTTerminal extends SimpleSwingApplication {
     doRepaint()
   }
 
-  var countChar = 'a';
-
   private def drawPixel(x: Int, y: Int, bit: Char, flip: Boolean) = {
 
     /* do not draw off side of screen ...
@@ -512,13 +510,6 @@ object UARTTerminal extends SimpleSwingApplication {
       }
 
       val char = if (bit == '1') BLOCKCHAR else BLANKCHAR
-//      val char = if (bit == '1') {
-//        countChar = (countChar + 1).asInstanceOf[Char]
-//        countChar
-//      }
-//      else BLANKCHAR
-
-      if (countChar > 'z') countChar = '0'
 
       data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH) = char
     }
