@@ -91,10 +91,10 @@ program {
         uint16 DT = 0;
 
         uint16 hackCount = 0;
-        uint16 LOG = 1;
+        uint16 LOG = 0;
 
         while (true) {
-            countI = countI+1;
+            countI = countI + 1;
 
             uint16 opcodehi = memory[pc];
             uint16 opcodelo = memory[pc + 1];
@@ -108,12 +108,10 @@ program {
             } else {
                 keyDown = keyLast;
             }
-            if (LOG > 0) {
                 putfuart(X, countI >> 8)
                 putfuart(X, countI)
                 putfuart(C, ':')
                 putfuart(C, 32)
-
                 putfuart(X, pc >> 8)
                 putfuart(X, pc)
                 putfuart(C, ':')
@@ -122,7 +120,7 @@ program {
                 putfuart(X, opcodelo)
                 putfuart(C, 32)
 
-/*
+            if (LOG > 0) {
                 putfuart(C, 'K')
                 putfuart(C, ':')
                 putfuart(X, keyDown >> 8)
@@ -133,6 +131,11 @@ program {
                 putfuart(C, ':')
                 putfuart(X, index >> 8)
                 putfuart(X, index)
+                putfuart(C, 32)
+
+                putfuart(C, 'D')
+                putfuart(C, ':')
+                putfuart(X, DT)
                 putfuart(C, 32)
 
                 putfuart(C, '0')
@@ -199,7 +202,7 @@ program {
                 putfuart(C, ':')
                 putfuart(X, registers[15])
                 putfuart(C, 32)
-*/
+
             }
 
             uint16 N___ = opcode & $f000;
@@ -520,9 +523,7 @@ program {
                 // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Cxkk
                 // Vx = Random AND __NN
 
-                //uint16 rand = random();
-                // hack
-                uint16 rand = 4;
+                uint16 rand = random();
 
                 registers[_X__] = rand & __NN;
 
@@ -557,10 +558,6 @@ program {
                 }
                 */
 
-                uint16 xpos = x;
-                uint16 ypos = y;
-
-                uint16 ycount = 0;
 
                 if (LOG > 0) {
                     putfuart(C, 'D')
@@ -589,11 +586,11 @@ program {
                 // no collision yet
                 registers[15] = 0;
 
-                while (true) { // TODO - make while take an expr
+                uint16 xpos = x;
+                uint16 ypos = y;
+                uint16 ycount = 0;
 
-                    uint16 rowStart = (ycount + ypos) * 64; // SCREEN_WIDTH;
-                    uint16 pixelPos = rowStart + xpos;
-                    uint16 rowLimit = rowStart + SCREEN_WIDTH;
+                while (true) { // TODO - make while take an expr
 
 /*
         putfuart(C, '\n')
@@ -606,33 +603,40 @@ program {
                         break
                     }
 
-                    uint16 glyphRow = memory[index + ycount];
+                    uint16 spriteY = ypos + ycount;
 
-                    // g0 is leftmost on screen
-                    uint16 s7 = screen[pixelPos];
-                    uint16 s6 = screen[pixelPos + 1];
-                    uint16 s5 = screen[pixelPos + 2];
-                    uint16 s4 = screen[pixelPos + 3];
-                    uint16 s3 = screen[pixelPos + 4];
-                    uint16 s2 = screen[pixelPos + 5];
-                    uint16 s1 = screen[pixelPos + 6];
-                    uint16 s0 = screen[pixelPos + 7];
+                    if (spriteY < SCREEN_HEIGHT) {
 
-                    uint16 screenRow = (s7 << 7) | (s6 << 6) | (s5 << 5) | (s4 << 4) | (s3 << 3) | (s2 << 2) | (s1 << 1) | s0;
+                        uint16 rowStart = (ycount + ypos) * 64; // SCREEN_WIDTH;
+                        uint16 pixelPos = rowStart + xpos;
+                        uint16 rowLimit = rowStart + SCREEN_WIDTH;
 
-                    uint16 newScreen = screenRow ^ glyphRow;
-                    uint16 impact = screenRow & glyphRow;
-                    uint16 yy = ypos + ycount;
+                        uint16 glyphRow = memory[index + ycount];
 
-                    putuart(GOTO_SETX_STATE)
-                    putuart(xpos)
-                    putuart(GOTO_SETY_STATE)
-                    putuart(yy)
-                    putuart(GOTO_DRAW_BYTE_STATE)
-                    putuart(newScreen)
+                        // g0 is leftmost on screen
+                        uint16 s7 = screen[pixelPos];
+                        uint16 s6 = screen[pixelPos + 1];
+                        uint16 s5 = screen[pixelPos + 2];
+                        uint16 s4 = screen[pixelPos + 3];
+                        uint16 s3 = screen[pixelPos + 4];
+                        uint16 s2 = screen[pixelPos + 5];
+                        uint16 s1 = screen[pixelPos + 6];
+                        uint16 s0 = screen[pixelPos + 7];
+
+                        uint16 screenRow = (s7 << 7) | (s6 << 6) | (s5 << 5) | (s4 << 4) | (s3 << 3) | (s2 << 2) | (s1 << 1) | s0;
+
+                        uint16 newScreen = screenRow ^ glyphRow;
+                        uint16 impact = screenRow & glyphRow;
+
+                        putuart(GOTO_SETX_STATE)
+                        putuart(xpos)
+                        putuart(GOTO_SETY_STATE)
+                        putuart(spriteY)
+                        putuart(GOTO_DRAW_BYTE_STATE)
+                        putuart(newScreen)
 
 /*
-        putfuart(X, yy)
+        putfuart(X, spriteY)
         putfuart(C, 32)
         putfuart(B, glyphRow)
         putfuart(C, 32)
@@ -641,22 +645,23 @@ program {
         putfuart(B, newScreen)
 */
 
-                    if (pixelPos < rowLimit) {
-                        screen[pixelPos + 0] = (newScreen & 128) >> 7;
-                        if ((pixelPos + 1) < rowLimit) {
-                            screen[pixelPos + 1] = (newScreen & 64) >> 6;
-                            if ((pixelPos + 2) < rowLimit) {
-                                screen[pixelPos + 2] = (newScreen & 32) >> 5;
-                                if ((pixelPos + 3) < rowLimit) {
-                                    screen[pixelPos + 3] = (newScreen & 16) >> 4;
-                                    if ((pixelPos + 4) < rowLimit) {
-                                        screen[pixelPos + 4] = (newScreen & 8) >> 3;
-                                        if ((pixelPos + 5) < rowLimit) {
-                                            screen[pixelPos + 5] = (newScreen & 4) >> 2;
-                                            if ((pixelPos + 6) < rowLimit) {
-                                                screen[pixelPos + 6] = (newScreen & 2) >> 1;
-                                                if ((pixelPos + 7) < rowLimit) {
-                                                    screen[pixelPos + 7] = (newScreen & 1);
+                        if (pixelPos < rowLimit) {
+                            screen[pixelPos + 0] = (newScreen & 128) >> 7;
+                            if ((pixelPos + 1) < rowLimit) {
+                                screen[pixelPos + 1] = (newScreen & 64) >> 6;
+                                if ((pixelPos + 2) < rowLimit) {
+                                    screen[pixelPos + 2] = (newScreen & 32) >> 5;
+                                    if ((pixelPos + 3) < rowLimit) {
+                                        screen[pixelPos + 3] = (newScreen & 16) >> 4;
+                                        if ((pixelPos + 4) < rowLimit) {
+                                            screen[pixelPos + 4] = (newScreen & 8) >> 3;
+                                            if ((pixelPos + 5) < rowLimit) {
+                                                screen[pixelPos + 5] = (newScreen & 4) >> 2;
+                                                if ((pixelPos + 6) < rowLimit) {
+                                                    screen[pixelPos + 6] = (newScreen & 2) >> 1;
+                                                    if ((pixelPos + 7) < rowLimit) {
+                                                        screen[pixelPos + 7] = (newScreen & 1);
+                                                    }
                                                 }
                                             }
                                         }
@@ -664,10 +669,10 @@ program {
                                 }
                             }
                         }
-                    }
 
-                    if (impact != 0) {
-                        registers[15] = 1;
+                        if (impact != 0) {
+                            registers[15] = 1;
+                        }
                     }
 
                     ycount = ycount + 1;
@@ -683,7 +688,7 @@ program {
                     // TODO IMPL KEYPRESS IO FROM UART??? GETCHAR?
                     uint16 key = x;
 
-                    if(LOG>0) {
+                    if (LOG > 0) {
                         putfuart(C, 'S')
                         putfuart(C, 'K')
                         putfuart(C, 'I')
@@ -705,7 +710,7 @@ program {
                     // skip; if key x is pressed
                     uint16 key = x;
 
-                    if(LOG>0) {
+                    if (LOG > 0) {
                         putfuart(C, 'S')
                         putfuart(C, 'K')
                         putfuart(C, 'I')
@@ -721,7 +726,7 @@ program {
 
                     if (keyDown == key) {
                         pc = pc + 2;
-                     }
+                    }
 
                 } else {
                     // not impl F0xx
@@ -741,7 +746,7 @@ program {
                         DT = DT / 2;
                     }
 
-                    if(LOG>0) {
+                    if (LOG > 0) {
                         putfuart(C, 'V')
                         putfuart(X, _X__)
                         putfuart(C, '=')
@@ -756,10 +761,7 @@ program {
                     // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx15
                     DT = registers[_X__];
 
-                    // FIXME  HACK
-                    DT = 0;
-
-                    if(LOG>0) {
+                    if (LOG > 0) {
                         putfuart(C, 'D')
                         putfuart(C, 'T')
                         putfuart(C, '=')
@@ -784,7 +786,7 @@ program {
                     } else {
                         registers[15] = 0;
                     }
-                    if(LOG>0) {
+                    if (LOG > 0) {
                         putfuart(C, 'I')
                         putfuart(C, '+')
                         putfuart(C, '=')
@@ -809,7 +811,7 @@ program {
                     uint16 locn = FontMemAddress + offset;
                     index = locn;
 
-                    if(LOG>0) {
+                    if (LOG > 0) {
                         putfuart(C, 'S')
                         putfuart(C, 'P')
                         putfuart(C, 'R')
@@ -831,7 +833,7 @@ program {
                     memory[index + 1] = i10;
                     memory[index + 2] = i1;
 
-                    if(LOG>0) {
+                    if (LOG > 0) {
                         putfuart(C, 'B')
                         putfuart(C, 'C')
                         putfuart(C, 'D')
@@ -839,7 +841,7 @@ program {
                         putfuart(X, x)
                     }
                 } else if (__NN == $55) {
-                    if(LOG>0) {
+                    if (LOG > 0) {
                         putfuart(C, 'P')
                         putfuart(C, 'U')
                         putfuart(C, 'S')
@@ -859,7 +861,7 @@ program {
                     // NB THERE IS AN OPTIONAL LEGACY STEP HERE THAT SOME PROGS MIGHT RELY ON
                     //       index = if (LoadStoreBehaviour == Legacy) (st.index + xReg.ubyte + 1) else st.index
                 } else if (__NN == $65) {
-                    if(LOG>0) {
+                    if (LOG > 0) {
                         putfuart(C, 'P')
                         putfuart(C, 'O')
                         putfuart(C, 'P')
@@ -889,9 +891,7 @@ program {
                 halt(opcode)
             }
 
-            if (LOG>0) {
-                putfuart(C, '\n')
-            }
+            putfuart(C, '\n')
 
             pc = pc + 2;
         }
