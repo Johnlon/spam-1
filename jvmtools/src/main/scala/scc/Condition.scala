@@ -4,7 +4,7 @@ import asm.AluOp
 import scc.Scope.LABEL_NAME_SEPARATOR
 import scc.SpamCC.TWO_BYTE_STORAGE
 
-case class ConditionComplex(exprL: BlkCompoundAluExpr, compOp: String, exprR: BlkCompoundAluExpr) extends Block {
+case class ConditionBlockBlockCompare(exprL: BlkCompoundAluExpr, compOp: String, exprR: BlkCompoundAluExpr) extends Block {
 
   // FIXME - MAYBE A BUG HERE SWITCHING BETWEEN SIGNED AND UNSIGNED ON SECOND BYTE?
   // FIXME - NEEDS TESTS AS I DUNNO THE LOGIC
@@ -25,7 +25,8 @@ case class ConditionComplex(exprL: BlkCompoundAluExpr, compOp: String, exprR: Bl
     val temporaryVarLabelR = parent.assignVarLabel("compoundBlkExprB" + depth + LABEL_NAME_SEPARATOR + Scope.nextInt, IsVar16, TWO_BYTE_STORAGE).fqn
 
     // code to run each expression and copy result into a temp var upon which the comparison can functionv
-    val exprEvalCode: Seq[String] = valueLCode ++
+    val exprEvalCode: Seq[String] =
+      valueLCode ++
       Seq(
         s"[:$temporaryVarLabelL]     = $WORKLO",
         s"[:$temporaryVarLabelL + 1] = $WORKHI"
@@ -75,7 +76,7 @@ case class ConditionComplex(exprL: BlkCompoundAluExpr, compOp: String, exprR: Bl
           s"$WORKLO = 0 _EQ", // set REG=0 if was EQ
 
           s"$checkLabel:",
-          s"$WORKLO = $WORKLO _S", // set _Z if condition was me
+          s"$WORKLO = $WORKLO _S", // set _Z if condition was met
           // sets _Z flag
         )
       case "<=" =>
@@ -113,7 +114,7 @@ case class ConditionComplex(exprL: BlkCompoundAluExpr, compOp: String, exprR: Bl
   }
 }
 
-case class ConditionSimple(varName: String, compOp: String, konst: Int) extends Block {
+case class ConditionVarConstCompare(varName: String, compOp: String, konst: Int) extends Block {
   override def gen(depth: Int, parent: Scope): List[String] = {
     val label = parent.getVarLabel(varName).fqn
 

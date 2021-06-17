@@ -133,7 +133,7 @@ case class DefUint16EqExpr(targetVar: String, block: Block) extends Block {
 }
 
 /** evaluates to 1 if condition is true otherwise 0 */
-case class DefUint16EqCondition(targetVar: String, flagToCheck: String, block: ConditionComplex) extends Block {
+case class DefUint16EqCondition(targetVar: String, flagToCheck: String, block: ConditionBlockBlockCompare) extends Block {
   override def gen(depth: Int, parent: Scope): Seq[String] = {
     val stmts: Seq[String] = block.expr(depth + 1, parent)
 
@@ -681,7 +681,6 @@ case class IfCond(flagToCheck: String,
 
   override def gen(depth: Int, parent: Scope): List[String] = {
     val labelCheck = parent.toFqLabelPath("CHECK")
-    val labelBody = parent.toFqLabelPath("BODY")
     val labelElse = parent.toFqLabelPath("ELSE")
     val labelBot = parent.toFqLabelPath("AFTER")
 
@@ -692,10 +691,8 @@ case class IfCond(flagToCheck: String,
         condStatements ++
         split(
           s"""
-             |PCHITMP = <:$labelBody
-             |PC = >:$labelBody $flagToCheck
              |PCHITMP = <:$labelElse
-             |PC = >:$labelElse
+             |PC = >:$labelElse ! $flagToCheck
               """)
     }
 
@@ -715,7 +712,6 @@ case class IfCond(flagToCheck: String,
     }
 
     conditionalJump ++
-      Seq(s"$labelBody:") ++
       stmts ++
       Seq(
         s"PCHITMP = <:$labelBot",

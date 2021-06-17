@@ -33,10 +33,10 @@ case class BlkArrayElement(arrayName: String, indexExpr: Block) extends Block wi
     val labelSrcVar = parent.getVarLabel(arrayName).fqn
 
     stmts ++ Seq(
-      s"; add the low byte of the index to the low byte of the array address + set flags",
-      s"MARLO = $WORKLO + (>:$labelSrcVar) _S",
+      s"; add the low byte of the index to the low byte of the array address + set flags so carry will occur",
+      s"MARLO = $WORKLO A_PLUS_B (>:$labelSrcVar) _S",
       s"; add the hi byte of the index to the hi byte of the array address - do not set flags",
-      s"MARHI = $WORKHI + (<:$labelSrcVar)",
+      s"MARHI = $WORKHI A_PLUS_B_PLUS_C (<:$labelSrcVar)",  // add with carry
       s"; if the low byte carried then add one to MARHI",
       s"MARHI = NU B_PLUS_1 MARHI _C",
       s"; pull from RAM into WORK registers",
@@ -114,14 +114,14 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
       // In an expression the result of the previous step is accumulated in the assigned temporaryVarLabel.
       // It is somewhat inefficient that I has to shove the value into RAM and back out on each step.
       val otherStatements: List[String] = otherExpr.reverse.zipWithIndex.flatMap {
-        case (AluExpr(op, b), idx) =>
+        case (AluExpr(op, rhs), idx) =>
 
           val scope = parent.pushScope("CHAIN"+ idx + "_" + iii)
-          
-          // clause called here is expected to drop it's result into WORKLO/WORKHI
-          val expressionValueClause = b.expr(depth + 1, scope)
 
-          val label = s"; concatenate clause ${idx + 1} to ram [:$temporaryVarLabel] <= $op $b"
+          // clause called here is expected to drop it's result into WORKLO/WORKHI
+          val expressionValueClause = rhs.expr(depth + 1, scope)
+
+          val label = s"; concatenate clause ${idx + 1} to ram [:$temporaryVarLabel] <= $op $rhs"
 
           // WORKLO/WORKI have already been updated by the next term so apply WORKLO/HI To the currently stashed accumulated value
           val thisClause = op match {
@@ -140,8 +140,8 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"[:$temporaryVarLabel+1] = $TMP1 A_MINUS_B_MINUS_C $WORKHI"
               )
             case "*" =>
-              val resultLo = ":" + scope.assignVarLabel("divisor", IsVar16, TWO_BYTE_STORAGE).fqn
-              val resultHi = s"($resultLo + 1)"
+              //val resultLo = ":" + scope.assignVarLabel("divisor", IsVar16, TWO_BYTE_STORAGE).fqn
+              //val resultHi = s"($resultLo + 1)"
 
               //   val res = ((timeHi(a.l, b.l) + timeLo(a.l, b.h) + timeLo(a.h, b.l)) << 8) + timeLo(a.l, b.l)
               List(
@@ -159,7 +159,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
             case op@("&" | "|" | "^" | "~&" | "~") =>
               List(
                 s"$TMP1 = [:$temporaryVarLabel]",
-                s"[:$temporaryVarLabel] = $TMP1 $op $WORKLO _S",
+                s"[:$temporaryVarLabel] = $TMP1 $op $WORKLO", // no need to set flags
                 s"$TMP1 = [:$temporaryVarLabel + 1]",
                 s"[:$temporaryVarLabel + 1] = $TMP1 $op $WORKHI"
               )
@@ -172,13 +172,14 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               List(
                 s"$shiftLoop:",
 
+                // hi/lo has been set to the shift amt
                 s"; is loop done?",
-                s"NOOP = $WORKHI A_MINUS_B 0 _S",
                 s"PCHITMP = < :$doShift",
-                s"PC = > :$doShift _NE",
+                s"NOOP = $WORKHI A_MINUS_B 0 _S",
+                s"PC = > :$doShift _NE", // do a shift if the high wasn't zero
                 s"NOOP = $WORKLO A_MINUS_B 0 _S",
-                s"PC = > :$doShift _NE",
-
+                s"PC = > :$doShift _NE", // do a shift if the low wasn't zero
+                // high/low is zero so no more shifting
                 s"PCHITMP = < :$endLoop",
                 s"PC = > :$endLoop",
 
@@ -191,8 +192,8 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"; do one shift",
                 s"$TMP1 = [:$temporaryVarLabel + 1]",
                 s"$TMP2 = $TMP1",
-                s"$TMP2 = $TMP2 & 1",
-                s"$TMP2 = $TMP2 << 7",
+//                s"$TMP2 = $TMP2 & 1", // not needed
+                s"$TMP2 = $TMP2 << 7", // move the lowest bit into the top position so we can add to the shifted lower byte
                 s"[:$temporaryVarLabel + 1] = $TMP1 A_LSR_B 1 _S",
 
                 s"; LSR load lo byte and or in the carry",
@@ -233,8 +234,8 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
 
                 s"; do one shift",
                 s"$TMP1 = [:$temporaryVarLabel]",
-                s"$TMP2 = $TMP1 & %10000000", // move the shifted out bit into the RHS pos
-                s"$TMP2 = $TMP2 >> 7",
+//                s"$TMP2 = $TMP1 & %10000000", // move the shifted out bit into the RHS pos
+                s"$TMP2 = $TMP2 >> 7",     // shift the top bit of low byte into bottom pos to add to upper byte
 
                 s"[:$temporaryVarLabel] = $TMP1 A_LSL_B 1 _S",
 
@@ -279,7 +280,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"    [$divisorLo] = $WORKLO",
                 s"    [$divisorHi] = $WORKHI _S",
 
-                s"; if both are 8 bit then use direct ALU op",
+                s"; FAST MODE: if both are 8 bit then use direct ALU op",
                 s"    PCHITMP = < :$longMethod",
                 s"    PC      = > :$longMethod ! _Z", // assumes Z FLAG WAS SET ABOVE divisor=HI
                 s"    $TMP1   =   [$dividendHi] _S",
@@ -291,7 +292,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"    PCHITMP = < :$endLabel",
                 s"    PC      = > :$endLabel",
 
-
+                s"; SLOW MODE using complicated algo I don't understand fully",
                 s"  $longMethod:",
                 s"; lda #0 -- NO NEED IN SPAM1 IMPL",
 
