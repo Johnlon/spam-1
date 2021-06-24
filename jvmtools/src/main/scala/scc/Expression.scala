@@ -217,9 +217,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
 
                 s"; do one shift",
                 s"$TMP1 = [:$temporaryVarLabel + 1]",
-                s"$TMP2 = $TMP1",
-//                s"$TMP2 = $TMP2 & 1", // not needed
-                s"$TMP2 = $TMP2 << 7", // move the lowest bit into the top position so we can add to the shifted lower byte
+                s"$TMP2 = $TMP1 << 7", // move the lowest bit into the top position so we can add to the shifted lower byte
                 s"[:$temporaryVarLabel + 1] = $TMP1 A_LSR_B 1 _S",
 
                 s"; LSR load lo byte and or in the carry",
@@ -276,7 +274,6 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"PCHITMP = < :$shiftLoop",
                 s"PC = > :$shiftLoop",
                 s"$endLoop:",
-
               )
             case "<<1" =>
               val shiftLoop = scope.fqnLabelPathUnique("shiftLoop")
