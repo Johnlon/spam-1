@@ -30,8 +30,7 @@ program {
         uint16 SCREEN_WIDTH = 64;
 
         // 32*64=screen size
-        var screen = [2 * 32 * 64: [0]];
-
+        var screen = [32 * 64: [0]];
 
         // 16 x 8 bits
         var registers = [16: [0]];
@@ -69,7 +68,7 @@ program {
                 $200 : [file(systemProp("CHIP8_FILENAME"))]
 
                 // memory limit - put a zero explicitly at posn - this has same effect as as "$FFF=[]"
-                $0FFF: [0] // 4k
+                //$0FFF: [0] // 4k - no need to populate with zeros - program will fill if needed
         ];
 
         uint16 pc = PC_INIT;
