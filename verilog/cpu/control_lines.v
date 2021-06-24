@@ -35,7 +35,7 @@ package control;
     localparam [2:0] ADEV_marlo = 4;
     localparam [2:0] ADEV_marhi = 5;
     localparam [2:0] ADEV_uart = 6;
-    localparam [2:0] ADEV_not_used = 7; // use for random number?
+    localparam [2:0] ADEV_not_used = 7;
 
     // B BUS
     localparam [3:0] BDEV_rega = 0; 
@@ -44,9 +44,9 @@ package control;
     localparam [3:0] BDEV_regd = 3; 
     localparam [3:0] BDEV_marlo = 4;
     localparam [3:0] BDEV_marhi = 5;
-    localparam [3:0] BDEV_immed = 6; // IMMER READ FROM THE INSTRUCTION
+    localparam [3:0] BDEV_immed = 6; // IMMED READ FROM THE INSTRUCTION
     localparam [3:0] BDEV_ram = 7;
-    localparam [3:0] BDEV_not_used = 8;
+    localparam [3:0] BDEV_not_used = 8; // DOES IT MAKE SENSE TO HAVE A LITERAL NOT USED DEVICE OR SELECT RAND OR CLOCK INSTEAD FOR INTANCE WHEN WE DONT CARE.
     localparam [3:0] BDEV_vram = 9;
     localparam [3:0] BDEV_porta = 10;
     localparam [3:0] BDEV_rand = 11;
@@ -62,10 +62,10 @@ package control;
     localparam [3:0] TDEV_uart = 6;
     localparam [3:0] TDEV_ram = 7;
     localparam [3:0] TDEV_halt = 8;
-    localparam [3:0] TDEV_not_used9 = 9;    // use for VRAM
-    localparam [3:0] TDEV_not_used10 = 10;  // use for PORTA
+    localparam [3:0] TDEV_vram = 9;    // use for VRAM
+    localparam [3:0] TDEV_porta = 10;  // use for PORTA
     localparam [3:0] TDEV_not_used11 = 11;  // use for PORTB
-    localparam [3:0] TDEV_not_used = 12;// needed for things like compare where we don't want to overwrite or just use pchitmp for noop writes
+    localparam [3:0] TDEV_not_used12 = 12;
     localparam [3:0] TDEV_pchitmp = 13; // only load pchitmp
     localparam [3:0] TDEV_pclo= 14;     // only load pclo
     localparam [3:0] TDEV_pc= 15;       // load pclo from instruction and load pchi from pchitmp
@@ -147,10 +147,10 @@ package control;
             TDEV_ram: tdevname = "RAM";
             TDEV_halt: tdevname = "HALT";
 
-            TDEV_not_used9: tdevname = "NOTUSED9";
-            TDEV_not_used10: tdevname = "NOTUSED10";
+            TDEV_vram: tdevname = "VRAM";
+            TDEV_porta: tdevname = "PORTA";
             TDEV_not_used11: tdevname = "NOTUSED11";
-            TDEV_not_used: tdevname = "NOTUSED";
+            TDEV_not_used12: tdevname = "NOTUSED12";
             TDEV_pchitmp: tdevname = "PCHITMP";
             TDEV_pclo: tdevname = "PCLO";
             TDEV_pc: tdevname = "PC";
