@@ -1,6 +1,5 @@
 package scc
 
-import java.io.{File, FileOutputStream}
 import org.junit.jupiter.api.Assertions.{assertEquals, fail}
 import org.junit.jupiter.api.MethodOrderer.MethodName
 import org.junit.jupiter.api.{Test, TestMethodOrder}
@@ -8,6 +7,8 @@ import terminal.UARTTerminalStates._
 import verification.Checks._
 import verification.HaltedException
 import verification.Verification._
+
+import java.io.{File, FileOutputStream}
 
 @TestMethodOrder(classOf[MethodName])
 class SpamCCTest {
@@ -132,10 +133,24 @@ class SpamCCTest {
       """fun main() {
         | var s = [file("src/test/resources/LotOfData.txt")];
         | uint16 a0 = s[0];
+        | uint16 a1= s[1];
+        | uint16 a15= s[15];
+        | uint16 a16= s[16];
+        | uint16 a99= s[99];
+        | uint16 a100= s[100];
+        | uint16 a200= s[200];
+        | uint16 a254= s[254];
         | uint16 a255= s[255];
         | uint16 a256 = s[256];
         | uint16 a338 = s[337];
         | putuart(a0)
+        | putuart(a1)
+        | putuart(a15)
+        | putuart(a16)
+        | putuart(a99)
+        | putuart(a100)
+        | putuart(a200)
+        | putuart(a254)
         | putuart(a255)
         | putuart(a256)
         | putuart(a338)
@@ -145,7 +160,7 @@ class SpamCCTest {
 
     compile(lines, verbose = true, outputCheck = {
       str =>
-        checkTransmittedChars('d', str, List('0', '5', '6', 'F'))
+        checkTransmittedChars('d', str, List('0', '1', 'F', 'G', 'O', 'P', '3', '4', '5', '6', 'F'))
     })
   }
 
@@ -340,10 +355,10 @@ class SpamCCTest {
         |
         | uint16 b = %1001;
 
-        | if ( (b<<1) == %00010010 ) {
+        | if ( (b<<1) == %10010 ) {
         |   putuart('=')
         | }
-        | if ( (b<<8) == %0000100100000000 ) {
+        | if ( (b<<8) == %100100000000 ) {
         |   putuart('=')
         | }
         |
@@ -352,6 +367,8 @@ class SpamCCTest {
         | putuart( b << 2 )
         | putuart( b << 3 )
         | putuart( b << 4 )
+        | putuart( b << 5 )
+        | putuart( b << 6 )
         | putuart( b << 7 )
         | putuart( b << 8 )
         |
@@ -372,7 +389,8 @@ class SpamCCTest {
       str =>
 
         checkTransmittedL('b', str, List(EqAsBin, EqAsBin,
-          "00001001", "00010010", "00100100", "01001000", "10010000", "10000000", "00000000", EqAsBin, "00001001"))
+          "00001001", "00010010", "00100100", "01001000", "10010000", "00100000", "01000000", "10000000", "00000000",
+          EqAsBin, "00001001"))
     })
   }
 
@@ -1392,7 +1410,6 @@ class SpamCCTest {
 
   @Test
   def snake(): Unit = {
-    import terminal.UARTTerminal._
 
     val lines =
       s"""fun main() {

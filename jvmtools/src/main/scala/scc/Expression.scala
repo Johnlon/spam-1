@@ -7,11 +7,22 @@ case class BlkName(variableName: String) extends Block with IsStandaloneVarExpr 
   override def toString = s"$variableName"
 
   override def gen(depth: Int, parent: Scope): List[String] = {
-    val labelSrcVar = parent.getVarLabel(variableName).fqn
-    List(
-      s"$WORKLO = [:$labelSrcVar]",
-      s"$WORKHI = [:$labelSrcVar + 1]",
-    )
+    val constValue = parent.getConst(variableName)
+    constValue match {
+      case Some(konst) =>
+        val lo = konst & 0xff
+        val hi = (konst>>8) & 0xff
+        List(
+          s"$WORKLO = $lo",
+          s"$WORKHI = $hi",
+        )
+      case None =>
+        val labelSrcVar = parent.getVarLabel(variableName).fqn
+        List(
+          s"$WORKLO = [:$labelSrcVar]",
+          s"$WORKHI = [:$labelSrcVar + 1]",
+        )
+    }
   }
 
   override def dump(depth: Int): List[(Int, String)] =
@@ -37,8 +48,6 @@ case class BlkArrayElement(arrayName: String, indexExpr: Block) extends Block wi
       s"MARLO = $WORKLO A_PLUS_B (>:$labelSrcVar) _S",
       s"; add the hi byte of the index to the hi byte of the array address - do not set flags",
       s"MARHI = $WORKHI A_PLUS_B_PLUS_C (<:$labelSrcVar)",  // add with carry
-      s"; if the low byte carried then add one to MARHI",
-      s"MARHI = NU B_PLUS_1 MARHI _C",
       s"; pull from RAM into WORK registers",
       s"$WORKLO = RAM",
       s"$WORKHI = 0",
@@ -56,7 +65,24 @@ case class BlkArrayElement(arrayName: String, indexExpr: Block) extends Block wi
 
 }
 
-case class BlkConst(konst: Int) extends Block {
+case class BlkLiteral(konst: Int) extends Block {
+  override def toString = s"$konst"
+
+  override def gen(depth: Int, parent: Scope): List[String] = {
+    List(
+      s"$WORKLO = > $konst",
+      s"$WORKHI = < $konst",
+    )
+  }
+
+  override def dump(depth: Int): List[(Int, String)] =
+    List(
+      (depth, this.getClass.getSimpleName + s"( $konst )")
+    )
+
+}
+
+case class BlkConstRef(konst: String) extends Block {
   override def toString = s"$konst"
 
   override def gen(depth: Int, parent: Scope): List[String] = {
@@ -121,7 +147,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
           // clause called here is expected to drop it's result into WORKLO/WORKHI
           val expressionValueClause = rhs.expr(depth + 1, scope)
 
-          val label = s"; concatenate clause ${idx + 1} to ram [:$temporaryVarLabel] <= $op $rhs"
+          val label = s"; apply clause ${idx + 1} to variable at ram [:$temporaryVarLabel] <= $op $rhs"
 
           // WORKLO/WORKI have already been updated by the next term so apply WORKLO/HI To the currently stashed accumulated value
           val thisClause = op match {
@@ -212,17 +238,19 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               val doShift = scope.fqnLabelPathUnique("doShift")
               val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
 
-              // sadly my alu doesn't allow carry-in to the shift operations
+              // sadly my alu doesn't allow carry-in to the shift operations, so I OR back in the top bit
               List(
                 s"$shiftLoop:",
 
-                s"; is loop done?",
+                s"; === is loop done?",
+                s"  ; if $WORKHI != 0 then do a shift",
                 s"NOOP = $WORKHI A_MINUS_B 0 _S",
                 s"PCHITMP = < :$doShift",
                 s"PC = > :$doShift _NE",
+                s"  ; if $WORKLO != 0 then do a shift",
                 s"NOOP = $WORKLO A_MINUS_B 0 _S",
                 s"PC = > :$doShift _NE",
-
+                s"  ; else no more shifting so jump to end",
                 s"PCHITMP = < :$endLoop",
                 s"PC = > :$endLoop",
 
@@ -232,14 +260,59 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"$WORKLO = $WORKLO A_MINUS_B 1 _S",
                 s"$WORKHI = $WORKHI A_MINUS_B_MINUS_C 0",
 
-                s"; do one shift",
+                s"; do one shift of low byte to left",
+                s"  ; $TMP2 = 1 if top bit of low byte is 1",
                 s"$TMP1 = [:$temporaryVarLabel]",
-//                s"$TMP2 = $TMP1 & %10000000", // move the shifted out bit into the RHS pos
-                s"$TMP2 = $TMP2 >> 7",     // shift the top bit of low byte into bottom pos to add to upper byte
+                s"$TMP2 = $TMP1 >> 7",     // shift the top bit of low byte into bottom pos to add to upper byte
 
-                s"[:$temporaryVarLabel] = $TMP1 A_LSL_B 1 _S",
+                s"[:$temporaryVarLabel] = $TMP1 A_LSL_B 1",
 
-                s"; LSR load lo byte and or in the carry",
+                s"; LSL hi byte and or in the carry",
+                s"$TMP1 = [:$temporaryVarLabel+1]",
+                s"$TMP1 = $TMP1 A_LSL_B 1",
+                s"[:$temporaryVarLabel+1] = $TMP1  | $TMP2",
+
+                s"; loop again",
+                s"PCHITMP = < :$shiftLoop",
+                s"PC = > :$shiftLoop",
+                s"$endLoop:",
+
+              )
+            case "<<1" =>
+              val shiftLoop = scope.fqnLabelPathUnique("shiftLoop")
+              val doShift = scope.fqnLabelPathUnique("doShift")
+              val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
+
+              // sadly my alu doesn't allow carry-in to the shift operations
+              List(
+                s"$shiftLoop:",
+
+                s"; === is loop done?",
+                s"  ; if $WORKHI != 0 then do a shift",
+                s"NOOP = $WORKHI A_MINUS_B 0 _S",
+                s"PCHITMP = < :$doShift",
+                s"PC = > :$doShift _NE",
+                s"  ; if $WORKLO != 0 then do a shift",
+                s"NOOP = $WORKLO A_MINUS_B 0 _S",
+                s"PC = > :$doShift _NE",
+                s"  ; else no more shifting so jump to end",
+                s"PCHITMP = < :$endLoop",
+                s"PC = > :$endLoop",
+
+                s"$doShift:",
+
+                s"; count down loop",
+                s"$WORKLO = $WORKLO A_MINUS_B 1 _S",
+                s"$WORKHI = $WORKHI A_MINUS_B_MINUS_C 0",
+
+                s"; do one shift of low byte to left",
+                s"  ; $TMP2 = 1 if top bit of low byte is 1",
+                s"$TMP1 = [:$temporaryVarLabel]",
+                s"$TMP2 = $TMP1 >> 7",     // shift the top bit of low byte into bottom pos to add to upper byte
+
+                s"[:$temporaryVarLabel] = $TMP1 A_LSL_B 1",
+
+                s"; LSL hi byte and or in the carry",
                 s"$TMP1 = [:$temporaryVarLabel+1]",
                 s"$TMP1 = $TMP1 A_LSL_B 1",
                 s"[:$temporaryVarLabel+1] = $TMP1  | $TMP2",

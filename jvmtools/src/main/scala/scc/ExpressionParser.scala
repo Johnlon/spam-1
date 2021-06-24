@@ -21,9 +21,9 @@ trait ExpressionParser {
   }
 
 
-  def blkConst: Parser[Block] = constExpression ^^ {
+  def blkLiteral: Parser[Block] = constExpression ^^ {
     konst =>
-      BlkConst(konst)
+      BlkLiteral(konst)
   }
 
   def blkWaituart: Parser[Block] = positioned {
@@ -52,7 +52,7 @@ trait ExpressionParser {
       BlkCompoundAluExpr(leftExpr, o)
   }
 
-  def factor: Parser[Block] = blkRandom | blkWaituart | blkGetuart | blkArrayElement | blkConst | blkName
+  def factor: Parser[Block] = blkRandom | blkWaituart | blkGetuart | blkArrayElement | blkLiteral | blkName
 
   def blkExpr: Parser[Block] = factor | "(" ~> blkCompoundAluExpr <~ ")"
 }

@@ -74,13 +74,13 @@ class AssemblerTest {
 
   @Test
   def `EQU_const`(): Unit = {
-    val code = Seq("CONST:    EQU ($10 + 1) ; some arbitrarily complicated constant expression", "END")
+    val code = Seq("CONSTNAME:    EQU ($10 + 1) ; some arbitrarily complicated constant expression", "END")
 
     val asm = new Assembler()
 
     asm.assemble(code.mkString("\n")) // comments run to end of line
 
-    assertLabel(asm, "CONST", Some(17))
+    assertLabel(asm, "CONSTNAME", Some(17))
   }
 
   @Test
@@ -171,7 +171,7 @@ class AssemblerTest {
     val asm = new Assembler()
     import asm._
 
-    assertEqualsList(Seq(inst(AluOp.PASS_A, TDevice.REGA, ADevice.REGB, BDevice.REGA, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
+    assertEqualsList(Seq(inst(AluOp.PASS_A, TDevice.REGA, ADevice.REGB, BDevice.NU, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
     ), instructions(code, asm))
   }
 

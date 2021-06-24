@@ -28,7 +28,6 @@ package scc
 
 import asm.{AluOp, EnumParserOps}
 
-import java.math.BigInteger
 import java.nio.file.{Files, Paths}
 import java.util.Objects
 import scala.language.postfixOps
@@ -44,6 +43,7 @@ class StatementParser {
   def statement: Parser[Block] = positioned {
     blockComment | lineComment |
       //statementUInt8Eq |
+      statementConst |
       statementUInt16EqExpr |
       statementUInt16EqCondition |
       statementVarDataLocated |
@@ -72,6 +72,14 @@ class StatementParser {
   }
 
   def statements: Parser[List[Block]] = rep(statement) ^^ (a => a)
+
+  def statementConst: Parser[DefConst] = {
+    "const" ~> name ~ "=" ~ constExpression <~ SEMICOLON ^^ {
+      case targetVar ~ _ ~ konst =>
+        DefConst(targetVar, konst)
+    }
+  }
+
 
   //
   //  // optimisation of "var VARIABLE=CONST"
@@ -234,7 +242,7 @@ class StatementParser {
               + "' (path:" + path.toFile.getPath + ", abs:" + path.toFile.getAbsolutePath + ") \n" + ex.getMessage)
         }
         val b = try {
-          str.grouped(2).map( i => Integer.parseInt(i, 16).toByte).toSeq
+          str.grouped(2).map(i => Integer.parseInt(i, 16).toByte).toSeq
         } catch {
           case ex: Throwable =>
             sys.error("can't decode data source '"
@@ -242,7 +250,7 @@ class StatementParser {
               + "' (path:" + path.toFile.getPath + ", abs:" + path.toFile.getAbsolutePath + ")\n" + ex.getMessage)
         }
 
-        b.foreach(x => println("I: "+ x.toInt))
+        b.foreach(x => println("I: " + x.toInt))
         b
       }
     }
@@ -328,7 +336,7 @@ class StatementParser {
 
   def stmtPutfuartGeneral: Parser[Block] = positioned {
     "putfuart" ~ "(" ~> fmtChar ~ ", " ~ blkCompoundAluExpr <~ ")" ^^ {
-      case code ~ _ ~  block => Putfuart(code, block)
+      case code ~ _ ~ block => Putfuart(code, block)
     }
   }
 

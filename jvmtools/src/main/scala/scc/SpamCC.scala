@@ -97,6 +97,7 @@ object SpamCC {
 class SpamCC extends StatementParser with ExpressionParser with ConstExpressionParser with ConditionParser with EnumParserOps with JavaTokenParsers {
 
   def compile(code: String): List[String] = {
+    Scope.resetCount
 
     parse(program, code) match {
       case Success(matched, _) =>

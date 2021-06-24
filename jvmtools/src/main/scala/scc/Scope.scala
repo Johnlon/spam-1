@@ -10,9 +10,9 @@ case class Scope private(parent: Scope,
                          name: String,
                          endLabel: Option[String] = None,
                          functions: ListBuffer[(Scope, DefFunction)] = ListBuffer.empty,
-                         variables: mutable.ListBuffer[Variable]
-                       ) {
-
+                         variables: mutable.ListBuffer[Variable],
+                         consts: mutable.Map[String, Int]
+                        ) {
   if (!name.matches("^[a-zA-Z0-9_]+$")) {
     sys.error(s"invalid name ;'$name'")
   }
@@ -63,12 +63,33 @@ case class Scope private(parent: Scope,
     functions.append(newReg)
   }
 
+  def assignConst(constName: String, konst: Int): Unit = {
+    consts.get(constName) match {
+      case Some(int) =>
+        sys.error(s"cannot redefine '$name' as const value $konst, because it is already defined as a const with value $int")
+      case None =>
+        val label = lookupVarLabel(name)
+        label.map { existing =>
+          sys.error(s"cannot redefine '$name' as const value $konst, because it is already defined with label\n ${existing.fqn}\n with initial value 0x${existing.address.toHexString}(${existing.address} dec)")
+        }
+        consts.put(constName, konst)
+    }
+  }
+
+  def getConst(constName: String): Option[Int] = {
+    consts.get(constName)
+  }
+
   def assignVarLabel(name: String, typ: VarType, data: Seq[Byte] = ONE_BYTE_STORAGE): Variable = {
-    assert(typ != IsVar16 || data.length==2)
-    assert(typ != IsVar8But || data.length==1)
+    assert(typ != IsVar16 || data.length == 2)
+    assert(typ != IsVar8But || data.length == 1)
+
+    consts.get(name).foreach {
+      found =>
+        sys.error(s"cannot redefine '$name' as a variable, because it is already defined as a const with value $found)")
+    }
 
     val newFqn = toFqVarPath(name)
-
     val label = lookupVarLabel(name)
     label.map { existing =>
       if (existing.typ != typ) sys.error(s"cannot redefine '$name' as $typ; it is already defined as a ${existing.typ}' with label ${existing.fqn}")
@@ -116,18 +137,19 @@ case class Scope private(parent: Scope,
       sys.error(s"cannot locate '$name' as $typ; but found it defined as a ${v.typ}' with label ${v.fqn}")
     }
 
-    assert(typ != IsVar16 || v.bytes.length==2)
-    assert(typ != IsVar8But || v.bytes.length==1)
+    assert(typ != IsVar16 || v.bytes.length == 2)
+    assert(typ != IsVar8But || v.bytes.length == 1)
 
     v
   }
 }
 
 object Scope {
-
   final val LABEL_NAME_SEPARATOR = "_"
 
   private[this] var idx = 0
+
+  def resetCount: Unit = idx = 0
 
   def nextInt: Int = {
     idx += 1

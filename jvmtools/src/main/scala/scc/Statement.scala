@@ -35,6 +35,15 @@ import scala.language.postfixOps
 import scala.util.parsing.input.Positional
 
 
+case class DefConst(constName: String, konst: Int) extends Block {
+  override def gen(depth: Int, parent: Scope): List[String] = {
+    parent.assignConst(constName, konst)
+    List(
+      s"; const '$constName' = $konst"
+    )
+  }
+}
+
 //
 //case class DefVarEqConst(targetVar: String, konst: Int) extends Block {
 //  override def gen(depth: Int, parent: Scope): List[String] = {
@@ -968,7 +977,7 @@ case class Program(fns: List[Block]) {
   def compile(): List[String] = {
     val variables: mutable.ListBuffer[Variable] = mutable.ListBuffer.empty[Variable]
 
-    val RootName: Scope = Scope(null, "root", variables = variables)
+    val RootName: Scope = Scope(null, "root", variables = variables, consts = mutable.Map.empty)
 
     val asm: List[String] = fns.flatMap {
       b => {
