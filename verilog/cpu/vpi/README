@@ -1,0 +1,4 @@
+compile the cpi module and then load it into vvp as shown here from simulate_one.sh
+
+$vvp -M/home/john/OneDrive/simplecpu/verilog/cpu/vpi -msleep  -N -i $rootname.vvp "$@"
+
