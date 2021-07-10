@@ -59,6 +59,7 @@ if [ $? != 0 ] ; then
     exit 1
 fi
 
+#
 #    echo $vvp
 $vvp -M/home/john/OneDrive/simplecpu/verilog/cpu/vpi -msleep  -N -i $rootname.vvp "$@"
 if [ $? != 0 ] ; then
