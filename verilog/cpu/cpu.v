@@ -47,7 +47,7 @@ module cpu(
 
     parameter LOG=0;
 
-    localparam tPD_7486=14;
+    localparam tPD_7402=7;
     
     tri0 [15:0] address_bus;
     tri0 [7:0] abus; // when NA device is selected we don't want Z going into ALU sim as this is not a value so we get X out
@@ -161,6 +161,26 @@ module cpu(
     hct74245 #(.LOG(0)) marhi_addbbushi_buf(.A(MARHI.Q), .B(address_bus[15:8]), .nOE(_addrmode_register), .dir(1'b1)); // DONE
     hct74245 #(.LOG(0)) marlo_addbbuslo_buf(.A(MARLO.Q), .B(address_bus[7:0]), .nOE(_addrmode_register), .dir(1'b1)); // DONE
 
+    // BUS PULLDOWN - hardware has 10k array on the ALU input lines
+    pulldown a_pd0(abus[0]);
+    pulldown a_pd1(abus[1]);
+    pulldown a_pd2(abus[2]);
+    pulldown a_pd3(abus[3]);
+    pulldown a_pd4(abus[4]);
+    pulldown a_pd5(abus[5]);
+    pulldown a_pd6(abus[6]);
+    pulldown a_pd7(abus[7]);
+
+    pulldown b_pd0(bbus[0]);
+    pulldown b_pd1(bbus[1]);
+    pulldown b_pd2(bbus[2]);
+    pulldown b_pd3(bbus[3]);
+    pulldown b_pd4(bbus[4]);
+    pulldown b_pd5(bbus[5]);
+    pulldown b_pd6(bbus[6]);
+    pulldown b_pd7(bbus[7]);
+    
+
     // ALU ==============================================================================================
     wire _flag_c_out, _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out;
     wire _flag_c, _flag_z, _flag_n, _flag_o, _flag_gt, _flag_lt, _flag_eq, _flag_ne;
@@ -182,7 +202,7 @@ module cpu(
     );
 
     wire gated_flags_clk;
-    nor #(9) ic7486_gating_a( gated_flags_clk , _phase_exec , _set_flags); // FIXME : NOT IMPLEMENTED YET
+    nor #(tPD_7402) ic7402_gating_b( gated_flags_clk , _phase_exec , _set_flags); // LOW when _set_flags is high or _phase_exec is high / HIGH WHEN _pe is low AND _sf IS LOW
 
     wire [7:0] alu_flags_czonGLEN = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
 
@@ -198,22 +218,22 @@ module cpu(
     // NOTE !!!! THIS CODE USES _phase_exec AS THE REGFILE GATING MEANING _WE IS LOW ONLY ON SECOND PHASE OF CLOCK - THIS PREVENTS A SPURIOUS WRITE TO REGFILE FROM IT'S INPUT LATCH
     wire _regfile_in, gated_regfile_in_tmp, _gated_regfile_in;
 
-    and #(11) ic7421_regfile_in(_regfile_in , _rega_in , _regb_in , _regc_in , _regd_in); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    // SOLUTION !! 4 input AND by using two spare 3 ip and's on 7411 on the ALU 
+    and #(11) ic7411_regfile_in(_regfile_in , _rega_in , _regb_in , _regc_in , _regd_in); // DONE
 
     // NOTE targ regX_in lines are gated with do_exec in the controller but we still need to gate with _phase_exec as we only want them enabled in the late phase as they are latches
-    // IMPL OF ... _gated_regfile_in = _phase_exec | _regfile_in;
-    // wire #(8) _gated_regfile_in = _phase_exec | _regfile_in; // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
-    nor #(tPD_7486) ic7486_gating_b(gated_regfile_in_tmp , _phase_exec , _regfile_in); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
-    nor #(tPD_7486) ic7486_gating_c(_gated_regfile_in , gated_regfile_in_tmp); // FIXME: NOT IMPL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED SPACE NE BOARD NEAR REGFILE!!
+    nor #(tPD_7402) ic7402_gating_d(gated_regfile_in_tmp , _phase_exec , _regfile_in); // DONE
+    nor #(tPD_7402) ic7402_gating_c(_gated_regfile_in , gated_regfile_in_tmp); // DONE
 
     // OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdL_en === abus_dev[2]
-    // OLD wire #(8) _regfile_rdL_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ; 
+    // So ... wire #(8) _regfile_rdL_en = _adev_rega &_adev_regb &_adev_regc &_adev_regd ; 
+    // is same as ...
     wire _regfile_rdL_en = abus_dev[2]; 
 
-    // OPTIMISATION ! THIS WORKS alternative logic ... _regfile_rdR_en === bbus_dev[2]
     // OLD wire #(8) _regfile_rdR_en = _bdev_rega &_bdev_regb &_bdev_regc &_bdev_regd ; 
     wire _regfile_rdR_en;
-    or #(11) regfile_rdR_7432(_regfile_rdR_en , bbus_dev[2], bbus_dev[3]); // TODO WIRE THIS OR IN THE HARDWARE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // SOLUTION: DONT USE 7432, USE 'A' gate on 7402 NOR of ALU and one invertor on 7404 of ALU
+    or #(11) regfile_rdR_7432(_regfile_rdR_en , bbus_dev[2], bbus_dev[3]); // NOT IMPL TODO WIRE THIS OR IN THE HARDWARE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     // the lower two bits can be used to address the regfile as the regfile is the first four locns
     wire [1:0] regfile_rdL_addr = abus_dev[1:0]; 
@@ -277,7 +297,7 @@ module cpu(
     always @(negedge system_clk) begin
         if (_mrPC && $isunknown(alu_result_bus)) begin // just check leftmost but as this is part of the op and is mandatory
             $display ("%9t ", $time,  "CPU ERROR");
-            $error("CPU : ERROR - ALU RESULT BUS UNDEFINED AT EXECUTE = %8b", alu_result_bus); 
+            $error("CPU : ERROR - ALU RESULT BUS UNDEFINED AT EXECUTE : ALU = %8b, A = %8b, B = %8b, OP = %2d, ADDRESS = %4h", alu_result_bus, abus, bbus, alu_op, address_bus); 
             //`FINISH_AND_RETURN(1);
         end
     end

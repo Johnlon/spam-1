@@ -8,9 +8,9 @@
 `define NA_AMODE 1'b0
 
 
-`define SET_FLAGS 1'b0
-`define KEEP_FLAGS 1'b1
-`define NA_FLAGS 1'b1
+`define SET_FLAGS 1'b1
+`define KEEP_FLAGS 1'b0
+`define NA_FLAGS 1'b0
 
 `define CM_STD 1'b0
 `define CM_INV 1'b1

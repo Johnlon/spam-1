@@ -100,7 +100,7 @@ module controller(
     wire bbus_dev_hi             = instruction_4[1]; // DONE
     wire unused_bit              = instruction_4[2]; // DONE
     wire condition_invert_bit    = instruction_4[3];  // +ve logic as it makes the hardware easier using the existing components
-    wire _set_flags_bit          = instruction_4[4]; // DONE
+    wire set_flags_bit           = instruction_4[4]; // DONE
     wire [2:0] conditionBot      = instruction_4[7:5]; // DONE
     wire conditionTopBit         = instruction_5[0]; // DONE
     wire [2:0] bbus_dev_lo       = instruction_5[3:1]; // DONE
@@ -154,13 +154,12 @@ module controller(
     //----------------------------------------------------------------------------------
     // execution control logic
 
-    wire _do_exec, do_exec, set_flags_bit;
+    wire _do_exec, do_exec;
 
     // The following three lines are the same as an OR as shown below however by using XOR (inverter) and Nand I can avoid the need for an OR gate chip and avoid an IC
     //   or #(9) ic7432_a(_set_flags, _set_flags_bit, _do_exec); 
     // enable flag update when both _set_flags_bit is active low and _do_exec is active low
     xor #(9) ic7486_b(do_exec, _do_exec, 1'b1); // use xor as inverter
-    xor #(9) ic7486_d(set_flags_bit, _set_flags_bit, 1'b1); // use xor as inverter
     nand #(9) ic7400_b(_set_flags, set_flags_bit, do_exec); // use nand
 
     // When condition_invert_bit is active high then the conditional exec logic is reversed.
