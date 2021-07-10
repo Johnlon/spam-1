@@ -82,11 +82,11 @@ class StatementParser {
 
 
   //
-  //  // optimisation of "var VARIABLE=CONST"
+  //  // optimisation of "var VARIABLE=CONST"  8 bit
   //  def statementVarEqConst: Parser[DefVarEqConst] = positioned {
   //    "var" ~> name ~ "=" ~ constExpression <~ SEMICOLON ^^ {
   //      case targetVar ~ _ ~ konst =>
-  //        Def`VarEqConst(targetVar, konst)
+  //        DefVarEqConst(targetVar, konst)
   //    }
   //  }
   //
