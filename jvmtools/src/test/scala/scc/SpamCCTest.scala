@@ -3,7 +3,7 @@ package scc
 import org.junit.jupiter.api.Assertions.{assertEquals, fail}
 import org.junit.jupiter.api.MethodOrderer.MethodName
 import org.junit.jupiter.api.{Test, TestMethodOrder}
-import terminal.UARTTerminalStates._
+import terminal.TerminalStates._
 import verification.Checks._
 import verification.HaltedException
 import verification.Verification._
@@ -1011,27 +1011,38 @@ class SpamCCTest {
   }
 
   @Test // BROKEN
-  def valEqGlobalVar(): Unit = {
+  def valEqGlobalVarBROKEN(): Unit = {
 
     val lines =
       """
-        |uint16 g = $1234; //  this variable is initialised on each call to this block so is effectively stack-like
+        |uint16 g = $1234;
         |// FIXME - "g" never gets initialised as the initialisation code sits between the top of the program and the beginning of main and it jumps straight to main.
+        |// WORKAROUND = can initialise in main() if it's a primitive value
         |
+        |fun fun3() {
+        |   putuart(g>>8)
+        |   putuart(g)
         |
+        |   var screen = [6: [1 2]]; // TODO - this array is effectively in global storage as the contents persist between calls and are not reinitialised
+        | }
+        |fun fun2() {
+        |   putuart(g>>8)
+        |   putuart(g)
+        |   g = g + $101;
+        |   fun3()
+        | }
         |fun main() {
-        |   uint16 z = $1234; //  this variable is initialised on each call to this block so is effectively stack-like
-        |   var screen = [6: [1 2]]; // TODO - this array is effectively in global storage  as the contents persist between calls and are not reinitialised
-        |   uint16 a = g;
-        |   putuart(a>>8)
-        |   putuart(a)
+        |   putuart(g>>8)
+        |   putuart(g)
+        |   g = g + $101;
+        |   fun2()
         | }
         |}
         |""".stripMargin
 
     compile(lines, verbose = true, quiet = false, outputCheck = {
       str =>
-        checkTransmittedL('d', str, List("12", "34"))
+        checkTransmittedL('d', str, List("12", "34", "13", "35", "14", "36"))
     })
   }
 
@@ -1561,7 +1572,7 @@ class SpamCCTest {
       fail("should have halted")
     } catch {
       case ex: HaltedException
-          if ex.halt.mar == 65432 && ex.halt.alu == 123 =>
+        if ex.halt.mar == 65432 && ex.halt.alu == 123 =>
         println("halted ok with " + ex)
       case ex: HaltedException =>
         fail("halted with wrong code " + ex.halt)

@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicReferenc
 import asm.Assembler
 import org.junit.jupiter.api.Assertions.fail
 import scc.SpamCC
-import terminal.UARTTerminal
+import terminal.VerilogUARTTerminal
 
 import scala.collection.mutable.ListBuffer
 
@@ -80,7 +80,7 @@ object Verification {
     }
 
     val tmpFileRom = new File("build", "spammcc-test.rom")
-    val tmpUartControl = new File(UARTTerminal.uartControl)
+    val tmpUartControl = new File(VerilogUARTTerminal.uartControl)
 
     println("WRITING ROM TO :\n" + tmpFileRom)
     writeFile(roms, tmpFileRom)

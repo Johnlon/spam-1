@@ -2,16 +2,10 @@ package terminal
 
 import org.apache.commons.io.input.{Tailer, TailerListener}
 
-import java.awt.Color
-import java.io.{File, FileOutputStream, OutputStream, PrintStream}
-import java.util.concurrent.atomic.AtomicInteger
-import javax.swing.BorderFactory
-import scala.collection.mutable
-import scala.swing.ScrollPane.BarPolicy
+import java.io.{File, FileOutputStream, PrintStream}
 import scala.swing._
-import scala.swing.event._
 
-object UARTTerminal extends Terminal {
+object VerilogUARTTerminal extends Terminal {
 
   val replay = true
 

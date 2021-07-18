@@ -1,7 +1,7 @@
 package terminal
 
 import com.fazecast.jSerialComm.{SerialPort, SerialPortTimeoutException}
-import terminal.UARTTerminal.uiapp
+import terminal.VerilogUARTTerminal.uiapp
 
 import java.io._
 import scala.swing._
@@ -143,9 +143,12 @@ object ComTerminal extends Terminal {
         comboPorts.peer.setModel(ComboBox.newConstantModel(portSelections))
 
       case ButtonClicked(`btnTest`) =>
-        send('J')
-        send('\n')
-        send('\r')
+        if (comAdapter.isOpen) {
+//          send('J')
+//          send('\n')
+//          send('\r')
+          // send something
+        }
 
       case SelectionChanged(`comboPorts`) =>
 

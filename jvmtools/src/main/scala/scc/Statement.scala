@@ -28,7 +28,7 @@ package scc
 import org.apache.commons.text.StringEscapeUtils
 import scc.Program.RootEndLabel
 import scc.SpamCC.{MAIN_LABEL, TWO_BYTE_STORAGE, intTo2xBytes, split}
-import terminal.{UARTTerminalStates, UARTTerminal}
+import terminal.TerminalStates
 
 import scala.collection.mutable
 import scala.language.postfixOps
@@ -476,9 +476,9 @@ case class Putfuart(code: Char, block: Block) extends Block(nestedName = "putfua
 
     // see
     val uartTerminalCtrl = code match {
-      case 'X' => UARTTerminalStates.GOTO_LOG_BYTE_STATE
-      case 'C' => UARTTerminalStates.GOTO_LOG_CHAR_STATE
-      case 'B' => UARTTerminalStates.GOTO_LOG_BIN_STATE
+      case 'X' => TerminalStates.GOTO_LOG_BYTE_STATE
+      case 'C' => TerminalStates.GOTO_LOG_CHAR_STATE
+      case 'B' => TerminalStates.GOTO_LOG_BIN_STATE
     }
 
     stmts ++ split(

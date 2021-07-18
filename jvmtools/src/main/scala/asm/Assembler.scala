@@ -2,7 +2,7 @@ package asm
 
 import asm.AddressMode.Mode
 
-import java.io.{File, FileOutputStream, PrintWriter}
+import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import scala.io.Source
 
 object Assembler {
@@ -24,6 +24,7 @@ object Assembler {
 
   }
 
+
   def disAsm(code: String) = {
     val asm = new Assembler()
     val codes = code.split("\\s")
@@ -35,8 +36,8 @@ object Assembler {
     }
   }
 
-  def binToByte(str: String): Byte = {
-    Integer.parseInt(str, 2).toByte
+  def binToByte(str: String): Char = {
+    Integer.parseInt(str, 2).toChar
   }
 
   private def asmFile(args: Array[String]) = {
@@ -59,7 +60,8 @@ object Assembler {
     val files = (1 to 6).map(n => new File(s"${fileName}.rom" + n))
     files.foreach(_.delete())
 
-    val romStreams = files.map(new FileOutputStream(_))
+    // massive write speed up by using buffered writer
+    val romStreams = files.map(f => new BufferedOutputStream(new FileOutputStream(f)))
     val rom1 =romStreams(0)
     val rom2 =romStreams(1)
     val rom3 =romStreams(2)
@@ -67,6 +69,8 @@ object Assembler {
     val rom5 =romStreams(4)
     val rom6 =romStreams(5)
 
+
+    var i = 0;
     roms.foreach { line =>
       line.foreach { romLine =>
         rom.write(romLine)
@@ -80,6 +84,19 @@ object Assembler {
       rom3.write(binToByte(line(3)))
       rom2.write(binToByte(line(4)))
       rom1.write(binToByte(line(5)))
+
+      printf("ROM PC %6d:  ", i)
+      line.foreach {
+        b =>
+          printf(" %2s (%8s) ", binToByte(b).toHexString, b)
+      }
+      printf("\n")
+
+
+      i+=1
+      if (i % 1000 == 0 )
+        println("written : " +  i)
+
     }
 
     List(rom, rom1, rom2, rom3, rom4, rom5, rom6).foreach(_.flush())

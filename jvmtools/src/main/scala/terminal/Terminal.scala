@@ -1,9 +1,7 @@
 package terminal
 
-import org.apache.commons.io.input.{Tailer, TailerListener}
-
 import java.awt.Color
-import java.io.{OutputStream, PrintStream}
+import java.io.PrintStream
 import java.util.concurrent.atomic.AtomicInteger
 import javax.swing.BorderFactory
 import scala.collection.mutable
@@ -11,7 +9,7 @@ import scala.swing.ScrollPane.BarPolicy
 import scala.swing._
 import scala.swing.event._
 
-object UARTTerminalStates {
+object TerminalStates {
 
   // valid in NONE_STATE
   val GOTO_INIT_STATE: Char = 0
@@ -34,7 +32,7 @@ object UARTTerminalStates {
 
 }
 
-import terminal.UARTTerminalStates._
+import terminal.TerminalStates._
 
 sealed trait TerminalIOState
 
@@ -114,7 +112,6 @@ abstract class Terminal extends SimpleSwingApplication {
 
   // one char per line in hex
   def handleLine(hexCharLine: String): Unit = {
-
     try {
       var wasStopped = false
 
