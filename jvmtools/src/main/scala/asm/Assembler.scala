@@ -1,9 +1,8 @@
 package asm
 
-import java.io.{File, PrintWriter}
-import AddressMode.Mode
-import asm.ConditionMode.Standard
+import asm.AddressMode.Mode
 
+import java.io.{File, FileOutputStream, PrintWriter}
 import scala.io.Source
 
 object Assembler {
@@ -36,23 +35,57 @@ object Assembler {
     }
   }
 
+  def binToByte(str: String): Byte = {
+    Integer.parseInt(str, 2).toByte
+  }
+
   private def asmFile(args: Array[String]) = {
     val fileName = args(0)
 
+    println("reading : " + fileName)
     val code = Source.fromFile(fileName).getLines().mkString("\n")
+    println("assembling : " + fileName)
 
     val asm = new Assembler()
 
     val roms: List[List[String]] = asm.assemble(code)
 
-    val pw = new PrintWriter(new File(s"${fileName}.rom"))
+    println("writing roms")
+
+    val singleRom = new File(s"${fileName}.rom")
+    singleRom.delete()
+    val rom = new PrintWriter(singleRom)
+
+    val files = (1 to 6).map(n => new File(s"${fileName}.rom" + n))
+    files.foreach(_.delete())
+
+    val romStreams = files.map(new FileOutputStream(_))
+    val rom1 =romStreams(0)
+    val rom2 =romStreams(1)
+    val rom3 =romStreams(2)
+    val rom4 =romStreams(3)
+    val rom5 =romStreams(4)
+    val rom6 =romStreams(5)
+
     roms.foreach { line =>
-      line.foreach { rom =>
-        pw.write(rom)
+      line.foreach { romLine =>
+        rom.write(romLine)
       }
-      pw.write("\n")
+      rom.write("\n")
+
+      // rom6 is high byte / left most
+      rom6.write(binToByte(line(0)))
+      rom5.write(binToByte(line(1)))
+      rom4.write(binToByte(line(2)))
+      rom3.write(binToByte(line(3)))
+      rom2.write(binToByte(line(4)))
+      rom1.write(binToByte(line(5)))
     }
-    pw.close()
+
+    List(rom, rom1, rom2, rom3, rom4, rom5, rom6).foreach(_.flush())
+    List(rom, rom1, rom2, rom3, rom4, rom5, rom6).foreach(_.close())
+
+    println("completed roms")
   }
 }
 
@@ -87,6 +120,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
 
         val instructions = filtered.collect { case x: Instruction => x.roms }
         //instructions.zipWithIndex.foreach(l => println("CODE : " + l))
+        println("Assembled: " + instructions.size + " instructions")
         instructions
       }
 
@@ -138,7 +172,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
       TDevice.valueOf(t),
       ADevice.valueOf(a),
       BDevice.valueOf(bHi << 3 + bLo),
-      Control.valueOf(cond, f),
+      Control.valueOf(cond, FlagControl.fromBit(f)),
       m,
       condmode,
       addr,

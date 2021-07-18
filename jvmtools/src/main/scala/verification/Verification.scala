@@ -16,7 +16,7 @@ object Verification {
               quiet: Boolean = true,
               dataIn: List[String] = List("t10000000"),
               outputCheck: List[String] => Unit = _ => {},
-              timeout: Int = 20
+              timeout: Int = 30
              ): List[String] = {
 
     val scc = new SpamCC

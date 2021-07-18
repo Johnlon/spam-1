@@ -240,6 +240,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               List(
                 s"$shiftLoop:",
 
+                s"    PORTA = 1",
                 s"; === is loop done?",
                 s"  ; if $WORKHI != 0 then do a shift",
                 s"NOOP = $WORKHI A_MINUS_B 0 _S",

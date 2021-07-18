@@ -395,6 +395,46 @@ class SpamCCTest {
   }
 
   @Test
+  def varLSLAll(): Unit = {
+
+    val lines =
+      """
+        |
+        |fun main(x) {
+        |
+        | uint16 b = %1001;
+        |
+        | putuart( b << 0 )
+        | putuart( b << 1 )
+        | putuart( b << 2 )
+        | putuart( b << 3 )
+        | putuart( b << 4 )
+        | putuart( b << 5 )
+        | putuart( b << 6 )
+        | putuart( b << 7 )
+        | putuart( b << 1 )
+        |}
+        |
+        |""".stripMargin
+
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+
+        checkTransmittedL('b', str, List(
+          "00001001",
+          "00010010",
+          "00100100",
+          "01001000",
+          "10010000",
+          "00100000",
+          "01000000",
+          "10000000",
+          "00010010",
+        ))
+    })
+  }
+
+  @Test
   def varLogicalAnd(): Unit = {
 
     val lines =
@@ -1487,7 +1527,7 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | halt(65432)
+        | halt(65432, 123)
         |}
         |""".stripMargin
 
@@ -1495,7 +1535,8 @@ class SpamCCTest {
       compile(lines, timeout = 5, quiet = true)
       fail("should have halted")
     } catch {
-      case ex: HaltedException if ex.halt.mar == 65432 =>
+      case ex: HaltedException
+        if ex.halt.mar == 65432 && ex.halt.alu == 123 =>
         println("halted ok with " + ex)
       case ex: HaltedException =>
         fail("halted with wrong code " + ex.halt)
@@ -1511,7 +1552,7 @@ class SpamCCTest {
       """
         |fun main() {
         | uint16 a = 65432;
-        | halt(a)
+        | halt(a, 123)
         |}
         |""".stripMargin
 
@@ -1519,7 +1560,8 @@ class SpamCCTest {
       compile(lines, timeout = 5, quiet = true)
       fail("should have halted")
     } catch {
-      case ex: HaltedException if ex.halt.mar == 65432 =>
+      case ex: HaltedException
+          if ex.halt.mar == 65432 && ex.halt.alu == 123 =>
         println("halted ok with " + ex)
       case ex: HaltedException =>
         fail("halted with wrong code " + ex.halt)

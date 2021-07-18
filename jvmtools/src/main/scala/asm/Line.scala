@@ -68,7 +68,7 @@ trait Lines {
 
     private def bitString(control: Control): String = {
       val (cond, flag) = (control.cond, control.setflag)
-      ((cond << 1) | flag).toBinaryString
+      ((cond << 1) | flag.bit).toBinaryString
     }
 
     def roms: List[String] = {

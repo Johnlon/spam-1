@@ -359,32 +359,31 @@ case class DefRefEqVar(refName: String, target: String) extends Block {
   }
 }
 
-case class Halt(haltCode: Int)
+case class Halt(haltCode: Int, num: Byte)
   extends Block(nestedName = s"halt_${haltCode}") {
 
   override def gen(depth: Int, parent: Scope): List[String] = {
     List(
+      s"; Halt: MAR = $haltCode ; code = " + num,
       s"MARHI = " + ((haltCode >> 8) & 0xff),
       s"MARLO = " + (haltCode & 0xff),
-      s"; Halt = Const =  code 1",
-      s"HALT = 1"
+      s"HALT = " + num
     )
   }
 }
 
-case class HaltVar(srcVarName: String)
-
-extends Block(nestedName = s"haltVar_${srcVarName}_") {
+case class HaltVar(srcVarName: String, num: Byte)
+  extends Block(nestedName = s"haltVar_${srcVarName}_") {
 
   override def gen(depth: Int, parent: Scope): List[String] = {
 
     val srcFqn = parent.getVarLabel(srcVarName).fqn
 
     List(
+      s"; Halt : MAR = $srcFqn ; code = " + num,
       s"MARHI = [:$srcFqn + 1]",
       s"MARLO = [:$srcFqn]",
-      s"; Halt = Var =  code 2",
-      s"HALT = 2"
+      s"HALT = " + num
     )
   }
 }

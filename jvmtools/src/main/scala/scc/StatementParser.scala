@@ -290,18 +290,18 @@ class StatementParser {
   }
 
   def statementHalt: Parser[Block] = positioned {
-    "halt" ~ "(" ~> wholeNumber <~ ")" ^^ {
-      haltCode =>
+    "halt" ~ "(" ~> constExpression ~ "," ~ constExpression <~ ")" ^^ {
+      case haltCode ~ _ ~ num =>
         val i = haltCode.toInt
         if (i > 65535 || i < 0) sys.error("halt const out of range : " + i)
-        Halt(i)
+        Halt(i, num.toByte)
     }
   }
 
   def statementHaltVar: Parser[Block] = positioned {
-    "halt" ~ "(" ~> name <~ ")" ^^ {
-      varName =>
-        HaltVar(varName)
+    "halt" ~ "(" ~> name ~ "," ~ constExpression <~ ")" ^^ {
+      case varName ~ _ ~ num =>
+        HaltVar(varName, num.toByte)
     }
   }
 

@@ -42,6 +42,7 @@ dependencies {
     // tailer
     implementation group: 'commons-io', name: 'commons-io', version: '2.6'
 
+    implementation 'com.fazecast:jSerialComm:[2.0.0,3.0.0)'
 
 }
 

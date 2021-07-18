@@ -90,7 +90,7 @@ trait Devices {
       values.find(c => c.id == id).getOrElse(throw new RuntimeException("unknown TDevice " + id))
     }
 
-    def values = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, UART, NOOP, RAM, HALT, PCHITMP, PCLO, PC)
+    def values = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, UART, NOOP, RAM, HALT, VRAM, PORTA, PCHITMP, PCLO, PC)
 
     object REGA extends TDevice(0)
 
@@ -109,6 +109,8 @@ trait Devices {
     object RAM extends TDevice(7)
 
     object HALT extends TDevice(8)
+    object VRAM extends TDevice(9)
+    object PORTA extends TDevice(10)
 
     object NOOP extends TDevice(12)
 
