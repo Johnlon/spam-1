@@ -28,7 +28,7 @@
 
 module test();
 
-    parameter LOG = 0;
+    parameter LOG = 1;
 
     string rom;
     initial begin
@@ -183,6 +183,14 @@ endfunction
             if (CPU.ctrl._do_exec == 0) begin
                 //$display("%6t", $time, " EXECUTING ..."); 
                 $display("%6t ", $time, "CYCLES %-6d : PC=%5d  %1s", opcount, {CPU.PCHI, CPU.PCLO}, CPU.disasm(data));
+                $display("%6s ", "", "= aaaaattt taaabbbC CCCFIbtM AAAAAAAA AAAAAAAA IIIIIIII");
+                $display("%6s ", "", "= %8b %8b %8b %8b %8b %8b", 
+                    data[47:40],
+                    data[39:32],
+                    data[31:24],
+                    data[23:16],
+                    data[15:8],
+                    data[7:0]);
             end
             else
             begin
@@ -199,12 +207,12 @@ endfunction
         if (LOG) 
         $display("%6t", $time, " DECOMPILE ",
             " PC=%-5d : ", pc,
-            " %-1s = ", control::tdevname(CPU.ctrl.instruction[42:39]),
+            " %-1s = ", control::tdevname({CPU.ctrl.instruction[25], CPU.ctrl.instruction[42:39]}),
             " %1s", control::adevname(CPU.ctrl.instruction[38:36]),
             "  (%1s) ",  aluopName(CPU.ctrl.instruction[47:43]),
-            " %1s", control::bdevname(CPU.ctrl.instruction[35:33]),
+            " %1s", control::bdevname({CPU.ctrl.instruction[26],CPU.ctrl.instruction[35:33]}),
             "  {%1s ", control::condname(CPU.ctrl.instruction[32:29]),
-            "%1s} ", CPU.ctrl.instruction[28] ? " " : "S",
+            "%1s} ", CPU.ctrl.instruction[28] ? "S" : " ",
             "  %1s ", control::amode(CPU.ctrl.instruction[24]),
             " addr:%02x:%02x ", CPU.ctrl.instruction[23:16], CPU.ctrl.instruction[15:8],
             " imm:%02x (dec %d) ", CPU.ctrl.instruction[7:0], CPU.ctrl.instruction[7:0]
@@ -305,7 +313,7 @@ endfunction
     end
     
 
-    `define DD  $display ("%6t ", $time,  "DUMP  ",
+    //`define DD  $display ("%6t ", $time,  "DUMP  ",
     task DUMP_OP;
           `DD ": PC  : %d", pcval);
           `DD ": CODE: %1s", currentCode);
@@ -320,7 +328,8 @@ endfunction
             `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " address_bus=0x%4x (%d) ", CPU.address_bus, CPU.address_bus);
             `DD " abus=%8b(%d) bbus=%8b(%d) alu_result_bus=%8b(%d)", CPU.abus, CPU.abus, CPU.bbus, CPU.bbus, CPU.alu_result_bus, CPU.alu_result_bus);
-            `DD " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU._registered_flags_czonGLEN, CPU.gated_flags_clk);
+            `DD " FLAGS ALU        czonGLEN=%8b ", CPU.alu_flags_czonGLEN);
+            `DD " FLAGS REGISTERED czonGLEN=%8b gated_flags_clk=%1b", CPU._registered_flags_czonGLEN, CPU.gated_flags_clk);
             `DD " FLAGS I/O  _flagdo=%1b _flags_di=%1b", CPU._flag_do, CPU._flag_di);
             `DD " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);
             `DD " REGA:%08b", CPU.regFile.get(0),

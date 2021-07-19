@@ -1,3 +1,4 @@
+
 program {
 
 
@@ -16,7 +17,7 @@ program {
         uint16 GOTO_DRAW_BYTE_STATE = 4; // switch state
         uint16 GOTO_LOG_CHAR_STATE = 5; // switch state
         uint16 GOTO_LOG_BYTE_STATE = 6; // switch state
-        uint16 DO_CLEAR = 10;
+        uint16 DO_CLEAR = 8;
         uint16 DO_UP = 11;
         uint16 DO_DOWN = 12;
         uint16 DO_LEFT = 13;
@@ -90,14 +91,33 @@ program {
         uint16 DT = 0;
 
         uint16 hackCount = 0;
-        uint16 LOG = 0;
-
+        uint16 LOG = 1;
+        
         while (true) {
+            putuart(GOTO_INIT_STATE)
+            putuart(GOTO_INIT_STATE)
+
+            halt(countI, $d0)
+            uint16 POP0 = countI>>8;
+            halt(POP0, $d1)
+
             countI = countI + 1;
 
+            halt(countI, $d2)
+            uint16 POP1 = countI>>8;
+            halt(POP1, $d3)
+
+            halt(0, $e0)
             uint16 opcodehi = memory[pc];
+            halt(opcodehi, $e1)
             uint16 opcodelo = memory[pc + 1];
+            halt(opcodelo, $e2)
+            halt(opcodehi, $e3)
             uint16 opcode = (opcodehi << 8) + opcodelo;
+            halt(opcode, $e4)
+            halt(opcodelo, $e5)
+            halt(opcodehi, $e6)
+
             uint16 keyLast = getuart(); // no key = x100 otherwise 0-255
 
             if (keyLast == $100) {
@@ -107,19 +127,28 @@ program {
             } else {
                 keyDown = keyLast;
             }
-                putfuart(X, countI >> 8)
-                putfuart(X, countI)
-                putfuart(C, ':')
-                putfuart(C, 32)
-                putfuart(X, pc >> 8)
-                putfuart(X, pc)
-                putfuart(C, ':')
-                putfuart(C, 32)
-                putfuart(X, opcodehi)
-                putfuart(X, opcodelo)
+
+
+            putfuart(X, countI >> 8)
+            putfuart(X, countI)
+            putfuart(C, ':')
+            putfuart(C, 32)
+            putfuart(X, pc >> 8)
+            putfuart(X, pc)
+            putfuart(C, ':')
+            putfuart(C, 32)
+            putfuart(X, opcodehi)
+            putfuart(X, opcodelo)
+
+            halt(opcodehi, $f0)
+            halt(opcodelo, $f1)
+            halt(opcode, $f2)
+            uint16 POP=opcode>>8;
+            halt(POP, $f3)
+
+            if (LOG == 1) {
                 putfuart(C, 32)
 
-            if (LOG > 0) {
                 putfuart(C, 'K')
                 putfuart(C, ':')
                 putfuart(X, keyDown >> 8)
@@ -217,7 +246,7 @@ program {
             if (opcode == $00e0) {
                 // draw
                 putuart(DO_CLEAR)
-                if (LOG > 0) {
+                if (LOG == 1) {
                     putfuart(C, 'C')
                     putfuart(C, 'L')
                     putfuart(C, 'S')
@@ -230,14 +259,14 @@ program {
                 stackPtr = stackPtr - 1;
                 uint16 addrHi = stack[stackPtr];
                 pc = (addrHi << 8) + addrLo;
-                if (LOG > 0) {
+                if (LOG == 1) {
                     putfuart(C, 'R')
                     putfuart(C, 'T')
                     putfuart(C, 'S')
                 }
             } else if (opcodehi == $00) {
                 // obsolete machine jump
-                if (LOG > 0) {
+                if (LOG == 1) {
                     putfuart(C, 'O')
                     putfuart(C, 'B')
                     putfuart(C, 'S')
@@ -245,7 +274,7 @@ program {
             } else if (N___ == $1000) {  // DONE
                 // jump to nnn
                 pc = _NNN - 2; // subtract 2 as there is an auto increment at end of loop
-                if (LOG > 0) {
+                if (LOG == 1) {
                     putfuart(C, 'J')
                     putfuart(C, 'M')
                     putfuart(C, 'P')
@@ -254,7 +283,7 @@ program {
                     putfuart(X, _NNN)
                 }
             } else if (N___ == $2000) {  // DONE
-                if (LOG > 0) {
+                if (LOG == 1) {
                     putfuart(C, 'C')
                     putfuart(C, 'A')
                     putfuart(C, 'L')
@@ -277,7 +306,7 @@ program {
 
             } else if (N___ == $3000) {  // DONE
                 // skip if X eq N
-                if (LOG > 0) {
+                if (LOG == 1) {
                     putfuart(C, 'S')
                     putfuart(C, 'K')
                     putfuart(C, 'I')
@@ -299,7 +328,7 @@ program {
 
             } else if (N___ == $4000) {  // DONE
                 // skip if X ne N
-                if (LOG > 0) {
+                if (LOG == 1) {
                     putfuart(C, 'S')
                     putfuart(C, 'K')
                     putfuart(C, 'I')
@@ -321,7 +350,7 @@ program {
                 }
             } else if (N___ == $5000) {  // DONE
                 // skip if X eq Y
-                if (LOG > 0) {
+                if (LOG == 1) {
                     putfuart(C, 'S')
                     putfuart(C, 'K')
                     putfuart(C, 'I')
@@ -338,7 +367,7 @@ program {
                     putfuart(X, y)
                 }
                 if (___N != 0) {
-                    halt(opcode)
+                    halt(opcode, 1)
                 }
                 if (x == y) {
                     pc = pc + 2;
@@ -347,7 +376,7 @@ program {
             } else if (N___ == $6000) { // DONE
                 // VX=__NN
                 registers[_X__] = __NN;
-                if (LOG > 0) {
+                if (LOG == 1) {
                     putfuart(C, 'V')
                     putfuart(X, _X__)
                     putfuart(C, '=')
@@ -357,7 +386,7 @@ program {
             } else if (N___ == $7000) { // DONE
                 // VX=VX+__NN
                 registers[_X__] = x + __NN;
-                if (LOG > 0) {
+                if (LOG == 1) {
                     putfuart(C, 'V')
                     putfuart(X, _X__)
                     putfuart(C, '+')
@@ -373,7 +402,7 @@ program {
             } else if (N___ == $8000) {
                 if (___N == 0) {
                     registers[_X__] = y;
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'V')
                         putfuart(X, _X__)
                         putfuart(C, '=')
@@ -385,7 +414,7 @@ program {
                     }
                 } else if (___N == 1) {
                     registers[_X__] = x | y;
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'V')
                         putfuart(X, _X__)
                         putfuart(C, '|')
@@ -402,7 +431,7 @@ program {
                     }
                 } else if (___N == 2) {
                     registers[_X__] = x & y;
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'V')
 
                         putfuart(X, _X__)
@@ -424,7 +453,7 @@ program {
                     //AddXPlusYCarry
                     uint16 result = x + y;
                     registers[_X__] = result;
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'V')
                         putfuart(X, _X__)
                         putfuart(C, '+')
@@ -483,7 +512,7 @@ program {
                     }
                     registers[_X__] = x << 1;
 
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'V')
                         putfuart(X, _X__)
                         putfuart(C, '<')
@@ -494,8 +523,10 @@ program {
                         putfuart(X, registers[_X__])
                     }
                 } else {
-                    // not impl F0xx
-                    halt(opcode)
+                    // not impl 
+                    halt($6000, 2)
+                    halt(N___, 2)
+                    halt(opcode, 2)
                 }
             } else if (N___ == $9000) {
                 // ADDED VIA test_opcode.ch8
@@ -506,13 +537,13 @@ program {
                     }
                 } else {
                     // not impl F0xx
-                    halt(opcode)
+                    halt(opcode, 3)
                 }
             } else if (N___ == $A000) { // DONE
                 // set index
                 index = _NNN;
 
-                if (LOG > 0) {
+                if (LOG == 1) {
                     putfuart(C, 'I')
                     putfuart(C, '=')
                     putfuart(X, index >> 8)
@@ -526,7 +557,7 @@ program {
 
                 registers[_X__] = rand & __NN;
 
-                if (LOG > 0) {
+                if (LOG == 1) {
                     putfuart(C, 'V')
                     putfuart(X, _X__)
                     putfuart(C, '=')
@@ -558,7 +589,7 @@ program {
                 */
 
 
-                if (LOG > 0) {
+                if (LOG == 1) {
                     putfuart(C, 'D')
                     putfuart(C, 'R')
                     putfuart(C, 'A')
@@ -687,7 +718,7 @@ program {
                     // TODO IMPL KEYPRESS IO FROM UART??? GETCHAR?
                     uint16 key = x;
 
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'S')
                         putfuart(C, 'K')
                         putfuart(C, 'I')
@@ -709,7 +740,7 @@ program {
                     // skip; if key x is pressed
                     uint16 key = x;
 
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'S')
                         putfuart(C, 'K')
                         putfuart(C, 'I')
@@ -729,7 +760,7 @@ program {
 
                 } else {
                     // not impl F0xx
-                    halt(opcode)
+                    halt(opcode, 4)
                 }
 
 
@@ -745,7 +776,7 @@ program {
                         DT = DT / 2;
                     }
 
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'V')
                         putfuart(X, _X__)
                         putfuart(C, '=')
@@ -760,7 +791,7 @@ program {
                     // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx15
                     DT = registers[_X__];
 
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'D')
                         putfuart(C, 'T')
                         putfuart(C, '=')
@@ -785,7 +816,7 @@ program {
                     } else {
                         registers[15] = 0;
                     }
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'I')
                         putfuart(C, '+')
                         putfuart(C, '=')
@@ -810,7 +841,7 @@ program {
                     uint16 locn = FontMemAddress + offset;
                     index = locn;
 
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'S')
                         putfuart(C, 'P')
                         putfuart(C, 'R')
@@ -832,7 +863,7 @@ program {
                     memory[index + 1] = i10;
                     memory[index + 2] = i1;
 
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'B')
                         putfuart(C, 'C')
                         putfuart(C, 'D')
@@ -840,7 +871,7 @@ program {
                         putfuart(X, x)
                     }
                 } else if (__NN == $55) {
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'P')
                         putfuart(C, 'U')
                         putfuart(C, 'S')
@@ -860,7 +891,7 @@ program {
                     // NB THERE IS AN OPTIONAL LEGACY STEP HERE THAT SOME PROGS MIGHT RELY ON
                     //       index = if (LoadStoreBehaviour == Legacy) (st.index + xReg.ubyte + 1) else st.index
                 } else if (__NN == $65) {
-                    if (LOG > 0) {
+                    if (LOG == 1) {
                         putfuart(C, 'P')
                         putfuart(C, 'O')
                         putfuart(C, 'P')
@@ -882,12 +913,15 @@ program {
 
 
                 } else {
-                    // not impl F0xx
-                    halt(opcode)
+                    // not impl
+                    halt(opcode, 5)
                 }
             } else {
                 // not impl top level
-                halt(opcode)
+                //uint16 yy = (opcodehi << 8) + opcodelo;
+//                uint16 yy = opcodehi << 0;
+//                halt(yy, 6)
+                halt(opcode, 6)
             }
 
             putfuart(C, '\n')

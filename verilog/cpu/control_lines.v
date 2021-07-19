@@ -53,22 +53,22 @@ package control;
     localparam [3:0] BDEV_clock = 12; // 8 bit @ 60 Hz = 4min  or  @100Hz=2.5min
 
     // DEST
-    localparam [3:0] TDEV_rega = 0; 
-    localparam [3:0] TDEV_regb = 1; 
-    localparam [3:0] TDEV_regc = 2; 
-    localparam [3:0] TDEV_regd = 3; 
-    localparam [3:0] TDEV_marlo = 4;
-    localparam [3:0] TDEV_marhi = 5;
-    localparam [3:0] TDEV_uart = 6;
-    localparam [3:0] TDEV_ram = 7;
-    localparam [3:0] TDEV_halt = 8;
-    localparam [3:0] TDEV_vram = 9;    // use for VRAM
-    localparam [3:0] TDEV_porta = 10;  // use for PORTA
-    localparam [3:0] TDEV_not_used11 = 11;  // use for PORTB
-    localparam [3:0] TDEV_not_used12 = 12;
-    localparam [3:0] TDEV_pchitmp = 13; // only load pchitmp
-    localparam [3:0] TDEV_pclo= 14;     // only load pclo
-    localparam [3:0] TDEV_pc= 15;       // load pclo from instruction and load pchi from pchitmp
+    localparam [4:0] TDEV_rega = 0; 
+    localparam [4:0] TDEV_regb = 1; 
+    localparam [4:0] TDEV_regc = 2; 
+    localparam [4:0] TDEV_regd = 3; 
+    localparam [4:0] TDEV_marlo = 4;
+    localparam [4:0] TDEV_marhi = 5;
+    localparam [4:0] TDEV_uart = 6;
+    localparam [4:0] TDEV_ram = 7;
+    localparam [4:0] TDEV_halt = 8;
+    localparam [4:0] TDEV_vram = 9;    // use for VRAM
+    localparam [4:0] TDEV_porta = 10;  // use for PORTA
+    localparam [4:0] TDEV_not_used11 = 11;  // use for PORTB
+    localparam [4:0] TDEV_not_used12 = 12;
+    localparam [4:0] TDEV_pchitmp = 13; // only load pchitmp
+    localparam [4:0] TDEV_pclo= 14;     // only load pclo
+    localparam [4:0] TDEV_pc= 15;       // load pclo from instruction and load pchi from pchitmp
     // eg ROM PAGE / RAM PAGE REGISTERS
     // ROM page could be a third register PCPAGE - but really the PCHITMP is also a page select so they would be three registers PC8 / PC16 / PC24
     // MAR would be MAR8 and MAR16 to correlate
@@ -134,7 +134,7 @@ package control;
     end
     endfunction    
 
-    function string tdevname([3:0] tdev); 
+    function string tdevname([4:0] tdev); 
     begin
         case (tdev)
             TDEV_rega: tdevname = "REGA"; // 1

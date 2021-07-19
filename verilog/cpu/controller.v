@@ -97,8 +97,8 @@ module controller(
     wire [7:0] direct_address_lo = instruction_2; // DONE
     wire [7:0] direct_address_hi = instruction_3; // DONR
     wire amode_bit               = instruction_4[0]; // DONE
-    wire bbus_dev_hi             = instruction_4[1]; // DONE
-    wire unused_bit              = instruction_4[2]; // DONE
+    wire targ_dev4               = instruction_4[1]; // DONE
+    wire bbus_dev_hi             = instruction_4[2]; // DONE
     wire condition_invert_bit    = instruction_4[3];  // +ve logic as it makes the hardware easier using the existing components
     wire set_flags_bit           = instruction_4[4]; // DONE
     wire [2:0] conditionBot      = instruction_4[7:5]; // DONE

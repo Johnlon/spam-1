@@ -51,7 +51,6 @@ module test();
 
     // SETUP ROM
     integer icount;
-    integer loop;
     integer populate_label;
     integer verify_label;
     task INIT_ROM;

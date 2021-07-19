@@ -13,7 +13,9 @@
 `define NA_FLAGS 1'b0
 
 `define CM_STD 1'b0
-`define CM_INV 1'b1
+`define CM_INV 1'b1 // 1 into XOR causes inversion
+
+`define ALWAYS 0
 
 // PSEUDO ASSEMBLER
 `define ROM(A) { CPU.ctrl.rom_6.Mem[A], CPU.ctrl.rom_5.Mem[A], CPU.ctrl.rom_4.Mem[A], CPU.ctrl.rom_3.Mem[A], CPU.ctrl.rom_2.Mem[A], CPU.ctrl.rom_1.Mem[A] }
@@ -28,36 +30,37 @@
 `define TEXT(LOCN,TXT)    CODE_TEXT[LOCN] = TXT;
 
 // in the same order as the instruction layout - args as numeric values already cast to correct size
-`define INSTRUCTION_NN(LOCN, ALUOP, TARGET, SRCA, SRCB_LO, CONDITION, FLAG_CTL, CMODE, SRCB_HI, AMODE, ADDRESS, IMMED) \
+`define INSTRUCTION_NN(LOCN, ALUOP, TDEV3_0, SRCA, SRCB2_0, CONDITION, FLAG_CTL, CMODE, SRCB3, TDEV4,AMODE, ADDRESS, IMMED) \
     `ROM(LOCN) = { \
          (ALUOP), \
-         (TARGET), \
+         (TDEV3_0), \
          (SRCA), \
-         (SRCB_LO), \
+         (SRCB2_0), \
          (CONDITION), \
          (FLAG_CTL), \
          (CMODE),  \
-         1'bz, \
-         (SRCB_HI), \
+         (SRCB3), \
+         (TDEV4), \
          (AMODE), \
          (ADDRESS), \
          (IMMED) }; \
         $sformat(TEMP_STRING, "aluop:%x  target:%x  a:%x  b:%x  cond:%x setf:%x cmode:%x amode:%x immed8:%x addr:%x", \
-                    ALUOP, TARGET, SRCA, ((SRCB_HI << 3) + SRCB_LO), CONDITION, FLAG_CTL, CMODE, AMODE, IMMED, ADDRESS); \
+                    ALUOP, ( (TDEV4 << 4) + TDEV3_0), SRCA, ((SRCB3 << 3) + SRCB2_0), CONDITION, FLAG_CTL, CMODE, AMODE, IMMED, ADDRESS); \
         $display("ASSEMBLED : ", TEMP_STRING);\
         CODE_NUM[LOCN] = TEMP_STRING;
 
 // in the same order as the instruction layout - args as numeric values 
-`define INSTRUCTION_N(LOCN, ALUOP, TARGET, SRCA, SRCB_LO, CONDITION, FLAG_CTL, CMODE, SRCB_HI, AMODE, ADDRESS, IMMED) \
+`define INSTRUCTION_N(LOCN, ALUOP, TDEV3_0, SRCA, SRCB2_0, CONDITION, FLAG_CTL, CMODE, SRCB3, TDEV4, AMODE, ADDRESS, IMMED) \
     `INSTRUCTION_NN(LOCN, \
          cast.to5(ALUOP), \
-         cast.to4(TARGET), \
+         cast.to4(TDEV3_0), \
          cast.to3(SRCA), \
-         cast.to3(SRCB_LO), \
+         cast.to3(SRCB2_0), \
          cast.to4(CONDITION), \
          cast.to1(FLAG_CTL), \
          cast.to1(CMODE), \
-         cast.to1(SRCB_HI), \
+         cast.to1(SRCB3), \
+         cast.to1(TDEV4), \
          cast.to1(AMODE), \
          cast.to16(ADDRESS), \
          cast.to8(IMMED) );
@@ -66,23 +69,26 @@
 `define INSTRUCTION_SYM(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, CMODE, AMODE, ADDRESS, IMMED) \
     `INSTRUCTION_N(LOCN, \
          `toALUOP(ALUOP), \
-         `toTDEV(TARGET), \
+         `toTDEV(TARGET)[3:0], \
          `toADEV(SRCA), \
          `toBDEV(SRCB)[2:0], \
          `COND(CONDITION), \
          FLAG_CTL, \
          CMODE, \
          `toBDEV(SRCB)[3], \
+         `toTDEV(TARGET)[4], \
          AMODE, \
          ADDRESS, \
          IMMED ); \
         CODE[LOCN] = "TARGET=SRCA(ALUOP)SRCB  cond=CONDITION setf=FLAG_CTL amode=AMODE cmode=CMODE immed8=IMMED addr=ADDRESS";
+
 
 // does autocounting
 `define INSTRUCTION(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, CMODE, AMODE, ADDRESS, IMMED) \
         `INSTRUCTION_SYM(LOCN, ALUOP, TARGET, SRCA, SRCB, CONDITION, FLAG_CTL, CMODE, AMODE, ADDRESS, IMMED); \
         LOCN++;
 
+`define RAM_DIRECT_EQ_IMMED8(INST,ADDRESS, IMMED8)     `INSTRUCTION(INST, B,      ram,      not_used, immed,    A, `SET_FLAGS, `CM_STD,  `DIRECT,   ADDRESS,  IMMED8)
 
 // in the same order as the instruction layout - args as numeric values already cast to correct size
 `define DISASSEMBLE(LOCN, INSTRUCTION) { \
@@ -117,12 +123,14 @@
 `define INSTRUCTION_S(LOCN, TARGET, SRCA, SRCB, ALUOP, CONDITION, FLAG_CTL, AMODE, ADDRESS, IMMED) \
     `INSTRUCTION_N(LOCN, \
          `toALUOP(ALUOP), \
-         `toTDEV(TARGET), \
+         `toTDEV(TARGET)[3:0], \
          `toADEV(SRCA), \
          `toBDEV(SRCB)[2:0], \
          `COND(CONDITION), \
          FLAG_CTL, \
+         `ALWAYS, \
          `toBDEV(SRCB)[3], \
+         `toTDEV(TARGET)[4], \
          AMODE, \
          ADDRESS, \
          IMMED ); \

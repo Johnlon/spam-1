@@ -309,13 +309,14 @@ module cpu(
         cycleCount ++;
 
         if (_halt_in == 0) begin
-            halt_code = (CPU.MARHI.Q  << 8) + CPU.MARLO.Q;
+            halt_code = (MARHI.Q  << 8) + MARLO.Q;
 
             // leave space around the code as Verification.scala looks for them to extract the value
             $display("----------------------------- CYCLES %d",  cycleCount);
             $display("----------------------------- HALTED <%1d h:%04x> <%1d h:%02x> ---------------------------", 
                         halt_code, 16'(halt_code),
                         alu_result_bus, 8'(alu_result_bus));
+            DUMP;
             $finish();
         end
     end
@@ -339,12 +340,13 @@ module cpu(
          reg [3:0] i_cond;
          reg i_flag;
          reg i_cmode;
-         reg i_nu;
          reg i_srcb_hi;
+         reg i_tdev4;
          reg i_amode;
          reg [23:8] i_addr ;
          reg [7:0] i_immed;
          reg [3:0] i_srcb;
+         reg [4:0] i_targ;
     begin
         import alu_ops::*;
         import control::*;
@@ -356,21 +358,22 @@ module cpu(
         i_cond = INSTRUCTION[32:29]; 
         i_flag = INSTRUCTION[28]; 
         i_cmode = INSTRUCTION[27]; 
-        i_nu   = INSTRUCTION[26]; 
-        i_srcb_hi   = INSTRUCTION[25]; 
+        i_srcb_hi = INSTRUCTION[26]; 
+        i_tdev4 = INSTRUCTION[25]; 
         i_amode= INSTRUCTION[24]; 
         i_addr = INSTRUCTION[23:8]; 
         i_immed= INSTRUCTION[7:0]; 
 
         i_srcb   = {i_srcb_hi, i_srcb_lo};
+        i_targ   = {i_tdev4, i_target};
 
         disasm = $sformatf(
                     "op:(%2d)%-10s", i_aluop, aluopName(i_aluop), 
-                    "  t:(%2d)%-6s", i_target, tdevname(i_target), 
+                    "  t:(%2d)%-6s", i_targ, tdevname(i_targ), 
                     " a:(%2d)%-8s", i_srca, adevname(i_srca),  
-                    " b:(%3d)%-10s", i_srcb, bdevname(i_srcb),  
+                    " b:(%2d)%-10s", i_srcb, bdevname(i_srcb),  
                     "  cond:(%1d)%2s", i_cond, condname(i_cond),  
-                    " setf:(%b)%s", i_flag, (i_flag? "NOSET" : "SET"), 
+                    " setf:(%b)%s", i_flag, (i_flag? "SET" : "NOSET"), 
                     " cmode:(%b)%s", i_cmode, (i_cmode? "INV" : "STD"), 
                     " amode:(%1b)%s", i_amode, (i_amode?  "DIR": "REG"), 
                     " addr:(%1d)%04x", i_addr, i_addr, 
@@ -379,5 +382,40 @@ module cpu(
     end 
     endfunction
 
+   // $timeformat [(unit_number, precision, suffix, min_width )] ;
+    task DUMP;
+         //   DUMP_OP;
+            `define DD $display ("%9t ", $time,  "DUMP  ", 
+
+            `DD " phase_exec=%1d", phase_exec);
+            `DD " PC=%1d (0x%4h) PCHItmp=%d (%2x)", pc_addr, pc_addr, PC.PCHITMP, PC.PCHITMP);
+            `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", ctrl.instruction_6, ctrl.instruction_5, ctrl.instruction_4, ctrl.instruction_3, ctrl.instruction_2, ctrl.instruction_1);
+            `DD " addrmode=%1s", control::fAddrMode(_addrmode_register),
+                " addbbus=0x%4x", address_bus);
+            `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  ctrl.rom_6.D, ctrl.rom_5.D, ctrl.rom_4.D, ctrl.rom_3.D, ctrl.rom_2.D, ctrl.rom_1.D);
+            `DD " immed8=%08b", ctrl.immed8);
+            `DD " ram=%08b", ram64.D);
+            `DD " tdev=%5b(%s)", targ_dev, control::tdevname(targ_dev),
+                " adev=%3b(%s)", abus_dev, control::adevname(abus_dev),
+                " bdev=%4b(%s)", bbus_dev,control::bdevname(bbus_dev),
+                " alu_op=%5b(%s)", alu_op, aluopName(alu_op)
+            );            
+            `DD " abus=%8b bbus=%8b alu_result_bus=%8b", abus, bbus, alu_result_bus);
+            `DD " ALUFLAGS czonGLEN=%8b ", alu_flags_czonGLEN);
+            `DD " FLAGSREG czonGLEN=%8b gated_flags_clk=%1b", status_register_czonGLEN.Q, gated_flags_clk);
+            `DD " FLAGS _flag_do=%b _flag_di=%b", _flag_do, _flag_di);
+            `DD " condition=%02d(%1s) _do_exec=%b _set_flags=%b", ctrl.condition, control::condname(ctrl.condition), ctrl._do_exec, _set_flags);
+            `DD " MAR=%8b:%8b (0x%2x:%2x)", MARHI.Q, MARLO.Q, MARHI.Q, MARLO.Q);
+            `DD "  REGA:%08b", regFile.get(0),
+                 "  REGB:%08b", regFile.get(1),
+                 "  REGC:%08b", regFile.get(2),
+                 "  REGD:%08b", regFile.get(3)
+                 );
+
+            `define LOGX_ADEV_SEL(DNAME) " _adev_``DNAME``=%1b", _adev_``DNAME``
+            `define LOGX_BDEV_SEL(DNAME) " _bdev_``DNAME``=%1b", _bdev_``DNAME``
+            `define LOGX_TDEV_SEL(DNAME) " _``DNAME``_in=%1b",  _``DNAME``_in
+            $display("%9t", $time, " DUMP   WIRES ", `CONTROL_WIRES(LOGX, `COMMA));
+    endtask 
 
 endmodule : cpu
