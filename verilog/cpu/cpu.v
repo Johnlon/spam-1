@@ -57,7 +57,7 @@ module cpu(
     wire [3:0] bbus_dev;
     wire [3:0] targ_dev;
     wire [4:0] alu_op;
-    wire [7:0] _registered_flags_czonGLEN;
+    wire [7:0] _registered_flags_czonENGL;
     wire _flag_di;
     wire _flag_do;
     wire _set_flags;
@@ -97,7 +97,7 @@ module cpu(
     // ROM =============================================================================================
     controller ctrl( // DONE
         .pc(pc_addr),
-        ._flags_czonGLEN(_registered_flags_czonGLEN),
+        ._flags_czonENGL(_registered_flags_czonENGL),
         ._flag_di, ._flag_do,
 
         ._addrmode_register, 
@@ -204,14 +204,14 @@ module cpu(
     wire gated_flags_clk;
     nor #(tPD_7402) ic7402_gating_b( gated_flags_clk , _phase_exec , _set_flags); // LOW when _set_flags is high or _phase_exec is high / HIGH WHEN _pe is low AND _sf IS LOW
 
-    wire [7:0] alu_flags_czonGLEN = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_gt_out, _flag_lt_out, _flag_eq_out, _flag_ne_out};
+    wire [7:0] alu_flags_czonENGL = {_flag_c_out , _flag_z_out, _flag_o_out, _flag_n_out, _flag_eq_out, _flag_ne_out, _flag_gt_out, _flag_lt_out};
 
-    hct74574 #(.LOG(LOG)) status_register_czonGLEN( .D(alu_flags_czonGLEN), // DONE
-                                       .Q(_registered_flags_czonGLEN),
+    hct74574 #(.LOG(LOG)) status_register_czonENGL( .D(alu_flags_czonENGL), // DONE
+                                       .Q(_registered_flags_czonENGL),
                                         .CLK(gated_flags_clk), 
                                         ._OE(1'b0)); 
 
-    assign {_flag_c, _flag_z, _flag_o, _flag_n, _flag_gt, _flag_lt, _flag_eq, _flag_ne} = _registered_flags_czonGLEN;
+    assign {_flag_c, _flag_z, _flag_o, _flag_n, _flag_eq, _flag_ne, _flag_gt, _flag_lt} = _registered_flags_czonENGL;
 
     // REGISTER FILE =====================================================================================
     // INTERESTING THAT THE SELECTION LOGIC DOESN'T CONSIDER REGD - THIS SIMPLIFIED VALUE DOMAIN CONSIDERING ONLY THE FOUR ACTIVE LOW STATES NEEDS JUST THIS SIMPLE LOGIC FOR THE ADDRESSING
@@ -317,7 +317,7 @@ module cpu(
                         halt_code, 16'(halt_code),
                         alu_result_bus, 8'(alu_result_bus));
             DUMP;
-            $finish();
+            //$finish();
         end
     end
 
@@ -401,8 +401,8 @@ module cpu(
                 " alu_op=%5b(%s)", alu_op, aluopName(alu_op)
             );            
             `DD " abus=%8b bbus=%8b alu_result_bus=%8b", abus, bbus, alu_result_bus);
-            `DD " ALUFLAGS czonGLEN=%8b ", alu_flags_czonGLEN);
-            `DD " FLAGSREG czonGLEN=%8b gated_flags_clk=%1b", status_register_czonGLEN.Q, gated_flags_clk);
+            `DD " ALUFLAGS czonENGL=%8b ", alu_flags_czonENGL);
+            `DD " FLAGSREG czonENGL=%8b gated_flags_clk=%1b", status_register_czonENGL.Q, gated_flags_clk);
             `DD " FLAGS _flag_do=%b _flag_di=%b", _flag_do, _flag_di);
             `DD " condition=%02d(%1s) _do_exec=%b _set_flags=%b", ctrl.condition, control::condname(ctrl.condition), ctrl._do_exec, _set_flags);
             `DD " MAR=%8b:%8b (0x%2x:%2x)", MARHI.Q, MARLO.Q, MARHI.Q, MARLO.Q);

@@ -50,7 +50,7 @@ existing logic ...
 
 module controller(
     input [15:0] pc,
-    input [7:0] _flags_czonGLEN,
+    input [7:0] _flags_czonENGL,
     input _flag_di, _flag_do,
 
     output _addrmode_register,
@@ -120,17 +120,17 @@ module controller(
             5'b0,
             _flag_do, //DO
             _flag_di, // DI
-            _flags_czonGLEN[0]  // NE
+            _flags_czonENGL[0]  // L
             };
 
     wire [7:0] _flags_lo = {
-            _flags_czonGLEN[1], // EQ
-            _flags_czonGLEN[2], // LT
-            _flags_czonGLEN[3], // GT
-            _flags_czonGLEN[4], // n
-            _flags_czonGLEN[5], // o
-            _flags_czonGLEN[6], // z
-            _flags_czonGLEN[7], // Carry
+            _flags_czonENGL[1], // G
+            _flags_czonENGL[2], // N
+            _flags_czonENGL[3], // E
+            _flags_czonENGL[4], // n
+            _flags_czonENGL[5], // o
+            _flags_czonENGL[6], // z
+            _flags_czonENGL[7], // Carry
             1'b0}; // Always
 
 

@@ -63,7 +63,7 @@ class ComAdapter {
 
   def startReader(handler: String => Unit): Unit = {
     val r = new Runnable {
-      def run {
+      def run : Unit = {
         try {
           var hadError = false
           while (true) {
@@ -74,7 +74,7 @@ class ComAdapter {
                 if (line != -1) {
                   val hex = line.toHexString
                   if (line.toChar.isLetterOrDigit) {
-                    println(line + " : " + line.toChar)
+                    println(s"$line : ${line.toChar}")
                   }else {
                     println(line)
                   }
@@ -100,7 +100,7 @@ class ComAdapter {
             }
           }
         } catch {
-          case ex =>
+          case ex: Throwable =>
             Dialog.showMessage(uiapp, "reader error: " + ex.getMessage)
         }
       }

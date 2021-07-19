@@ -91,32 +91,17 @@ program {
         uint16 DT = 0;
 
         uint16 hackCount = 0;
-        uint16 LOG = 1;
+        uint16 LOG = 0;
         
         while (true) {
             putuart(GOTO_INIT_STATE)
             putuart(GOTO_INIT_STATE)
 
-            halt(countI, $d0)
-            uint16 POP0 = countI>>8;
-            halt(POP0, $d1)
-
             countI = countI + 1;
 
-            halt(countI, $d2)
-            uint16 POP1 = countI>>8;
-            halt(POP1, $d3)
-
-            halt(0, $e0)
             uint16 opcodehi = memory[pc];
-            halt(opcodehi, $e1)
             uint16 opcodelo = memory[pc + 1];
-            halt(opcodelo, $e2)
-            halt(opcodehi, $e3)
             uint16 opcode = (opcodehi << 8) + opcodelo;
-            halt(opcode, $e4)
-            halt(opcodelo, $e5)
-            halt(opcodehi, $e6)
 
             uint16 keyLast = getuart(); // no key = x100 otherwise 0-255
 
@@ -139,12 +124,6 @@ program {
             putfuart(C, 32)
             putfuart(X, opcodehi)
             putfuart(X, opcodelo)
-
-            halt(opcodehi, $f0)
-            halt(opcodelo, $f1)
-            halt(opcode, $f2)
-            uint16 POP=opcode>>8;
-            halt(POP, $f3)
 
             if (LOG == 1) {
                 putfuart(C, 32)
@@ -524,8 +503,6 @@ program {
                     }
                 } else {
                     // not impl 
-                    halt($6000, 2)
-                    halt(N___, 2)
                     halt(opcode, 2)
                 }
             } else if (N___ == $9000) {
@@ -918,9 +895,6 @@ program {
                 }
             } else {
                 // not impl top level
-                //uint16 yy = (opcodehi << 8) + opcodelo;
-//                uint16 yy = opcodehi << 0;
-//                halt(yy, 6)
                 halt(opcode, 6)
             }
 

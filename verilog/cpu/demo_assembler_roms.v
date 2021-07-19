@@ -268,7 +268,7 @@ endfunction
             CLK_DN;
             #HALF_CLK_LO
             if (LOG) $display("%6t", $time, " DUMPREG:", "  PC=%1d ", pcval, "ALU:%03d", CPU.alu_result_bus, " REGA:%03d", CPU.regFile.get(0), "  REGB:%03d", CPU.regFile.get(1), "  REGC:%03d", CPU.regFile.get(2), "  REGD:%03d", CPU.regFile.get(3));
-            if (LOG) $display("%6t", $time, " FLAGS czonGLEN=%8b" , CPU._registered_flags_czonGLEN);
+            if (LOG) $display("%6t", $time, " FLAGS czonENGL=%8b" , CPU._registered_flags_czonENGL);
             CLK_UP;
         end
 
@@ -328,8 +328,8 @@ endfunction
             `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " address_bus=0x%4x (%d) ", CPU.address_bus, CPU.address_bus);
             `DD " abus=%8b(%d) bbus=%8b(%d) alu_result_bus=%8b(%d)", CPU.abus, CPU.abus, CPU.bbus, CPU.bbus, CPU.alu_result_bus, CPU.alu_result_bus);
-            `DD " FLAGS ALU        czonGLEN=%8b ", CPU.alu_flags_czonGLEN);
-            `DD " FLAGS REGISTERED czonGLEN=%8b gated_flags_clk=%1b", CPU._registered_flags_czonGLEN, CPU.gated_flags_clk);
+            `DD " FLAGS ALU        czonENGL=%8b ", CPU.alu_flags_czonENGL);
+            `DD " FLAGS REGISTERED czonENGL=%8b gated_flags_clk=%1b", CPU._registered_flags_czonENGL, CPU.gated_flags_clk);
             `DD " FLAGS I/O  _flagdo=%1b _flags_di=%1b", CPU._flag_do, CPU._flag_di);
             `DD " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);
             `DD " REGA:%08b", CPU.regFile.get(0),
