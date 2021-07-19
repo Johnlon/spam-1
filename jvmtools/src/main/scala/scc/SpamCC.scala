@@ -27,10 +27,11 @@ todo:
 
 package scc
 
-import java.io.{File, PrintWriter}
-
 import asm.EnumParserOps
+import org.anarres.cpp.{CppReader, DefaultPreprocessorListener}
+import org.apache.commons.io.IOUtils
 
+import java.io.{File, PrintWriter, StringReader}
 import scala.io.Source
 import scala.language.postfixOps
 import scala.util.parsing.combinator.JavaTokenParsers
@@ -99,7 +100,9 @@ class SpamCC extends StatementParser with ExpressionParser with ConstExpressionP
   def compile(code: String): List[String] = {
     Scope.resetCount
 
-    parse(program, code) match {
+    val prep = cpp(code)
+
+    parse(program, prep) match {
       case Success(matched, _) =>
         println("SpamCC parsed : ")
         //println(matched.dump(1))
@@ -111,6 +114,13 @@ class SpamCC extends StatementParser with ExpressionParser with ConstExpressionP
       case msg: Error =>
         sys.error(s"ERROR: $msg")
     }
+  }
+
+
+  def cpp(rawCode: String): String = {
+    val r = new CppReader(new StringReader(rawCode))
+    r.getPreprocessor.setListener(new DefaultPreprocessorListener())
+    IOUtils.toString(r)
   }
 
 }

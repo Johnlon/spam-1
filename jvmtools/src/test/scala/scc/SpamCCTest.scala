@@ -946,6 +946,23 @@ class SpamCCTest {
   }
 
   @Test
+  def cpp(): Unit = {
+
+    val lines =
+      """
+        |#define MACROA 'a'
+        |fun main() {
+        | putuart(MACROA)
+        |}
+        |""".stripMargin
+
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+        checkTransmittedL('c', str, List("a"))
+    })
+  }
+
+  @Test
   def valEqVarMinus(): Unit = {
 
     val lines =
