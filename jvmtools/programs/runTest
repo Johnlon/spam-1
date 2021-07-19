@@ -1,0 +1,16 @@
+# 4 rotate, 5 left, 6 right, 7 drop
+
+echo 't100000' >  /home/john/OneDrive/simplecpu/verilog/cpu/uart.control
+echo >  /home/john/OneDrive/simplecpu/verilog/cpu/uart.out
+
+./scc_chip8.sh  TestProg.scc /home/john/OneDrive/github/johnlon/chip-8/src/main/resources/chip8/roms/TETRIS
+if [ $? -ne 0 ]; then
+    echo error
+    exit 1
+fi
+
+../../verilog/spamcc_sim.sh  100000 ../../verilog/cpu/demo_assembler_roms.v TestProg.scc.asm.rom
+if [ $? -ne 0 ]; then
+    echo error
+    exit 1
+fi

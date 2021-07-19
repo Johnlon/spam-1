@@ -1,0 +1,28 @@
+program {
+
+
+    fun main() {
+
+    halt(0, 0)
+
+    uint16 aa = $a2;
+    halt(aa, 1)
+
+    uint16 bb = $b4;
+    halt(bb, 2)
+
+    uint16 cc = (aa << 8) + bb;
+    halt(cc, 3)
+
+    uint16 dd = cc >> 8;
+    halt(dd, 4)
+
+    uint16 ee = (aa << 8);
+    halt(ee, 5)
+
+    uint16 ff = ee + bb;
+    halt(ff, 6)
+
+    }
+
+}
