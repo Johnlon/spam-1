@@ -11,7 +11,7 @@ case class BlkName(variableName: String) extends Block with IsStandaloneVarExpr 
     constValue match {
       case Some(konst) =>
         val lo = konst & 0xff
-        val hi = (konst>>8) & 0xff
+        val hi = (konst >> 8) & 0xff
         List(
           s"$WORKLO = $lo",
           s"$WORKHI = $hi",
@@ -47,7 +47,7 @@ case class BlkArrayElement(arrayName: String, indexExpr: Block) extends Block wi
       s"; add the low byte of the index to the low byte of the array address + set flags so carry will occur",
       s"MARLO = $WORKLO A_PLUS_B (>:$labelSrcVar) _S",
       s"; add the hi byte of the index to the hi byte of the array address - do not set flags",
-      s"MARHI = $WORKHI A_PLUS_B_PLUS_C (<:$labelSrcVar)",  // add with carry
+      s"MARHI = $WORKHI A_PLUS_B_PLUS_C (<:$labelSrcVar)", // add with carry
       s"; pull from RAM into WORK registers",
       s"$WORKLO = RAM",
       s"$WORKHI = 0",
@@ -103,7 +103,7 @@ case class BlkConstRef(konst: String) extends Block {
 case class AluExpr(aluop: String, rhs: Block)
 
 object COUNTER {
-  var iii : Int = 0
+  var iii: Int = 0
 }
 
 import scc.COUNTER.iii
@@ -120,6 +120,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
 
   override def gen(depth: Int, parent: Scope): Seq[String] = {
 
+    // left stmt leaves the results in WORKLO/HI
     val leftStatement: Seq[String] = leftExpr.expr(depth + 1, parent)
 
     // if there is no right side then no need for temporary variables or merge logic
@@ -127,10 +128,10 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
       val temporaryVarLabel = parent.assignVarLabel("compoundBlkExpr" + depth + LABEL_NAME_SEPARATOR + Scope.nextInt, IsVar16, TWO_BYTE_STORAGE).fqn
 
       // !!!!!!!
-      // The expr evaluates left to right and results accumulate in the temp var pair and new right hand side args are found in $WORKLO/$WORKHI
+      // The expr evaluates left to right and results accumulate temporaryVarLabel and new right hand side args are found in $WORKLO/$WORKHI
       // !!!!!!!
 
-      val assignLeftToTemp =
+      val stashLeftToTemp =
         List(
           s"; backup the clause 0 result to ram : [:$temporaryVarLabel] = $leftExpr ",
           s"[:$temporaryVarLabel] = $WORKLO",
@@ -140,16 +141,16 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
       // In an expression the result of the previous step is accumulated in the assigned temporaryVarLabel.
       // It is somewhat inefficient that I has to shove the value into RAM and back out on each step.
       val otherStatements: List[String] = otherExpr.reverse.zipWithIndex.flatMap {
-        case (AluExpr(op, rhs), idx) =>
+        case (AluExpr(op: String, rhs: Block), idx) =>
 
-          val scope = parent.pushScope("CHAIN"+ idx + "_" + iii)
+          val scope = parent.pushScope("CHAIN" + idx + "_" + iii)
 
-          // clause called here is expected to drop it's result into WORKLO/WORKHI
-          val expressionValueClause = rhs.expr(depth + 1, scope)
+          // 1) right hand clause drops it's result into WORKLO/WORKHI
+          val rightHandSideExpression = rhs.expr(depth + 1, scope)
 
-          val label = s"; apply clause ${idx + 1} to variable at ram [:$temporaryVarLabel] <= $op $rhs"
+          // 2) left hand clause is already in temporaryVarLabel
 
-          // WORKLO/WORKI have already been updated by the next term so apply WORKLO/HI To the currently stashed accumulated value
+          // 3) do calc and updated the stashed accumulated value
           val thisClause = op match {
             case "+" =>
               List(
@@ -166,10 +167,12 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"[:$temporaryVarLabel+1] = $TMP1 A_MINUS_B_MINUS_C $WORKHI"
               )
             case "*" =>
-              //val resultLo = ":" + scope.assignVarLabel("divisor", IsVar16, TWO_BYTE_STORAGE).fqn
-              //val resultHi = s"($resultLo + 1)"
-
-              //   val res = ((timeHi(a.l, b.l) + timeLo(a.l, b.h) + timeLo(a.h, b.l)) << 8) + timeLo(a.l, b.l)
+              /*
+              * AH:AL   BH:BL
+              *
+              * $temporaryVarLabel/$temporaryVarLabel+1 contain the left side of the expr
+              *
+              * */
               List(
                 s"$TMP1 = [:$temporaryVarLabel]",
                 s"[:$temporaryVarLabel] = $TMP1 *LO $WORKLO", // units:  lo * lo
@@ -262,7 +265,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"; do one shift of low byte to left",
                 s"  ; $TMP2 = 1 if top bit of low byte is 1",
                 s"$TMP1 = [:$temporaryVarLabel]",
-                s"$TMP2 = $TMP1 >> 7",     // shift the top bit of low byte into bottom pos to add to upper byte
+                s"$TMP2 = $TMP1 >> 7", // shift the top bit of low byte into bottom pos to add to upper byte
 
                 s"[:$temporaryVarLabel] = $TMP1 A_LSL_B 1",
 
@@ -306,7 +309,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"; do one shift of low byte to left",
                 s"  ; $TMP2 = 1 if top bit of low byte is 1",
                 s"$TMP1 = [:$temporaryVarLabel]",
-                s"$TMP2 = $TMP1 >> 7",     // shift the top bit of low byte into bottom pos to add to upper byte
+                s"$TMP2 = $TMP1 >> 7", // shift the top bit of low byte into bottom pos to add to upper byte
 
                 s"[:$temporaryVarLabel] = $TMP1 A_LSL_B 1",
 
@@ -359,7 +362,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"    PC      = > :$longMethod ! _Z",
                 s"    [$dividendHi] = 0",
                 s"    $TMP1   =   [$dividendLo]",
-                s"    [$dividendLo] = $TMP1 / $WORKLO",  // at this point it is assumed that TMP1 = dividendlo and WORKLO = divisorlo
+                s"    [$dividendLo] = $TMP1 / $WORKLO", // at this point it is assumed that TMP1 = dividendlo and WORKLO = divisorlo
                 s"    PCHITMP = < :$endLabel",
                 s"    PC      = > :$endLabel",
 
@@ -449,12 +452,17 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"    [:$temporaryVarLabel] = $TMP1",
                 s"    $TMP1 = [$dividendHi]",
                 s"    [:$temporaryVarLabel+1] = $TMP1"
-          )
+              )
             case x =>
               sys.error("NOT IMPL ALU OP '" + x + "'")
           }
-          expressionValueClause ++ (label +: thisClause)
-          
+
+
+          val comment = s"; apply clause ${idx + 1} to variable at ram [:$temporaryVarLabel] <= $op $rhs"
+
+          rightHandSideExpression ++
+            (comment +: thisClause)
+
       }
 
       val suffix = split(
@@ -464,7 +472,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
            |$WORKHI = [:$temporaryVarLabel+1]
            |""")
 
-      assignLeftToTemp ++ otherStatements ++ suffix
+      stashLeftToTemp ++ otherStatements ++ suffix
     } else Nil
 
     leftStatement ++ optionalExtraForRight

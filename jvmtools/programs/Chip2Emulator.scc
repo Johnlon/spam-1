@@ -1,6 +1,7 @@
+// Consider psuedo random using .. https://codebase64.org/doku.php?id=base:16bit_xorshift_random_generator
+
 
 program {
-
 
     fun main() {
 
