@@ -262,51 +262,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"PC = > :$shiftLoop",
                 s"$endLoop:",
               )
-            case "<<1" =>
-              val shiftLoop = scope.fqnLabelPathUnique("shiftLoop")
-              val doShift = scope.fqnLabelPathUnique("doShift")
-              val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
 
-              // sadly my alu doesn't allow carry-in to the shift operations
-              List(
-                s"$shiftLoop:",
-
-                s"; === is loop done?",
-                s"  ; if $WORKHI != 0 then do a shift",
-                s"NOOP = $WORKHI A_MINUS_B 0 _S",
-                s"PCHITMP = < :$doShift",
-                s"PC = > :$doShift _NE",
-                s"  ; if $WORKLO != 0 then do a shift",
-                s"NOOP = $WORKLO A_MINUS_B 0 _S",
-                s"PC = > :$doShift _NE",
-                s"  ; else no more shifting so jump to end",
-                s"PCHITMP = < :$endLoop",
-                s"PC = > :$endLoop",
-
-                s"$doShift:",
-
-                s"; count down loop",
-                s"$WORKLO = $WORKLO A_MINUS_B 1 _S",
-                s"$WORKHI = $WORKHI A_MINUS_B_MINUS_C 0",
-
-                s"; do one shift of low byte to left",
-                s"  ; $TMP2 = 1 if top bit of low byte is 1",
-                s"$TMP1 = [:$temporaryVarLabel]",
-                s"$TMP2 = $TMP1 >> 7", // shift the top bit of low byte into bottom pos to add to upper byte
-
-                s"[:$temporaryVarLabel] = $TMP1 A_LSL_B 1",
-
-                s"; LSL hi byte and or in the carry",
-                s"$TMP1 = [:$temporaryVarLabel+1]",
-                s"$TMP1 = $TMP1 A_LSL_B 1",
-                s"[:$temporaryVarLabel+1] = $TMP1  | $TMP2",
-
-                s"; loop again",
-                s"PCHITMP = < :$shiftLoop",
-                s"PC = > :$shiftLoop",
-                s"$endLoop:",
-
-              )
             case "/" =>
               // https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
               val divisorLo = ":" + scope.assignVarLabel("divisor", IsVar16, TWO_BYTE_STORAGE).fqn
