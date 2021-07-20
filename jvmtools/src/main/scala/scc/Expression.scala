@@ -236,20 +236,10 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               List(
                 s"$shiftLoop:",
 
-                s"    PORTA = 1",
-                s"; === is loop done?",
-                s"  ; if $WORKHI != 0 then do a shift",
-                s"NOOP = $WORKHI A_MINUS_B 0 _S",
-                s"PCHITMP = < :$doShift",
-                s"PC = > :$doShift _NE",
-                s"  ; if $WORKLO != 0 then do a shift",
-                s"NOOP = $WORKLO A_MINUS_B 0 _S",
-                s"PC = > :$doShift _NE",
-                s"  ; else no more shifting so jump to end",
+                s"; is loop done?",
+                s"NOOP = $WORKHI | $WORKLO _S",
                 s"PCHITMP = < :$endLoop",
-                s"PC = > :$endLoop",
-
-                s"$doShift:",
+                s"PC = > :$endLoop _Z", // do a shift if LO or HI != 0
 
                 s"; count down loop",
                 s"$WORKLO = $WORKLO A_MINUS_B 1 _S",
