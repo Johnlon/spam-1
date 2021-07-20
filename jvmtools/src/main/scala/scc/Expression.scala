@@ -229,7 +229,6 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               )
             case "<<" =>
               val shiftLoop = scope.fqnLabelPathUnique("shiftLoop")
-              val doShift = scope.fqnLabelPathUnique("doShift")
               val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
 
               // sadly my alu doesn't allow carry-in to the shift operations, so I OR back in the top bit
@@ -261,6 +260,70 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"PCHITMP = < :$shiftLoop",
                 s"PC = > :$shiftLoop",
                 s"$endLoop:",
+              )
+
+            case "<<MOREEFFICIENT-NOT-TESTED" =>
+              val lt8 = scope.fqnLabelPathUnique("lt8")
+              val lt16 = scope.fqnLabelPathUnique("lt16")
+              val gt16 = scope.fqnLabelPathUnique("gt16")
+              val endLabel = scope.fqnLabelPathUnique("endLabel")
+
+              // ignore top byte of RHS as it would shift all to zeros
+              List(
+                s"NOOP = $WORKHI A_MINUS_B 0 _S",
+                s"PCHITMP = < :$gt16",
+                s"PC = > :$gt16 _NE",
+
+                s"NOOP = $WORKLO A_MINUS_B 8 _S",
+                s"PCHITMP = < :$lt8",
+                s"PC = > :$lt8 _LT",
+
+                s"NOOP = $WORKLO A_MINUS_B 16 _S",
+                s"PCHITMP = < :$lt16",
+                s"PC = > :$lt16 _LT",
+
+                s"PCHITMP = < :$gt16",
+                s"PC = > :$gt16",
+
+                s"$lt8:",
+                s"; val S = 8 - N",
+                s"$TMP1 = 8",
+                s"$TMP1 = $TMP1 A_MINUS_B $WORKLO",
+
+                s"; val LC = L >> S",
+                s"$TMP2 = [:$temporaryVarLabel]",
+                s"$TMP1  = $TMP2 A_LSR_B $TMP1",
+
+                s"; val LS = L << N",
+                s"[:$temporaryVarLabel] = $TMP2 A_LSL_B $WORKLO",
+
+                s"; val HS = (H << N) | LC",
+                s"$TMP1 = [:$temporaryVarLabel+1]",
+                s"$TMP1 = $TMP1 << $WORKLO",
+                s"$TMP1 = $TMP1 | $TMP2",
+                s"[:$temporaryVarLabel+1] = $TMP1",
+
+                s"PCHITMP = < :$endLabel",
+                s"PC = > :$endLabel",
+
+                s"$lt16:",
+                s"; val S = (N % 8)",
+                s"$TMP1 = $WORKLO % 8",
+
+                s"; val LS = 0",
+                s"[:$temporaryVarLabel] = 0",
+
+                s"; val HS = L << S",
+                s"[:$temporaryVarLabel+1] = $WORKLO << $TMP1",
+
+                s"PCHITMP = < :$endLabel",
+                s"PC = > :$endLabel",
+
+                s"$gt16:",
+                s"[:$temporaryVarLabel] = 0",
+                s"[:$temporaryVarLabel+1] = 0",
+
+                s"$endLabel:",
               )
 
             case "/" =>

@@ -102,7 +102,7 @@ program {
 
             uint16 opcodehi = memory[pc];
             uint16 opcodelo = memory[pc + 1];
-            uint16 opcode = (opcodehi << 8) + opcodelo;
+            uint16 opcode = (lsl8(opcodehi)) + opcodelo;
 
             uint16 keyLast = getuart(); // no key = x100 otherwise 0-255
 
@@ -115,11 +115,11 @@ program {
             }
 
 
-            putfuart(X, countI >> 8)
+            putfuart(X, lsr8(countI))
             putfuart(X, countI)
             putfuart(C, ':')
             putfuart(C, 32)
-            putfuart(X, pc >> 8)
+            putfuart(X, lsr8(pc))
             putfuart(X, pc)
             putfuart(C, ':')
             putfuart(C, 32)
@@ -131,13 +131,13 @@ program {
 
                 putfuart(C, 'K')
                 putfuart(C, ':')
-                putfuart(X, keyDown >> 8)
+                putfuart(X, lsr8(keyDown))
                 putfuart(X, keyDown)
                 putfuart(C, 32)
 
                 putfuart(C, 'I')
                 putfuart(C, ':')
-                putfuart(X, index >> 8)
+                putfuart(X, lsr8(index))
                 putfuart(X, index)
                 putfuart(C, 32)
 
@@ -259,7 +259,7 @@ program {
                     putfuart(C, 'M')
                     putfuart(C, 'P')
                     putfuart(C, 32)
-                    putfuart(X, _NNN >> 8)
+                    putfuart(X, lsr8(_NNN))
                     putfuart(X, _NNN)
                 }
             } else if (N___ == $2000) {  // DONE
@@ -269,14 +269,14 @@ program {
                     putfuart(C, 'L')
                     putfuart(C, 'L')
                     putfuart(C, 32)
-                    putfuart(X, _NNN >> 8)
+                    putfuart(X, lsr8(_NNN))
                     putfuart(X, _NNN)
                 }
                 // CALL _NNN
                 // tested using test_opcode.ch8
 
                 // store into stack
-                stack[stackPtr] = pc >> 8;
+                stack[stackPtr] = lsr8(pc);
                 stackPtr = stackPtr + 1;
                 stack[stackPtr] = pc & $ff;
                 stackPtr = stackPtr + 1;
@@ -472,7 +472,7 @@ program {
                     } else {
                         registers[15] = 0;
                     }
-                    registers[_X__] = x >> 1;
+                    registers[_X__] = lsr1(x);
                 } else if (___N == 7) {
                     // X = Y - X with carry
                     if (x > y) {
@@ -524,7 +524,7 @@ program {
                 if (LOG == 1) {
                     putfuart(C, 'I')
                     putfuart(C, '=')
-                    putfuart(X, index >> 8)
+                    putfuart(X, lsr8(index))
                     putfuart(X, index)
                 }
             } else if (N___ == $C000) { // DONE
@@ -801,12 +801,12 @@ program {
                         putfuart(C, 'V')
                         putfuart(X, _X__)
                         putfuart(C, 32)
-                        putfuart(X, oldI >> 8)
+                        putfuart(X, lsr8(oldI))
                         putfuart(X, oldI)
                         putfuart(C, '+')
                         putfuart(X, x)
                         putfuart(C, '=')
-                        putfuart(X, index >> 8)
+                        putfuart(X, lsr8(index))
                         putfuart(X, index)
                         putfuart(C, 32)
                         putfuart(C, 'C')
@@ -827,7 +827,7 @@ program {
                         putfuart(C, 'T')
                         putfuart(C, 'E')
                         putfuart(C, 32)
-                        putfuart(X, index >> 8)
+                        putfuart(X, lsr8(index))
                         putfuart(X, index)
                     }
                 } else if (__NN == $33) {
