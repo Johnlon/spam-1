@@ -317,7 +317,7 @@ module cpu(
                         halt_code, 16'(halt_code),
                         alu_result_bus, 8'(alu_result_bus));
             DUMP;
-            //$finish();
+            $finish();
         end
     end
 

@@ -154,6 +154,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
           val thisClause = op match {
             case "+" =>
               List(
+                // can't read and update ram in one op so go via reg
                 s"$TMP1 = [:$temporaryVarLabel]",
                 s"[:$temporaryVarLabel] = $TMP1 A_PLUS_B $WORKLO _S",
                 s"$TMP1 = [:$temporaryVarLabel + 1]",
@@ -168,9 +169,10 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               )
             case "*" =>
               /*
-              * AH:AL   BH:BL
+              * AH:AL *  BH:BL
               *
               * $temporaryVarLabel/$temporaryVarLabel+1 contain the left side of the expr
+              * WORKLO/HI contains right side
               *
               * */
               List(
@@ -194,25 +196,16 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               )
             case ">>" =>
               val shiftLoop = scope.fqnLabelPathUnique("shiftLoop")
-              val doShift = scope.fqnLabelPathUnique("doShift")
               val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
 
               // sadly my alu doesn't allow carry-in to the shift operations
               List(
                 s"$shiftLoop:",
-
                 // hi/lo has been set to the shift amt
                 s"; is loop done?",
-                s"PCHITMP = < :$doShift",
-                s"NOOP = $WORKHI A_MINUS_B 0 _S",
-                s"PC = > :$doShift _NE", // do a shift if the high wasn't zero
-                s"NOOP = $WORKLO A_MINUS_B 0 _S",
-                s"PC = > :$doShift _NE", // do a shift if the low wasn't zero
-                // high/low is zero so no more shifting
+                s"NOOP = $WORKHI | $WORKLO _S",
                 s"PCHITMP = < :$endLoop",
-                s"PC = > :$endLoop",
-
-                s"$doShift:",
+                s"PC = > :$endLoop _Z", // do a shift if LO or HI != 0
 
                 s"; count down loop",
                 s"$WORKLO = $WORKLO A_MINUS_B 1 _S",
