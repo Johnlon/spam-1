@@ -60,7 +60,7 @@ class StatementParser {
       statementLetVarEqExpr |
       statementLetStringIndexEqExpr |
       statementPutuartVarOptimisation | statementPutuartConstOptimisation | stmtPutuartGeneral |
-      stmtPutfuartGeneral |
+      stmtPutfuartGeneral | stmtPutfuartConst |
       statementPutsName |
       statementHalt | statementHaltVar |
       whileCond | whileTrue |
@@ -337,6 +337,12 @@ class StatementParser {
   def stmtPutfuartGeneral: Parser[Block] = positioned {
     "putfuart" ~ "(" ~> fmtChar ~ ", " ~ blkCompoundAluExpr <~ ")" ^^ {
       case code ~ _ ~ block => Putfuart(code, block)
+    }
+  }
+
+  def stmtPutfuartConst: Parser[Block] = positioned {
+    "putfuart" ~ "(" ~> fmtChar ~ ", " ~ constExpression <~ ")" ^^ {
+      case code ~ _ ~ block => PutfuartCont(code, block)
     }
   }
 

@@ -458,7 +458,6 @@ case class Putuart(block: Block) extends Block(nestedName = "putuartGeneral") wi
   override def gen(depth: Int, parent: Scope): Seq[String] = {
     val labelWait = parent.fqnLabelPathUnique("wait")
 
-    // leaves result in $V1
     val stmts: Seq[String] = block.expr(depth + 1, parent)
 
     stmts ++ split(
@@ -470,6 +469,38 @@ case class Putuart(block: Block) extends Block(nestedName = "putuartGeneral") wi
          |""")
   }
 
+}
+
+/** 25% fewer instructions than basic case */
+case class PutfuartCont(code: Char, konst: Int) extends Block(nestedName = "putfuartGeneral") {
+  override def gen(depth: Int, parent: Scope): Seq[String] = {
+    val labelWait1 = parent.fqnLabelPathUnique("wait1")
+    val labelWait2 = parent.fqnLabelPathUnique("wait2")
+
+    // leaves result in $V1
+
+    // see
+    val uartTerminalCtrl = code match {
+      case 'X' => TerminalStates.GOTO_LOG_BYTE_STATE
+      case 'C' => TerminalStates.GOTO_LOG_CHAR_STATE
+      case 'B' => TerminalStates.GOTO_LOG_BIN_STATE
+    }
+
+    split(
+      s"""
+         |$labelWait1:
+         |PCHITMP = <:$labelWait1
+         |PC = >:$labelWait1 ! _DO
+         |UART = ${uartTerminalCtrl.toInt}
+         |$labelWait2:
+         |PCHITMP = <:$labelWait2
+         |PC = >:$labelWait2 ! _DO
+         |UART = $konst
+         |""")
+  }
+
+  override def dump(depth: Int): List[(Int, String)] =
+    List((depth, this.getClass.getSimpleName + s"( '$code', $konst {h${konst.toHexString}})"))
 }
 
 case class Putfuart(code: Char, block: Block) extends Block(nestedName = "putfuartGeneral") {

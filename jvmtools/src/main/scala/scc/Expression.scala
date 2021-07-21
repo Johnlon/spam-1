@@ -210,37 +210,15 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
 
               constRight match {
-                case Some(1) =>
+                case Some(n) if n < 8  =>
                   // fast
                   List(
                     s"$TMP1 = [:$temporaryVarLabel + 1]",
-                    s"$TMP2 = $TMP1 << 7",
-                    s"$TMP1 = $TMP1 >> 1",
+                    s"$TMP2 = $TMP1 << ${8-n}",
+                    s"$TMP1 = $TMP1 >> $n",
                     s"[:$temporaryVarLabel + 1] = $TMP1",
                     s"$TMP1 = [:$temporaryVarLabel]",
-                    s"$TMP1 = $TMP1 >> 1",
-                    s"[:$temporaryVarLabel] = $TMP1 A_OR_B $TMP2",
-                  )
-                case Some(2) =>
-                  // fast
-                  List(
-                    s"$TMP1 = [:$temporaryVarLabel + 1]",
-                    s"$TMP2 = $TMP1 << 6",
-                    s"$TMP1 = $TMP1 >> 2",
-                    s"[:$temporaryVarLabel + 1] = $TMP1",
-                    s"$TMP1 = [:$temporaryVarLabel]",
-                    s"$TMP1 = $TMP1 >> 2",
-                    s"[:$temporaryVarLabel] = $TMP1 A_OR_B $TMP2",
-                  )
-                case Some(3) =>
-                  // fast
-                  List(
-                    s"$TMP1 = [:$temporaryVarLabel + 1]",
-                    s"$TMP2 = $TMP1 << 5",
-                    s"$TMP1 = $TMP1 >> 3",
-                    s"[:$temporaryVarLabel + 1] = $TMP1",
-                    s"$TMP1 = [:$temporaryVarLabel]",
-                    s"$TMP1 = $TMP1 >> 3",
+                    s"$TMP1 = $TMP1 >> $n",
                     s"[:$temporaryVarLabel] = $TMP1 A_OR_B $TMP2",
                   )
                 case Some(8) =>
@@ -285,16 +263,16 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
 
               constRight match {
-                case Some(1) =>
+                case Some(n) if n < 8  =>
                   // fast
                   List(
-                    s"$TMP1 = [:$temporaryVarLabel]",
-                    s"$TMP2 = $TMP1 >> 7",
-                    s"$TMP1 = $TMP1 << 1",
-                    s"[:$temporaryVarLabel] = $TMP1",
                     s"$TMP1 = [:$temporaryVarLabel + 1]",
-                    s"$TMP1 = $TMP1 << 1",
-                    s"[:$temporaryVarLabel + 1] = $TMP1 A_OR_B $TMP2",
+                    s"$TMP2 = $TMP1 >> ${8-n}",
+                    s"$TMP1 = $TMP1 << $n",
+                    s"[:$temporaryVarLabel + 1] = $TMP1",
+                    s"$TMP1 = [:$temporaryVarLabel]",
+                    s"$TMP1 = $TMP1 << $n",
+                    s"[:$temporaryVarLabel] = $TMP1 A_OR_B $TMP2",
                   )
                 case Some(8) =>
                   // fast

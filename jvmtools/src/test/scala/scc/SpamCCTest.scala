@@ -961,6 +961,23 @@ class SpamCCTest {
   }
 
   @Test
+  def putfuart(): Unit = {
+
+    val lines =
+      """
+        |fun main() {
+        |  putfuart(X, 1)
+        |  putfuart(C, 2)
+        |  putfuart(B, 3)
+        |}
+        |""".stripMargin
+
+    compile(lines, verbose = true, outputCheck = str => {
+      checkTransmittedL('d', str, List("6", "1", "5", "2", "19", "3"))
+    })
+  }
+
+  @Test
   def waituart(): Unit = {
 
     val lines =
