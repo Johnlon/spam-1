@@ -221,6 +221,28 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                     s"$TMP1 = $TMP1 >> 1",
                     s"[:$temporaryVarLabel] = $TMP1 A_OR_B $TMP2",
                   )
+                case Some(2) =>
+                  // fast
+                  List(
+                    s"$TMP1 = [:$temporaryVarLabel + 1]",
+                    s"$TMP2 = $TMP1 << 6",
+                    s"$TMP1 = $TMP1 >> 2",
+                    s"[:$temporaryVarLabel + 1] = $TMP1",
+                    s"$TMP1 = [:$temporaryVarLabel]",
+                    s"$TMP1 = $TMP1 >> 2",
+                    s"[:$temporaryVarLabel] = $TMP1 A_OR_B $TMP2",
+                  )
+                case Some(3) =>
+                  // fast
+                  List(
+                    s"$TMP1 = [:$temporaryVarLabel + 1]",
+                    s"$TMP2 = $TMP1 << 5",
+                    s"$TMP1 = $TMP1 >> 3",
+                    s"[:$temporaryVarLabel + 1] = $TMP1",
+                    s"$TMP1 = [:$temporaryVarLabel]",
+                    s"$TMP1 = $TMP1 >> 3",
+                    s"[:$temporaryVarLabel] = $TMP1 A_OR_B $TMP2",
+                  )
                 case Some(8) =>
                   // fast
                   List(

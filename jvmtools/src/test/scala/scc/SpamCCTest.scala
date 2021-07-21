@@ -352,6 +352,11 @@ class SpamCCTest {
     })
   }
 
+  def toDecStr(bits: String) : String = {
+    val d = Integer.parseInt(bits, 2)
+    d.toString
+  }
+
   @Test
   def varLSR(): Unit = {
 
@@ -360,11 +365,13 @@ class SpamCCTest {
         |
         |fun main(x) {
         |
-        | uint16 a = $4142;
+        | uint16 a = %0100000101000010;
         |
         | putuart(a)
         | putuart(a >> 0)
         | putuart(a >> 1)
+        | putuart(a >> 2)
+        | putuart(a >> 3)
         | putuart(a >> 8)
         | putuart(a >> 9)
         | putuart(a >> 16)
@@ -376,7 +383,16 @@ class SpamCCTest {
     compile(lines, verbose = true, outputCheck = {
       str =>
 
-        checkTransmittedL('d', str, List("66", "66", "161", "65", "32", "0"))
+        checkTransmittedL('d', str, List(
+          toDecStr("01000010"),
+          toDecStr("01000010"),
+          toDecStr("10100001"),
+          toDecStr("01010000"),
+          toDecStr("00101000"),
+          toDecStr("01000001"),
+          toDecStr("00100000"),
+          toDecStr("00000000"),
+        ))
     })
   }
 
