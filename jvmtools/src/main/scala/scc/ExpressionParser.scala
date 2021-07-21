@@ -44,30 +44,6 @@ trait ExpressionParser {
     }
   }
 
-  def blkLsr8: Parser[Block] = positioned {
-    "lsr8" ~ "(" ~> blkCompoundAluExpr <~ ")" ^^ {
-      block => Lsr8(block)
-    }
-  }
-
-  def blkLsl8: Parser[Block] = positioned {
-    "lsl8" ~ "(" ~> blkCompoundAluExpr <~ ")" ^^ {
-      block => Lsl8(block)
-    }
-  }
-
-  def blkLsr1: Parser[Block] = positioned {
-    "lsr1" ~ "(" ~> blkCompoundAluExpr <~ ")" ^^ {
-      block => Lsr1(block)
-    }
-  }
-
-  def blkLsl1: Parser[Block] = positioned {
-    "lsl1" ~ "(" ~> blkCompoundAluExpr <~ ")" ^^ {
-      block => Lsl1(block)
-    }
-  }
-
   def blkCompoundAluExpr: Parser[BlkCompoundAluExpr] = blkExpr ~ ((aluOp ~ blkExpr) *) ^^ {
     case leftExpr ~ otherExpr =>
       val o = otherExpr map {
@@ -78,7 +54,6 @@ trait ExpressionParser {
 
   // ORDER MATTERS HERE!!!
   def factor: Parser[Block] = blkRandom | blkWaituart | blkGetuart |
-    blkLsr8 | blkLsl8 | blkLsr1 | blkLsl1 |
     blkArrayElement | blkLiteral | blkName
 
   def blkExpr: Parser[Block] = factor | "(" ~> blkCompoundAluExpr <~ ")"

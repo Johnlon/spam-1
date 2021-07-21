@@ -507,64 +507,6 @@ case class Putfuart(code: Char, block: Block) extends Block(nestedName = "putfua
       List((depth, ")"))
 }
 
-case class Lsr8(block: Block) extends Block(nestedName = "lsr8") with RecursiveDumpFn {
-  override def gen(depth: Int, parent: Scope): Seq[String] = {
-    // leaves result in WORKHI/WORKLO
-    val stmts: Seq[String] = block.expr(depth + 1, parent)
-
-    stmts ++ split(
-      s"""
-         |$WORKLO = $WORKHI
-         |$WORKHI = 0
-         |""")
-  }
-}
-
-case class Lsl8(block: Block) extends Block(nestedName = "lsl8") with RecursiveDumpFn {
-  override def gen(depth: Int, parent: Scope): Seq[String] = {
-
-    // leaves result in WORKHI/WORKLO
-    val stmts: Seq[String] = block.expr(depth + 1, parent)
-
-    stmts ++ split(
-      s"""
-         |$WORKHI = $WORKLO
-         |$WORKLO = 0
-         |""")
-  }
-}
-
-case class Lsr1(block: Block) extends Block(nestedName = "lsr1") with RecursiveDumpFn {
-  override def gen(depth: Int, parent: Scope): Seq[String] = {
-    // leaves result in WORKHI/WORKLO
-    val stmts: Seq[String] = block.expr(depth + 1, parent)
-
-    stmts ++ split(
-      s"""
-         |$TMP1 = $WORKHI << 7
-         |$WORKHI = $WORKHI >> 1
-         |$WORKLO = $WORKLO >> 1
-         |$WORKLO = $WORKLO A_OR_B $TMP1
-         |""")
-  }
-}
-
-case class Lsl1(block: Block) extends Block(nestedName = "lsl1") with RecursiveDumpFn {
-  override def gen(depth: Int, parent: Scope): Seq[String] = {
-
-    // leaves result in WORKHI/WORKLO
-    val stmts: Seq[String] = block.expr(depth + 1, parent)
-
-    stmts ++ split(
-      s"""
-         |$TMP1 = $WORKLO >> 7
-         |$WORKHI = $WORKHI << 1
-         |$WORKLO = $WORKLO << 1
-         |$WORKHI = $WORKHI A_OR_B $TMP1
-         |""")
-  }
-}
-
 //
 //  def stmtPutsGeneral: Parser[Block] = "puts" ~ "(" ~> blkExpr <~ ")" ^^ {
 //    bex =>
