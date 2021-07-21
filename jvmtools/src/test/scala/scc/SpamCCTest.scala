@@ -470,59 +470,6 @@ class SpamCCTest {
   }
 
   @Test
-  def varLSL(): Unit = {
-
-    val lines =
-      """
-        |
-        |fun main(x) {
-        |
-        | uint16 b = %1001;
-
-        | if ( (b<<1) == %10010 ) {
-        |//   putuart('=')
-        | }
-        | if ( (b<<8) == %100100000000 ) {
-        | //  putuart('=')
-        | }
-        |
-        | putuart( b << 0 )
-        | putuart( b << 1 )
-        | putuart( b << 2 )
-        | putuart( b << 3 )
-        | putuart( b << 4 )
-        | putuart( b << 5 )
-        | putuart( b << 6 )
-        | putuart( b << 7 )
-        | putuart( b << 8 )
-        | putuart( b >> 1  )
-        | putuart( ((b << 1)) >> 1  )
-        |
-        | uint16 c = b << 12;
-        | if ( (b<<12) == %1001000000000000 ) {
-        | //  putuart('=')
-        | }
-        |
-        | // double check value was preserved
-        | //putuart( c >> 12 )
-        |
-        |}
-        |
-        |""".stripMargin
-
-    val EqAsBin = "00111101"
-    compile(lines, verbose = true, outputCheck = {
-      str =>
-
-        checkTransmittedL('b', str, List(
-          //EqAsBin, EqAsBin,
-          "00001001", "00010010", "00100100", "01001000", "10010000", "00100000", "01000000", "10000000", "00000000", "00001001",
-          //  EqAsBin, "00001001"
-        ))
-    })
-  }
-
-  @Test
   def varLSLAll(): Unit = {
 
     val lines =
@@ -540,7 +487,9 @@ class SpamCCTest {
         | putuart( b << 5 )
         | putuart( b << 6 )
         | putuart( b << 7 )
-        | putuart( b << 1 )
+        | putuart( b << 8 )
+        | putuart( ((b << 1)) >> 1  )
+        |
         |}
         |
         |""".stripMargin
@@ -549,15 +498,7 @@ class SpamCCTest {
       str =>
 
         checkTransmittedL('b', str, List(
-          "00001001",
-          "00010010",
-          "00100100",
-          "01001000",
-          "10010000",
-          "00100000",
-          "01000000",
-          "10000000",
-          "00010010",
+          "00001001", "00010010", "00100100", "01001000", "10010000", "00100000", "01000000", "10000000", "00000000", "00001001",
         ))
     })
   }

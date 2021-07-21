@@ -109,7 +109,18 @@ object COUNTER {
 import scc.COUNTER.iii
 
 case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
-  extends Block(nestedName = s"Compound${Scope.nextInt}") {
+  extends Block(nestedName = s"CompoundAluExpr${Scope.nextInt}") {
+
+  val constRight: Option[Int] = if (otherExpr.size == 1) {
+    otherExpr(0).rhs match {
+      case lit: BlkLiteral =>
+        Some(lit.konst)
+      case _ =>
+        None
+    }
+  } else {
+    None
+  }
 
   val description: String = otherExpr.foldLeft(leftExpr.toString) {
     case (acc, b) =>
@@ -150,7 +161,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
 
           // 2) left hand clause is already in temporaryVarLabel
 
-          // 3) do calc and updated the stashed accumulated value
+          // 3) load left hand sde, do calc and updated the stashed accumulated value
           val thisClause = op match {
             case "+" =>
               List(
@@ -198,35 +209,56 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               val shiftLoop = scope.fqnLabelPathUnique("shiftLoop")
               val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
 
-              // sadly my alu doesn't allow carry-in to the shift operations
-              List(
-                s"$shiftLoop:",
-                // hi/lo has been set to the shift amt
-                s"; is loop done?",
-                s"NOOP = $WORKHI | $WORKLO _S",
-                s"PCHITMP = < :$endLoop",
-                s"PC = > :$endLoop _Z", // do a shift if LO or HI != 0
 
-                s"; count down loop",
-                s"$WORKLO = $WORKLO A_MINUS_B 1 _S",
-                s"$WORKHI = $WORKHI A_MINUS_B_MINUS_C 0",
+              constRight match {
+                case Some(1) =>
+                  // fast
+                  List(
+                    s"$TMP1 = [:$temporaryVarLabel + 1]",
+                    s"$TMP2 = $TMP1 << 7",
+                    s"$TMP1 = $TMP1 >> 1",
+                    s"[:$temporaryVarLabel + 1] = $TMP1",
+                    s"$TMP1 = [:$temporaryVarLabel]",
+                    s"$TMP1 = $TMP1 >> 1",
+                    s"[:$temporaryVarLabel] = $TMP1 A_OR_B $TMP2",
+                  )
+                case Some(8) =>
+                  // fast
+                  List(
+                    s"$TMP1 = [:$temporaryVarLabel + 1]",
+                    s"[:$temporaryVarLabel + 1] = 0",
+                    s"[:$temporaryVarLabel] = $TMP1",
+                  )
+                case _ =>
+                  // slow
+                  List(
+                    s"$shiftLoop:",
+                    // hi/lo has been set to the shift amt
+                    s"; is loop done?",
+                    s"NOOP = $WORKHI | $WORKLO _S",
+                    s"PCHITMP = < :$endLoop",
+                    s"PC = > :$endLoop _Z", // do a shift if LO or HI != 0
 
-                s"; do one shift",
-                s"$TMP1 = [:$temporaryVarLabel + 1]",
-                s"$TMP2 = $TMP1 << 7", // move the lowest bit into the top position so we can add to the shifted lower byte
-                s"[:$temporaryVarLabel + 1] = $TMP1 A_LSR_B 1 _S",
+                    s"; count down loop",
+                    s"$WORKLO = $WORKLO A_MINUS_B 1 _S",
+                    s"$WORKHI = $WORKHI A_MINUS_B_MINUS_C 0",
 
-                s"; LSR load lo byte and or in the carry",
-                s"$TMP1 = [:$temporaryVarLabel]",
-                s"$TMP1 = $TMP1 A_LSR_B 1",
-                s"[:$temporaryVarLabel] = $TMP1  | $TMP2",
+                    s"; do one shift",
+                    s"$TMP1 = [:$temporaryVarLabel + 1]",
+                    s"$TMP2 = $TMP1 << 7", // move the lowest bit into the top position so we can add to the shifted lower byte
+                    s"[:$temporaryVarLabel + 1] = $TMP1 A_LSR_B 1 _S",
 
-                s"; loop again",
-                s"PCHITMP = < :$shiftLoop",
-                s"PC = > :$shiftLoop",
-                s"$endLoop:",
+                    s"; LSR load lo byte and or in the carry",
+                    s"$TMP1 = [:$temporaryVarLabel]",
+                    s"$TMP1 = $TMP1 A_LSR_B 1",
+                    s"[:$temporaryVarLabel] = $TMP1  | $TMP2",
 
-              )
+                    s"; loop again",
+                    s"PCHITMP = < :$shiftLoop",
+                    s"PC = > :$shiftLoop",
+                    s"$endLoop:",
+                  )
+              }
             case "<<" =>
               val shiftLoop = scope.fqnLabelPathUnique("shiftLoop")
               val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
