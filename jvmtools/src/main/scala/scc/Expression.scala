@@ -343,14 +343,18 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"    $TMP1 = [:$temporaryVarLabel+1]",
                 s"    [$dividendHi] = $TMP1",
                 s"    [$divisorLo] = $WORKLO",
-                s"    [$divisorHi] = $WORKHI _S",
+                s"    [$divisorHi] = $WORKHI _S",    // sets Z f the top byte of divisor is 0; Z used n 8 bt optimisation below
 
-                s"; FAST MODE: if both are 8 bit then use direct ALU op",
+                s"; FAST MODE CHECK: if both are 8 bit then use direct ALU op",
+                s";   skip FAST MODE if divisor > 8 bit",
                 s"    PCHITMP = < :$longMethod",
                 s"    PC      = > :$longMethod ! _Z", // assumes Z FLAG WAS SET ABOVE divisor=HI
-                s"    $TMP1   =   [$dividendHi] _S",
+                s";   skip FAST MODE if dividend > 8 bit",
+                s"    $TMP1   =   [$dividendHi] _S",  // sets Z if top byte of dividend is 0
                 s"    PCHITMP = < :$longMethod",
                 s"    PC      = > :$longMethod ! _Z",
+
+                s"; FAST MODE: execution",
                 s"    [$dividendHi] = 0",
                 s"    $TMP1   =   [$dividendLo]",
                 s"    [$dividendLo] = $TMP1 / $WORKLO", // at this point it is assumed that TMP1 = dividendlo and WORKLO = divisorlo
@@ -359,7 +363,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
 
                 s"; SLOW MODE using complicated algo I don't understand fully",
                 s"  $longMethod:",
-                s"; lda #0 -- NO NEED IN SPAM1 IMPL",
+                s"; lda #0 -- NO NEED FOR LDA 0 IN SPAM1 IMPL AS I CAN DIRECTLY ASSIGN VARS BELOW",
 
                 s"; sta remainder",
                 s"    [$remainderLo] = 0",
@@ -398,7 +402,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"; lda remainder",
                 s"    $TMP1 = [$remainderLo]",
 
-                s"; sec -  set carry - SBC uses the inverse of the carry bit so SEC is actualll clearing carry",
+                s"; sec -  set carry - SBC uses the inverse of the carry bit so SEC is actually clearing carry",
                 s"    ; NOT_USED = $WORKLO B 0 _S ; clear carry << bit not needed as SPAM has dedicate MINUS without carry in",
 
                 s"; sbc divisor",
@@ -413,7 +417,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"; sbc divisor+1",
                 s"    $TMP1 = $TMP1 A_MINUS_B_MINUS_C [$divisorHi] _S",
 
-                s"; bcc skip -  if a cleared carry bit means carry occured, then bcc means skip if carry occured",
+                s"; bcc skip -  if a cleared carry bit means carry occurred, then bcc means skip if carry occurred",
                 s"    PCHITMP = < :$skipLabel",
                 s"    PC      = > :$skipLabel _C",
 
