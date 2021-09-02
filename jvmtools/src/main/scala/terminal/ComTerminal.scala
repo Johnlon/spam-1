@@ -78,8 +78,10 @@ class ComAdapter {
                   }else {
                     println(line)
                   }
+                  if (hex == "ff")
+                    println("stop")
                   handler.apply(hex)
-                  hadError = false
+                  //hadError = false
                 } else {
                   Thread.sleep(10)
                 }

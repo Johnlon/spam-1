@@ -64,7 +64,9 @@ abstract class Terminal extends SimpleSwingApplication {
   var uiapp = new MainFrame()
 
   def run(): Unit
+
   def doReplay(): Unit
+
   def outputStream(): PrintStream
 
   @volatile var stopped = true
@@ -76,10 +78,11 @@ abstract class Terminal extends SimpleSwingApplication {
   val width = C8_SCREEN_WIDTH; //50
   val height = C8_SCREEN_HEIGHT; // 40
 
-  val BLANKCHAR = '.'
+  val BLANKCHAR = ' '
   val BLANK = BLANKCHAR.toString
-  //val BLOCKCHAR = '#'
   val BLOCKCHAR = 0x2588.toChar // '#'
+  val BACKGROUND_CHAR = " "
+
 
   var x = new AtomicInteger(0)
   var y = new AtomicInteger(0)
@@ -95,6 +98,9 @@ abstract class Terminal extends SimpleSwingApplication {
 
   val textArea = new TextArea("Java Version: " + util.Properties.javaVersion + "\n" + "john")
   textArea.border = BorderFactory.createLineBorder(Color.BLUE)
+  textArea.background = Color.BLACK
+  textArea.foreground = Color.WHITE
+
   textArea.preferredSize = new Dimension(900, 450)
   textArea.font = new Font("Courier New", scala.swing.Font.Plain.id, 10)
 
@@ -114,6 +120,9 @@ abstract class Terminal extends SimpleSwingApplication {
   def handleLine(hexCharLine: String): Unit = {
     try {
       var wasStopped = false
+
+//      if (hexCharLine == "ff")
+//        println("STOP")
 
       while (stopped && nextInst.get() == 0) {
         wasStopped = true
@@ -149,6 +158,7 @@ abstract class Terminal extends SimpleSwingApplication {
         throw ex
     }
   }
+
   val labelChar = new Label("<No data yet>")
 
   val brefresh = new Button("Reset")
@@ -162,7 +172,7 @@ abstract class Terminal extends SimpleSwingApplication {
     outputStream().print(f"x${c.toInt}%02X\n")
     //      if (sendDelay) outputStream().print(f"#\n")
 
-   // outputStream().flush()
+    // outputStream().flush()
     //println("sent " + c)
   }
 
@@ -299,138 +309,144 @@ abstract class Terminal extends SimpleSwingApplication {
   var logString = ""
 
   def plot(c: Char): Unit = synchronized {
-    state match {
-      case STATE_SETX =>
-        report("SETTING X", c)
-        x.set(c)
-        state = STATE_INIT
-      case STATE_SETY =>
-        report("SETTING Y", c)
-        y.set(c)
-        state = STATE_INIT
-      case STATE_DRAW_PIXEL =>
-        val yi = y.get()
-        val xi = x.get()
-        report(s"DRAW PIXEL AT X=$xi Y=$yi", c)
-        drawPixel(xi, yi, c, false)
-        state = STATE_INIT
-      case STATE_DRAW_BYTE =>
-        val yi = y.get()
-        val xi = x.get()
-        val bits = f"${c.toBinaryString}%8s".replace(' ', '0')
-
-        report(s"DRAW BYTE AT X=$xi Y=$yi Bits=$bits")
-        bits.zipWithIndex foreach {
-          case (bit, bitIndex) =>
-            val pixelX = xi + bitIndex
-            drawPixel(pixelX, yi, bit, true)
-        }
-        state = STATE_INIT
-      case STATE_LOG_CHAR =>
-        report(s"LOG CHAR", c)
-        log(c)
-        state = STATE_INIT
-      case STATE_LOG_BYTE =>
-        report(s"LOG BYTE", c)
-        logByte(c)
-        state = STATE_INIT
-      case STATE_LOG_BIN =>
-        report(s"LOG BIN", c)
-        logBin(c)
-        state = STATE_INIT
-      case STATE_LOG_OPCODE1 =>
-        report(s"LOG OPCODE1", c)
-        opcode1 = c;
-        state = STATE_LOG_OPCODE2
-      case STATE_LOG_OPCODE2 =>
-        report(s"LOG OPCODE2", c)
-        logOpcode(opcode1, c)
-        state = STATE_INIT
-      case STATE_LOG_STRING_START =>
-        report(s"LOG STRING START", c)
-        logStringRemaining = c
-        state = STATE_LOG_STRING_WRITE
-      case STATE_LOG_STRING_WRITE =>
-        logString = logString + c
-        logStringRemaining -= 1
-
-        report(s"LOG STRING WRITE " + logStringRemaining, c)
-        if (logStringRemaining == 0) {
-          report(s"WRITING " + logString)
-          logString(logString)
-          logString = ""
+    try {
+      state match {
+        case STATE_SETX =>
+          report("SETTING X", c)
+          x.set(c)
           state = STATE_INIT
-        }
-      case STATE_INIT =>
-        c match {
-          // FOLLOWING INIT CODES SIGNAL START OF 2 BYTE SEQ
-          case GOTO_INIT_STATE =>
-            // useful for resynchronisation - emitting two "0" bytes in sequence should push system into NONE_STATE
-            // first byte either completes an existing SET/DRAW or it hits this DO_NONE_STATE noop
+        case STATE_SETY =>
+          report("SETTING Y", c)
+          y.set(c)
+          state = STATE_INIT
+        case STATE_DRAW_PIXEL =>
+          val yi = y.get()
+          val xi = x.get()
+          report(s"DRAW PIXEL AT X=$xi Y=$yi", c)
+          drawPixel(xi, yi, c, false)
+          state = STATE_INIT
+        case STATE_DRAW_BYTE =>
+          val yi = y.get()
+          val xi = x.get()
+          val bits = f"${c.toBinaryString}%8s".replace(' ', '0')
+
+          report(s"DRAW BYTE AT X=$xi Y=$yi Bits=$bits")
+          bits.zipWithIndex foreach {
+            case (bit, bitIndex) =>
+              val pixelX = xi + bitIndex
+              drawPixel(pixelX, yi, bit, true)
+          }
+          state = STATE_INIT
+        case STATE_LOG_CHAR =>
+          report(s"LOG CHAR", c)
+          log(c)
+          state = STATE_INIT
+        case STATE_LOG_BYTE =>
+          report(s"LOG BYTE", c)
+          logByte(c)
+          state = STATE_INIT
+        case STATE_LOG_BIN =>
+          report(s"LOG BIN", c)
+          logBin(c)
+          state = STATE_INIT
+        case STATE_LOG_OPCODE1 =>
+          report(s"LOG OPCODE1", c)
+          opcode1 = c;
+          state = STATE_LOG_OPCODE2
+        case STATE_LOG_OPCODE2 =>
+          report(s"LOG OPCODE2", c)
+          logOpcode(opcode1, c)
+          state = STATE_INIT
+        case STATE_LOG_STRING_START =>
+          report(s"LOG STRING START", c)
+          logStringRemaining = c
+          state = STATE_LOG_STRING_WRITE
+        case STATE_LOG_STRING_WRITE =>
+          logString = logString + c
+          logStringRemaining -= 1
+
+          report(s"LOG STRING WRITE " + logStringRemaining, c)
+          if (logStringRemaining == 0) {
+            report(s"WRITING " + logString)
+            logString(logString)
+            logString = ""
             state = STATE_INIT
-            report(s"STATE=$state")
-          case GOTO_SETX_STATE =>
-            state = STATE_SETX
-            report(s"STATE=$state")
-          case GOTO_SETY_STATE =>
-            state = STATE_SETY
-            report(s"STATE=$state")
-          case GOTO_DRAW_PIXEL_STATE =>
-            state = STATE_DRAW_PIXEL
-            report(s"STATE=$state")
-          case GOTO_DRAW_BYTE_STATE =>
-            state = STATE_DRAW_BYTE
-            report(s"STATE=$state")
-          case GOTO_LOG_CHAR_STATE =>
-            state = STATE_LOG_CHAR
-            report(s"STATE=$state")
-          case GOTO_LOG_BIN_STATE =>
-            state = STATE_LOG_BIN
-            report(s"STATE=$state")
-          case GOTO_LOG_BYTE_STATE =>
-            state = STATE_LOG_BYTE
-            report(s"STATE=$state")
+          }
+        case STATE_INIT =>
+          c match {
+            // FOLLOWING INIT CODES SIGNAL START OF 2 BYTE SEQ
+            case GOTO_INIT_STATE =>
+              // useful for resynchronisation - emitting two "0" bytes in sequence should push system into NONE_STATE
+              // first byte either completes an existing SET/DRAW or it hits this DO_NONE_STATE noop
+              state = STATE_INIT
+              report(s"STATE=$state")
+            case GOTO_SETX_STATE =>
+              state = STATE_SETX
+              report(s"STATE=$state")
+            case GOTO_SETY_STATE =>
+              state = STATE_SETY
+              report(s"STATE=$state")
+            case GOTO_DRAW_PIXEL_STATE =>
+              state = STATE_DRAW_PIXEL
+              report(s"STATE=$state")
+            case GOTO_DRAW_BYTE_STATE =>
+              state = STATE_DRAW_BYTE
+              report(s"STATE=$state")
+            case GOTO_LOG_CHAR_STATE =>
+              state = STATE_LOG_CHAR
+              report(s"STATE=$state")
+            case GOTO_LOG_BIN_STATE =>
+              state = STATE_LOG_BIN
+              report(s"STATE=$state")
+            case GOTO_LOG_BYTE_STATE =>
+              state = STATE_LOG_BYTE
+              report(s"STATE=$state")
 
-          case GOTO_LOG_OPCODE =>
-            state = STATE_LOG_OPCODE1
-            report(s"STATE=$state")
+            case GOTO_LOG_OPCODE =>
+              state = STATE_LOG_OPCODE1
+              report(s"STATE=$state")
 
-          case GOTO_LOG_STRING =>
-            state = STATE_LOG_STRING_START
-            report(s"STATE=$state")
+            case GOTO_LOG_STRING =>
+              state = STATE_LOG_STRING_START
+              report(s"STATE=$state")
 
-          // FOLLOWING COMMANDS ARE ONE BYTE SEQ
-          case DO_CLEAR =>
-            report(s"DO CLEAR")
-            clearScreen()
-          case DO_ORIGIN =>
-            report(s"DO ORIGIN")
-            y.set(0)
-            x.set(0)
-          case DO_CENTRE =>
-            report(s"DO CENTRE")
-            y.set(height / 2)
-            x.set(width / 2)
-          case DO_UP =>
-            report(s"DO UP")
-            y.decrementAndGet()
-            y.set(Math.max(0, y.get()))
-          case DO_DOWN =>
-            report(s"DO DOWN")
-            y.incrementAndGet()
-            y.set(Math.min(height - 1, y.get()))
-          case DO_LEFT =>
-            report(s"DO LEFT")
-            x.decrementAndGet()
-            x.set(Math.max(0, x.get()))
-          case DO_RIGHT =>
-            report(s"DO RIGHT")
-            x.incrementAndGet()
-            if (x.get() >= width) {
+            // FOLLOWING COMMANDS ARE ONE BYTE SEQ
+            case DO_CLEAR =>
+              report(s"DO CLEAR")
+              clearScreen()
+            case DO_ORIGIN =>
+              report(s"DO ORIGIN")
+              y.set(0)
               x.set(0)
-              plot(DO_DOWN)
-            }
-        }
+            case DO_CENTRE =>
+              report(s"DO CENTRE")
+              y.set(height / 2)
+              x.set(width / 2)
+            case DO_UP =>
+              report(s"DO UP")
+              y.decrementAndGet()
+              y.set(Math.max(0, y.get()))
+            case DO_DOWN =>
+              report(s"DO DOWN")
+              y.incrementAndGet()
+              y.set(Math.min(height - 1, y.get()))
+            case DO_LEFT =>
+              report(s"DO LEFT")
+              x.decrementAndGet()
+              x.set(Math.max(0, x.get()))
+            case DO_RIGHT =>
+              report(s"DO RIGHT")
+              x.incrementAndGet()
+              if (x.get() >= width) {
+                x.set(0)
+                plot(DO_DOWN)
+              }
+          }
+      }
+    }
+    catch {
+      case ex: MatchError =>
+        Dialog.showMessage(uiapp, s"PROTOCOL ERROR : current state : ${state},  this code int:${c.toInt}")
     }
 
     doRepaint()
@@ -457,7 +473,7 @@ abstract class Terminal extends SimpleSwingApplication {
     (0 until height).map {
       d =>
         //(BLANK * width).toBuffer
-        ("-" * width).toBuffer
+        (BACKGROUND_CHAR * width).toBuffer
     }.toBuffer
   }
 

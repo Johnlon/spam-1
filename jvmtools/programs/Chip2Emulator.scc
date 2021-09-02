@@ -37,7 +37,7 @@ program {
         // 16 x 8 bits
         var registers = [16: [0]];
 
-        // 16 x 16 bits
+        // 16 x 2 bytes - two per locn
         var stack = [32: [0]];
 
         uint16 FontMemAddress = $50;
