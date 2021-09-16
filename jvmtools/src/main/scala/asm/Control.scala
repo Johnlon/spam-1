@@ -19,13 +19,16 @@ object Condition {
   val Default = Condition(Standard, Control._A)
 }
 
-sealed class FlagControl(val bit: Int)
+sealed class FlagControl(val bit: Int) extends E
 
 object FlagControl {
   def fromBit(bit: Int): FlagControl = {
-    if (SetFlag.bit == bit) SetFlag
-    else if (NoSetFlag.bit == bit) SetFlag
-    else sys.error("invalid flag control bit" + bit)
+    if (SetFlag.bit == bit)
+      SetFlag
+    else if (NoSetFlag.bit == bit)
+      NoSetFlag
+    else
+      sys.error("invalid flag control bit" + bit)
   }
 
   case object SetFlag extends FlagControl(1)
@@ -35,7 +38,7 @@ object FlagControl {
 }
 
 sealed class Control private(val cond: Int, val setflag: FlagControl) extends E {
-  override def toString = s"Condition=${enumName} ${setflag.getClass.getSimpleName}"
+  override def toString = s"Condition=${enumName}"
 }
 
 object Control {
