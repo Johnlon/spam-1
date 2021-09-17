@@ -55,7 +55,7 @@ module cpu(
     tri [7:0] alu_result_bus;
     wire [2:0] abus_dev;
     wire [3:0] bbus_dev;
-    wire [3:0] targ_dev;
+    wire [4:0] targ_dev;
     wire [4:0] alu_op;
     wire [7:0] _registered_flags_czonENGL;
     wire _flag_di;
@@ -127,9 +127,9 @@ module cpu(
     );
 
 
-    // RANDOM =============================================================================================
+    // PORT CONTROLLER  =============================================================================================
 
-    random rand1( .clk(system_clk), ._OE(_bdev_rand), .Q(bbus));
+    // HERE 
 
     // RAM =============================================================================================
 
@@ -368,7 +368,7 @@ module cpu(
         i_targ   = {i_tdev4, i_target};
 
         disasm = $sformatf(
-                    "op:(%2d)%-10s", i_aluop, aluopName(i_aluop), 
+                    "op:(%2d)%-10s", i_aluop, alu_ops::aluopName(i_aluop), 
                     "  t:(%2d)%-6s", i_targ, tdevname(i_targ), 
                     " a:(%2d)%-8s", i_srca, adevname(i_srca),  
                     " b:(%2d)%-10s", i_srcb, bdevname(i_srcb),  
@@ -398,7 +398,7 @@ module cpu(
             `DD " tdev=%5b(%s)", targ_dev, control::tdevname(targ_dev),
                 " adev=%3b(%s)", abus_dev, control::adevname(abus_dev),
                 " bdev=%4b(%s)", bbus_dev,control::bdevname(bbus_dev),
-                " alu_op=%5b(%s)", alu_op, aluopName(alu_op)
+                " alu_op=%5b(%s)", alu_op, alu_ops::aluopName(alu_op)
             );            
             `DD " abus=%8b bbus=%8b alu_result_bus=%8b", abus, bbus, alu_result_bus);
             `DD " ALUFLAGS czonENGL=%8b ", alu_flags_czonENGL);

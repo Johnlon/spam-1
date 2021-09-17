@@ -38,7 +38,8 @@ object FlagControl {
 }
 
 sealed class Control private(val cond: Int, val setflag: FlagControl) extends E {
-  override def toString = s"Condition=${enumName}"
+  // setflag value is included in enum name so no need to log
+  override def toString = s"Condition=$enumName}"
 }
 
 object Control {

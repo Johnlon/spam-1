@@ -26,6 +26,12 @@ trait ExpressionParser {
       BlkLiteral(konst)
   }
 
+  def blkReadPort: Parser[Block] = positioned {
+    "readport" ~ "(" ~> readPort <~ ")" ^^ {
+      portname => BlkReadPort(portname)
+    }
+  }
+
   def blkWaituart: Parser[Block] = positioned {
     "waituart" ~ "(" ~ ")" ^^ {
       _ => Waituart()
@@ -40,7 +46,9 @@ trait ExpressionParser {
 
   def blkRandom: Parser[Block] = positioned {
     "random()" ^^ {
-      _ => Random()
+      _ =>
+        sys.error("NEEDS REWORK TO USE PORT")
+        Random()
     }
   }
 
@@ -53,7 +61,7 @@ trait ExpressionParser {
   }
 
   // ORDER MATTERS HERE!!!
-  def factor: Parser[Block] = blkRandom | blkWaituart | blkGetuart |
+  def factor: Parser[Block] = blkReadPort | blkRandom | blkWaituart | blkGetuart |
     blkArrayElement | blkLiteral | blkName
 
   def blkExpr: Parser[Block] = factor | "(" ~> blkCompoundAluExpr <~ ")"

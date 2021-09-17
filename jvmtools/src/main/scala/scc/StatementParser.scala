@@ -26,7 +26,8 @@ todo:
 
 package scc
 
-import asm.{AluOp, EnumParserOps}
+import asm.Ports.{ReadPort, WritePort}
+import asm.{AluOp, EnumParserOps, Ports}
 
 import java.nio.file.{Files, Paths}
 import java.util.Objects
@@ -36,7 +37,9 @@ import scala.util.parsing.combinator.JavaTokenParsers
 
 class StatementParser {
 
-  self: ExpressionParser with ConstExpressionParser with ConditionParser with EnumParserOps with JavaTokenParsers =>
+  self: ExpressionParser with ConstExpressionParser
+    with ConditionParser with EnumParserOps with JavaTokenParsers
+    =>
 
   val SPACE = " "
 
@@ -60,6 +63,7 @@ class StatementParser {
       statementLetVarEqExpr |
       statementLetStringIndexEqExpr |
       statementPutuartVarOptimisation | statementPutuartConstOptimisation | stmtPutuartGeneral |
+      statementWritePort |
       stmtPutfuartGeneral | stmtPutfuartConst |
       statementPutsName |
       statementHalt | statementHaltVar |
@@ -305,6 +309,13 @@ class StatementParser {
     }
   }
 
+
+  def statementWritePort: Parser[Block] = positioned {
+    "writeport" ~ "(" ~> writePort ~ "," ~ blkExpr <~ ")" ^^ {
+      case port ~ _ ~ value => BlkWritePort(port, value)
+    }
+  }
+
   def statementPutsName: Parser[Block] = positioned {
     "puts" ~ "(" ~> name <~ ")" ^^ {
       varName => Puts(varName)
@@ -434,5 +445,21 @@ class StatementParser {
     }
     val longAluOps = enumToParser(AluOp.values)
     (longAluOps | shortAluOps).map(_.preferredName)
+  }
+
+  def readPortName: Parser[String] = {
+    enumToParser(ReadPort.values).map(_.enumName)
+  }
+
+  def readPort: Parser[ReadPort] = readPortName ^^ {
+    name => ReadPort.valueOf(name)
+  }
+
+  def writePortName: Parser[String] = {
+    enumToParser(WritePort.values).map(_.enumName)
+  }
+
+  def writePort: Parser[WritePort] = writePortName ^^ {
+    name => WritePort.valueOf(name)
   }
 }

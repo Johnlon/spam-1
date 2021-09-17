@@ -48,9 +48,7 @@ package control;
     localparam [3:0] BDEV_ram = 7;
     localparam [3:0] BDEV_not_used = 8; // DOES IT MAKE SENSE TO HAVE A LITERAL NOT USED DEVICE OR SELECT RAND OR CLOCK INSTEAD FOR INTANCE WHEN WE DONT CARE.
     localparam [3:0] BDEV_vram = 9;
-    localparam [3:0] BDEV_porta = 10;
-    localparam [3:0] BDEV_rand = 11;
-    localparam [3:0] BDEV_clock = 12; // 8 bit @ 60 Hz = 4min  or  @100Hz=2.5min
+    localparam [3:0] BDEV_port = 10;
 
     // DEST
     localparam [4:0] TDEV_rega = 0; 
@@ -62,9 +60,9 @@ package control;
     localparam [4:0] TDEV_uart = 6;
     localparam [4:0] TDEV_ram = 7;
     localparam [4:0] TDEV_halt = 8;
-    localparam [4:0] TDEV_vram = 9;    // use for VRAM
-    localparam [4:0] TDEV_porta = 10;  // use for PORTA
-    localparam [4:0] TDEV_not_used11 = 11;  // use for PORTB
+    localparam [4:0] TDEV_vram = 9;   
+    localparam [4:0] TDEV_portsel = 10; 
+    localparam [4:0] TDEV_port = 11;  
     localparam [4:0] TDEV_not_used12 = 12;
     localparam [4:0] TDEV_pchitmp = 13; // only load pchitmp
     localparam [4:0] TDEV_pclo= 14;     // only load pclo
@@ -122,9 +120,7 @@ package control;
             BDEV_ram: bdevname = "RAM";
             BDEV_not_used: bdevname = "NU";
             BDEV_vram : bdevname = "VRAM";
-            BDEV_porta : bdevname = "PORTA";
-            BDEV_rand : bdevname = "RAND";
-            BDEV_clock : bdevname = "CLOCK";
+            BDEV_port : bdevname = "PORT";
             default: begin
                 string n; 
                 $sformat(n,"??(unknown B device %4b)", dev);
@@ -148,9 +144,9 @@ package control;
             TDEV_halt: tdevname = "HALT";
 
             TDEV_vram: tdevname = "VRAM";
-            TDEV_porta: tdevname = "PORTA";
-            TDEV_not_used11: tdevname = "NOTUSED11";
-            TDEV_not_used12: tdevname = "NOTUSED12";
+            TDEV_portsel: tdevname = "PORTSEL";
+            TDEV_port: tdevname = "PORT";
+            // not used
             TDEV_pchitmp: tdevname = "PCHITMP";
             TDEV_pclo: tdevname = "PCLO";
             TDEV_pc: tdevname = "PC";
@@ -228,6 +224,7 @@ import control::*;
     ```FN``_ADEV_SEL(marlo)    SEP\
     ```FN``_ADEV_SEL(uart)    SEP\
     ```FN``_ADEV_SEL(not_used)    SEP\
+    \
     ```FN``_BDEV_SEL(rega)    SEP\
     ```FN``_BDEV_SEL(regb)    SEP\
     ```FN``_BDEV_SEL(regc)    SEP\
@@ -238,9 +235,8 @@ import control::*;
     ```FN``_BDEV_SEL(ram)    SEP\
     ```FN``_BDEV_SEL(not_used)    SEP\
     ```FN``_BDEV_SEL(vram)    SEP\
-    ```FN``_BDEV_SEL(porta)    SEP\
-    ```FN``_BDEV_SEL(rand)    SEP\
-    ```FN``_BDEV_SEL(clock)    SEP\
+    ```FN``_BDEV_SEL(port)    SEP\
+    \
     ```FN``_TDEV_SEL(rega)    SEP\
     ```FN``_TDEV_SEL(regb)    SEP\
     ```FN``_TDEV_SEL(regc)    SEP\
@@ -250,6 +246,8 @@ import control::*;
     ```FN``_TDEV_SEL(uart)    SEP\
     ```FN``_TDEV_SEL(ram)    SEP\
     ```FN``_TDEV_SEL(halt)    SEP\
+    ```FN``_TDEV_SEL(vram)    SEP\
+    ```FN``_TDEV_SEL(portsel)    SEP\
     ```FN``_TDEV_SEL(pc)    SEP\
     ```FN``_TDEV_SEL(pchitmp)    SEP\
     ```FN``_TDEV_SEL(pclo)    

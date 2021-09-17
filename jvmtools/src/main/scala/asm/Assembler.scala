@@ -1,6 +1,7 @@
 package asm
 
 import asm.AddressMode.Mode
+import asm.Ports.{ReadPort, WritePort}
 
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import scala.io.Source
@@ -62,12 +63,12 @@ object Assembler {
 
     // massive write speed up by using buffered writer
     val romStreams = files.map(f => new BufferedOutputStream(new FileOutputStream(f)))
-    val rom1 =romStreams(0)
-    val rom2 =romStreams(1)
-    val rom3 =romStreams(2)
-    val rom4 =romStreams(3)
-    val rom5 =romStreams(4)
-    val rom6 =romStreams(5)
+    val rom1 = romStreams(0)
+    val rom2 = romStreams(1)
+    val rom3 = romStreams(2)
+    val rom4 = romStreams(3)
+    val rom5 = romStreams(4)
+    val rom6 = romStreams(5)
 
 
     var i = 0;
@@ -93,9 +94,9 @@ object Assembler {
       printf("\n")
 
 
-      i+=1
-      if (i % 1000 == 0 )
-        println("written : " +  i)
+      i += 1
+      if (i % 1000 == 0)
+        println("written : " + i)
 
     }
 
@@ -111,7 +112,17 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
 
   def assemble(code: String, quiet: Boolean = false): List[List[String]] = {
 
-    parse(lines, code) match {
+    val constantsRd = ReadPort.values.map(
+      p => s"${p.asmPortName}: EQU ${p.id}"
+    ).toList
+
+    val constantsWr = WritePort.values.map(
+      p => s"${p.asmPortName}: EQU ${p.id}"
+    ).toList
+
+    val product = constantsWr.mkString("\n", "\n","\n") + constantsRd.mkString("\n", "\n","\n") + code
+
+    parse(lines, product) match {
       case Success(theCode, _) => {
         println("Statements:")
 
@@ -124,18 +135,11 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
           }
         }
 
-        filtered.zipWithIndex.foreach(
-          l => {
-            val line: Line = l._1
-            val address = line.instructionAddress
-            val index: Int = l._2
-            System.out.println(index.formatted("%03d") + " pc:" + address.formatted("%04x") + ":" + address.formatted("%05d") + ": " + line)
-          }
-        )
+        logInstructions(filtered)
 
         assertAllResolved(theCode)
 
-        val instructions = filtered.collect { case x: Instruction => x.roms }
+        val instructions = filtered.collect { case x: Instruction => x.encode }
         //instructions.zipWithIndex.foreach(l => println("CODE : " + l))
         println("Assembled: " + instructions.size + " instructions")
         instructions
@@ -152,6 +156,17 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
   }
 
 
+  private def logInstructions(filtered: List[Line]) = {
+    filtered.zipWithIndex.foreach(
+      l => {
+        val line: Line = l._1
+        val address = line.instructionAddress
+        val index: Int = l._2
+        System.out.println(index.formatted("%03d") + " pc:" + address.formatted("%04x") + ":" + address.formatted("%05d") + ": " + line)
+      }
+    )
+  }
+
   private def assertAllResolved(theCode: List[Line]) = {
     val unresolvedStatements = theCode.zipWithIndex.filter(s =>
       s._1.unresolved
@@ -164,11 +179,15 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
   }
 
   def decode[A <: Assembler](rom: List[String]): (AluOp, TDevice, ADevice, BDevice, Control, Mode, ConditionMode, Int, Byte) = {
-    val str = rom.mkString("");
+    val str = rom.mkString(" ");
     decode(str)
   }
 
-  private def decode[A <: Assembler](str: String) = {
+  /* spaces permitted in input value for formatting reasons */
+  private def decode[A <: Assembler](strIn: String) = {
+
+    val str = strIn.replaceAll(" ","")
+
     val sitr = str.iterator.buffered
 
     val op = fromBin(sitr, 5)
@@ -185,7 +204,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     val immed = fromBin(sitr, 8)
 
     val b = (bdev_3 << 3) + bdev_2_0
-    val t = (tdev_4 << 3) + tdev_3_0
+    val t = (tdev_4 << 4) + tdev_3_0
 
     val i = inst(
       AluOp.valueOf(op),
@@ -198,7 +217,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
       addr,
       immed.toByte
     )
-    
+    println(i)
     i
   }
 

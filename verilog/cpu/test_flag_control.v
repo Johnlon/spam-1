@@ -259,8 +259,8 @@ module test();
                 " alu_op=%5b(%s)", CPU.alu_op, aluopName(CPU.alu_op)
             );            
             `DD " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
-            `DD " ALUFLAGS czonGLEN=%8b ", CPU.alu_flags_czonGLEN );
-            `DD " FLAGSREG czonGLEN=%8b gated_flags_clk=%1b", CPU.status_register_czonGLEN.Q, CPU.gated_flags_clk);
+            `DD " ALUFLAGS czonENGL=%8b ", CPU.alu_flags_czonENGL );
+            `DD " FLAGSREG czonENGL=%8b gated_flags_clk=%1b", CPU.status_register_czonENGL.Q, CPU.gated_flags_clk);
             `DD " FLAGS _flag_do=%b _flag_di=%b", CPU._flag_do, CPU._flag_di);
             `DD " condition=%02d(%1s) _do_exec=%b _set_flags=%b", CPU.ctrl.condition, control::condname(CPU.ctrl.condition), CPU.ctrl._do_exec, CPU._set_flags);
             `DD " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);
@@ -297,8 +297,8 @@ module test();
 
     always @( posedge CPU.phase_exec ) begin
        $display ("%9t ", $time,  "PHASE_EXEC +ve");
-       `DD " ALUFLAGS czonGLEN=%8b ", CPU.alu_flags_czonGLEN );
-       `DD " FLAGSREG czonGLEN=%8b gated_flags_clk=%1b", CPU.status_register_czonGLEN.Q, CPU.gated_flags_clk);
+       `DD " ALUFLAGS czonENGL=%8b ", CPU.alu_flags_czonENGL );
+       `DD " FLAGSREG czonENGL=%8b gated_flags_clk=%1b", CPU.status_register_czonENGL.Q, CPU.gated_flags_clk);
        `DD " FLAGS _flag_do=%b _flag_di=%b", CPU._flag_do, CPU._flag_di);
        `DD " condition=%02d(%1s) _do_exec=%b _set_flags=%b", CPU.ctrl.condition, control::condname(CPU.ctrl.condition), CPU.ctrl._do_exec, CPU._set_flags);
         //CPU.ctrl.dump;

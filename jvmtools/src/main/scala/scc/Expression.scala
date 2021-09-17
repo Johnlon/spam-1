@@ -1,5 +1,6 @@
 package scc
 
+import asm.Ports.{ReadPort, WritePort}
 import scc.Scope.LABEL_NAME_SEPARATOR
 import scc.SpamCC.{TWO_BYTE_STORAGE, split}
 
@@ -80,6 +81,42 @@ case class BlkLiteral(konst: Int) extends Block {
       (depth, this.getClass.getSimpleName + s"( $konst )")
     )
 
+}
+
+case class BlkReadPort(port: ReadPort) extends Block {
+  override def toString = s"readport(${port.enumName})"
+
+  override def gen(depth: Int, parent: Scope): List[String] = {
+    List(
+      s"PORTSEL = :${port.asmPortName}",
+      s"$WORKLO = PORT",
+      s"$WORKHI = 0",
+    )
+  }
+
+  override def dump(depth: Int): List[(Int, String)] =
+    List(
+      (depth, this.getClass.getSimpleName + s"( ${port.enumName} )")
+    )
+
+}
+
+case class BlkWritePort(port: WritePort, blk: Block) extends Block {
+  override def toString = s"writeport(${port.enumName}, $blk)"
+
+  override def gen(depth: Int, parent: Scope): List[String] = {
+    sys.error("NOT IMPLEMENTED BLK YET")
+    List(
+      s"PORTSEL = ${port.asmPortName}",
+      s"PORT = $WORKLO",
+      s"; $WORKHI ignored"
+    )
+  }
+
+  override def dump(depth: Int): List[(Int, String)] =
+    List(
+      (depth, this.getClass.getSimpleName + s"( ${port.enumName}, $blk} )")
+    )
 }
 
 case class BlkConstRef(konst: String) extends Block {
@@ -210,11 +247,11 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
 
               constRight match {
-                case Some(n) if n < 8  =>
+                case Some(n) if n < 8 =>
                   // fast
                   List(
                     s"$TMP1 = [:$temporaryVarLabel + 1]",
-                    s"$TMP2 = $TMP1 << ${8-n}",
+                    s"$TMP2 = $TMP1 << ${8 - n}",
                     s"$TMP1 = $TMP1 >> $n",
                     s"[:$temporaryVarLabel + 1] = $TMP1",
                     s"$TMP1 = [:$temporaryVarLabel]",
@@ -263,11 +300,11 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
 
               constRight match {
-                case Some(n) if n < 8  =>
+                case Some(n) if n < 8 =>
                   // fast
                   List(
                     s"$TMP1 = [:$temporaryVarLabel + 1]",
-                    s"$TMP2 = $TMP1 >> ${8-n}",
+                    s"$TMP2 = $TMP1 >> ${8 - n}",
                     s"$TMP1 = $TMP1 << $n",
                     s"[:$temporaryVarLabel + 1] = $TMP1",
                     s"$TMP1 = [:$temporaryVarLabel]",
@@ -343,14 +380,14 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"    $TMP1 = [:$temporaryVarLabel+1]",
                 s"    [$dividendHi] = $TMP1",
                 s"    [$divisorLo] = $WORKLO",
-                s"    [$divisorHi] = $WORKHI _S",    // sets Z f the top byte of divisor is 0; Z used n 8 bt optimisation below
+                s"    [$divisorHi] = $WORKHI _S", // sets Z f the top byte of divisor is 0; Z used n 8 bt optimisation below
 
                 s"; FAST MODE CHECK: if both are 8 bit then use direct ALU op",
                 s";   skip FAST MODE if divisor > 8 bit",
                 s"    PCHITMP = < :$longMethod",
                 s"    PC      = > :$longMethod ! _Z", // assumes Z FLAG WAS SET ABOVE divisor=HI
                 s";   skip FAST MODE if dividend > 8 bit",
-                s"    $TMP1   =   [$dividendHi] _S",  // sets Z if top byte of dividend is 0
+                s"    $TMP1   =   [$dividendHi] _S", // sets Z if top byte of dividend is 0
                 s"    PCHITMP = < :$longMethod",
                 s"    PC      = > :$longMethod ! _Z",
 

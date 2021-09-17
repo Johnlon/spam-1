@@ -114,7 +114,7 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_A, TDevice.REGA, ADevice.UART, BDevice.REGA, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
+      inst(AluOp.PASS_A, TDevice.REGA, ADevice.UART, BDevice.NU, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
     ), instructions(code, asm))
   }
 
@@ -158,8 +158,10 @@ class AssemblerTest {
     val asm = new Assembler()
     import asm._
 
-    assertEqualsList(Seq(inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 27)
-    ), instructions(code, asm))
+    val value = instructions(code, asm)
+    assertEqualsList(Seq(
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 27)
+    ), value)
   }
 
   @Test
@@ -171,8 +173,9 @@ class AssemblerTest {
     val asm = new Assembler()
     import asm._
 
+    val actual = instructions(code, asm)
     assertEqualsList(Seq(inst(AluOp.PASS_A, TDevice.REGA, ADevice.REGB, BDevice.NU, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
-    ), instructions(code, asm))
+    ), actual)
   }
 
   @Test
@@ -184,7 +187,7 @@ class AssemblerTest {
     val asm = new Assembler()
     import asm._
 
-    assertEqualsList(Seq(inst(AluOp.PASS_A, TDevice.REGA, ADevice.REGA, BDevice.REGA, Control._A, REGISTER, ConditionMode.Standard, 0, 0)),
+    assertEqualsList(Seq(inst(AluOp.PASS_A, TDevice.REGA, ADevice.REGA, BDevice.NU, Control._A, REGISTER, ConditionMode.Standard, 0, 0)),
       instructions(code, asm))
   }
 
@@ -292,7 +295,7 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_A, TDevice.RAM, ADevice.REGA, BDevice.REGA, Control._C_S, DIRECT, ConditionMode.Standard, 1000, 0)
+      inst(AluOp.PASS_A, TDevice.RAM, ADevice.REGA, BDevice.NU, Control._C_S, DIRECT, ConditionMode.Standard, 1000, 0)
     ), instructions(code, asm))
   }
 
@@ -339,7 +342,7 @@ class AssemblerTest {
     assertEquals(Some(KnownByteArray(0, List(1, 2, 3))), asm.labels("FIRST").getVal)
     val minus127: Byte = (-127 & 0xff).toByte
 
-    val value : List[Byte] = List[Byte](B_65, B_65, B_65, B_65, 255.toByte, 255.toByte, minus127, 0.toByte, 127.toByte, 128.toByte)
+    val value: List[Byte] = List[Byte](B_65, B_65, B_65, B_65, 255.toByte, 255.toByte, minus127, 0.toByte, 127.toByte, 128.toByte)
 
     assertEquals(Some(KnownByteArray(3, value)), asm.labels("SECOND").getVal)
     assertEquals(Some(KnownInt(3)), asm.labels("FIRST_LEN").getVal)
@@ -419,9 +422,28 @@ class AssemblerTest {
     }
   }
 
+  @Test
+  def `REGA_eq_PORT_ID_CONST`(): Unit = {
+    // these two lines are equivalent
+    val code = List(
+      "REGA = :PORT_RD_Random",
+      "END")
+
+    val asm = new Assembler()
+    import asm._
+
+    val assembled = instructions(code, asm)
+
+    assertEqualsList(Seq(
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 2)
+    ), assembled)
+  }
+
   private def instructions(code: Seq[String], asm: Assembler): Seq[(AluOp, Any, Any, Any, Control, Mode, ConditionMode, Int, Byte)] = {
     val roms = asm.assemble(code.mkString("\n")) // comments run to end of line
-    roms.map(r => asm.decode(r))
+    roms.map(r =>
+      asm.decode(r)
+    )
   }
 
   def assertLabel(asm: Assembler, s: String, i: Some[Int]): Unit = {

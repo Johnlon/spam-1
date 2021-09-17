@@ -71,24 +71,27 @@ trait Lines {
       ((cond << 1) | flag.bit).toBinaryString
     }
 
-    def roms: List[String] = {
+    def encode: List[String] = {
       val sAluop = bits("aluop", aluop.id.toBinaryString, 5)
-      val sTDev = bits("tdev", tdev.id.toBinaryString, 4)
+      val sTDev = bits("tdev", tdev.id.toBinaryString, 5)
       val sADev = bits("adev", adev.id.toBinaryString, 3)
       val sBDev = bits("bdev", bdev.id.toBinaryString, 4)
       val sFlags = bits("control", bitString(condition.map(_.cond).getOrElse(Control._A)), 5)
       val sCondMode = condition.map(_.mode).getOrElse(ConditionMode.Standard).bit
-      val sNU = bits("nu", "", 1) // TODO: USE ONE OF THESE TO EXTEND EITHER THE A or B DEV FOR RAND/FOR PORTS/FOR READ VIDEO RAM/FOR TIMER
       val sAddrMode = if (amode == DIRECT) "1" else "0"
       val sAddress = bits("address", address.getVal.map(_.toBinaryString).getOrElse(""), 16)
       val sImmed = bits("immed", immed.getVal.map { v =>
         v.value & 0xff
       }.map(_.toBinaryString).getOrElse(""), 8)
 
-      val sBDevLo = sBDev.takeRight(3);
-      val sBDevHi = sBDev.take(1);
+      val sBDev_2_0 = sBDev.takeRight(3);
+      val sBDev_3 = sBDev.take(1);
 
-      val i = sAluop + sTDev + sADev + sBDevLo + sFlags + sCondMode + sNU + sBDevHi + sAddrMode + sAddress + sImmed
+      val sTDev_3_0 = sTDev.takeRight(4);
+      val sTDev_4 = sTDev.take(1);
+
+      // CHECK THIS !!!!!! is T and B extra bit the right way round
+      val i = sAluop + sTDev_3_0 + sADev + sBDev_2_0 + sFlags + sCondMode + sBDev_3 + sTDev_4 + sAddrMode + sAddress + sImmed
       if (i.length != 48) throw new RuntimeException(s"sw error: expected 48 bits but got ${i.size} in '${i}''")
 
       val list = i.grouped(8).toList

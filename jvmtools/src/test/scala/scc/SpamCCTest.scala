@@ -906,6 +906,23 @@ class SpamCCTest {
   }
 
   @Test
+  def readPortNOTIMPL(): Unit = {
+
+    val lines =
+      """
+        |fun main() {
+        |  uint16 g = readport(Gamepad1);
+        |  putuart(g)
+        |}
+        |""".stripMargin
+
+    compile(lines, verbose = true, timeout = 1000, dataIn = List("t1", "rA"), outputCheck = {
+      str =>
+        checkTransmittedChar(str, 'A')
+    })
+  }
+
+  @Test
   def valEqVarLogicalNOTIMPL(): Unit = {
 
     // NOT IMPLEMENTED YET

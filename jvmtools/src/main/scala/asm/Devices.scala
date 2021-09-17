@@ -27,7 +27,7 @@ trait Devices {
       values.find(c => c.id == id).getOrElse(throw new RuntimeException("unknown BDevice " + id))
     }
 
-    def values: Seq[BDevice] = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, IMMED, RAM, NU, VRAM, PORTA, RAND, CLOCK)
+    def values: Seq[BDevice] = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, IMMED, RAM, NU, VRAM, PORT)
 
     object REGA extends BDevice(0)
 
@@ -47,7 +47,7 @@ trait Devices {
     object NU extends BDevice(8)
 
     object VRAM extends BDevice(9) with BOnlyDevice
-    object PORTA extends BDevice(10) with BOnlyDevice
+    object PORT extends BDevice(10) with BOnlyDevice
     object RAND extends BDevice(11) with BOnlyDevice
     object CLOCK extends BDevice(12) with BOnlyDevice
 
@@ -90,7 +90,7 @@ trait Devices {
       values.find(c => c.id == id).getOrElse(throw new RuntimeException("unknown TDevice " + id))
     }
 
-    def values = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, UART, NOOP, RAM, HALT, VRAM, PORTA, PCHITMP, PCLO, PC)
+    def values = Seq(REGA, REGB, REGC, REGD, MARLO, MARHI, UART, NOOP, RAM, HALT, VRAM, PORTSEL, PORT, PCHITMP, PCLO, PC)
 
     object REGA extends TDevice(0)
 
@@ -110,7 +110,8 @@ trait Devices {
 
     object HALT extends TDevice(8)
     object VRAM extends TDevice(9)
-    object PORTA extends TDevice(10)
+    object PORTSEL extends TDevice(10)
+    object PORT extends TDevice(11)
 
     object NOOP extends TDevice(12)
 

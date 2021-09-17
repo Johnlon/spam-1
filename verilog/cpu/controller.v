@@ -67,7 +67,7 @@ module controller(
     output [4:0] alu_op,
     output [2:0] abus_dev,
     output [3:0] bbus_dev,
-    output [3:0] targ_dev,
+    output [4:0] targ_dev,
     output _set_flags
 );
 
@@ -97,20 +97,22 @@ module controller(
     wire [7:0] direct_address_lo = instruction_2; // DONE
     wire [7:0] direct_address_hi = instruction_3; // DONR
     wire amode_bit               = instruction_4[0]; // DONE
-    wire targ_dev4               = instruction_4[1]; // DONE
-    wire bbus_dev_hi             = instruction_4[2]; // DONE
+    wire targ_dev_4              = instruction_4[1]; // DONE
+    wire bbus_dev_3              = instruction_4[2]; // DONE
     wire condition_invert_bit    = instruction_4[3];  // +ve logic as it makes the hardware easier using the existing components
     wire set_flags_bit           = instruction_4[4]; // DONE
     wire [2:0] conditionBot      = instruction_4[7:5]; // DONE
     wire conditionTopBit         = instruction_5[0]; // DONE
-    wire [2:0] bbus_dev_lo       = instruction_5[3:1]; // DONE
+    wire [2:0] bbus_dev_2_0      = instruction_5[3:1]; // DONE
     assign abus_dev              = instruction_5[6:4]; // DONE
-    assign targ_dev              ={instruction_6[2:0],instruction_5[7]}; // DONE
+    wire [3:0] targ_dev_3_0          ={instruction_6[2:0],instruction_5[7]}; // DONE
     assign alu_op                ={instruction_6[7:3]}; // DONE 
 
     wire [3:0] condition        = { conditionTopBit, conditionBot};
 
-    assign bbus_dev              = {bbus_dev_hi, bbus_dev_lo};
+    assign bbus_dev              = {bbus_dev_3, bbus_dev_2_0};
+    //assign targ_dev              = {targ_dev_4, targ_dev_3_0};
+    assign targ_dev              = {1'b0, targ_dev_3_0};
 
     //----------------------------------------------------------------------------------
     // condition logic
