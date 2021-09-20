@@ -10,6 +10,7 @@
 
 //#!/usr/bin/iverilog -Ttyp -Wall -g2012 -gspecify -o test.vvp 
 `include "../cpu/controller.v"
+`include "../cpu/ports.v"
 `include "../reset/reset.v"
 `include "../registerFile/syncRegisterFile.v"
 `include "../pc/pc.v"
@@ -23,7 +24,8 @@
 `include "../ram/ram.v"
 `include "../alu/alu.v"
 `include "../uart/um245r.v"
-`include "../random/random.v"
+`include "../portController/portController.v"
+`include "../gamepadAdapter/gamepadAdapter.v"
 
 
 // verilator lint_off ASSIGNDLY
@@ -38,11 +40,15 @@
 typedef reg[`MAX_INST_LEN:0][7:0] string_bits;
 typedef reg[15:0] reg16;
 
+
 // "Do not use an asynchronous reset within your design." - https://zipcpu.com/blog/2017/08/21/rules-for-newbies.html
 module cpu(
     input _RESET_SWITCH,
     input system_clk
 );
+
+    import ports::*;
+
     int cycleCount = 0;
 
     parameter LOG=0;
@@ -128,8 +134,25 @@ module cpu(
 
 
     // PORT CONTROLLER  =============================================================================================
+    wire  [15:0] _port_sel_wr;
+    wire  [15:0] _port_sel_rd;
 
-    // HERE 
+    portController port_ctrl(
+        .data( alu_result_bus ),
+        ._portsel_in, 
+        ._port_wr(_port_in), 
+        ._port_rd(_bdev_port),
+        ._port_sel_wr, 
+        ._port_sel_rd 
+    );
+
+    gamepadAdapter game_port(
+        ._OErandom(_port_sel_rd[PORT_RD_RANDOM]), 
+        ._OEpad1(_port_sel_rd[PORT_RD_GAMEPAD1]),
+        ._OEpad2(_port_sel_rd[PORT_RD_GAMEPAD2]),
+       .Q(bbus) 
+    );
+
 
     // RAM =============================================================================================
 

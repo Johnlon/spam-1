@@ -248,6 +248,7 @@ import control::*;
     ```FN``_TDEV_SEL(halt)    SEP\
     ```FN``_TDEV_SEL(vram)    SEP\
     ```FN``_TDEV_SEL(portsel)    SEP\
+    ```FN``_TDEV_SEL(port)    SEP\
     ```FN``_TDEV_SEL(pc)    SEP\
     ```FN``_TDEV_SEL(pchitmp)    SEP\
     ```FN``_TDEV_SEL(pclo)    

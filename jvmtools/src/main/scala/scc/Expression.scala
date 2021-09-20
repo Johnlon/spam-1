@@ -104,9 +104,11 @@ case class BlkReadPort(port: ReadPort) extends Block {
 case class BlkWritePort(port: WritePort, blk: Block) extends Block {
   override def toString = s"writeport(${port.enumName}, $blk)"
 
-  override def gen(depth: Int, parent: Scope): List[String] = {
-    sys.error("NOT IMPLEMENTED BLK YET")
-    List(
+  override def gen(depth: Int, parent: Scope): Seq[String] = {
+
+    val stmts: Seq[String] = blk.expr(depth + 1, parent)
+
+    stmts ++ Seq(
       s"PORTSEL = ${port.asmPortName}",
       s"PORT = $WORKLO",
       s"; $WORKHI ignored"

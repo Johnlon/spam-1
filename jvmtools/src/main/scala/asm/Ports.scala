@@ -18,9 +18,9 @@ object Ports {
 
     def values: Seq[ReadPort] = Seq(Gamepad1, Gamepad2, Random, Parallel)
 
-    object Gamepad1 extends ReadPort(0)
-    object Gamepad2 extends ReadPort(1)
-    object Random extends ReadPort(2)
+    object Random extends ReadPort(0)
+    object Gamepad1 extends ReadPort(1)
+    object Gamepad2 extends ReadPort(2)
     object Parallel extends ReadPort(7)
   }
 

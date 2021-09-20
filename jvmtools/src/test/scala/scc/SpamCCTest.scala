@@ -8,45 +8,11 @@ import verification.Checks._
 import verification.HaltedException
 import verification.Verification._
 
-import java.io.{File, FileOutputStream}
-
-object J extends App {
-  val H = 0
-  val L = 128 + 1
-
-  (0 to 17).foreach { N =>
-    //  val N = 7
-    print(N + " \t:  " + b8(H) + " " + b8(L) + "   ")
-
-    if (N < 8) {
-      val S = 8 - N
-      val LC = L >> S
-
-      val LS = L << N
-      val HS = (H << N) | LC
-
-      println(b8(HS) + " " + b8(LS))
-    }
-    else if (N < 16) {
-      val S = (N % 8)
-
-      val LS = 0
-      val HS = L << S
-
-      println(b8(HS) + " " + b8(LS))
-    }
-    else
-      println(b8(0) + " " + b8(0))
-
-    def b8(i: Int): String = {
-      ("00000000" + i.toBinaryString).takeRight(8)
-    }
-  }
-}
-
+import java.io.{File, FileOutputStream, PrintWriter}
 
 @TestMethodOrder(classOf[MethodName])
 class SpamCCTest {
+  val gamepadControl = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\gamepad.control"
 
   def split(s: String): List[String] = {
     val strings = s.split("\n")
@@ -352,7 +318,7 @@ class SpamCCTest {
     })
   }
 
-  def toDecStr(bits: String) : String = {
+  def toDecStr(bits: String): String = {
     val d = Integer.parseInt(bits, 2)
     d.toString
   }
@@ -908,18 +874,23 @@ class SpamCCTest {
   @Test
   def readPortNOTIMPL(): Unit = {
 
+    // set the game controller value to 123
+    val pw = new PrintWriter(new File(gamepadControl))
+    pw.println("/ setting controller to 1")
+    pw.println("c1=" + 123.toHexString)
+    pw.flush()
+
+    // read the controller via the sim
     val lines =
       """
         |fun main() {
         |  uint16 g = readport(Gamepad1);
-        |  putuart(g)
+        |  halt(g, 0)
         |}
         |""".stripMargin
 
-    compile(lines, verbose = true, timeout = 1000, dataIn = List("t1", "rA"), outputCheck = {
-      str =>
-        checkTransmittedChar(str, 'A')
-    })
+    // assert the correct value was read
+    expectHalt(() => compile(lines, verbose = true, timeout = 1000), MAR = 123, CODE = 0)
   }
 
   @Test
@@ -1589,18 +1560,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    try {
-      compile(lines, timeout = 5, quiet = true)
-      fail("should have halted")
-    } catch {
-      case ex: HaltedException
-        if ex.halt.mar == 65432 && ex.halt.alu == 123 =>
-        println("halted ok with " + ex)
-      case ex: HaltedException =>
-        fail("halted with wrong code " + ex.halt)
-      case ex: Throwable =>
-        fail("unexpected exception : " + ex.getMessage)
-    }
+    expectHalt(() => compile(lines, timeout = 5, quiet = true), MAR = 65432, CODE = 123)
   }
 
   @Test
@@ -1614,12 +1574,16 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
+    expectHalt(() => compile(lines, timeout = 5, quiet = true), MAR = 65432, CODE = 123)
+  }
+
+  private def expectHalt(blk: () => Unit, MAR: Int, CODE: Int) = {
     try {
-      compile(lines, timeout = 5, quiet = true)
+      blk()
       fail("should have halted")
     } catch {
       case ex: HaltedException
-        if ex.halt.mar == 65432 && ex.halt.alu == 123 =>
+        if ex.halt.mar == MAR && ex.halt.alu == CODE =>
         println("halted ok with " + ex)
       case ex: HaltedException =>
         fail("halted with wrong code " + ex.halt)

@@ -439,6 +439,25 @@ class AssemblerTest {
     ), assembled)
   }
 
+  @Test
+  def `PORTSEL_AND_PORT_EQ_REGA`(): Unit = {
+    // these two lines are equivalent
+    val code = List(
+      "PORTSEL = REGA",
+      "PORT = REGA",
+      "END")
+
+    val asm = new Assembler()
+    import asm._
+
+    val assembled = instructions(code, asm)
+
+    assertEqualsList(Seq(
+      inst(AluOp.PASS_A, TDevice.PORTSEL, ADevice.REGA, BDevice.NU, Control._A, REGISTER, ConditionMode.Standard, 0, 0),
+      inst(AluOp.PASS_A, TDevice.PORT, ADevice.REGA, BDevice.NU, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
+    ), assembled)
+  }
+
   private def instructions(code: Seq[String], asm: Assembler): Seq[(AluOp, Any, Any, Any, Control, Mode, ConditionMode, Int, Byte)] = {
     val roms = asm.assemble(code.mkString("\n")) // comments run to end of line
     roms.map(r =>

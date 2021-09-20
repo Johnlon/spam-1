@@ -61,6 +61,7 @@ object STATE_LOG_STRING_START extends TerminalIOState
 object STATE_LOG_STRING_WRITE extends TerminalIOState
 
 abstract class Terminal extends SimpleSwingApplication {
+
   var uiapp = new MainFrame()
 
   def run(): Unit
