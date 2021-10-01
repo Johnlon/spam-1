@@ -25,12 +25,12 @@ todo:
 
 package scc
 
+import asm.Ports.ReadPort
 import org.apache.commons.text.StringEscapeUtils
 import scc.Program.RootEndLabel
-import scc.SpamCC.{MAIN_LABEL, TWO_BYTE_STORAGE, intTo2xBytes, split}
+import scc.SpamCC.{TWO_BYTE_STORAGE, intTo2xBytes, split}
 import terminal.TerminalStates
 
-import scala.collection.mutable
 import scala.language.postfixOps
 import scala.util.parsing.input.Positional
 
@@ -578,6 +578,7 @@ case class PutuartVar(varName: String) extends Block(nestedName = s"putuartVar_$
 }
 
 case class Waituart() extends Block(nestedName = s"waituart_") {
+  // blocking read
   override def gen(depth: Int, parent: Scope): List[String] = {
     val labelWait = parent.fqnLabelPathUnique("wait")
     split(
@@ -593,32 +594,38 @@ case class Waituart() extends Block(nestedName = s"waituart_") {
 
 
 case class Getuart() extends Block(nestedName = s"getuart_") {
+  // non-blocking read
   override def gen(depth: Int, parent: Scope): List[String] = {
     val labelSkip = parent.fqnLabelPathUnique("end")
     split(
       s"""
          |$WORKLO = 0
-         |$WORKHI = 1
+         |$WORKHI = 1 // if 16 bit result > 255 then no data was read into lower byte
          |PCHITMP = <:$labelSkip
          |PC = >:$labelSkip ! _DI
          |$WORKLO = UART
-         |$WORKHI = 0
+         |$WORKHI = 0 // clear upper byte to indicate that a read took place
          |$labelSkip:
          |""")
   }
 }
 
+/**
+ * "x = random()"  is an alias for "x = readport(Random)"
+ * */
 case class Random() extends Block(nestedName = s"random_") {
   override def gen(depth: Int, parent: Scope): List[String] = {
     split(
       s"""
-         |$WORKLO = RAND
-         |$WORKHI = 0
-         |""")
+         |PORTSEL = :${ReadPort.Random.asmPortName}
+         |$WORKLO = PORT
+         |$WORKHI = 0"""
+    )
   }
 }
 
 case class PutuartConst(konst: Int) extends Block(nestedName = s"putuartConst_${konst}_") {
+  // blocking write
   override def gen(depth: Int, parent: Scope): List[String] = {
     val labelWait = parent.fqnLabelPathUnique("wait")
     split(

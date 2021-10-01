@@ -61,7 +61,9 @@ trait ExpressionParser {
   }
 
   // ORDER MATTERS HERE!!!
-  def factor: Parser[Block] = blkReadPort | blkRandom | blkWaituart | blkGetuart |
+  def factor: Parser[Block] =
+    blkReadPort | blkRandom |
+    blkWaituart | blkGetuart |
     blkArrayElement | blkLiteral | blkName
 
   def blkExpr: Parser[Block] = factor | "(" ~> blkCompoundAluExpr <~ ")"
