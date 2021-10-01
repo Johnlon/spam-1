@@ -437,10 +437,8 @@ case class Puts(varName: String)
            |PC = >:$labelEndLoop _Z
            |; wait for tx ready
            |$labelWait:
-           |PCHITMP = <:$labelTransmit
-           |PC = >:$labelTransmit _DO
            |PCHITMP = <:$labelWait
-           |PC = >:$labelWait
+           |PC = >:$labelWait ! _DO
            |; do transmit
            |$labelTransmit:
            |UART = RAM
