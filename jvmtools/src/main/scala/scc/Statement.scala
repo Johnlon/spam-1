@@ -28,9 +28,10 @@ package scc
 import asm.Ports.ReadPort
 import org.apache.commons.text.StringEscapeUtils
 import scc.Program.RootEndLabel
-import scc.SpamCC.{TWO_BYTE_STORAGE, intTo2xBytes, split}
+import scc.SpamCC.{MAIN_LABEL, TWO_BYTE_STORAGE, intTo2xBytes, split}
 import terminal.TerminalStates
 
+import scala.collection.mutable
 import scala.language.postfixOps
 import scala.util.parsing.input.Positional
 
@@ -824,7 +825,7 @@ case class DefFunction(functionName: String, functionArgs: List[FunctionArg], co
 
     val prefix = if (functionName == "main") {
       List(
-        s"$MAIN_LABEL:",
+        s"${SpamCC.MAIN_LABEL}:",
         s"$startLabel:"
       )
     } else

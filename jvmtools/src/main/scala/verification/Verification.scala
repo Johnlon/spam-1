@@ -180,5 +180,9 @@ object Verification {
   }
 }
 
-case class HaltCode(mar:Int, alu:Int)
+case class HaltCode(mar:Int, alu:Int) {
+  override def toString: String = {
+    s"HaltCode(mar:$mar, alu:$alu)"
+  }
+}
 case class HaltedException(halt: HaltCode) extends RuntimeException

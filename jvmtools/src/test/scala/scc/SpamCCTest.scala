@@ -872,7 +872,7 @@ class SpamCCTest {
   }
 
   @Test
-  def readPortNOTIMPL(): Unit = {
+  def readPort(): Unit = {
 
     // set the game controller value to 123
     val pw = new PrintWriter(new File(gamepadControl))
@@ -894,9 +894,29 @@ class SpamCCTest {
   }
 
   @Test
-  def valEqVarLogicalNOTIMPL(): Unit = {
+  def readRandomNOTIMPL(): Unit = {
 
-    // NOT IMPLEMENTED YET
+    // set the game controller value to 123
+    val pw = new PrintWriter(new File(gamepadControl))
+    pw.println("/ forcing random value to a fixed value for testing")
+    pw.println("r=" + 123.toHexString)
+    pw.flush()
+
+    // read the controller via the sim
+    val lines =
+      """
+        |fun main() {
+        |  uint16 g = random();
+        |  halt(g, 0)
+        |}
+        |""".stripMargin
+
+    // assert the correct value was read
+    expectHalt(() => compile(lines, verbose = true, timeout = 1000), MAR = 123, CODE = 0)
+  }
+
+  @Test
+  def valEqVarLogical(): Unit = {
     val lines =
       """
         |fun main() {

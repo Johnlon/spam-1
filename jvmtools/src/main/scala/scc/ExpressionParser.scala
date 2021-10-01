@@ -47,7 +47,6 @@ trait ExpressionParser {
   def blkRandom: Parser[Block] = positioned {
     "random()" ^^ {
       _ =>
-        sys.error("NEEDS REWORK TO USE PORT")
         Random()
     }
   }
