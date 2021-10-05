@@ -1,7 +1,7 @@
 package verification
 
 import asm.Assembler
-import org.junit.jupiter.api.Assertions.{assertEquals, assertSame, fail}
+import org.junit.jupiter.api.Assertions.assertEquals
 import scc.SpamCC
 import terminal.VerilogUARTTerminal
 
@@ -25,12 +25,6 @@ object Verification {
     val lines = "program {\n" + linesRaw + "\n}"
     val actual: List[String] = scc.compile(lines)
 
-    //val endRemoved: List[String] = actual.filter(!_.equals("END"))
-    //val successfulTerminationLocation = List("PCHITMP = <$BEAF", "PC = >$BEAF", "END")
-    //val patched = endRemoved // ++ successfulTerminationLocation
-
-    // jump to signaling location - verilog program monitors this locn
-    //val str = patched.mkString("\n")
     val str = actual.mkString("\n")
     println("ASSEMBLING:\n")
     var pc = 0
@@ -139,13 +133,11 @@ object Verification {
     val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh '$timeout' ../verilog/cpu/demo_assembler_roms.v `pwd`/$romFileUnix"""))
 
     val halted = new AtomicReference[HaltCode]()
-    //val success1 = new AtomicBoolean()
     val lines = ListBuffer.empty[String]
 
     val logger = ProcessLogger.apply(
       fout = output => {
         lines.append("OUT:" + output)
-        //if (output.contains("SUCCESS - AT EXPECTED END OF PROGRAM")) success.set(true)
         if (output.contains("--- HALTED ")) {
           val haltedRegex = "--* HALTED <(\\d+)\\s.*> <(\\d+)\\s.*>.*".r
           val haltedRegex(marHaltCode, aluHaltCode) = output
@@ -172,21 +164,6 @@ object Verification {
     val expectedHalt = checkHalt.orNull
 
     assertEquals(expectedHalt, actualHalt)
-//
-//    checkHalt.map {
-//      hc =>
-//        if (actualHalt == null) {
-//          fail(s"expected halt code $hc but did nnt halt")
-//        }
-//
-//        assertEquals(hc, actualHalt)
-//
-//        val lastFewLines = lines.takeRight(50).mkString("\ni//")
-//        println("=================================================")
-//        println("Last few lines:")
-//        println(lastFewLines)
-//        fail("SIMULATION - DID NOT REACH EXPECTED HALT : " + checkHalt)
-//    }
   }
 }
 
