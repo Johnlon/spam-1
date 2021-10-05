@@ -110,8 +110,8 @@ trait Devices {
 
     object HALT extends TDevice(8)
     object VRAM extends TDevice(9)
-    object PORTSEL extends TDevice(10)
-    object PORT extends TDevice(11)
+    object PORT extends TDevice(10)
+    object PORTSEL extends TDevice(11)
 
     object NOOP extends TDevice(12)
 

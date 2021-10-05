@@ -109,7 +109,7 @@ case class BlkWritePort(port: WritePort, blk: Block) extends Block {
     val stmts: Seq[String] = blk.expr(depth + 1, parent)
 
     stmts ++ Seq(
-      s"PORTSEL = ${port.asmPortName}",
+      s"PORTSEL = :${port.asmPortName}",
       s"PORT = $WORKLO",
       s"; $WORKHI ignored"
     )

@@ -1055,7 +1055,11 @@ case class Program(fns: List[Block]) {
 
           // end of program has no code at this location and sim can detect this
          */
-        s"$RootEndLabel:"
+        s"$RootEndLabel:",
+        // halt the program with 255 in each halt register to signal end or program during debugging
+        s"MARHI=255",
+        s"MARLO=255",
+        s"HALT=255"
       ) :+ "END"
   }
 }

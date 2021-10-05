@@ -1,11 +1,11 @@
 package scc
 
-import org.junit.jupiter.api.Assertions.{assertEquals, fail}
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.MethodOrderer.MethodName
 import org.junit.jupiter.api.{Test, TestMethodOrder}
 import terminal.TerminalStates._
 import verification.Checks._
-import verification.HaltedException
+import verification.HaltCode
 import verification.Verification._
 
 import java.io.{File, FileOutputStream, PrintWriter}
@@ -59,6 +59,9 @@ class SpamCCTest {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
+        |MARHI=255
+        |MARLO=255
+        |HALT=255
         |END""".stripMargin)
 
     assertSame(expected, actual)
@@ -91,6 +94,9 @@ class SpamCCTest {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
+        |MARHI=255
+        |MARLO=255
+        |HALT=255
         |END""".stripMargin)
 
     assertSame(expected, actual)
@@ -122,6 +128,9 @@ class SpamCCTest {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
+        |MARHI=255
+        |MARLO=255
+        |HALT=255
         |END""".stripMargin)
 
     assertSame(expected, actual)
@@ -200,6 +209,9 @@ class SpamCCTest {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
+        |MARHI=255
+        |MARLO=255
+        |HALT=255
         |END""".stripMargin)
 
     assertSame(expected, actual)
@@ -244,6 +256,9 @@ class SpamCCTest {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
+        |MARHI=255
+        |MARLO=255
+        |HALT=255
         |END""".stripMargin)
 
     assertSame(expected, actual)
@@ -279,6 +294,9 @@ class SpamCCTest {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
+        |MARHI=255
+        |MARLO=255
+        |HALT=255
         |END""".stripMargin)
 
     assertSame(expected, actual)
@@ -615,6 +633,9 @@ class SpamCCTest {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
+        |MARHI=255
+        |MARLO=255
+        |HALT=255
         |END
         |""".stripMargin)
 
@@ -659,6 +680,9 @@ class SpamCCTest {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
+        |MARHI=255
+        |MARLO=255
+        |HALT=255
         |END""".stripMargin)
 
     assertSame(expected, actual)
@@ -813,6 +837,9 @@ class SpamCCTest {
         |       PCHITMP = <:root_end
         |       PC = >:root_end
         |root_end:
+        |MARHI=255
+        |MARLO=255
+        |HALT=255
         |END""".stripMargin)
 
     assertSame(expected, code)
@@ -872,6 +899,27 @@ class SpamCCTest {
   }
 
   @Test
+  def writePort(): Unit = {
+
+    // set the game controller value to 123
+    //    val pw = new PrintWriter(new File(gamepadControl))
+    //    pw.println("/ setting controller to 1")
+    //    pw.println("c1=" + 123.toHexString)
+    //    pw.flush()
+
+    // read the controller via the sim
+    val lines =
+      """
+        |fun main() {
+        |  writeport(Parallel, 123)
+        |}
+        |""".stripMargin
+
+    // assert the correct value was read
+    compile(lines, verbose = true, checkHalt = Some(HaltCode(123, 0)), timeout = 1000)
+  }
+
+  @Test
   def readPort(): Unit = {
 
     // set the game controller value to 123
@@ -890,11 +938,11 @@ class SpamCCTest {
         |""".stripMargin
 
     // assert the correct value was read
-    expectHalt(() => compile(lines, verbose = true, timeout = 1000), MAR = 123, CODE = 0)
+    compile(lines, verbose = true, checkHalt = Some(HaltCode(123, 0)), timeout = 1000)
   }
 
   @Test
-  def readRandomNOTIMPL(): Unit = {
+  def readRandom(): Unit = {
 
     // set the game controller value to 123
     val pw = new PrintWriter(new File(gamepadControl))
@@ -912,7 +960,7 @@ class SpamCCTest {
         |""".stripMargin
 
     // assert the correct value was read
-    expectHalt(() => compile(lines, verbose = true, timeout = 1000), MAR = 123, CODE = 0)
+    compile(lines, verbose = true, checkHalt = Some(HaltCode(123, 0)), timeout = 1000)
   }
 
   @Test
@@ -1318,7 +1366,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual = compile(lines, timeout = 5, quiet = true)
+    val actual = compile(lines, timeout = 5, quiet = true).map(x => x.replaceAll("^\\s*", ""))
 
     val expected = split(
       """root_function_main___VAR_RETURN_HI: EQU   0
@@ -1332,6 +1380,9 @@ class SpamCCTest {
         |PCHITMP = <:root_end
         |PC = >:root_end
         |root_end:
+        |MARHI=255
+        |MARLO=255
+        |HALT=255
         |END""".stripMargin)
 
     assertSame(expected, actual)
@@ -1580,7 +1631,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    expectHalt(() => compile(lines, timeout = 5, quiet = true), MAR = 65432, CODE = 123)
+    compile(lines, timeout = 5, checkHalt = Some(HaltCode(65432, 123)), quiet = true)
   }
 
   @Test
@@ -1594,21 +1645,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    expectHalt(() => compile(lines, timeout = 5, quiet = true), MAR = 65432, CODE = 123)
-  }
-
-  private def expectHalt(blk: () => Unit, MAR: Int, CODE: Int) = {
-    try {
-      blk()
-      fail("should have halted")
-    } catch {
-      case ex: HaltedException
-        if ex.halt.mar == MAR && ex.halt.alu == CODE =>
-        println("halted ok with " + ex)
-      case ex: HaltedException =>
-        fail("halted with wrong code " + ex.halt)
-      case ex: Throwable =>
-        fail("unexpected exception : " + ex.getMessage)
-    }
+    //    expectHalt(() => compile(lines, timeout = 5, quiet = true), MAR = 65432, CODE = 123)
+    compile(lines, timeout = 5, checkHalt = Some(HaltCode(65432, 123)), quiet = true)
   }
 }

@@ -1,12 +1,12 @@
 package verification
 
-import java.io.{File, PrintWriter}
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicReference}
 import asm.Assembler
-import org.junit.jupiter.api.Assertions.fail
+import org.junit.jupiter.api.Assertions.{assertEquals, assertSame, fail}
 import scc.SpamCC
 import terminal.VerilogUARTTerminal
 
+import java.io.{File, PrintWriter}
+import java.util.concurrent.atomic.AtomicReference
 import scala.collection.mutable.ListBuffer
 
 object Verification {
@@ -16,6 +16,7 @@ object Verification {
               quiet: Boolean = true,
               dataIn: List[String] = List("t10000000"),
               outputCheck: List[String] => Unit = _ => {},
+              checkHalt: Option[HaltCode] = Some(HaltCode(65535, 255)),
               timeout: Int = 30
              ): List[String] = {
 
@@ -24,12 +25,13 @@ object Verification {
     val lines = "program {\n" + linesRaw + "\n}"
     val actual: List[String] = scc.compile(lines)
 
-    val endRemoved: List[String] = actual.filter(!_.equals("END"))
-    val successfulTerminationLocation = List("PCHITMP = <$BEAF", "PC = >$BEAF", "END")
-    val patched = endRemoved ++ successfulTerminationLocation
+    //val endRemoved: List[String] = actual.filter(!_.equals("END"))
+    //val successfulTerminationLocation = List("PCHITMP = <$BEAF", "PC = >$BEAF", "END")
+    //val patched = endRemoved // ++ successfulTerminationLocation
 
     // jump to signaling location - verilog program monitors this locn
-    val str = patched.mkString("\n")
+    //val str = patched.mkString("\n")
+    val str = actual.mkString("\n")
     println("ASSEMBLING:\n")
     var pc = 0
 
@@ -86,7 +88,7 @@ object Verification {
     writeFile(roms, tmpFileRom)
 
     writeUartControlFile(tmpUartControl, dataIn)
-    exec(tmpFileRom, tmpUartControl, verbose, outputCheck, timeout)
+    exec(tmpFileRom, tmpUartControl, verbose, outputCheck, checkHalt, timeout)
 
     print("ASM RAN OK\n" + filtered.map(_.stripLeading()).mkString("\n"))
     filtered
@@ -122,7 +124,10 @@ object Verification {
     pw.close()
   }
 
-  def exec(romsPath: File, tmpUartControl: File, verbose: Boolean, outputCheck: List[String] => Unit, timeout: Int): Unit = {
+  def exec(romsPath: File, tmpUartControl: File, verbose: Boolean,
+           outputCheck: List[String] => Unit,
+           checkHalt: Option[HaltCode],
+           timeout: Int): Unit = {
     import scala.language.postfixOps
     import scala.sys.process._
     val romFileUnix = romsPath.getPath.replaceAll("\\\\", "/")
@@ -133,20 +138,19 @@ object Verification {
     //    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix  +uart_control_file=`pwd`/$controlFileUnix"""))
     val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh '$timeout' ../verilog/cpu/demo_assembler_roms.v `pwd`/$romFileUnix"""))
 
-
     val halted = new AtomicReference[HaltCode]()
-    val success = new AtomicBoolean()
+    //val success1 = new AtomicBoolean()
     val lines = ListBuffer.empty[String]
 
     val logger = ProcessLogger.apply(
       fout = output => {
         lines.append("OUT:" + output)
-        if (output.contains("SUCCESS - AT EXPECTED END OF PROGRAM")) success.set(true)
+        //if (output.contains("SUCCESS - AT EXPECTED END OF PROGRAM")) success.set(true)
         if (output.contains("--- HALTED ")) {
           val haltedRegex = "--* HALTED <(\\d+)\\s.*> <(\\d+)\\s.*>.*".r
-          val haltedRegex(marHaltCode,aluHaltCode) = output
+          val haltedRegex(marHaltCode, aluHaltCode) = output
 
-          halted.set(HaltCode(marHaltCode.toInt,aluHaltCode.toInt))
+          halted.set(HaltCode(marHaltCode.toInt, aluHaltCode.toInt))
         }
         if (verbose) println("\t   \t: " + output)
       },
@@ -157,32 +161,37 @@ object Verification {
     )
 
     // process has builtin timeout
-    println("CMD: "+ pb)
+    println("CMD: " + pb)
     val process = pb.run(logger)
     val ex = process.exitValue()
 
     println("EXIT CODE " + ex)
 
     outputCheck(lines.toList)
+    val actualHalt = halted.get()
+    val expectedHalt = checkHalt.orNull
 
-    if (success.get())
-      println("SUCCESSFUL SIMULATION")
-    else if (halted.get() != null)
-      throw HaltedException(halted.get())
-    else {
-      val lastFewLines = lines.takeRight(50).mkString("\ni//")
-      println("=================================================")
-      println("Last few lines:")
-      println(lastFewLines)
-      fail("SIMULATION - DID NOT REACH END")
-    }
-
+    assertEquals(expectedHalt, actualHalt)
+//
+//    checkHalt.map {
+//      hc =>
+//        if (actualHalt == null) {
+//          fail(s"expected halt code $hc but did nnt halt")
+//        }
+//
+//        assertEquals(hc, actualHalt)
+//
+//        val lastFewLines = lines.takeRight(50).mkString("\ni//")
+//        println("=================================================")
+//        println("Last few lines:")
+//        println(lastFewLines)
+//        fail("SIMULATION - DID NOT REACH EXPECTED HALT : " + checkHalt)
+//    }
   }
 }
 
-case class HaltCode(mar:Int, alu:Int) {
+case class HaltCode(mar: Int, alu: Int) {
   override def toString: String = {
     s"HaltCode(mar:$mar, alu:$alu)"
   }
 }
-case class HaltedException(halt: HaltCode) extends RuntimeException
