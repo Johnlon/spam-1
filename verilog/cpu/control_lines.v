@@ -61,8 +61,8 @@ package control;
     localparam [4:0] TDEV_ram = 7;
     localparam [4:0] TDEV_halt = 8;
     localparam [4:0] TDEV_vram = 9;   
-    localparam [4:0] TDEV_portsel = 10; 
-    localparam [4:0] TDEV_port = 11;  
+    localparam [4:0] TDEV_port = 10;  
+    localparam [4:0] TDEV_portsel = 11; 
     localparam [4:0] TDEV_not_used12 = 12;
     localparam [4:0] TDEV_pchitmp = 13; // only load pchitmp
     localparam [4:0] TDEV_pclo= 14;     // only load pclo

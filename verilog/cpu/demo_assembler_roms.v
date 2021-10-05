@@ -302,17 +302,6 @@ endfunction
         end
     end
 
-    always @(CPU.PCHI or CPU.PCLO) begin
-        if (pcval == 16'hBEAF) begin
-            $display("%6t ", $time, "SUCCESS - AT EXPECTED END OF PROGRAM" );
-            
-`ifndef verilator
-            $finish();
-`endif
-        end
-    end
-    
-
     //`define DD  $display ("%6t ", $time,  "DUMP  ",
     task DUMP_OP;
           `DD ": PC  : %d", pcval);
