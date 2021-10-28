@@ -273,7 +273,7 @@ initial
 
         $display("%9t ", $time, "UART: opening %s", uart_out_file);
 `ifndef verilator
-        fOut = $fopen(uart_out_file, "w+"); 
+        fOut = $fopen(uart_out_file, "w"); 
 `endif
         //fOut = $fopen("/dev/stdout", "w+"); 
         if (fOut == `NULL) // If error opening file 

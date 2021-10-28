@@ -1,0 +1,11 @@
+rom=$1
+if [ -z $rom ]; then 
+    echo "$0: missing arg 'rom'"
+    exit 1
+fi
+
+../../verilog/spamcc_sim.sh  1000 ../../verilog/cpu/demo_assembler_roms.v $rom
+if [ $? -ne 0 ]; then
+    echo error
+    exit 1
+fi

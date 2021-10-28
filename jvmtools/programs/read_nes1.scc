@@ -1,0 +1,8 @@
+
+program{
+    fun main() {
+        uint16 a = readport(Gamepad1);
+        halt(a,0)
+    }
+
+}

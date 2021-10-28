@@ -1,0 +1,5 @@
+PORTSEL = :PORT_RD_Gamepad1
+MARLO = 1
+MARHI = 1
+HALT = PORT
+END
