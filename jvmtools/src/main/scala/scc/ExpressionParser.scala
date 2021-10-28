@@ -27,7 +27,7 @@ trait ExpressionParser {
   }
 
   def blkReadPort: Parser[Block] = positioned {
-    "readport" ~ "(" ~> readPort <~ ")" ^^ {
+    "readport" ~ "(" ~>! readPort <~ ")" ^^ {
       portname => BlkReadPort(portname)
     }
   }

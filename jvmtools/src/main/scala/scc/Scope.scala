@@ -82,7 +82,7 @@ case class Scope private(parent: Scope,
 
   def assignVarLabel(name: String, typ: VarType, data: Seq[Byte] = ONE_BYTE_STORAGE): Variable = {
     assert(typ != IsVar16 || data.length == 2)
-    assert(typ != IsVar8But || data.length == 1)
+    assert(typ != IsVar8 || data.length == 1)
 
     consts.get(name).foreach {
       found =>
@@ -138,7 +138,7 @@ case class Scope private(parent: Scope,
     }
 
     assert(typ != IsVar16 || v.bytes.length == 2)
-    assert(typ != IsVar8But || v.bytes.length == 1)
+    assert(typ != IsVar8 || v.bytes.length == 1)
 
     v
   }

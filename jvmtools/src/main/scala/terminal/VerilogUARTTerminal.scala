@@ -59,7 +59,7 @@ object VerilogUARTTerminal extends Terminal {
     override def init(tailer: Tailer): Unit = {}
 
     override def fileNotFound(): Unit = {
-      //      println("file not found")
+      println("file not found")
       Thread.sleep(100)
     }
 

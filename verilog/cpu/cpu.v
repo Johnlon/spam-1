@@ -16,7 +16,7 @@
 `include "../pc/pc.v"
 `include "../lib/assertion.v"
 `include "../74245/hct74245.v"
-`include "../74573/hct74573.v"
+`include "../74574/hct74574.v"
 `include "../7474/hct7474.v"
 `include "../74139/hct74139.v"
 `include "../74377/hct74377.v"
@@ -152,6 +152,12 @@ module cpu(
         ._OEpad2(_port_sel_rd[PORT_RD_GAMEPAD2]),
        .Q(bbus) 
     );
+
+    // FIXME: JUST HARD CODE FOR NOW
+    wire [7:0] parallelPortLoopback;
+
+    hct74574 parallelport_out(.D(alu_result_bus), .Q(parallelPortLoopback), .CLK(_port_sel_wr[PORT_WR_PARALLEL]), ._OE(1'b0)); // DONE
+    hct74245 parallelport_in(.A(bbus), .B(parallelPortLoopback), .nOE(_port_sel_rd[PORT_RD_PARALLEL]), .dir(1'b0)); // DONE
 
 
     // RAM =============================================================================================

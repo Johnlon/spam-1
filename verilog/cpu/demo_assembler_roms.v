@@ -108,7 +108,7 @@ endfunction
 `endif
         if (fControl == `NULL) // If error opening file 
         begin
-                $error("%6t ERROR ", $time, "failed opening file %s", rom);
+                $error("%9t ERROR ", $time, "failed opening file %s", rom);
 `ifndef verilator
                 $finish_and_return(1);
 `endif
@@ -134,7 +134,7 @@ endfunction
             end
             else
             if (r != 0) begin
-                $error("%6t ERROR ", $time, "failed read - got %d chars but expected %d : '%d'", r, MAX_LINE_LENGTH, line);
+                $error("%9t ERROR ", $time, "failed read - got %d chars but expected %d : '%d'", r, MAX_LINE_LENGTH, line);
 `ifndef verilator
                 $finish_and_return(1);
 `endif
@@ -159,13 +159,14 @@ endfunction
 
     task CLK_UP; 
     begin
+        // ENTER FETCH PHASE
         if (_RESET_SWITCH) icount++; else icount=0;
 
-        if (LOG) $display("\n%6t", $time, " END OF EXECUTE VALUES"); 
-        if (LOG > 0) DUMP; 
+        if (LOG) $display("\n%9t", $time, " END OF EXECUTE VALUES"); 
+        //if (LOG) DUMP; 
 
-        if (LOG) 
-        $display("\n%6t", $time, " CLK GOING HIGH  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ INSTRUCTION %1d\n", icount); 
+        if (LOG) $display("\n%9t", $time, " CLK GOING HIGH  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ INSTRUCTION %1d", icount); 
+        if (LOG) $display("\n%9t", $time, " ENTERING FETCH"); 
         clk = 1;
 
     end
@@ -173,16 +174,17 @@ endfunction
 
     task CLK_DN; 
     begin
+        // ENTER EXEC PHASE
         opcount ++;
 
         begin 
             data = `ROM(pc);
             //$display(">>>> CODE[%d] : %-s" , pc, CPU.disasm(data));
 
-            //$display("%6t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
+            //$display("%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
             if (CPU.ctrl._do_exec == 0) begin
-                //$display("%6t", $time, " EXECUTING ..."); 
-                $display("%6t ", $time, "CYCLES %-6d : PC=%5d  %1s", opcount, {CPU.PCHI, CPU.PCLO}, CPU.disasm(data));
+                //$display("%9t", $time, " EXECUTING ..."); 
+                $display("%9t ", $time, "CYCLES %-6d : PC=%5d  %1s", opcount, {CPU.PCHI, CPU.PCLO}, CPU.disasm(data));
                 $display("%6s ", "", "= aaaaattt taaabbbC CCCFIbtM AAAAAAAA AAAAAAAA IIIIIIII");
                 $display("%6s ", "", "= %8b %8b %8b %8b %8b %8b", 
                     data[47:40],
@@ -194,18 +196,19 @@ endfunction
             end
             else
             begin
-//                $display("%6t", $time, " SKIPPING ..."); 
+//                $display("%9t", $time, " SKIPPING ..."); 
             end
 
 
-            //$display("\n%6t", $time, " DECOMPILE %s", CPU.ctrl.decode(1).display()); 
+            //$display("\n%9t", $time, " DECOMPILE %s", CPU.ctrl.decode(1).display()); 
             //DUMP; 
         
-            //$display("%6t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
+            //$display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
         end
 
+/*
         if (LOG) 
-        $display("%6t", $time, " DECOMPILE ",
+        $display("%9t", $time, " DECOMPILE ",
             " PC=%-5d : ", pc,
             " %-1s = ", control::tdevname({CPU.ctrl.instruction[25], CPU.ctrl.instruction[42:39]}),
             " %1s", control::adevname(CPU.ctrl.instruction[38:36]),
@@ -217,6 +220,7 @@ endfunction
             " addr:%02x:%02x ", CPU.ctrl.instruction[23:16], CPU.ctrl.instruction[15:8],
             " imm:%02x (dec %d) ", CPU.ctrl.instruction[7:0], CPU.ctrl.instruction[7:0]
         );
+*/
 
 /*
         $display("%06t", $time, " RAM divisorL:H %02x:%02x dividendL:H %02x:%02x remainderL:H%02x:%02x resultL:H", 
@@ -230,7 +234,7 @@ endfunction
                 CPU.ram64.Mem[13]
             );
 */
-        if (LOG) $display("%6t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
+        if (LOG) $display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
         clk = 0;
     end
     endtask
@@ -243,7 +247,7 @@ endfunction
     endtask: noop
 
 
-    `define DUMP_REG $display("%6t", $time, " REGISTERS:", "  REGA:%08b", CPU.regFile.get(0), "  REGB:%08b", CPU.regFile.get(1), "  REGC:%08b", CPU.regFile.get(2), "  REGD:%08b", CPU.regFile.get(3)); 
+    `define DUMP_REG $display("%9t", $time, " REGISTERS:", "  REGA:%08b", CPU.regFile.get(0), "  REGB:%08b", CPU.regFile.get(1), "  REGC:%08b", CPU.regFile.get(2), "  REGD:%08b", CPU.regFile.get(3)); 
 
     initial begin
         $dumpfile("dumpfile.vcd");
@@ -267,8 +271,8 @@ endfunction
             #HALF_CLK_HI
             CLK_DN;
             #HALF_CLK_LO
-            if (LOG) $display("%6t", $time, " DUMPREG:", "  PC=%1d ", pcval, "ALU:%03d", CPU.alu_result_bus, " REGA:%03d", CPU.regFile.get(0), "  REGB:%03d", CPU.regFile.get(1), "  REGC:%03d", CPU.regFile.get(2), "  REGD:%03d", CPU.regFile.get(3));
-            if (LOG) $display("%6t", $time, " FLAGS czonENGL=%8b" , CPU._registered_flags_czonENGL);
+            if (LOG) $display("%9t", $time, " DUMPREG:", "  PC=%1d ", pcval, "ALU:%03d", CPU.alu_result_bus, " REGA:%03d", CPU.regFile.get(0), "  REGB:%03d", CPU.regFile.get(1), "  REGC:%03d", CPU.regFile.get(2), "  REGD:%03d", CPU.regFile.get(3));
+            if (LOG) $display("%9t", $time, " FLAGS czonENGL=%8b" , CPU._registered_flags_czonENGL);
             CLK_UP;
         end
 
@@ -289,20 +293,20 @@ endfunction
     always @(CPU.PCHI or CPU.PCLO) begin
         currentCode = string_bits'(CODE[pcval]); // assign outside 'always' doesn't work so do here instead
         currentCodeText = string_bits'(CODE_TEXT[pcval]);
-        if (LOG) $display("%6t ", $time, "CYCLES %d : INCREMENTED PC=%1d    INSTRUCTION: %1s", opcount, {CPU.PCHI, CPU.PCLO}, currentCode);
+        if (LOG) $display("%9t ", $time, "CYCLES %d : INCREMENTED PC=%1d    INSTRUCTION: %1s", opcount, {CPU.PCHI, CPU.PCLO}, currentCode);
             //$display(">>>> CODE[%d] : %-s" , pc, CPU.disasm(data));
 
-        //if (currentCodeText != "") $display("%6t ", $time, "COMMENT: %1s", currentCodeText);
+        //if (currentCodeText != "") $display("%9t ", $time, "COMMENT: %1s", currentCodeText);
 
         if (pcval >= counter) begin
-            $display("%6t ", $time, "INCREMENTED PC=%1d    BEYOND PROGRAM LENGTH %d", {CPU.PCHI, CPU.PCLO}, counter);
+            $display("%9t ", $time, "INCREMENTED PC=%1d    BEYOND PROGRAM LENGTH %d", {CPU.PCHI, CPU.PCLO}, counter);
 `ifndef verilator
             $finish_and_return(1);
 `endif
         end
     end
 
-    //`define DD  $display ("%6t ", $time,  "DUMP  ",
+    //`define DD  $display ("%9t ", $time,  "DUMP  ",
     task DUMP_OP;
           `DD ": PC  : %d", pcval);
           `DD ": CODE: %1s", currentCode);
@@ -335,15 +339,15 @@ endfunction
 
     always @* 
         if (_RESET_SWITCH)  
-            $display("\n%6t RESET SWITCH RELEASE   _RESET_SWITCH=%1b  ======================================================================\n", $time, _RESET_SWITCH); 
+            $display("\n%9t RESET SWITCH RELEASE   _RESET_SWITCH=%1b  ======================================================================\n", $time, _RESET_SWITCH); 
         else      
-            $display("\n%6t RESET SWITCH SET       _RESET_SWITCH=%1b  ======================================================================\n", $time, _RESET_SWITCH); 
+            $display("\n%9t RESET SWITCH SET       _RESET_SWITCH=%1b  ======================================================================\n", $time, _RESET_SWITCH); 
 
     always @* 
         if (CPU._mrPC)  
-            $display("\n%6t PC RESET RELEASE   _mr=%1b  ======================================================================\n", $time, CPU._mrPC); 
+            $display("\n%9t PC RESET RELEASE   _mr=%1b  ======================================================================\n", $time, CPU._mrPC); 
         else      
-            $display("\n%6t PC RESET SET       _mr=%1b  ======================================================================\n", $time, CPU._mrPC); 
+            $display("\n%9t PC RESET SET       _mr=%1b  ======================================================================\n", $time, CPU._mrPC); 
 
 
     
@@ -352,20 +356,20 @@ endfunction
 
 /*
     always @(CPU.clk) begin
-        $display("%6t", $time, " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CLK %1b  <<<<<<<<<<<<<<<<<<<<<<<", CPU.clk);
+        $display("%9t", $time, " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> CLK %1b  <<<<<<<<<<<<<<<<<<<<<<<", CPU.clk);
     end
 
     always @(posedge CPU.phase_exec) begin
-        $display("%6t", $time, " START PHASE: EXECUTE (posedge) =============================================================="); 
+        $display("%9t", $time, " START PHASE: EXECUTE (posedge) =============================================================="); 
     end
 
     always @(negedge CPU.phase_exec) begin
-        $display("%6t", $time, " END PHASE: EXECUTE (negedge) =============================================================="); 
+        $display("%9t", $time, " END PHASE: EXECUTE (negedge) =============================================================="); 
         DUMP;
     end
     always @(posedge CPU.phaseFetch) begin
         instCount ++;
-        $display("%6t", $time, " START PHASE: FETCH (posedge)  INTRUCTION#=%-d ==============================================================", instCount); 
+        $display("%9t", $time, " START PHASE: FETCH (posedge)  INTRUCTION#=%-d ==============================================================", instCount); 
     end
 */
     
@@ -399,14 +403,14 @@ endfunction
         // expect address and data to remain stable while ram write enabled
         if (!CPU._gated_ram_in) begin
             if (prev_address_bus != CPU.address_bus) begin
-                $display("\n\n%6t ", $time, " ADDRESS CHANGED WHILE GATED RAM WRITE ENABLED");
-                $display("\n\n%6t ", $time, " ABORT");
+                $display("\n\n%9t ", $time, " ADDRESS CHANGED WHILE GATED RAM WRITE ENABLED");
+                $display("\n\n%9t ", $time, " ABORT");
                 $finish();
             end
             if (prev_alu_result_bus != CPU.alu_result_bus) begin
-                $display("\n\n%6t ", $time, " DATA CHANGED WHILE GATED RAM WRITE ENABLED");
-                $display("%6t ", $time, " prev = %8b, now = %8b", prev_alu_result_bus, CPU.alu_result_bus);
-                $display("\n\n%6t ", $time, " ABORT");
+                $display("\n\n%9t ", $time, " DATA CHANGED WHILE GATED RAM WRITE ENABLED");
+                $display("%9t ", $time, " prev = %8b, now = %8b", prev_alu_result_bus, CPU.alu_result_bus);
+                $display("\n\n%9t ", $time, " ABORT");
                 $finish();
             end
         end
@@ -419,9 +423,9 @@ endfunction
         // this is ok as long as they settle quickly and are settled before exec phase.
         if (CPU._mrPC & CPU.phase_exec) begin
             if (CPU._addrmode_register === 1'bx) begin
-                $display("\n\n%6t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _REG=%1b", CPU._addrmode_register);
+                $display("\n\n%9t ", $time, " ERROR ILLEGAL INDETERMINATE ADDR MODE _REG=%1b", CPU._addrmode_register);
                 DUMP;
-                $display("\n\n%6t ", $time, " ABORT");
+                $display("\n\n%9t ", $time, " ABORT");
                 $finish();
             end
         end

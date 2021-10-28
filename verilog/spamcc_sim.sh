@@ -1,4 +1,6 @@
 #!/bin/bash
+echo running $0
+
 set -x
 
 echo ARGS "$@"
@@ -75,6 +77,7 @@ $vvp -N -i $rootname.vvp +rom=$ROM &
 while [ -d /proc/$! -a $timeout -gt 0 ]; do
     sleep 1
     timeout=$((timeout-1))
+    echo sim has $timeout seconds remaining
 done
 
 if [ -d /proc/$! ]; then

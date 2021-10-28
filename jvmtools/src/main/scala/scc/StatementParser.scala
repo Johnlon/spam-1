@@ -278,6 +278,7 @@ class StatementParser {
       LocatedData(k, ds.getOrElse(Nil))
   }
 
+  // permits any mix of data and comments
   def statementVarDataLocated: Parser[Block] = positioned {
     "var" ~> name ~ ("=" ~ "[") ~ rep1(locatedData | blockComment | lineComment) <~ ("]" ~ SEMICOLON) ^^ {
       // doesn't preserve the comments - too much hassle

@@ -71,7 +71,7 @@ module test();
             immed=$random;
 
             if (targ == control::TDEV_halt) begin
-                // skip halt
+                // skip halt so I can eumerate all devices
                 targ=0;
             end
             if (targ == control::TDEV_pclo) begin

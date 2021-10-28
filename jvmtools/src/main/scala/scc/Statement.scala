@@ -195,6 +195,8 @@ case class LetVarEqConst(targetVar: String, konst: Int) extends Block {
           s"[:$fqn] = <$konst",
           s"[:$fqn + 1] = >$konst "
         )
+      case IsVar8 =>
+        sys.error("var 8 not handled")
     }
   }
 }
@@ -246,6 +248,8 @@ case class LetVarEqVar(targetVarName: String, srcVarName: String) extends Block 
           s"$WORKLO = >:$srcFqn ",
           s"[:$targFqn + 1] = $WORKLO"
         )
+      case IsVar8 =>
+        sys.error("var 8 not handled")
     }
   }
 }
@@ -259,8 +263,8 @@ case class LetStringIndexEqExpr(targetVar: String, indexBlock: BlkCompoundAluExp
 
     // string indexing creates needs temp vars and a string indexing can occur multiple times at the same scope eg "a[1] = a[1] + 1" so
     // we need to make sure these temp vars are local - ie unique.
-    val indexTempVarLo = parent.assignVarLabel("INDEX_TMP_LO" + Scope.nextInt, IsVar8But).fqn
-    val indexTempVarHi = parent.assignVarLabel("INDEX_TMP_HI" + Scope.nextInt, IsVar8But).fqn
+    val indexTempVarLo = parent.assignVarLabel("INDEX_TMP_LO" + Scope.nextInt, IsVar8).fqn
+    val indexTempVarHi = parent.assignVarLabel("INDEX_TMP_HI" + Scope.nextInt, IsVar8).fqn
 
     val targLabel = parent.getVarLabel(targetVar).fqn
 
@@ -320,13 +324,20 @@ case class DefVarEqData(target: String, data: Seq[Byte]) extends Block {
   }
 }
 
-case class LocatedData(location: Int, data: Seq[Byte])
+/* location here refers to the location of the data within the given extent.
+so var X = [ 15: [1 2] 2: [9] ];
+Means create an array of data that is as long as the max relative location + length of the data
+at that location so that's a total length of 15+2 bytes .
+It also mens place bytes [1 2] at rel location 15, and byte 9 at rel location 2.
+So we end up with [ 0 0 9 0 0 0 0 0 0 0 0 0 0 0 0 1 2 ]
+* */
+case class LocatedData(relLocation: Int, data: Seq[Byte])
 
 case class DefVarEqLocatedData(target: String, locatedData: Seq[LocatedData]) extends Block {
 
   private val data = {
-    val sortedByAddr = locatedData.sortBy(x => x.location)
-    val extent: Int = locatedData.map(c => c.location + c.data.size).sorted.lastOption.getOrElse(0)
+    val sortedByAddr = locatedData.sortBy(x => x.relLocation)
+    val extent: Int = locatedData.map(c => c.relLocation + c.data.size).sorted.lastOption.getOrElse(0)
 
     val data = (0 until extent).map(_ => 0.toByte).toBuffer
 
@@ -425,6 +436,8 @@ case class Puts(varName: String)
           s"MARHI = [:$varLabel]",
           s"MARLO = [:$varLabel+1]"
         )
+      case IsVar8 =>
+        sys.error("var 8 not handled")
     }
 
     marSetup ++
@@ -599,11 +612,11 @@ case class Getuart() extends Block(nestedName = s"getuart_") {
     split(
       s"""
          |$WORKLO = 0
-         |$WORKHI = 1 // if 16 bit result > 255 then no data was read into lower byte
+         |$WORKHI = 1 ;if 16 bit result > 255 then no data was read into lower byte
          |PCHITMP = <:$labelSkip
          |PC = >:$labelSkip ! _DI
          |$WORKLO = UART
-         |$WORKHI = 0 // clear upper byte to indicate that a read took place
+         |$WORKHI = 0 ;clear upper byte to indicate that a read took place
          |$labelSkip:
          |""")
   }
@@ -863,8 +876,8 @@ case class DefFunction(functionName: String, functionArgs: List[FunctionArg], co
 
   // DEF
   def defScopedArgLabels(scope: Scope): FunctionDef = {
-    val returnHiLabel = scope.assignVarLabel("RETURN_HI", IsVar8But).fqn
-    val returnLoLabel = scope.assignVarLabel("RETURN_LO", IsVar8But).fqn
+    val returnHiLabel = scope.assignVarLabel("RETURN_HI", IsVar8).fqn
+    val returnLoLabel = scope.assignVarLabel("RETURN_LO", IsVar8).fqn
     // These locations where we write the input parameters into the function.
     // Also, read from these locations to fetch "out" values.
     val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.
@@ -881,8 +894,8 @@ case class DefFunction(functionName: String, functionArgs: List[FunctionArg], co
 
   // GET - TODO remove dupe code with defXXX above
   def getScopedArgLabels(scope: Scope): FunctionDef = {
-    val returnHiLabel = scope.getVarLabel("RETURN_HI", IsVar8But).fqn
-    val returnLoLabel = scope.getVarLabel("RETURN_LO", IsVar8But).fqn
+    val returnHiLabel = scope.getVarLabel("RETURN_HI", IsVar8).fqn
+    val returnLoLabel = scope.getVarLabel("RETURN_LO", IsVar8).fqn
     // These locations where we write the input parameters into the function.
     // Also, read from these locations to fetch "out" values.
     val argNamesLabelsDirection: List[FunctionArgNameAndLabel] = functionArgs.map {

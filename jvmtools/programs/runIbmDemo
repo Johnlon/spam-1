@@ -1,4 +1,4 @@
-./run /home/john/OneDrive/github/johnlon/chip-8/src/main/resources/chip8/roms/IBM_Logo.ch8
+./run_chip8 /home/john/OneDrive/github/johnlon/chip-8/src/main/resources/chip8/roms/IBM_Logo.ch8
 #./scc.sh  Chip2Emulator.scc /home/john/OneDrive/github/johnlon/chip-8/src/main/resources/chip8/roms/IBM_Logo.ch8
 #if [ $? -ne 0 ]; then
 #    echo error

@@ -530,6 +530,9 @@ program {
                 }
             } else if (N___ == $C000) { // DONE
                 // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Cxkk
+                // The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. 
+                // The results are stored in Vx. See instruction 8xy2 for more information on AND.
+
                 // Vx = Random AND __NN
 
                 uint16 rand = random();

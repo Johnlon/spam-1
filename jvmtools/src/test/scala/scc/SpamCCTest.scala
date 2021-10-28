@@ -899,19 +899,14 @@ class SpamCCTest {
   }
 
   @Test
-  def writePort(): Unit = {
+  def writePortLoopback(): Unit = {
 
-    // set the game controller value to 123
-    //    val pw = new PrintWriter(new File(gamepadControl))
-    //    pw.println("/ setting controller to 1")
-    //    pw.println("c1=" + 123.toHexString)
-    //    pw.flush()
-
-    // read the controller via the sim
     val lines =
       """
         |fun main() {
-        |  writeport(Parallel, 123)
+        |  writeport(Parallel, 123) // this code assumes that the parallel out is looped back to parallel in
+        |  uint16 g = readport(Parallel);
+        |  halt(g, 0)
         |}
         |""".stripMargin
 
@@ -920,7 +915,7 @@ class SpamCCTest {
   }
 
   @Test
-  def readPort(): Unit = {
+  def readPortGamepad(): Unit = {
 
     // set the game controller value to 123
     val pw = new PrintWriter(new File(gamepadControl))
@@ -939,6 +934,21 @@ class SpamCCTest {
 
     // assert the correct value was read
     compile(lines, verbose = true, checkHalt = Some(HaltCode(123, 0)), timeout = 1000)
+  }
+  @Test
+  def readPortParallel(): Unit = {
+
+    // read the controller via the sim
+    val lines =
+      """
+        |fun main() {
+        |  uint16 g = readport(Parallel);
+        |  halt(g, 0)
+        |}
+        |""".stripMargin
+
+    // assert the correct value was read - HARD CODED PARALLEL IN VALUE IN VERILOG
+    compile(lines, verbose = true, checkHalt = Some(HaltCode(0xaa, 0)), timeout = 1000)
   }
 
   @Test
@@ -1587,6 +1597,7 @@ class SpamCCTest {
          |
          |  loop = loop + 1;
          | }
+         |
          |}
          |
          |// END  COMMAND

@@ -17,7 +17,7 @@ object Verification {
               dataIn: List[String] = List("t10000000"),
               outputCheck: List[String] => Unit = _ => {},
               checkHalt: Option[HaltCode] = Some(HaltCode(65535, 255)),
-              timeout: Int = 30
+              timeout: Int = 45
              ): List[String] = {
 
     val scc = new SpamCC
@@ -160,10 +160,11 @@ object Verification {
     println("EXIT CODE " + ex)
 
     outputCheck(lines.toList)
+
     val actualHalt = halted.get()
     val expectedHalt = checkHalt.orNull
-
     assertEquals(expectedHalt, actualHalt)
+    println("halted: " + actualHalt)
   }
 }
 
