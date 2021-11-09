@@ -1,9 +1,8 @@
 package scc
 
-import org.hamcrest.CoreMatchers
 import org.hamcrest.CoreMatchers.containsString
 import org.hamcrest.MatcherAssert.assertThat
-import org.junit.jupiter.api.Assertions.{assertEquals, assertThrows, assertTrue}
+import org.junit.jupiter.api.Assertions.{assertEquals, assertThrows}
 import org.junit.jupiter.api.MethodOrderer.MethodName
 import org.junit.jupiter.api.{Test, TestMethodOrder}
 import terminal.TerminalStates._
@@ -130,7 +129,7 @@ class SpamCCTest {
 
     val linesB =
       """fun main() {
-        | var s = [0: [  ] ];
+        | var s = [0: [ 00 01 $ff ] ];
         |}
         |""".stripMargin
 
@@ -958,22 +957,6 @@ class SpamCCTest {
 
     // assert the correct value was read
     compile(lines, verbose = true, checkHalt = Some(HaltCode(123, 0)), timeout = 1000)
-  }
-
-  @Test
-  def readPortParallel(): Unit = {
-
-    // read the controller via the sim
-    val lines =
-      """
-        |fun main() {
-        |  uint16 g = readport(Parallel);
-        |  halt(g, 0)
-        |}
-        |""".stripMargin
-
-    // assert the correct value was read - HARD CODED PARALLEL IN VALUE IN VERILOG
-    compile(lines, verbose = true, checkHalt = Some(HaltCode(0xaa, 0)), timeout = 1000)
   }
 
   @Test
