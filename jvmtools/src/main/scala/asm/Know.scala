@@ -49,8 +49,11 @@ trait Knowing {
               case Some(v) =>
                 v match {
                   case newInt: KnownInt =>
+                    // NOT OK TO REDEFINE THE VALUE OF THE POINTER
                     sys.error(s"symbol '${name}' has already defined as ${existingInt} can't assign new value ${newInt}")
                   case newArr: KnownByteArray =>
+                    // IS OK TO REDEFINE THE VALUE OF WHAT IS AT THE POINTER FROM A VALUE TO AN ARRAY AT THAT LOCATION WITH THAT VALUE
+
                     // save data at predefined location
                     Known(name, KnownByteArray(existingInt.value, newArr.data)).asInstanceOf[K]
                 }
@@ -119,7 +122,7 @@ trait Knowing {
 
     def getVal = Some(knownVal)
 
-    override def toString(): String = s"""$knownVal${if (name.length > 0) "{" + name + "}" else ""}"""
+    override def toString(): String = s"""${this.getClass.getSimpleName}($knownVal${if (name.length > 0) "{" + name + "}" else ""})"""
   }
 
   /* something who's value is definitely unknown */

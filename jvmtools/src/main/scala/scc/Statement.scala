@@ -33,7 +33,7 @@ import terminal.TerminalStates
 
 import scala.collection.mutable
 import scala.language.postfixOps
-import scala.util.parsing.input.Positional
+import scala.util.parsing.input.{OffsetPosition, Positional}
 
 
 trait RecursiveDumpFn {
@@ -331,7 +331,7 @@ at that location so that's a total length of 15+2 bytes .
 It also mens place bytes [1 2] at rel location 15, and byte 9 at rel location 2.
 So we end up with [ 0 0 9 0 0 0 0 0 0 0 0 0 0 0 0 1 2 ]
 * */
-case class LocatedData(relLocation: Int, data: Seq[Byte])
+case class LocatedData(relLocation: Int, data: Seq[Byte]) extends Positional
 
 case class DefVarEqLocatedData(target: String, locatedData: Seq[LocatedData]) extends Block {
 
@@ -357,12 +357,17 @@ case class DefVarEqLocatedData(target: String, locatedData: Seq[LocatedData]) ex
 
   override def toString = s"statementVarDataLocated( $target, [$locatedData] )"
 
-  //  override def toString = s"statementVarDataLocated( $target, [$escaped] )"
-
   override def gen(depth: Int, parent: Scope): List[String] = {
+    locatedData.foreach { data =>
+      if (data.relLocation == 0 && data.data.isEmpty) {
+        sys.error(s"located data at offset ${data.relLocation} cannot be empty at : "
+          + data.pos.asInstanceOf[OffsetPosition].lineContents)
+      }
+    }
 
     // nothing to do but record the data with current scope - data will be laid out later
-    parent.assignVarLabel(target, IsData, data).fqn
+    parent.assignVarLabel(target, IsData, data)
+
     List(
       s"""; var $target = [$escaped]"""
     )

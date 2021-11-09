@@ -272,10 +272,15 @@ class StatementParser {
     }
   }
 
-  // data can be zero length in which case it is merely a means to ensure capacity to that point without specifying data
-  def locatedData: Parser[LocatedData] = constExpression ~ (":" ~ "[") ~ opt(dataSource) <~ "]" ^^ {
-    case k ~ _ ~ ds =>
-      LocatedData(k, ds.getOrElse(Nil))
+  /*
+  it is an illegal situation to have a zero length data at index 0 - we can't usefully declare a zero bytes of data at index 0.
+  at other indexes the datasource can be zero length in which case it is merely a means to ensure capacity upto but excluding that index without specifying data.
+  */
+  def locatedData: Parser[LocatedData] = positioned {
+    constExpression ~ (":" ~ "[") ~ opt(dataSource) <~ "]" ^^ {
+      case offset ~ _ ~ ds =>
+        LocatedData(offset, ds.getOrElse(Nil))
+    }
   }
 
   // permits any mix of data and comments

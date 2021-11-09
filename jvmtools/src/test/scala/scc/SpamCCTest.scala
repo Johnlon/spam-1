@@ -1,6 +1,9 @@
 package scc
 
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.hamcrest.CoreMatchers
+import org.hamcrest.CoreMatchers.containsString
+import org.hamcrest.MatcherAssert.assertThat
+import org.junit.jupiter.api.Assertions.{assertEquals, assertThrows, assertTrue}
 import org.junit.jupiter.api.MethodOrderer.MethodName
 import org.junit.jupiter.api.{Test, TestMethodOrder}
 import terminal.TerminalStates._
@@ -34,7 +37,20 @@ class SpamCCTest {
   }
 
   @Test
-  def varFromFile(): Unit = {
+  def varDataFromZeroLenDataAtPosition0IsIllegal(): Unit = {
+    // illegal because a zero len data at relative location means no memory allocated
+    val lines =
+      """fun main() {
+        | var s = [0: [  ] ];
+        |}
+        |""".stripMargin
+
+    val ex = assertThrows(classOf[RuntimeException], () => compile(lines, verbose = true))
+    assertThat(ex.getMessage, containsString("located data at offset 0 cannot be empty at :  var s = [0: [  ] ];"))
+  }
+
+  @Test
+  def varDataFromFile(): Unit = {
 
     val lines =
       """fun main() {
@@ -68,7 +84,7 @@ class SpamCCTest {
   }
 
   @Test
-  def varFromFileProp(): Unit = {
+  def varDataFromFileViaSystemProp(): Unit = {
 
     val fileName = "src/test/resources/SomeData.txt"
     System.setProperty("FILENAME", fileName)
@@ -103,16 +119,23 @@ class SpamCCTest {
   }
 
   @Test
-  def varFromData(): Unit = {
+  def varDataFromBytes(): Unit = {
 
-    val lines =
+    // two equivalents
+    val linesA =
       """fun main() {
-        | var s = [00 01 $ff];
+        | var s = [ 00 01 $ff ];
         |}
         |""".stripMargin
 
+    val linesB =
+      """fun main() {
+        | var s = [0: [  ] ];
+        |}
+        |""".stripMargin
 
-    val actual = compile(lines, verbose = true)
+    val actualA = compile(linesA, verbose = true)
+    val actualB = compile(linesB, verbose = true)
 
     val expected = split(
       """root_function_main___VAR_RETURN_HI: EQU   0
@@ -133,11 +156,12 @@ class SpamCCTest {
         |HALT=255
         |END""".stripMargin)
 
-    assertSame(expected, actual)
+    assertSame(expected, actualA)
+    assertSame(expected, actualB)
   }
 
   @Test
-  def varFromLongFile(): Unit = {
+  def varDataFromLongFile(): Unit = {
 
     val lines =
       """fun main() {
@@ -218,7 +242,7 @@ class SpamCCTest {
   }
 
   @Test
-  def varFromMixedData(): Unit = {
+  def varDataFromLocatedMixedData(): Unit = {
 
     val data = File.createTempFile(this.getClass.getName, ".dat")
     val os = new FileOutputStream(data)
@@ -935,6 +959,7 @@ class SpamCCTest {
     // assert the correct value was read
     compile(lines, verbose = true, checkHalt = Some(HaltCode(123, 0)), timeout = 1000)
   }
+
   @Test
   def readPortParallel(): Unit = {
 

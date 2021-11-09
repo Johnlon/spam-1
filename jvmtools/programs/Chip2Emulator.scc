@@ -32,9 +32,12 @@ program {
         uint16 SCREEN_WIDTH = 64;
 
         // 32*64=screen size
+        // = [ datasource ]
+        // = an array that is 0-2048 index where the byte at 2048 is 0
         var screen = [32 * 64: [0]];
 
         // 16 x 8 bits
+        // = an array of 0 to 16 where byte 16 is 0
         var registers = [16: [0]];
 
         // 16 x 2 bytes - two per locn

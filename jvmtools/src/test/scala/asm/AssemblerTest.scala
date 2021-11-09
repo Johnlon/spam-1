@@ -375,6 +375,26 @@ class AssemblerTest {
   }
 
   @Test
+  def `compile_no_bytes_to_RAM_is_illegal`(): Unit = {
+    val code = Seq(
+      "ILLEGAL:       BYTES   [ ]",
+      "END")
+
+    val asm = new Assembler()
+
+    try {
+      instructions(code, asm)
+      fail("expected an error")
+    } catch {
+      case ex: RuntimeException =>
+        val err = "BYTES expression with label 'ILLEGAL' must have at least one byte but none were defined"
+        if (!ex.getMessage.contains(err)) {
+          sys.error("expected error : " + err)
+        }
+    }
+  }
+
+  @Test
   def `strings_len`(): Unit = {
     val code = Seq(
       "REGA = 1", // put this ahead of the data so make sure it's not simply counting the PC then allocating addresses for data

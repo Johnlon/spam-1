@@ -154,9 +154,9 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   }
 
   def eqInstruction: Parser[EquInstruction] = (name <~ ":" ~ "EQU") ~ expr ^^ {
-    case n ~ k =>
-      rememberKnown(n, k)
-      EquInstruction(n, k)
+    case n ~ konst =>
+      rememberKnown(n, konst)
+      EquInstruction(n, konst)
   }
 
   // amended vs 'stringLiteral' to include the short form \0
@@ -182,10 +182,12 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       }.toList
   }
 
-  def bytesInstruction: Parser[List[Line]] = (name <~ ":" ~ "BYTES" ~ "[") ~ expr ~ (("," ~> expr) *) <~ "]" ^^ {
-    case a ~ b ~ c =>
-
-      val exprs: List[Know[KnownInt]] = b +: c
+  def bytesInstruction: Parser[List[Line]] = (name <~ ":" ~ "BYTES" ~ "[") ~ repsep(expr, ",") <~ "]" ^^ {
+    case n ~ expr =>
+      if (expr.isEmpty) {
+        sys.error(s"asm error: BYTES expression with label '$n' must have at least one byte but none were defined")
+      }
+      val exprs: List[Know[KnownInt]] = expr
 
       val ints: List[Int] = exprs.map(_.getVal.get.value)
 
@@ -193,9 +195,9 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
         x < Byte.MinValue || x > 255
       }.foreach(x => sys.error(s"asm error: $x evaluates as out of range ${Byte.MinValue} to 255"))
 
-      rememberKnown(a, Known(a, KnownByteArray(pc, ints.map(_.toByte))))
+      rememberKnown(n, Known(n, KnownByteArray(pc, ints.map(_.toByte))))
 
-      Label(a) +: ints.map {
+      Label(n) +: ints.map {
         c => {
           // c.toByte will render between -128 and  +127
           // then name "c" will render as whatever int value was actually presented in the code (eg when c=255 then toByte = -1 )
