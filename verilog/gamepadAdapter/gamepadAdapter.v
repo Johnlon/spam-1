@@ -50,6 +50,8 @@ module gamepadAdapter #(parameter CONTROL_FILE="gamepad.control") (
 
     initial 
     begin : file_block 
+        // tiny delay allows the main program to setup the control file
+        #1
 
         if (! $value$plusargs("gamepad_control_file=%s", controlFile)) begin
             controlFile = CONTROL_FILE;
