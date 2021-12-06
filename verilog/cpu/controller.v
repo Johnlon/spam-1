@@ -112,7 +112,8 @@ module controller(
 
     assign bbus_dev              = {bbus_dev_3, bbus_dev_2_0};
     //assign targ_dev              = {targ_dev_4, targ_dev_3_0};
-    assign targ_dev              = {1'b0, targ_dev_3_0};
+    //assign targ_dev              = {1'b0, targ_dev_3_0};
+    assign targ_dev              = {targ_dev_4, targ_dev_3_0};  // NOTE !! top bit of targ dev isn't needed unless > 16 one cycle targ devices,  but the port sel approach gives plenty of extension ports
 
     //----------------------------------------------------------------------------------
     // condition logic
@@ -158,18 +159,18 @@ module controller(
 
     wire _do_exec, do_exec;
 
-    // The following three lines are the same as an OR as shown below however by using XOR (inverter) and Nand I can avoid the need for an OR gate chip and avoid an IC
-    //   or #(9) ic7432_a(_set_flags, _set_flags_bit, _do_exec); 
-    // enable flag update when both _set_flags_bit is active low and _do_exec is active low
-    xor #(9) ic7486_b(do_exec, _do_exec, 1'b1); // use xor as inverter
-    nand #(9) ic7400_b(_set_flags, set_flags_bit, do_exec); // use nand
-
     // When condition_invert_bit is active high then the conditional exec logic is reversed.
     // eg when "invert" is inactive "DO" means execute only if DO flag is set, 
     // but when "invert" is active "DO" means execute only if DO flag is not set.
     // This new feature means the NE output of the ALU is redundant as the same can be achieved using 
     // using EQ but with the condition invert enabled.
     xor #(9) ic7486_c(_do_exec, _condition_met, condition_invert_bit); // use xor as conditional inverter 
+
+    // The following three lines are the same as an OR as shown below however by using XOR (inverter) and Nand I can avoid the need for an OR gate chip and avoid an IC
+    //   or #(9) ic7432_a(_set_flags, _set_flags_bit, _do_exec); 
+    // enable flag update when both _set_flags_bit is active low and _do_exec is active low
+    xor #(9) ic7486_b(do_exec, _do_exec, 1'b1); // use xor as inverter
+    nand #(9) ic7400_b(_set_flags, set_flags_bit, do_exec); // use nand
 
     //----------------------------------------------------------------------------------
     // address mode logic
