@@ -138,6 +138,7 @@ module test();
 
         `define CYCLE begin CLK_UP; #HALF_CLK CLK_DN; #HALF_CLK; noop(); end
         `define FULL_CYCLE(N) for (count =0; count < N; count++) begin CLK_UP; #HALF_CLK; CLK_DN; #HALF_CLK; noop(); end
+
         CPU.PC.PCHI_7_4.count = 15;
         CPU.PC.PCHI_3_0.count = 15;
         CPU.PC.PCLO_7_4.count = 15;

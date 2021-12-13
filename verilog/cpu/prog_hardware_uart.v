@@ -103,7 +103,7 @@ module test();
             #TCLK;
 
             while (1==1) begin
-                sleep(1000);
+                //sleep(1000);
                 #TCLK
                 $display("");
                 $display("%9t ", $time, " CLOCK DOWN - EXEC ", CPU.disasmCur());
