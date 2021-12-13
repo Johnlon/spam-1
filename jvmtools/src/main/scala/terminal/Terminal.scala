@@ -2,7 +2,7 @@ package terminal
 
 import java.awt.Color
 import java.io.PrintStream
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import javax.swing.BorderFactory
 import scala.collection.mutable
 import scala.swing.ScrollPane.BarPolicy
@@ -70,6 +70,8 @@ abstract class Terminal extends SimpleSwingApplication {
 
   def outputStream(): PrintStream
 
+  def gamepadStream(): PrintStream
+
   @volatile var stopped = true
   var nextInst = new AtomicInteger(0)
 
@@ -101,9 +103,9 @@ abstract class Terminal extends SimpleSwingApplication {
   textArea.border = BorderFactory.createLineBorder(Color.BLUE)
   textArea.background = Color.BLACK
   textArea.foreground = Color.WHITE
-
   textArea.preferredSize = new Dimension(900, 450)
   textArea.font = new Font("Courier New", scala.swing.Font.Plain.id, 10)
+  textArea.editable = false
 
   val logLine = new TextArea(1, 100)
   logLine.border = BorderFactory.createLineBorder(Color.GREEN)
@@ -122,8 +124,8 @@ abstract class Terminal extends SimpleSwingApplication {
     try {
       var wasStopped = false
 
-//      if (hexCharLine == "ff")
-//        println("STOP")
+      //      if (hexCharLine == "ff")
+      //        println("STOP")
 
       while (stopped && nextInst.get() == 0) {
         wasStopped = true
@@ -169,12 +171,22 @@ abstract class Terminal extends SimpleSwingApplication {
   val breplay = new Button("Replay")
 
   //    def send(c: Char, sendDelay: Boolean = true): Unit = {
-  def send(c: Char): Unit = {
+  def sendUart(c: Char): Unit = {
     outputStream().print(f"x${c.toInt}%02X\n")
     //      if (sendDelay) outputStream().print(f"#\n")
 
     // outputStream().flush()
     //println("sent " + c)
+  }
+
+  def sendGamepad(cid: Int, c: Int): Unit = {
+    gamepadStream().print(f"c${cid}=${c.toInt}%02X\n")
+    gamepadStream().flush()
+  }
+
+
+  def doRepaint(): Unit = {
+    mightNeedRepaint.set(true)
   }
 
   def top: Frame = {
@@ -195,6 +207,20 @@ abstract class Terminal extends SimpleSwingApplication {
 
     updateStopButton()
 
+
+    // as per https://github.com/Johnlon/NESInterfaceAndPeripherals/blob/main/controller.h#L25
+    val gamepad = Map(
+      Key.Up -> 1,
+      Key.Down -> 2,
+      Key.Left -> 4,
+      Key.Right -> 8,
+      Key.Space -> 16, // SELECT BUTTON
+      Key.Enter -> 32, // START BUTTON
+      Key.B -> 64, // B BUTTON
+      Key.A -> 128, // A BUTTON
+    )
+
+    // map the arrow keys to a WASD-like set - see keypad numbering https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
     val hexpad: Map[scala.swing.event.Key.Value, Char] = Map(
       Key.Key0 -> 0,
       Key.Key1 -> 1,
@@ -220,6 +246,19 @@ abstract class Terminal extends SimpleSwingApplication {
       Key.Right -> 6,
       Key.Space -> 32,
     )
+
+    var controllerState: Int = 0
+
+    def gamepadPressKey(c: Key.Value): Unit = {
+      controllerState = controllerState | gamepad.getOrElse(c, 0)
+      sendGamepad(1, controllerState)
+    }
+
+    def gamepadReleaseKey(c: Key.Value): Unit = {
+      controllerState = controllerState ^ gamepad.getOrElse(c, 0)
+      sendGamepad(1, controllerState)
+    }
+
     reactions += {
       case ButtonClicked(b) if b == brefresh =>
         data = fill()
@@ -235,8 +274,16 @@ abstract class Terminal extends SimpleSwingApplication {
       case ButtonClicked(b) if b == breplay =>
         doReplay()
 
+      case KeyPressed(_, c, _, _) if gamepad.keySet.contains(c) =>
+        gamepadPressKey(c)
+      case KeyReleased(_, c, _, _) if gamepad.keySet.contains(c) =>
+        gamepadReleaseKey(c)
+
       case KeyPressed(_, c, _, _) if hexpad.keySet.contains(c) =>
-        send(hexpad(c))
+        sendUart(hexpad(c))
+      case KeyReleased(_, c, _, _) if hexpad.keySet.contains(c) =>
+        sendUart(hexpad(c))
+
       case _ =>
     }
 
@@ -245,14 +292,29 @@ abstract class Terminal extends SimpleSwingApplication {
     uiapp
   }
 
-  def doRepaint(): Unit = {
-    val LEFT_MARGIN = "   "
-    val GAP = ""
+  var tc = 0
+  var mightNeedRepaint = new AtomicBoolean(true)
+  val paintThread = new Thread {
+    override def run(): Unit = {
+      while (true) {
+        if (mightNeedRepaint.get()) {
+          mightNeedRepaint.set(false)
 
-    val t = "\n" + data.map(line => LEFT_MARGIN + duplicateChar(line).mkString(GAP)).mkString("\n")
-    textArea.text = t
-    //    text.repaint()
+          val LEFT_MARGIN = "   "
+          val GAP = ""
+
+          val t = "\n" + data.map(line => LEFT_MARGIN + duplicateChar(line).mkString(GAP)).mkString("\n")
+          textArea.text = t
+          //    text.repaint()
+          println("" + tc)
+          tc = tc + 1
+        }
+      }
+    }
   }
+  paintThread.setDaemon(true)
+  paintThread.start()
+
 
   // double the width of the chars to make them more blocky
   private def duplicateChar(line: mutable.Buffer[Char]) = {
@@ -273,7 +335,6 @@ abstract class Terminal extends SimpleSwingApplication {
     if (c == '\n') {
       // insert at top : https://stackoverflow.com/questions/12565358/how-to-insert-or-append-new-line-on-top-of-the-jtextarea-in-java-swing
       logPanel.peer.getDocument.insertString(0, logLine.text + "\n", null);
-      //logPanel.text = logLine.text +  "\n" + logPanel.text
       logLine.text = ""
     } else {
       logLine.text += c
@@ -450,7 +511,6 @@ abstract class Terminal extends SimpleSwingApplication {
         Dialog.showMessage(uiapp, s"PROTOCOL ERROR : current state : ${state},  this code int:${c.toInt}")
     }
 
-    doRepaint()
   }
 
   private def drawPixel(x: Int, y: Int, bit: Char, flip: Boolean) = {
@@ -468,6 +528,8 @@ abstract class Terminal extends SimpleSwingApplication {
 
       data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH) = char
     }
+
+    doRepaint()
   }
 
   def fill(): mutable.Seq[mutable.Buffer[Char]] = {

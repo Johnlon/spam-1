@@ -189,4 +189,8 @@ object ComTerminal extends Terminal {
   override def outputStream(): PrintStream = {
     comAdapter.getOutputStream
   }
+
+  override def gamepadStream(): PrintStream = {
+    ???
+  }
 }

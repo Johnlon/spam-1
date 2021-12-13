@@ -11,7 +11,11 @@ object VerilogUARTTerminal extends Terminal {
 
   val uartOut = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.out"
   val uartControl = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.control"
-  val controlStream = new PrintStream(new FileOutputStream(uartControl, true))
+  val gamepadControl = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\gamepad.control"
+
+  val uartControlStream = new PrintStream(new FileOutputStream(uartControl, true))
+  val gamepadControlStream = new PrintStream(new FileOutputStream(gamepadControl, false))
+  def gamepadStream() = gamepadControlStream
 
   var tailer: Tailer = null
 
@@ -43,7 +47,7 @@ object VerilogUARTTerminal extends Terminal {
   }
 
   override def outputStream(): PrintStream = {
-    controlStream
+    uartControlStream
   }
 
   private def startTailer(gotoEnd: Boolean) = {
