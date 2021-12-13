@@ -1,0 +1,523 @@
+/* verilator lint_off ASSIGNDLY */
+/* verilator lint_off STMTDLY */
+
+/* 
+Verilog simulation of https://github.com/Johnlon/NESInterfaceAndPeripherals
+*/
+
+
+
+
+
+
+
+// assertion macro used in tests - is there a built for this??
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Format ...
+    FAILED Line 82   : expected 'xxxxxxxx'
+                     : but got  '00010001'
+*/
+
+
+
+
+
+
+
+
+/* Format ...
+     1122  Line:82    FAILED: actual '00010001' != 'xxxxxxxx' expected,   (d17!=dx)(h11!=hxx)  : rdA_data != B
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// never returns
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+`timescale 1ns/1ns
+
+module dummy;
+    initial 
+        $write("");
+endmodule
+
+ 
+
+
+// based on https://raw.githubusercontent.com/TimRudy/ice-chips-verilog/master/source-7400/74377.v
+// timings from https://assets.nexperia.com/documents/data-sheet/74HC_HCT377.pdf
+
+// Octal D flip-flop with enable
+
+`timescale 1ns/1ns
+
+module hct74377 #(parameter WIDTH = 8, LOG = 0)
+(
+  input _EN,
+  input CP,
+  input [WIDTH-1:0] D,
+  output [WIDTH-1:0] Q
+);
+
+parameter [WIDTH-1:0] UNDEF = {(WIDTH/4){4'bzxxz}};
+reg [WIDTH-1:0] Q_current=UNDEF;
+
+always @(posedge CP)
+begin
+  if (!_EN) begin
+    if (LOG)  $display("%9t", $time, " REGISTER %m   ASSIGNING D=%08b to Q_current", D);
+    Q_current = D;
+  end
+end
+
+if (LOG)
+  always @(Q) begin
+      $display("%9t", $time, " REGISTER %m   OUTPUT CHANGE CP=%1b _EN=%1b D=%08b Q=%08b (Q_current=%08b)", CP, _EN, D, Q, Q_current);
+  end
+
+assign #14 Q = Q_current;
+
+function isUndef();
+    isUndef = (Q === UNDEF);
+endfunction
+
+endmodule
+
+
+// 4-16 decoder
+// https://assets.nexperia.com/documents/data-sheet/74HC_HCT154.pdf
+               
+
+
+
+`timescale 1ns/1ns
+
+module hct74154(_E0, _E1, A, Y);
+    input _E0, _E1;
+    input [3:0] A;
+    output [15:0] Y;
+
+    wire [15:0] x = 16'hffff ^ (2**A);
+    
+    assign #(13) Y = !_E0 & !_E1 ? x: 16'hffff;
+
+endmodule
+
+
+
+
+`timescale 1ns/1ns
+
+module portController (
+    input  [7:0] data, 
+    input  _portsel_in, 
+    input  _port_wr, 
+    input  _port_rd,
+    output  [15:0] _port_sel_wr, 
+    output  [15:0] _port_sel_rd 
+);
+
+	logic [7:0] D, Q;
+	logic CP, _EN;
+    
+	hct74377 #(.LOG(1)) register(
+        .D(data), .Q,
+        .CP(_portsel_in), ._EN(1'b0)
+	);
+
+    hct74154 decode_wr(._E0(1'b0), ._E1(1'b0), .A(register.Q[3:0]), .Y(_port_sel_wr));
+    hct74154 decode_rd(._E0(1'b0), ._E1(1'b0), .A(register.Q[3:0]), .Y(_port_sel_rd));
+
+
+endmodule
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+`timescale 1ns/1ns
+
+module test();
+
+    initial begin
+        $dumpfile("dumpfile.vcd");
+        $dumpvars(0, test);
+
+        $display("[%9t] TEST: START", $time);
+    end
+
+    input  [7:0] data, 
+    input  _portsel_in, 
+    input  _port_wr, 
+    input  _port_rd,
+    output  [15:0] _port_sel_wr, 
+    output  [15:0] _port_sel_rd 
+
+    portController ctrl(
+        .data, 
+        ._portsel_in, 
+        ._port_wr, 
+        ._port_rd,
+        ._port_sel_wr, 
+        ._port_sel_rd 
+    );
+
+
+    always @(*)
+        $display("[%9t] TEST: ", $time, " WR=%16b", _port_sel_wr );
+
+    initial begin
+
+    end
+
+endmodule
+

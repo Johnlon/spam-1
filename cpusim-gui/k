@@ -1,0 +1,216 @@
+
+> nodegui-starter@1.0.0 start
+> webpack && qode ./dist/index.js
+
+asset [1m[32mnodegui_core-929995da3e2117295e9bd364508092d1.node[39m[22m 3.57 MiB [1m[32m[emitted][39m[22m (auxiliary name: main)
+asset [1m[32mindex.js[39m[22m 1.33 MiB [1m[32m[emitted][39m[22m (name: main)
+asset [1m[32m22c8769d0d1e03941f73a69e7842ebe4.png[39m[22m 6.58 KiB [1m[32m[emitted][39m[22m [1m[32m[immutable][39m[22m [from: assets/logox200.png] (auxiliary name: main)
+runtime modules 670 bytes 3 modules
+modules by path [1m./node_modules/@nodegui/nodegui/dist/lib/[39m[22m 491 KiB 214 modules
+modules by path [1m./node_modules/postcss/lib/*.js[39m[22m 480 KiB 25 modules
+modules by path [1m./node_modules/source-map/[39m[22m 99.4 KiB 11 modules
+modules by path [1m./node_modules/cuid/[39m[22m 2.88 KiB
+  [1m./node_modules/cuid/index.js[39m[22m 2.18 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1m./node_modules/cuid/lib/fingerprint.js[39m[22m 435 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1m./node_modules/cuid/lib/pad.js[39m[22m 112 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1m./node_modules/cuid/lib/getRandomValue.js[39m[22m 174 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+modules by path [1m./src/*.ts[39m[22m 27.4 KiB
+  [1m./src/index.ts[39m[22m 2.27 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1m./src/cpu.ts[39m[22m 17.1 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1m./src/control_lines.ts[39m[22m 7.98 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+12 modules
+webpack 5.64.4 compiled [1m[32msuccessfully[39m[22m in 3148 ms
+SETTING UP CONTROL
+SETTING UP ALU
+SETTING UP PC
+SETTING UP ROM
+SETTING UP MAR
+SETTING UP RAM
+ASSEMBLING
+DUMP:  000100100111110000010001000000000000000000000000
+DUMP: 4 = 7 (2) 6 ex:true ci:false cond:0
+DUMP: marlo = nu (B) immed ex:true ci:false cond:0
+DUMP:  000100101111110000010001000000000000000000000001
+DUMP: 5 = 7 (2) 6 ex:true ci:false cond:0
+DUMP: marhi = nu (B) immed ex:true ci:false cond:0
+DUMP:  010010101100101000010001000000000000000000000001
+DUMP: 5 = 4 (9) 5 ex:true ci:false cond:0
+DUMP: marhi = marlo (A_PLUS_B) marhi ex:true ci:false cond:0
+DUMP:  000101101111110000010001000000000000000000000000
+DUMP: 13 = 7 (2) 6 ex:true ci:false cond:0
+DUMP: pchitmp = nu (B) immed ex:true ci:false cond:0
+DUMP:  000101111111001000010001000000000000000000000000
+DUMP: 15 = 7 (2) 1 ex:true ci:false cond:0
+DUMP: pc = nu (B) regb ex:true ci:false cond:0
+
+--- CLOCK RISING
+REG MARHI_a OUT DISABLED
+aBus checking MARHI_a = undefined
+REG MARLO_a OUT DISABLED
+aBus checking MARLO_a = undefined
+aBus = undefined
+REG MARHI_b OUT DISABLED
+bBus checking MARHI_b = undefined
+REG MARLO_b OUT DISABLED
+bBus checking MARLO_b = undefined
+bBus = undefined
+ALU OUT undefined
+LOADING REG MARLO_a <- 0
+REG MARHI_a OUT DISABLED
+aBus checking MARHI_a = undefined
+REG MARLO_a OUT DISABLED
+aBus checking MARLO_a = undefined
+aBus = undefined
+REG MARHI_b OUT DISABLED
+bBus checking MARHI_b = undefined
+REG MARLO_b OUT DISABLED
+bBus checking MARLO_b = undefined
+bBus = undefined
+ALU OUT undefined
+LOADING REG MARLO_b <- 0
+DUMP:  000100100111110000010001000000000000000000000000
+DUMP: 4 = 7 (2) 6 ex:true ci:false cond:0
+DUMP: marlo = nu (B) immed ex:true ci:false cond:0
+--- CLOCK FALLING
+REG MARHI_a OUT DISABLED
+aBus checking MARHI_a = undefined
+REG MARLO_a OUT DISABLED
+aBus checking MARLO_a = undefined
+aBus = undefined
+REG MARHI_b OUT DISABLED
+bBus checking MARHI_b = undefined
+REG MARLO_b OUT DISABLED
+bBus checking MARLO_b = undefined
+bBus = undefined
+ALU OUT undefined
+PC CLOCKING = 1
+
+--- CLOCK RISING
+REG MARHI_a OUT DISABLED
+aBus checking MARHI_a = undefined
+REG MARLO_a OUT DISABLED
+aBus checking MARLO_a = undefined
+aBus = undefined
+REG MARHI_b OUT DISABLED
+bBus checking MARHI_b = undefined
+REG MARLO_b OUT DISABLED
+bBus checking MARLO_b = undefined
+bBus = undefined
+ALU OUT undefined
+LOADING REG MARHI_a <- 0
+REG MARHI_a OUT DISABLED
+aBus checking MARHI_a = undefined
+REG MARLO_a OUT DISABLED
+aBus checking MARLO_a = undefined
+aBus = undefined
+REG MARHI_b OUT DISABLED
+bBus checking MARHI_b = undefined
+REG MARLO_b OUT DISABLED
+bBus checking MARLO_b = undefined
+bBus = undefined
+ALU OUT undefined
+LOADING REG MARHI_b <- 0
+DUMP:  000100101111110000010001000000000000000000000001
+DUMP: 5 = 7 (2) 6 ex:true ci:false cond:0
+DUMP: marhi = nu (B) immed ex:true ci:false cond:0
+--- CLOCK FALLING
+REG MARHI_a OUT DISABLED
+aBus checking MARHI_a = undefined
+REG MARLO_a OUT DISABLED
+aBus checking MARLO_a = undefined
+aBus = undefined
+REG MARHI_b OUT DISABLED
+bBus checking MARHI_b = undefined
+REG MARLO_b OUT DISABLED
+bBus checking MARLO_b = undefined
+bBus = undefined
+ALU OUT undefined
+PC CLOCKING = 2
+
+--- CLOCK RISING
+REG MARHI_a OUT DISABLED
+aBus checking MARHI_a = undefined
+REG MARLO_a OUT ENABLED - OUT 0
+aBus checking MARLO_a = 0
+REG MARLO_a OUT ENABLED - OUT 0
+aBus = 0
+REG MARHI_b OUT ENABLED - OUT 0
+bBus checking MARHI_b = 0
+REG MARHI_b OUT ENABLED - OUT 0
+bBus = 0
+ALU OUT 0
+LOADING REG MARHI_a <- 0
+REG MARHI_a OUT DISABLED
+aBus checking MARHI_a = undefined
+REG MARLO_a OUT ENABLED - OUT 0
+aBus checking MARLO_a = 0
+REG MARLO_a OUT ENABLED - OUT 0
+aBus = 0
+REG MARHI_b OUT ENABLED - OUT 0
+bBus checking MARHI_b = 0
+REG MARHI_b OUT ENABLED - OUT 0
+bBus = 0
+ALU OUT 0
+LOADING REG MARHI_b <- 0
+DUMP:  010010101100101000010001000000000000000000000001
+DUMP: 5 = 4 (9) 5 ex:true ci:false cond:0
+DUMP: marhi = marlo (A_PLUS_B) marhi ex:true ci:false cond:0
+--- CLOCK FALLING
+REG MARHI_a OUT DISABLED
+aBus checking MARHI_a = undefined
+REG MARLO_a OUT ENABLED - OUT 0
+aBus checking MARLO_a = 0
+REG MARLO_a OUT ENABLED - OUT 0
+aBus = 0
+REG MARHI_b OUT ENABLED - OUT 0
+bBus checking MARHI_b = 0
+REG MARHI_b OUT ENABLED - OUT 0
+bBus = 0
+ALU OUT 0
+PC CLOCKING = 3
+PC LOADING HITMP = 0
+
+--- CLOCK RISING
+DUMP:  000101101111110000010001000000000000000000000000
+DUMP: 13 = 7 (2) 6 ex:true ci:false cond:0
+DUMP: pchitmp = nu (B) immed ex:true ci:false cond:0
+--- CLOCK FALLING
+REG MARHI_a OUT DISABLED
+aBus checking MARHI_a = undefined
+REG MARLO_a OUT DISABLED
+aBus checking MARLO_a = undefined
+aBus = undefined
+REG MARHI_b OUT DISABLED
+bBus checking MARHI_b = undefined
+REG MARLO_b OUT DISABLED
+bBus checking MARLO_b = undefined
+bBus = undefined
+ALU OUT undefined
+PC CLOCKING = 4
+
+--- CLOCK RISING
+DUMP:  000101111111001000010001000000000000000000000000
+DUMP: 15 = 7 (2) 1 ex:true ci:false cond:0
+DUMP: pc = nu (B) regb ex:true ci:false cond:0
+--- CLOCK FALLING
+REG MARHI_a OUT DISABLED
+aBus checking MARHI_a = undefined
+REG MARLO_a OUT DISABLED
+aBus checking MARLO_a = undefined
+aBus = undefined
+REG MARHI_b OUT DISABLED
+bBus checking MARHI_b = undefined
+REG MARLO_b OUT DISABLED
+bBus checking MARLO_b = undefined
+bBus = undefined
+ALU OUT undefined
+PC LOADING HI:LO = 0:0 = 0
+-----
+DEV_SELECT T:4 B:1 A:2
+TARG_DEV 12 = false
+BBUS_DEV 1 = false
+ABUS_DEV 0 = false
+ABUS_DEV rega = false
+ABUS_DEV regb = false
+BBUS_DEV immed = true
+START =========================
