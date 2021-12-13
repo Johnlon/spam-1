@@ -240,6 +240,14 @@ module test();
 
         ////////////////////////////////////////////////////////////// NEGATE_B
         assign a = 0; 
+        assign b = 1;
+        assign _flag_c_in = 0; // not relevant
+        assign alu_op = OP_NEGATE_B;
+        PD;
+        `Equals(o, 8'b11111111)
+        `FLAGS(N|NE|LT)
+
+        assign a = 0; 
         assign b = 0;
         assign _flag_c_in = 'x; // not relevant
         assign alu_op = OP_NEGATE_B;

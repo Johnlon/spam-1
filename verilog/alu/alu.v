@@ -93,19 +93,34 @@ module alu #(parameter LOG=0, PD=120) (
     assign aluop_1=alu_op[1];
     assign aluop_0=alu_op[0];
 
-    wire [7:0] _decoded;
-    hct74138 alu_op_decoder(.Enable1_bar(aluop_4), .Enable2_bar(1'b0), .Enable3(aluop_3), .A({aluop_2,aluop_1,aluop_0}), .Y(_decoded) );
+    logic use_hw=1;
+    
+//`define USE_HW
+`ifdef USE_HW
 
-    wire _use_cin;
-    and #(8) use_cin_decoder(_use_cin, _decoded[7], _decoded[6],  _decoded[5]); 
+        wire [7:0] _decoded;
+        hct74138 alu_op_decoder(.Enable1_bar(aluop_4), .Enable2_bar(1'b0), .Enable3(aluop_3), .A({aluop_2,aluop_1,aluop_0}), .Y(_decoded) );
 
-    wire flag_c_in;
-    not #(8) hct7404(flag_c_in, _flag_c_in); // inverter
+        wire _use_cin;
+        and #(8) use_cin_decoder(_use_cin, _decoded[7], _decoded[6],  _decoded[5]); 
 
-    wire effective_aluop_2;
-    hct74157 #(.WIDTH(1)) effective_bit_sel(._E(1'b0), .S(_use_cin), .I1({aluop_2}), .I0({flag_c_in}), .Y({ effective_aluop_2 })); // decoder
+        wire flag_c_in;
+        not #(8) hct7404(flag_c_in, _flag_c_in); // inverter
 
-    wire [4:0] alu_op_effective = {aluop_4, aluop_3, effective_aluop_2, aluop_1, aluop_0};
+        wire effective_aluop_2;
+        hct74157 #(.WIDTH(1)) effective_bit_sel(._E(1'b0), .S(_use_cin), .I1({aluop_2}), .I0({flag_c_in}), .Y({ effective_aluop_2 })); // decoder
+
+        wire [4:0] alu_op_effective = {aluop_4, aluop_3, effective_aluop_2, aluop_1, aluop_0};
+`else
+
+        logic effective_aluop_2;
+
+        always @* begin
+            effective_aluop_2 = (( alu_op == 13 || alu_op == 14 || alu_op == 15 )? !_flag_c_in: aluop_2);
+        end
+        
+        wire [4:0] alu_op_effective = {aluop_4, aluop_3, effective_aluop_2, aluop_1, aluop_0};
+`endif
 
 
     //////////////////////////////////////////////////////
