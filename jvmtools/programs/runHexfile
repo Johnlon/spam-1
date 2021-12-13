@@ -1,12 +1,12 @@
 
 ## NEED TO EDIT THE CHIP 8 EMUL TO USE THE HEXFILE FUCTION TO MAKE THIS WORK 
-./scc_chip8.sh  Chip2Emulator.scc hexfile
+./scc_chip8.sh  Chip8Emulator.scc hexfile
 if [ $? -ne 0 ]; then
     echo error
     exit 1
 fi
 
-../../verilog/spamcc_sim.sh  1000 ../../verilog/cpu/demo_assembler_roms.v Chip2Emulator.scc.asm.rom
+../../verilog/spamcc_sim.sh  1000 ../../verilog/cpu/demo_assembler_roms.v Chip8Emulator.scc.asm.rom
 if [ $? -ne 0 ]; then
     echo error
     exit 1

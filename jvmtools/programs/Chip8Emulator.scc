@@ -107,8 +107,26 @@ program {
             uint16 opcodelo = memory[pc + 1];
             uint16 opcode = (opcodehi << 8) + opcodelo;
 
-            uint16 keyLast = getuart(); // no key = x100 otherwise 0-255
+            uint16 control = readport(Gamepad1);
+            if (control == 0) {
+                keyDown = $100; // no key pressed
+            } else if (control == 1) { // nes-up=1
+                keyDown = 4; // rotate left
+            } else if (control == 2) { // nes-dn=2
+                keyDown = 1; // drop
+            } else if (control == 4) { // nes-left=4
+                keyDown = 5; // left
+            } else if (control == 8) { // nes-right=8
+                keyDown = 6; // right
+            } else if (control == 16) { // nes-space=16
+                keyDown = 1; // drop
+            } else {
+                keyDown = 0;
+            }
 
+
+/*
+            uint16 keyLast = getuart(); // no key = x100 otherwise 0-255
             if (keyLast == $100) {
                 // no change
             } else if (keyLast == 32) {
@@ -116,6 +134,7 @@ program {
             } else {
                 keyDown = keyLast;
             }
+*/
 
 
 
@@ -351,6 +370,7 @@ program {
                     putfuart(X, y)
                 }
                 if (___N != 0) {
+                    // _X__ and __Y_ are only factors to this op and so ___N ought to be unused and 0
                     halt(opcode, 1)
                 }
                 if (x == y) {

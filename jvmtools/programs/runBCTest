@@ -1,10 +1,10 @@
-./scc_chip8.sh  Chip2Emulator.scc /home/john/OneDrive/github/johnlon/chip-8/src/main/resources/chip8/roms/BC_test
+./scc_chip8.sh  Chip8Emulator.scc /home/john/OneDrive/github/johnlon/chip-8/src/main/resources/chip8/roms/BC_test
 if [ $? -ne 0 ]; then
     echo error
     exit 1
 fi
 
-../../verilog/spamcc_sim.sh  1000 ../../verilog/cpu/demo_assembler_roms.v Chip2Emulator.scc.asm.rom
+../../verilog/spamcc_sim.sh  1000 ../../verilog/cpu/demo_assembler_roms.v Chip8Emulator.scc.asm.rom
 if [ $? -ne 0 ]; then
     echo error
     exit 1
