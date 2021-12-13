@@ -138,6 +138,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
 
   def ramDirect: Parser[RamDirect] = "[" ~ expr ~ "]" ^^ { case _ ~ v ~ _ => RamDirect(v) }
 
+  def debug: Parser[Debug] = ";;" ~> ".*".r ^^ (a => Debug(a))
   def comment: Parser[Comment] = ";" ~> ".*".r ^^ (a => Comment(a))
 
   def targets: Parser[TExpression] = tdev | ramDirect
@@ -211,13 +212,15 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   }
 
   private def inst(t: TExpression, a: ADevice, op: AluOp, b: BExpression, f: Option[Condition], immed: Know[KnownInt]): Instruction = {
+    val defaultCont = Condition(ConditionMode.Standard, Control._A)
+
     (t, b) match {
       case (t: TDevice, b: BDevice) =>
-        Instruction(t, a, b, op, f, REGISTER, Irrelevant(), immed)
+        Instruction(t, a, b, op, f.getOrElse(defaultCont), REGISTER, Irrelevant(), immed)
       case (t: TDevice, RamDirect(addr)) =>
-        Instruction(t, a, BDevice.RAM, op, f, DIRECT, addr, immed)
+        Instruction(t, a, BDevice.RAM, op, f.getOrElse(defaultCont), DIRECT, addr, immed)
       case (RamDirect(addr), b: BDevice) =>
-        Instruction(TDevice.RAM, a, b, op, f, DIRECT, addr, immed)
+        Instruction(TDevice.RAM, a, b, op, f.getOrElse(defaultCont), DIRECT, addr, immed)
       case (RamDirect(_), RamDirect(_)) =>
         sys.error(s"illegal instruction: target '$t' and source '$b' cannot both be RAM")
     }
@@ -248,7 +251,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       inst(t, a, AluOp.PASS_A, BDevice.NU, f, Irrelevant())
   }
 
-  def line: Parser[List[Line]] = (strInstruction | bytesInstruction | eqInstruction | bInstruction | abInstructionImmed | abInstruction | aInstruction | bInstructionImmed | comment | label) ^^ {
+  def line: Parser[List[Line]] = (strInstruction | bytesInstruction | eqInstruction | bInstruction | abInstructionImmed | abInstruction | aInstruction | bInstructionImmed | debug | comment | label) ^^ {
     case x: List[_] => x.asInstanceOf[List[Line]]
     case x: Line => List(x)
   }

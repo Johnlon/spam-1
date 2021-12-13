@@ -122,7 +122,7 @@ trait Knowing {
 
     def getVal = Some(knownVal)
 
-    override def toString(): String = s"""${this.getClass.getSimpleName}($knownVal${if (name.length > 0) "{" + name + "}" else ""})"""
+    override def toString(): String = s"""${this.getClass.getSimpleName}($knownVal, ${if (name.length > 0) "Name:" + name else "NoName"})"""
   }
 
   /* something who's value is definitely unknown */

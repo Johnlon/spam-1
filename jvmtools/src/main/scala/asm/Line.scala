@@ -18,7 +18,7 @@ trait Lines {
     instNo += 1
   }
 
-  case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, condition: Option[Condition], amode: Mode, address: Know[KnownInt], immed: Know[KnownInt])
+  case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, condition: Condition, amode: Mode, address: Know[KnownInt], immed: Know[KnownInt])
     extends Line {
 
     pc += 1
@@ -76,8 +76,8 @@ trait Lines {
       val sTDev = bits("tdev", tdev.id.toBinaryString, 5)
       val sADev = bits("adev", adev.id.toBinaryString, 3)
       val sBDev = bits("bdev", bdev.id.toBinaryString, 4)
-      val sFlags = bits("control", bitString(condition.map(_.cond).getOrElse(Control._A)), 5)
-      val sCondMode = condition.map(_.mode).getOrElse(ConditionMode.Standard).bit
+      val sFlags = bits("control", bitString(condition.cond), 5)
+      val sCondMode = condition.mode.bit
       val sAddrMode = if (amode == DIRECT) "1" else "0"
       val sAddress = bits("address", address.getVal.map(_.toBinaryString).getOrElse(""), 16)
       val sImmed = bits("immed", immed.getVal.map { v =>
@@ -125,6 +125,10 @@ trait Lines {
           false
       }
     }
+  }
+
+  case class Debug(comment: String) extends Line {
+    def unresolved = false
   }
 
   case class Comment(comment: String) extends Line {

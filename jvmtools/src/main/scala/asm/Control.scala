@@ -12,7 +12,7 @@ object ConditionMode {
 }
 
 case class Condition private(mode: ConditionMode, cond: Control) extends E {
-  override def toString = s"Control=${cond} Mode=${mode}"
+  override def toString = s"$cond,$mode"
 }
 
 object Condition {
@@ -39,7 +39,7 @@ object FlagControl {
 
 sealed class Control private(val cond: Int, val setflag: FlagControl) extends E {
   // setflag value is included in enum name so no need to log
-  override def toString = s"Condition=$enumName"
+  override def toString = s"$enumName"
 }
 
 object Control {

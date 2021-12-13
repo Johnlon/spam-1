@@ -360,8 +360,7 @@ case class DefVarEqLocatedData(target: String, locatedData: Seq[LocatedData]) ex
   override def gen(depth: Int, parent: Scope): List[String] = {
     locatedData.foreach { data =>
       if (data.relLocation == 0 && data.data.isEmpty) {
-        sys.error(s"located data at offset ${data.relLocation} cannot be empty at : "
-          + data.pos.asInstanceOf[OffsetPosition].lineContents)
+        sys.error(s"located data at offset ${data.relLocation} cannot be empty at : " + data.pos.asInstanceOf[OffsetPosition].lineContents)
       }
     }
 
@@ -757,9 +756,11 @@ case class IfCond(flagToCheck: String,
 
     val conditionalJump = {
       List(s"$labelCheck:") ++
+        List(s";; conditional statement") ++
         condStatements ++
         split(
           s"""
+             |;; jump if !$flagToCheck
              |PCHITMP = <:$labelElse
              |PC = >:$labelElse ! $flagToCheck
               """)
@@ -781,13 +782,17 @@ case class IfCond(flagToCheck: String,
     }
 
     conditionalJump ++
+      List(";; if true ....") ++
       stmts ++
       Seq(
+        ";; goto endif",
         s"PCHITMP = <:$labelBot",
         s"PC = >:$labelBot",
+        s";; else ..:",
         s"$labelElse:"
       ) ++
       elseStmts ++
+      List(";; endif") ++
       Seq(
         s"$labelBot:"
       )
@@ -1005,7 +1010,7 @@ case class CallFunction(fnName: String, argExpr: List[BlkCompoundAluExpr]) exten
 case class LineComment(comment: String) extends Block(logEntryExit = false) {
   override def gen(depth: Int, parent: Scope): Seq[String] = {
     val withoutLeading = comment.replace("//", "")
-    List(s"; $withoutLeading")
+    List(s";LINECOMMENT $withoutLeading")
   }
 }
 
@@ -1018,7 +1023,7 @@ case class BlockComment(comment: String) extends Block(logEntryExit = false) {
       replaceAll("^/\\*", "").
       replaceAll("\\*/$", "").
       split("[\n\r]+").
-      map(";" + _).toSeq
+      map(";BLOCKCOMMENT " + _).toSeq
     patched
   }
 }
@@ -1050,7 +1055,8 @@ case class Program(fns: List[Block]) {
         val byteString = bytes.map(_.toInt).mkString(", ")
 
         Seq(
-          s"; $typ : $name : $fqn",
+          //s";VARIABLE $typ : $name : $fqn",
+          s";;VARIABLE $typ : $name",
           s"$fqn: EQU   $address",
           s"$fqn: BYTES [$byteString]"
         )
@@ -1117,8 +1123,19 @@ abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) exte
       }
 
       // generate code
-      val generatedCode = gen(depth, thisScope)
-      val prettyCode: Seq[String] = generatedCode.map(l => {
+      val generatedCode: Seq[String] = gen(depth, thisScope)
+
+      val comment = this.pos match {
+        case p: OffsetPosition =>
+          val lineContents = p.lineContents.trim
+          val lineNo = p.line
+          s";; DEBUG ($lineNo) $lineContents     --------------------------------------------------------"
+        case _ => ""
+      }
+
+      val code: Seq[String] = comment +: generatedCode
+
+      val prettyCode: Seq[String] = code.map(l => {
         indentPrefix + l
       })
 

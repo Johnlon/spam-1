@@ -86,12 +86,14 @@ object Assembler {
       rom2.write(binToByte(line(4)))
       rom1.write(binToByte(line(5)))
 
+      /*
       printf("ROM PC %6d:  ", i)
       line.foreach {
         b =>
           printf(" %2s (%8s) ", binToByte(b).toHexString, b)
       }
       printf("\n")
+       */
 
 
       i += 1
