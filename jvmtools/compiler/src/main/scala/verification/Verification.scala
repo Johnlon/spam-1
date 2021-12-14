@@ -130,7 +130,7 @@ object Verification {
     println("RUNNING :\n" + romFileUnix)
 
     //    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh ../verilog/cpu/demo_assembler_roms.v +rom=`pwd`/$romFileUnix  +uart_control_file=`pwd`/$controlFileUnix"""))
-    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../verilog/spamcc_sim.sh '$timeout' ../verilog/cpu/demo_assembler_roms.v `pwd`/$romFileUnix"""))
+    val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../../verilog/spamcc_sim.sh '$timeout' ../../verilog/cpu/demo_assembler_roms.v `pwd`/$romFileUnix"""))
 
     val halted = new AtomicReference[HaltCode]()
     val lines = ListBuffer.empty[String]
@@ -156,15 +156,24 @@ object Verification {
     println("CMD: " + pb)
     val process = pb.run(logger)
     val ex = process.exitValue()
-
     println("EXIT CODE " + ex)
+
+    if (ex == 127) {
+      println("CANT FIND EXEC")
+    }
 
     outputCheck(lines.toList)
 
     val actualHalt = halted.get()
     val expectedHalt = checkHalt.orNull
-    assertEquals(expectedHalt, actualHalt)
-    println("halted: " + actualHalt)
+    if (expectedHalt == null) {
+      if (actualHalt != null) {
+        println("expected no halt, but halted with: " + actualHalt)
+      }
+    } else {
+      assertEquals(expectedHalt, actualHalt)
+    }
+    println("halted state: " + actualHalt)
   }
 }
 
