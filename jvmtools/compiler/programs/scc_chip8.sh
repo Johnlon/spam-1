@@ -1,5 +1,6 @@
 #!/bin/sh
 set -x
+
 cd $(readlink -f $(dirname $0))
 scc_file=$1
 if [ -z $scc_file ]; then 
@@ -14,14 +15,16 @@ fi
 
 HERE=$(readlink -f $(dirname $0))
 
+pwd
+
 set -x
-java -DCHIP8_FILENAME=$chip8_prog -classpath $HERE/../build/libs/jvmtools.jar  scc/SpamCC $scc_file
+java -DCHIP8_FILENAME=$chip8_prog -classpath $HERE/../build/libs/compiler.jar  scc/SpamCC $scc_file
 if [ $? -ne 0 ]; then
     echo error
     exit 1
 fi
 
-java -classpath $HERE/../build/libs/jvmtools.jar  asm/Assembler $scc_file.asm
+java -classpath $HERE/../build/libs/compiler.jar  asm/Assembler $scc_file.asm
 if [ $? -ne 0 ]; then
     echo error
     exit 1
