@@ -5,10 +5,14 @@ l
 **/*.vvp
 **/*.log
 **/*.swp
+**/*.swm
 **/*.vcd
 **/a.out
 **/*.v.out
 **/*.class
+**/igamepad.control
+**/iuart.control
+**/iuart.out
 
 **/.old
 /verilog/_old/
