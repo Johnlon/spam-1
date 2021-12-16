@@ -4,7 +4,7 @@ import kotlin.test.assertEquals
 internal class AssembleTest {
     @Test
     fun testAsm() {
-        val rom = LongArray(10)
+        val rom = mutableListOf<Long>()
         val inst = mutableListOf<Instruction>()
         val code = Instruction(
             Op.A_MINUS_B_BCD,
@@ -21,7 +21,6 @@ internal class AssembleTest {
         assemble(
             rom,
             inst,
-            0,
             code
         )
 

@@ -2,8 +2,9 @@ fun tobin(value: Int, pad: Int): String {
     return tobin(value, pad, pad-1,0)
 }
 
+// return single bit
 fun tobin(value: Int, pad: Int, left: Int): String {
-    return tobin(value, pad, left,0)
+    return tobin(value, pad, left,left)
 }
 
 fun tobin(value: Int, pad: Int, left: Int, right: Int): String {

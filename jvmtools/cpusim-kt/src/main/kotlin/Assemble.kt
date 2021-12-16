@@ -31,12 +31,11 @@ data class Instruction(
 }
 
 fun assemble(
-    rom: LongArray,
+    rom: MutableList<Long>,
     instructions: MutableList<Instruction>,
-    locn: Int,
     vararg prog: Instruction
 ) {
-    var l = locn
+    var l = 0
 
     prog.forEach { inst ->
         val strF = "" +
@@ -56,9 +55,8 @@ fun assemble(
         System.out.println("ASM : " + strF)
 
         val str = strF.replace("\\s.:".toRegex(), "")
-
-        rom.set(l, str.toLong(2))
-        instructions.set(l, inst)
+        rom.add(str.toLong(2))
+        instructions.add(inst)
         l++
     }
 }

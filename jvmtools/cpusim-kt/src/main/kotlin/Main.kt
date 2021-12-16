@@ -8,8 +8,11 @@ import java.io.*
 import java.util.*
 import java.util.regex.Pattern
 
+
 class CPU {
     val gamepageReader = GamepadFileReader()
+
+    val t = InProcessTerminal()
 
     companion object {
         fun loadAlu(aluRom: MutableList<Int>) {
@@ -32,7 +35,7 @@ class CPU {
 
     val aluRom = mutableListOf<Int>()
 
-    val rom = LongArray(65536) { 0 }
+    val rom = mutableListOf<Long>(65536)
     val instructions = mutableListOf<Instruction>()
 
     val ram = IntArray(65536) { 0 }
@@ -284,7 +287,6 @@ fun prog(cpu: CPU) {
     assemble(
         cpu.rom,
         cpu.instructions,
-        0,
         Instruction(
             Op.B, TDev.marlo, ADev.marhi, BDev.immed, Cond.A, Keep, Std, Dir, 0xffff, 0x0
         ),
@@ -318,7 +320,7 @@ fun prog(cpu: CPU) {
 fun loadProgram(cpu: CPU, romFile: String) {
     var loc = 0
     File(romFile).forEachLine { line ->
-        cpu.rom[loc] = line.toLong(2)
+        cpu.rom.add(line.toLong(2))
         val inst = decode(line)
         println("${loc} = ${inst}")
         cpu.instructions.add(inst)
@@ -347,7 +349,7 @@ fun main(_args: Array<String>) {
     println("START")
 
     val cpu = CPU()
-    loadProgram(cpu, "c:/Users/johnl/OneDrive/simplecpu/jvmtools/programs/Chip8Emulator.scc.asm.rom")
+    loadProgram(cpu, "c:/Users/johnl/OneDrive/simplecpu/jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
     cpu.run()
 }
 
