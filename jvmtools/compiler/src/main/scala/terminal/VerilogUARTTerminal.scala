@@ -3,9 +3,8 @@ package terminal
 import org.apache.commons.io.input.{Tailer, TailerListener}
 
 import java.io.{File, FileOutputStream, PrintStream}
-import scala.swing._
 
-object VerilogUARTTerminal extends Terminal {
+object VerilogUARTTerminal extends UARTTerminal {
 
   val replay = true
 
@@ -15,28 +14,14 @@ object VerilogUARTTerminal extends Terminal {
 
   val uartControlStream = new PrintStream(new FileOutputStream(uartControl, true))
   val gamepadControlStream = new PrintStream(new FileOutputStream(gamepadControl, false))
+
   def gamepadStream() = gamepadControlStream
 
   var tailer: Tailer = null
 
-  def run(): Unit = {
+  override def run(): Unit = {
 
-    val buttons = new BoxPanel(Orientation.Horizontal) {
-      contents ++= Seq(brefresh, bpaint, bstop, bnext, breplay)
-    }
-
-    val label = new BoxPanel(Orientation.Horizontal) {
-      contents ++= Seq(labelChar)
-    }
-
-    val head = new BoxPanel(Orientation.Vertical) {
-      contents ++= Seq(buttons, label, textArea, logLine, scrText)
-    }
-
-    uiapp.contents = head
-
-    outputStream().print(f"t100000\n")
-    outputStream().flush()
+    super.run()
 
     val gotoEnd = !replay
     startTailer(gotoEnd)

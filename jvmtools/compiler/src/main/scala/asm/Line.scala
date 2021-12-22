@@ -47,10 +47,10 @@ trait Lines {
       case _ =>
     }
 
-//    def str = {
-//      val fstr = control.toString
-//      s"""${instNo.formatted("%03d")} pc:${instructionAddress.formatted("%04x")} ${this.getClass.getName}(${tdev} = ${adev} ${aluop}$fstr ${bdev})  amode:${amode}   addr:${address.eval}  immed:${immed.eval}"""
-//    }
+    //    def str = {
+    //      val fstr = control.toString
+    //      s"""${instNo.formatted("%03d")} pc:${instructionAddress.formatted("%04x")} ${this.getClass.getName}(${tdev} = ${adev} ${aluop}$fstr ${bdev})  amode:${amode}   addr:${address.eval}  immed:${immed.eval}"""
+    //    }
 
     def unresolved = {
       val Aok = address.getVal match {
@@ -64,11 +64,6 @@ trait Lines {
 
       val isResolved = Aok & Iok
       !isResolved
-    }
-
-    private def bitString(control: Control): String = {
-      val (cond, flag) = (control.cond, control.setflag)
-      ((cond << 1) | flag.bit).toBinaryString
     }
 
     def encode: List[String] = {
@@ -96,6 +91,11 @@ trait Lines {
 
       val list = i.grouped(8).toList
       list
+    }
+
+    private def bitString(control: Control): String = {
+      val (cond, flag) = (control.cond, control.setflag)
+      ((cond << 1) | flag.bit).toBinaryString
     }
 
     private def bits(name: String, value: String, len: Int): String = {

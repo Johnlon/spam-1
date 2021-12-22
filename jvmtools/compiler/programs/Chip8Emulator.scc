@@ -149,7 +149,7 @@ program {
             putfuart(X, opcodehi)
             putfuart(X, opcodelo)
 
-            if (LOG == 1) {
+//            if (LOG == 1) {
                 putfuart(C, 32)
 
                 putfuart(C, 'K')
@@ -234,7 +234,7 @@ program {
                 putfuart(X, registers[15])
                 putfuart(C, 32)
 
-            }
+//            }
 
             uint16 N___ = opcode & $f000;
             uint16 _NNN = opcode & $0fff;

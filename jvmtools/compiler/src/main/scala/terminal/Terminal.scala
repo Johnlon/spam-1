@@ -305,8 +305,6 @@ abstract class Terminal extends SimpleSwingApplication {
 
           val t = "\n" + data.map(line => LEFT_MARGIN + duplicateChar(line).mkString(GAP)).mkString("\n")
           textArea.text = t
-          //    text.repaint()
-          println("" + tc)
           tc = tc + 1
         }
       }

@@ -7,34 +7,6 @@ trait Knowing {
 
   val labels = mutable.Map.empty[String, IsKnowable[_ <: KnownValue]]
 
-  sealed trait KnownValue {
-    def value: Int
-  }
-
-  case class KnownInt(value: Int) extends KnownValue {
-    def toBinaryString: String = value.toBinaryString
-
-    def +(knownInt: KnownInt) = KnownInt(value + knownInt.value)
-
-    def -(knownInt: KnownInt) = KnownInt(value - knownInt.value)
-
-    def /(knownInt: KnownInt) = KnownInt(value / knownInt.value)
-
-    def *(knownInt: KnownInt) = KnownInt(value * knownInt.value)
-
-    def %(knownInt: KnownInt) = KnownInt(value % knownInt.value)
-
-    def &(knownInt: KnownInt) = KnownInt(value & knownInt.value)
-
-    def |(knownInt: KnownInt) = KnownInt(value | knownInt.value)
-
-    override def toString = s"$value"
-  }
-
-  case class KnownByteArray(value: Int, data: List[Byte]) extends KnownValue {
-    override def toString = s"bytes(pos:$value len:${data.length}, data:${data})"
-  }
-
   def rememberKnown[K <: IsKnowable[_ <: KnownValue]](name: String, ik: K): K = {
     val newValue = ik.getVal
 
@@ -89,7 +61,7 @@ trait Knowing {
   def recall(name: String): Option[KnownInt] = {
     val maybeKnow: Option[IsKnowable[_ <: KnownValue]] = labels.get(name)
     maybeKnow match {
-      case Some(b:IsKnowable[_]) =>
+      case Some(b: IsKnowable[_]) =>
         val oi = b.getVal.map { v =>
           KnownInt(v.value)
         }
@@ -99,18 +71,41 @@ trait Knowing {
     }
   }
 
-  object Known {
-    def apply(name: String, i: Int): Known[KnownInt] = Known(name, KnownInt(i))
-
-    def apply(name: String, i: Int, b: Seq[Byte]): Known[KnownByteArray] = Known(name, KnownByteArray(i, b.toList))
+  sealed trait KnownValue {
+    def value: Int
   }
 
   sealed trait Know[T <: KnownValue] {
     def eval: Know[T] // none - means unknowable
+
     def getVal: Option[T]
   }
 
   sealed trait IsKnowable[T <: KnownValue] extends Know[T]
+
+  case class KnownInt(value: Int) extends KnownValue {
+    def toBinaryString: String = value.toBinaryString
+
+    def +(knownInt: KnownInt) = KnownInt(value + knownInt.value)
+
+    def -(knownInt: KnownInt) = KnownInt(value - knownInt.value)
+
+    def /(knownInt: KnownInt) = KnownInt(value / knownInt.value)
+
+    def *(knownInt: KnownInt) = KnownInt(value * knownInt.value)
+
+    def %(knownInt: KnownInt) = KnownInt(value % knownInt.value)
+
+    def &(knownInt: KnownInt) = KnownInt(value & knownInt.value)
+
+    def |(knownInt: KnownInt) = KnownInt(value | knownInt.value)
+
+    override def toString = s"$value"
+  }
+
+  case class KnownByteArray(value: Int, data: List[Byte]) extends KnownValue {
+    override def toString = s"bytes(pos:$value len:${data.length}, data:${data})"
+  }
 
   /* somethng whose value is resolved as known */
   case class Known[T <: KnownValue : ClassTag](name: String, knownVal: T) extends IsKnowable[T] {
@@ -217,6 +212,12 @@ trait Knowing {
     override def toString(): String = {
       s"( ${a()} ${name} ${b()} )"
     }
+  }
+
+  object Known {
+    def apply(name: String, i: Int): Known[KnownInt] = Known(name, KnownInt(i))
+
+    def apply(name: String, i: Int, b: Seq[Byte]): Known[KnownByteArray] = Known(name, KnownByteArray(i, b.toList))
   }
 
 }

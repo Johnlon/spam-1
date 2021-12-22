@@ -21,9 +21,6 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-    implementation("org.apache.commons:commons-lang3:3.12.0")
-    implementation("commons-io:commons-io:2.11.0")
-
 }
 
 dependencies {

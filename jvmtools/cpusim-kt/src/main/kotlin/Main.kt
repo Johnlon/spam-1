@@ -4,15 +4,11 @@ import CInv.Inv
 import CInv.Std
 import Flag.Keep
 import Flag.Set
-import java.io.*
-import java.util.*
+import java.io.File
 import java.util.regex.Pattern
 
 
 class CPU {
-    val gamepageReader = GamepadFileReader()
-
-    val t = InProcessTerminal()
 
     companion object {
         fun loadAlu(aluRom: MutableList<Int>) {
@@ -28,7 +24,6 @@ class CPU {
 
     constructor() {
         loadAlu(aluRom)
-        gamepageReader.startTailer(false, this::gamepadHandler)
     }
 
     lateinit var lastOp: Op
@@ -93,7 +88,10 @@ class CPU {
     }
 
     var cycles = 0
-    fun cycle() {
+    var freq = 1000*1000
+    var intervalNs : Long = (1000000000 * (1.0/freq)).toLong()
+
+    fun cycle(terminalHandler: (String) -> Unit) {
 
         cycles++
         val i: Instruction = instructions[pc()] ?: throw Error("NO INSTRUCTION AT " + pc())
@@ -165,7 +163,7 @@ class CPU {
                 TDev.regd -> regd = aluVal
                 TDev.marlo -> marlo = aluVal
                 TDev.marhi -> marhi = aluVal
-                TDev.uart -> uartOut(aluVal)
+                TDev.uart -> uartOut(aluVal, terminalHandler)
                 TDev.ram -> if (i.amode == Dir) ram[i.address] = aluVal else ram[mar()] = aluVal
                 TDev.halt -> halt(aluVal)
                 TDev.vram -> TODO()
@@ -192,54 +190,50 @@ class CPU {
         if (!jumped) {
             incPc()
         }
+
+        // slow down
+        delay()
     }
 
-    var transmitted = 0
-
-    val uartOutName = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.out"
-
-    val uartOutFile = run {
-        File(uartOutName).delete()
-        BufferedWriter(FileWriter(uartOutName))
+    var lastTime = System.nanoTime()
+    fun delay() {
+        val now = System.nanoTime()
+        val remaining = intervalNs - (now - lastTime)
+        nanosleep(remaining)
+        lastTime = now
     }
 
-    private fun uartOut(aluVal: Int) {
-        // just to slow the cpu down
 
-        fun map(i: Int): String {
+    private fun uartOut(aluVal: Int, terminalHandler: (String) -> Unit) {
 
-            return if (i.toChar().isISOControl())
-                when (i) {
-                    0 -> "nul"
-                    '\t'.code -> "\\t"
-                    '\n'.code -> "\\n"
-                    '\r'.code -> "\\r"
-                    else -> "<ctrl>"
-                }
-            else
-                i.toChar().toString()
-        }
-
-//        println(
-//            "TRANSMITTING ${
-//                (transmitted++).toString().padStart(4, ' ')
-//            } :  D:${aluVal}  H:${aluVal.toString(16)}   C:'${map(aluVal)}'"
-//        )
-
-        uartOutFile.write(aluVal.toString(16).padStart(2, '0') + "\n")
+        val terminalOut: String = aluVal.toString(16).padStart(2, '0')
+        terminalHandler(terminalOut)
     }
 
-    val gamepadData = LinkedList<String>()
+    val gamepadData = mutableListOf<String>()
 
     fun gamepadHandler(line: String) {
-        gamepadData.add(line)
+        synchronized(gamepadData) {
+            gamepadData.add(line)
+        }
+    }
+
+
+    fun nanosleep(i: Long) {
+        val start = System.nanoTime()
+        var end: Long = 0
+        do {
+            end = System.nanoTime()
+        } while (start + i >= end)
     }
 
     /* field 0 is 0 if nothing read , otherwise it's the controller id*/
     var lastPad1 = 0
     var lastPad2 = 0
     private fun padin(pad: Int): Int {
-        val k = if (gamepadData.size>0) gamepadData.removeFirst() else null
+        val k = synchronized(gamepadData) {
+            if (gamepadData.size > 0) gamepadData.removeFirst() else null
+        }
 
         if (k != null) {
             val p = Pattern.compile("c([12])=(\\d+)")
@@ -260,18 +254,23 @@ class CPU {
     var halted = false
 
     /* note: runs at up to 30MHz when dump IO is disabled and jvm warmed up, approx 2MHz for short progs*/
-    fun run() {
+    fun run(terminalHandler: (String) -> Unit) {
         pcHi = 0
         pcLo = 0
 
         halted = false
         val start = System.currentTimeMillis()
         while (!halted) {
-            cycle()
+            cycle(terminalHandler)
+            if (cycles %1000000 == 0) printRate(start)
         }
+        printRate(start)
+    }
+
+    private fun printRate(start: Long) {
         val took = System.currentTimeMillis() - start
         println("RUNTIME ${took} ms")
-        println("RATE ${(1000 * cycles) / (took + 1)} inst/s")
+        println("RATE ${(1000L * cycles) / (took + 1)} inst/s")
     }
 
     private fun halt(aluValue: Int) {
@@ -350,6 +349,9 @@ fun main(_args: Array<String>) {
 
     val cpu = CPU()
     loadProgram(cpu, "c:/Users/johnl/OneDrive/simplecpu/jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
-    cpu.run()
+
+    val t = InProcessTerminal(cpu::gamepadHandler)
+    t.main(_args)
+    cpu.run(t::handleLine)
 }
 

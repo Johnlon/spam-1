@@ -1,23 +1,38 @@
-import terminal.Terminal
+import terminal.UARTTerminal
+import java.io.OutputStream
 import java.io.PrintStream
 
-class InProcessTerminal : Terminal(
+class InProcessTerminal(val gamepadHandler: (String) -> Unit) : UARTTerminal() {
+    class NullOS : OutputStream() {
+        override fun write(b: Int) {
+            //
+        }
+    }
 
-) {
+    // write to the CPU via it's UART
     override fun outputStream(): PrintStream {
-        TODO("Not yet implemented")
+        // ignore
+        return PrintStream(NullOS())
     }
 
     override fun doReplay() {
-        TODO("Not yet implemented")
+        // ignore
     }
 
+    class GPStream(val handler: (String) -> Unit) : OutputStream() {
+        var data: String = ""
+        override fun write(b: Int) {
+            if (b == '\n'.code) {
+                handler(data)
+                data = ""
+            } else {
+                data += b.toChar()
+            }
+        }
+    }
+
+    // write to the CPU gamepad port
     override fun gamepadStream(): PrintStream {
-        TODO("Not yet implemented")
+        return PrintStream(GPStream(gamepadHandler))
     }
-
-    override fun run() {
-        TODO("Not yet implemented")
-    }
-
 }
