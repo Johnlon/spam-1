@@ -3,6 +3,11 @@ import java.io.OutputStream
 import java.io.PrintStream
 
 class InProcessTerminal(val gamepadHandler: (String) -> Unit) : UARTTerminal() {
+
+    init {
+        `stopped_$eq`(false)
+    }
+
     class NullOS : OutputStream() {
         override fun write(b: Int) {
             //

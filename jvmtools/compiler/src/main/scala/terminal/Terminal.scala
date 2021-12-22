@@ -72,7 +72,8 @@ abstract class Terminal extends SimpleSwingApplication {
 
   def gamepadStream(): PrintStream
 
-  @volatile var stopped = true
+  @volatile protected var stopped = true
+
   var nextInst = new AtomicInteger(0)
 
   val C8_SCREEN_HEIGHT = 32
