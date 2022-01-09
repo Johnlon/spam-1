@@ -159,6 +159,26 @@ module cpu(
     hct74574 parallelport_out(.D(alu_result_bus), .Q(parallelPortLoopback), .CLK(_port_sel_wr[PORT_WR_PARALLEL]), ._OE(1'b0)); // DONE
     hct74245 parallelport_in(.A(bbus), .B(parallelPortLoopback), .nOE(_port_sel_rd[PORT_RD_PARALLEL]), .dir(1'b0)); // DONE
 
+    reg [7:0] timer1;
+    reg timer1_OE=0;
+    assign bbus = timer1_OE? timer1: 8'bz;
+
+    always @(negedge system_clk) begin
+        // execute
+        if (!_port_sel_wr[PORT_WR_TIMER1]) begin
+            timer1 = alu_result_bus;
+        end
+    end
+
+    always @* begin
+        if (!_port_sel_rd[PORT_RD_TIMER1]) begin
+           $display("ENABLE READ TIMER1"); 
+        end else begin
+           $display("DISABLE READ TIMER1"); 
+        end
+        timer1_OE=!_port_sel_rd[PORT_RD_TIMER1];
+    end
+
 
     // RAM =============================================================================================
 
@@ -440,6 +460,8 @@ module cpu(
                  "  REGC:%08b", regFile.get(2),
                  "  REGD:%08b", regFile.get(3)
                  );
+            `DD " PORTSEL=%8b", port_ctrl.port_sel_reg.Q);
+            `DD " TIMER1=%8b", timer1);
 
             `define LOGX_ADEV_SEL(DNAME) " _adev_``DNAME``=%1b", _adev_``DNAME``
             `define LOGX_BDEV_SEL(DNAME) " _bdev_``DNAME``=%1b", _bdev_``DNAME``

@@ -1,6 +1,3 @@
-/* 
-Verilog simulation of https://github.com/Johnlon/NESInterfaceAndPeripherals
-*/
 `ifndef V_PORTCTL
 `define V_PORTCTL
 
@@ -15,8 +12,8 @@ module portController (
     input  _portsel_in, 
     input  _port_wr, 
     input  _port_rd,
-    output  [15:0] _port_sel_wr, 
-    output  [15:0] _port_sel_rd 
+    output  [15:0] _port_sel_wr, // all lines high uless _port_wr is low
+    output  [15:0] _port_sel_rd  // all lines high uless _port_rd is low
 );
 
 	logic [7:0] D, Q;
