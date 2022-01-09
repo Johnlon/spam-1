@@ -1,11 +1,3 @@
-import AMode.Dir
-import AMode.Reg
-import CInv.Inv
-import CInv.Std
-import Flag.Keep
-import Flag.Set
-import java.io.File
-
 fun alu(rom: MutableList<Int>?, aluOp: Op, carryIn: Boolean, a: Int, b: Int): Tuple5<Int, MutableList<Cond>, Op, Int, Int> {
     var effectiveOp = aluOp
 

@@ -6,6 +6,7 @@ import Flag.Keep
 import Flag.Set
 import java.io.File
 import java.util.regex.Pattern
+import kotlin.concurrent.thread
 
 
 class CPU {
@@ -21,9 +22,21 @@ class CPU {
         }
     }
 
+    @Volatile var timer1 : Int = 0
+    val countFreq = 60
+    val countIntervalMs = ((1.0/countFreq)*1000).toLong()
 
     constructor() {
         loadAlu(aluRom)
+
+        thread(isDaemon=true, start=true) {
+            while(true) {
+               Thread.sleep(countIntervalMs)
+                if (timer1 > 0) {
+                    timer1 --
+                }
+            }
+        }
     }
 
     lateinit var lastOp: Op
@@ -91,6 +104,7 @@ class CPU {
     var freq = 1000*1000
     var intervalNs : Long = (1000000000 * (1.0/freq)).toLong()
 
+
     fun cycle(terminalHandler: (String) -> Unit) {
 
         cycles++
@@ -133,17 +147,20 @@ class CPU {
                         padin(1)
                     ReadPort.Gamepad2.id ->
                         TODO()
+                    ReadPort.Timer1.id ->
+                        timer1
+                    ReadPort.Timer2.id ->
+                        TODO()
                     else -> TODO()
                 }
             }
         }
 
-        // enable UART out always - not impl yet
-
         var jumped = false
         val shouldInvert = (i.conditionInvert == Inv)
-        val condMatch = flags.contains(i.condition)
+        val condMatch = flags.contains(i.condition) || i.condition == Cond.T1
         val doExec = if (shouldInvert) !condMatch else condMatch
+
         val curPc = pc()
 
         if (doExec) {
@@ -167,7 +184,17 @@ class CPU {
                 TDev.ram -> if (i.amode == Dir) ram[i.address] = aluVal else ram[mar()] = aluVal
                 TDev.halt -> halt(aluVal)
                 TDev.vram -> TODO()
-                TDev.port -> TODO()
+                TDev.port -> {
+                    when (portsel) {
+                        WritePort.Timer1.id ->
+                            timer1 = aluVal
+                        WritePort.Timer2.id ->
+                            TODO()
+                        WritePort.Parallel.id ->
+                            TODO()
+                        else -> TODO()
+                    }
+                }
                 TDev.portsel -> {
                     portsel = aluVal
                 }

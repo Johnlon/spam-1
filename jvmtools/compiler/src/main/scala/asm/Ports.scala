@@ -16,11 +16,13 @@ object Ports {
       values.find(c => c.enumName == code).getOrElse(throw new RuntimeException("unknown ReadPort " + code))
     }
 
-    def values: Seq[ReadPort] = Seq(Gamepad1, Gamepad2, Random, Parallel)
+    def values: Seq[ReadPort] = Seq(Gamepad1, Gamepad2, Random, Timer1, Timer2, Parallel)
 
     object Random extends ReadPort(0)
     object Gamepad1 extends ReadPort(1)
     object Gamepad2 extends ReadPort(2)
+    object Timer1 extends ReadPort(3)
+    object Timer2 extends ReadPort(4)
     object Parallel extends ReadPort(7)
   }
 
@@ -38,10 +40,10 @@ object Ports {
       values.find(c => c.enumName == code).getOrElse(throw new RuntimeException("unknown WritePort " + code))
     }
 
-    def values: Seq[WritePort] = Seq(BeepDuration, BeepPitch, Parallel)
+    def values: Seq[WritePort] = Seq(Timer1, Timer2, Parallel)
 
-    object BeepDuration extends WritePort(0)
-    object BeepPitch extends WritePort(1)
+    object Timer1 extends WritePort(3)
+    object Timer2 extends WritePort(4)
     object Parallel extends WritePort(7)
   }
 

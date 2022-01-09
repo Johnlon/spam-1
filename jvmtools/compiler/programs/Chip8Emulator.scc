@@ -771,15 +771,11 @@ program {
 
             } else if (N___ == $F000) {
                 if (__NN == $07) {
-                    // GET DELAY TIMER
+                    // get delay timer / sleep
                     // TODO WORK OUT HOW MANY CYCLES FOR 60 Hz
                     // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx07
+                    DT = readport(Timer1);
                     registers[_X__] = DT;
-
-                    // FIXME - hack so it's Counts down somehow
-                    if (DT > 0) {
-                        DT = DT / 2;
-                    }
 
                     if (LOG == 1) {
                         putfuart(C, 'V')
@@ -788,13 +784,14 @@ program {
                         putfuart(C, 'D')
                         putfuart(C, 'T')
                         putfuart(C, '=')
-                        putfuart(X, registers[_X__])
+                        putfuart(X, DT)
                     }
                 } else if (__NN == $15) {
-                    // SET DELAY TIMER
+                    // set delay timer / sleep
                     // TODO WORK OUT HOW MANY CYCLES FOR 60 Hz
                     // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx15
                     DT = registers[_X__];
+                    writeport(Timer1, DT)
 
                     if (LOG == 1) {
                         putfuart(C, 'D')

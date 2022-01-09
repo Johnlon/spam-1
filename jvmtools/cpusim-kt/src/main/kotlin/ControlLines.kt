@@ -106,5 +106,12 @@ enum class ReadPort(val id: Int) {
     Random(0),
     Gamepad1(1),
     Gamepad2(2),
+    Timer1(3),
+    Timer2(4),
+    Parallel(7)
+}
+enum class WritePort(val id: Int) {
+    Timer1(3),
+    Timer2(4),
     Parallel(7)
 }
