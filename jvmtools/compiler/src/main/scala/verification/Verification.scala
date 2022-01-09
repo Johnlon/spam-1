@@ -17,7 +17,7 @@ object Verification {
               dataIn: List[String] = List("t10000000"),
               outputCheck: List[String] => Unit = _ => {},
               checkHalt: Option[HaltCode] = Some(HaltCode(65535, 255)),
-              timeout: Int = 45
+              timeout: Int = 60
              ): List[String] = {
 
     val scc = new SpamCC
