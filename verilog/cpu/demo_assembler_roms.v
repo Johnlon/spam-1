@@ -183,7 +183,7 @@ endfunction
 
             //$display("%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
             if (CPU.ctrl._do_exec == 0) begin
-                //$display("%9t", $time, " EXECUTING ..."); 
+                $display("%9t", $time, " EXECUTING ..."); 
                 $display("%9t ", $time, "CYCLES %-6d : PC=%5d  %1s", opcount, {CPU.PCHI, CPU.PCLO}, CPU.disasm(data));
                 $display("%6s ", "", "= aaaaattt taaabbbC CCCFIbtM AAAAAAAA AAAAAAAA IIIIIIII");
                 $display("%6s ", "", "= %8b %8b %8b %8b %8b %8b", 
@@ -196,7 +196,7 @@ endfunction
             end
             else
             begin
-//                $display("%9t", $time, " SKIPPING ..."); 
+                $display("%9t", $time, " SKIPPING"); 
             end
 
 
