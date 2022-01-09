@@ -158,7 +158,7 @@ class CPU {
 
         var jumped = false
         val shouldInvert = (i.conditionInvert == Inv)
-        val condMatch = flags.contains(i.condition) || i.condition == Cond.T1
+        val condMatch = flags.contains(i.condition)
         val doExec = if (shouldInvert) !condMatch else condMatch
 
         val curPc = pc()
