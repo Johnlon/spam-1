@@ -133,11 +133,18 @@ object Verification {
     val pb: ProcessBuilder = Process(Seq("bash", "-c", s"""../../verilog/spamcc_sim.sh '$timeout' ../../verilog/cpu/demo_assembler_roms.v `pwd`/$romFileUnix"""))
 
     val halted = new AtomicReference[HaltCode]()
+
     val lines = ListBuffer.empty[String]
+
+    def addLine(line: String): Unit = {
+      lines.synchronized {
+        lines.append(line)
+      }
+    }
 
     val logger = ProcessLogger.apply(
       fout = output => {
-        lines.append("OUT:" + output)
+        addLine("OUT:" + output)
         if (output.contains("--- HALTED ")) {
           val haltedRegex = "--* HALTED <(\\d+)\\s.*> <(\\d+)\\s.*>.*".r
           val haltedRegex(marHaltCode, aluHaltCode) = output
@@ -147,7 +154,7 @@ object Verification {
         if (verbose) println("\t   \t: " + output)
       },
       ferr = output => {
-        lines.append("ERR:" + output)
+        addLine("ERR:" + output)
         if (verbose) println("\tERR\t: " + output)
       }
     )
@@ -162,7 +169,9 @@ object Verification {
       println("CANT FIND EXEC")
     }
 
-    outputCheck(lines.toList)
+    lines.synchronized {
+      outputCheck(lines.toList)
+    }
 
     val actualHalt = halted.get()
     val expectedHalt = checkHalt.orNull

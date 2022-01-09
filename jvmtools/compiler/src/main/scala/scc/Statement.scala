@@ -1129,11 +1129,11 @@ abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) exte
         case p: OffsetPosition =>
           val lineContents = p.lineContents.trim
           val lineNo = p.line
-          s";; DEBUG ($lineNo) $lineContents     --------------------------------------------------------"
-        case _ => ""
+          Some(s";; DEBUG ($lineNo) $lineContents     --------------------------------------------------------")
+        case _ => None
       }
 
-      val code: Seq[String] = comment +: generatedCode
+      val code: Seq[String] = comment.toSeq ++ generatedCode
 
       val prettyCode: Seq[String] = code.map(l => {
         indentPrefix + l
