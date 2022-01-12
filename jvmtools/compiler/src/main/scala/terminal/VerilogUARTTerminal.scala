@@ -13,15 +13,16 @@ object VerilogUARTTerminal extends UARTTerminal {
   val gamepadControl = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\gamepad.control"
 
   val uartControlStream = new PrintStream(new FileOutputStream(uartControl, true))
-  val gamepadControlStream = new PrintStream(new FileOutputStream(gamepadControl, false))
+  val gamepadControlStream = new PrintStream(new FileOutputStream(gamepadControl, true))
 
   def gamepadStream() = gamepadControlStream
 
   var tailer: Tailer = null
 
   override def run(): Unit = {
-
     super.run()
+
+    gamepadControlStream.println("c1=0")
 
     val gotoEnd = !replay
     startTailer(gotoEnd)

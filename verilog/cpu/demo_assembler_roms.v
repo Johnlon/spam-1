@@ -11,6 +11,7 @@
 `include "cpu.v"
 `include "../lib/assertion.v"
 `include "psuedo_assembler.sv"
+
 // verilator lint_off ASSIGNDLY
 // verilator lint_off STMTDLY
 
@@ -163,7 +164,7 @@ endfunction
         if (_RESET_SWITCH) icount++; else icount=0;
 
         if (LOG) $display("\n%9t", $time, " END OF EXECUTE VALUES"); 
-        //if (LOG) DUMP; 
+        CPU.DUMP; 
 
         if (LOG) $display("\n%9t", $time, " CLK GOING HIGH  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ INSTRUCTION %1d", icount); 
         if (LOG) $display("\n%9t", $time, " ENTERING FETCH"); 
@@ -196,12 +197,12 @@ endfunction
             end
             else
             begin
-                $display("%9t", $time, " SKIPPING"); 
+                $display("%9t", $time, " SKIPPING EXEC"); 
             end
 
 
             //$display("\n%9t", $time, " DECOMPILE %s", CPU.ctrl.decode(1).display()); 
-            //DUMP; 
+            CPU.DUMP; 
         
             //$display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
         end

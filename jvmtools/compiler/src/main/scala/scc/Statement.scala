@@ -135,6 +135,9 @@ case class DefConst(constName: String, konst: Int) extends Block {
 //}
 
 case class DefUint16EqExpr(targetVar: String, block: Block) extends Block {
+
+  override def toString = s"uint16 $targetVar = block"
+
   override def gen(depth: Int, parent: Scope): Seq[String] = {
     val stmts: Seq[String] = block.expr(depth + 1, parent)
 
@@ -203,6 +206,8 @@ case class LetVarEqConst(targetVar: String, konst: Int) extends Block {
 
 // general purpose
 case class LetVarEqExpr(targetVar: String, block: Block) extends Block {
+  override def toString = s"$targetVar = block"
+
   override def gen(depth: Int, parent: Scope): Seq[String] = {
 
     val stmts: Seq[String] = block.expr(depth + 1, parent)
@@ -654,30 +659,54 @@ case class PutuartConst(konst: Int) extends Block(nestedName = s"putuartConst_${
   }
 }
 
-case class WhileTrue(content: List[Block])
-  extends Block(nestedName = s"whileTrue${Scope.nextInt}") {
+case class LabelledStatement(label: String, content: Block)
+  // label does not introduce a new scope or nested name
+  extends Block {
+
+  override def gen(depth: Int, parent: Scope): Seq[String] = {
+
+    // label uses parent scope as it doesn't introduce a block
+    val stmts = content.expr(depth, parent)
+
+    val labelAfter = parent.toFqLabelPath("AFTER")
+    val suffix = split(
+      s"""
+         |; for the purposes of break instructions - TODO
+         |$labelAfter:
+         |""")
+
+    stmts ++ suffix
+  }
+
+  override def dump(depth: Int): List[(Int, String)] =
+    List(
+      (depth, this.getClass.getSimpleName),
+    ) ++
+      content.dump(depth + 1)
+}
+
+
+case class WhileTrue(label: Option[String], content: Block)
+  extends Block(nestedName = label.map(n => n + "_").getOrElse("") + s"whileTrue${Scope.nextInt}") {
 
   override def gen(depth: Int, parent: Scope): List[String] = {
 
     val labelBody = parent.toFqLabelPath("BODY")
     val labelAfter = parent.toFqLabelPath("AFTER")
 
-    val prefix = split(s"""$labelBody:""")
+    val prefix = split(s"$labelBody:")
 
-    val stmts = content.flatMap {
-      b => {
-        val breakName = parent.copy(endLabel = Some(labelAfter))
-        b.expr(depth + 1, breakName)
-      }
-    }
+    val whileScope = parent.copy(endLabel = Some(labelAfter))
+    val stmts = content.expr(depth + 1, whileScope)
 
     val suffix = split(
       s"""
+         |; loop back to top
          |PCHITMP = <:$labelBody
-         |PC = >:$labelBody
+         |PC =      >:$labelBody
+         |; end while
          |$labelAfter:
          |""")
-
 
     prefix ++ stmts ++ suffix
   }
@@ -686,10 +715,29 @@ case class WhileTrue(content: List[Block])
     List(
       (depth, this.getClass.getSimpleName),
     ) ++
-      content.flatMap(_.dump(depth + 1))
+      content.dump(depth + 1)
 }
 
-case class WhileCond(flagToCheck: String, conditionBlock: Block, content: List[Block])
+case class CodeBlock(content: List[Block])
+  extends Block(nestedName = s"block${Scope.nextInt}") {
+
+  override def gen(depth: Int, parent: Scope): List[String] = {
+
+    val stmts = content.flatMap {
+      b => {
+        b.expr(depth + 1, parent)
+      }
+    }
+
+    stmts
+  }
+
+  override def dump(depth: Int): List[(Int, String)] =
+    content.flatMap(_.dump(depth))
+
+}
+
+case class WhileCond(flagToCheck: String, conditionBlock: Block, content: Block)
   extends Block(nestedName = s"whileCond${Scope.nextInt}") {
 
   override def gen(depth: Int, parent: Scope): List[String] = {
@@ -706,22 +754,20 @@ case class WhileCond(flagToCheck: String, conditionBlock: Block, content: List[B
           s"""
              |; skip to end if condition NOT met
              |PCHITMP = <:$labelAfter
-             |PC = >:$labelAfter ! $flagToCheck
+             |PC =      >:$labelAfter ! $flagToCheck
                """)
     }
 
-    val stmts = content.flatMap {
-      b => {
-        val breakName = parent.copy(endLabel = Some(labelAfter))
+    val whileScope = parent.copy(endLabel = Some(labelAfter))
 
-        b.expr(depth + 1, breakName)
-      }
-    }
+    val stmts = content.expr(depth + 1, whileScope)
 
     val suffix = split(
       s"""
+         |; loop back to top
          |PCHITMP = <:$labelCheck
-         |PC = >:$labelCheck
+         |PC      = >:$labelCheck
+         |; end while
          |$labelAfter:
          |""")
 
@@ -736,13 +782,13 @@ case class WhileCond(flagToCheck: String, conditionBlock: Block, content: List[B
       List(
         (depth, ")")
       ) ++
-      content.flatMap(_.dump(depth + 1))
+      content.dump(depth + 1)
 
 }
 
 case class IfCond(flagToCheck: String,
                   conditionBlock: Block,
-                  content: List[Block],
+                  content: Block,
                   elseContent: List[Block]
                  )
   extends Block(nestedName = s"ifCond${Scope.nextInt}") {
@@ -767,13 +813,9 @@ case class IfCond(flagToCheck: String,
     }
 
     // need separate scopes for the main and else blocks to lexically scope vars
-    val scopeMatch = parent.pushScope("MATCH")
-    val scopeNotMatch = parent.pushScope("NOTMATCH")
-    val stmts = content.flatMap {
-      b => {
-        b.expr(depth + 1, scopeMatch) // SHOULD THIS BE this RATHER THAN PARENT - test case two if's in the same function and both declare same var name
-      }
-    }
+    val scopeMatch = parent.pushScope("ifBody")
+    val scopeNotMatch = parent.pushScope("ifElse")
+    val stmts = content.expr(depth + 1, scopeMatch) // SHOULD THIS BE this RATHER THAN PARENT - test case two if's in the same function and both declare same var name
 
     val elseStmts = elseContent.flatMap {
       b => {
@@ -809,7 +851,7 @@ case class IfCond(flagToCheck: String,
       List(
         (depth, "Body ( ")
       ) ++
-      content.flatMap(_.dump(depth + 1)) ++
+      content.dump(depth + 1) ++
       List(
         (depth, ")"),
         (depth, "Else (")
@@ -821,7 +863,8 @@ case class IfCond(flagToCheck: String,
 
 }
 
-case class Break() extends Block {
+case class Break() extends Block(nestedName = "break") {
+
   override def gen(depth: Int, parent: Scope): List[String] = {
 
     val breakToLabel = parent.getEndLabel.getOrElse {
@@ -836,7 +879,7 @@ case class Break() extends Block {
   }
 }
 
-case class DefFunction(functionName: String, functionArgs: List[FunctionArg], content: List[Block])
+case class DefFunction(functionName: String, functionArgs: List[FunctionArg], content: Block)
   extends Block(nestedName = s"function_$functionName") {
 
   def gen(depth: Int, scope: Scope): List[String] = {
@@ -853,11 +896,7 @@ case class DefFunction(functionName: String, functionArgs: List[FunctionArg], co
       List(s"$startLabel:")
 
     // eval the code that uses these vars
-    val stmts = content.flatMap {
-      b => {
-        b.expr(depth + 1, scope)
-      }
-    }
+    val stmts = content.expr(depth + 1, scope)
 
     val suffix = if (functionName == "main") {
       List(
@@ -881,7 +920,7 @@ case class DefFunction(functionName: String, functionArgs: List[FunctionArg], co
       functionArgs.flatMap {
         a => a.dump(depth + 1)
       } ++
-      content.flatMap(_.dump(depth + 1))
+      content.dump(depth + 1)
   }
 
   // DEF
@@ -1107,7 +1146,7 @@ abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) exte
 
     val thisScope = localize(parentScope)
 
-    val enter = s"${commentPrefix(depth)}ENTER ${thisScope.blockName} @ $this $pos"
+    val enter = s"${commentPrefix(depth)}ENTER ${thisScope.blockName} @ $this [$pos]"
     val exit = s"${commentPrefix(depth)}EXIT  ${thisScope.blockName} @ $this"
     val indentPrefix = opPrefix(depth)
 
@@ -1170,5 +1209,12 @@ abstract class Block(nestedName: String = "", logEntryExit: Boolean = true) exte
   }
 
   protected[this] def gen(depth: Int, parent: Scope): Seq[String]
+
+  override def toString() : String = {
+    if (0 == nestedName.length()) {
+      return this.getClass.getSimpleName
+    }
+    nestedName
+  }
 }
 

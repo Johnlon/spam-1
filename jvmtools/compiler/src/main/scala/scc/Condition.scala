@@ -6,6 +6,8 @@ import scc.SpamCC.TWO_BYTE_STORAGE
 
 case class ConditionBlockBlockCompare(exprL: BlkCompoundAluExpr, compOp: String, exprR: BlkCompoundAluExpr) extends Block {
 
+  override def toString() = s"expr $compOp expr"
+
   // FIXME - MAYBE A BUG HERE SWITCHING BETWEEN SIGNED AND UNSIGNED ON SECOND BYTE?
   // FIXME - NEEDS TESTS AS I DUNNO THE LOGIC
 
@@ -115,6 +117,8 @@ case class ConditionBlockBlockCompare(exprL: BlkCompoundAluExpr, compOp: String,
 }
 
 case class ConditionVarConstCompare(varName: String, compOp: String, konst: Int) extends Block {
+  override def toString() = s"$varName $compOp $konst"
+
   override def gen(depth: Int, parent: Scope): List[String] = {
     val label = parent.getVarLabel(varName).fqn
 

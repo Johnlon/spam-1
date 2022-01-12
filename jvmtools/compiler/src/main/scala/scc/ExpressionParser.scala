@@ -10,20 +10,26 @@ trait IsStandaloneVarExpr {
 trait ExpressionParser {
   self: SpamCC =>
 
-  def blkName: Parser[Block] = name ^^ {
-    n =>
-      BlkName(n)
+  def blkName: Parser[Block] = positioned {
+    name ^^ {
+      n =>
+        BlkName(n)
+    }
   }
 
-  def blkArrayElement: Parser[Block] = name ~ "[" ~ blkCompoundAluExpr ~ "]" ^^ {
-    case arrayName ~ _ ~ blkExpr ~ _ =>
-      BlkArrayElement(arrayName, blkExpr)
+  def blkArrayElement: Parser[Block] = positioned {
+    name ~ "[" ~ blkCompoundAluExpr ~ "]" ^^ {
+      case arrayName ~ _ ~ blkExpr ~ _ =>
+        BlkArrayElement(arrayName, blkExpr)
+    }
   }
 
 
-  def blkLiteral: Parser[Block] = constExpression ^^ {
-    konst =>
-      BlkLiteral(konst)
+  def blkLiteral: Parser[Block] = positioned {
+    constExpression ^^ {
+      konst =>
+        BlkLiteral(konst)
+    }
   }
 
   def blkReadPort: Parser[Block] = positioned {
@@ -51,19 +57,21 @@ trait ExpressionParser {
     }
   }
 
-  def blkCompoundAluExpr: Parser[BlkCompoundAluExpr] = blkExpr ~ ((aluOp ~ blkExpr) *) ^^ {
-    case leftExpr ~ otherExpr =>
-      val o = otherExpr map {
-        case a ~ e => AluExpr(a, e)
-      }
-      BlkCompoundAluExpr(leftExpr, o)
+  def blkCompoundAluExpr: Parser[BlkCompoundAluExpr] = positioned {
+    blkExpr ~ ((aluOp ~ blkExpr) *) ^^ {
+      case leftExpr ~ otherExpr =>
+        val o = otherExpr map {
+          case a ~ e => AluExpr(a, e)
+        }
+        BlkCompoundAluExpr(leftExpr, o)
+    }
   }
 
   // ORDER MATTERS HERE!!!
   def factor: Parser[Block] =
     blkReadPort | blkRandom |
-    blkWaituart | blkGetuart |
-    blkArrayElement | blkLiteral | blkName
+      blkWaituart | blkGetuart |
+      blkArrayElement | blkLiteral | blkName
 
   def blkExpr: Parser[Block] = factor | "(" ~> blkCompoundAluExpr <~ ")"
 }

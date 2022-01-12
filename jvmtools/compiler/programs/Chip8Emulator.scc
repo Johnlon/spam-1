@@ -95,7 +95,7 @@ program {
         uint16 DT = 0;
 
         uint16 hackCount = 0;
-        uint16 LOG = 1;
+        uint16 LOG = 0;
         
         while (true) {
             putuart(GOTO_INIT_STATE)

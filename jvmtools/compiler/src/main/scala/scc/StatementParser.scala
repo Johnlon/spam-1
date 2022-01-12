@@ -39,12 +39,13 @@ class StatementParser {
 
   self: ExpressionParser with ConstExpressionParser
     with ConditionParser with EnumParserOps with JavaTokenParsers
-    =>
+  =>
 
   val SPACE = " "
 
-  def statement: Parser[Block] = positioned {
-    blockComment | lineComment |
+  def statement1: Parser[Block] = positioned {
+    codeBlock |
+      blockComment | lineComment |
       //statementUInt8Eq |
       statementConst |
       statementUInt16EqExpr |
@@ -75,9 +76,20 @@ class StatementParser {
     }
   }
 
-  def statements: Parser[List[Block]] = rep(statement) ^^ (a => a)
+  def label: Parser[Option[String]] = opt(name <~ ":")
 
-  def statementConst: Parser[DefConst] = {
+  def statement = positioned {
+    label ~ statement1 ^^ {
+      case Some(l) ~ s => LabelledStatement(l, s)
+      case None ~ s => s
+    }
+  }
+
+  def codeBlock: Parser[Block] = positioned {
+    "{" ~> rep(statement) <~ "}" ^^ (a => CodeBlock(a))
+  }
+
+  def statementConst: Parser[DefConst] = positioned {
     "const" ~> name ~ "=" ~ constExpression <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ konst =>
         DefConst(targetVar, konst)
@@ -369,7 +381,7 @@ class StatementParser {
   }
 
   def functionDef: Parser[Block] = positioned {
-    "fun " ~> name ~ "(" ~ repsep(argumentDefTerm, ",") ~ (")" ~ "{") ~ statements <~ "}" ^^ {
+    "fun " ~> name ~ "(" ~ repsep(argumentDefTerm, ",") ~ ")" ~ codeBlock ^^ {
       case fnName ~ _ ~ args ~ _ ~ content =>
         DefFunction(fnName, args, content)
     }
@@ -383,14 +395,14 @@ class StatementParser {
   }
 
   def whileTrue: Parser[Block] = positioned {
-    ("while" ~ "(" ~ "true" ~ ")" ~! "{") ~> statements <~ "}" ^^ {
-      content => WhileTrue(content)
+    label ~ ("while" ~ "(" ~ "true" ~ ")") ~! statement ^^ {
+      case l ~ _ ~ content => WhileTrue(l, content)
     }
   }
 
   def whileCond: Parser[Block] = positioned {
-    "while" ~ "(" ~> conditionWithConst ~ ")" ~! "{" ~ statements <~ "}" ^^ {
-      case cond ~ _ ~ _ ~ content =>
+    "while" ~ "(" ~> conditionWithConst ~ ")" ~! statement ^^ {
+      case cond ~ _ ~ content =>
         WhileCond(cond._1, cond._2, content)
     }
   }
@@ -401,21 +413,14 @@ class StatementParser {
     }
   }
 
-  def elseCurlyBlock: Parser[List[Block]] = "else" ~ "{" ~>! statements <~ "}"
-
-  def elseNonCurlyBlock: Parser[List[Block]] = "else" ~>! statement ^^ {
+  def elseStatement: Parser[List[Block]] = "else" ~>! statement ^^ {
     b =>
       List(b)
   }
 
-  def elseBlock: Parser[List[Block]] = elseCurlyBlock | elseNonCurlyBlock ^^ {
-    blk =>
-      blk
-  }
-
   def ifCond: Parser[Block] = positioned {
-    "if" ~ "(" ~> conditionExpr ~ ")" ~! "{" ~ statements ~ "}" ~! opt(elseBlock) ^^ {
-      case cond ~ _ ~ _ ~ content ~ _ ~ elseContent =>
+    "if" ~ "(" ~> conditionExpr ~ ")" ~! statement ~! opt(elseStatement) ^^ {
+      case cond ~ _ ~ content ~ elseContent =>
         IfCond(cond._1, cond._2, content, elseContent.getOrElse(Nil))
     }
   }

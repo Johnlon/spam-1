@@ -159,7 +159,7 @@ module cpu(
     hct74574 parallelport_out(.D(alu_result_bus), .Q(parallelPortLoopback), .CLK(_port_sel_wr[PORT_WR_PARALLEL]), ._OE(1'b0)); // DONE
     hct74245 parallelport_in(.A(bbus), .B(parallelPortLoopback), .nOE(_port_sel_rd[PORT_RD_PARALLEL]), .dir(1'b0)); // DONE
 
-    reg [7:0] timer1;
+    reg [7:0] timer1=0; // timer will be 0 unless time is remaining
     reg timer1_OE=0;
     assign bbus = timer1_OE? timer1: 8'bz;
 
@@ -439,8 +439,8 @@ module cpu(
             `DD " phase_exec=%1d", phase_exec);
             `DD " PC=%1d (0x%4h) PCHItmp=%d (%2x)", pc_addr, pc_addr, PC.PCHITMP, PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", ctrl.instruction_6, ctrl.instruction_5, ctrl.instruction_4, ctrl.instruction_3, ctrl.instruction_2, ctrl.instruction_1);
-            `DD " addrmode=%1s", control::fAddrMode(_addrmode_register),
-                " addbbus=0x%4x", address_bus);
+            `DD " address_bus=0x%4x", address_bus);
+            `DD " address_mode=%1s", control::fAddrMode(_addrmode_register));
             `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  ctrl.rom_6.D, ctrl.rom_5.D, ctrl.rom_4.D, ctrl.rom_3.D, ctrl.rom_2.D, ctrl.rom_1.D);
             `DD " immed8=%08b", ctrl.immed8);
             `DD " ram=%08b", ram64.D);
@@ -450,17 +450,21 @@ module cpu(
                 " alu_op=%5b(%s)", alu_op, alu_ops::aluopName(alu_op)
             );            
             `DD " abus=%8b bbus=%8b alu_result_bus=%8b", abus, bbus, alu_result_bus);
-            `DD " ALUFLAGS czonENGL=%8b ", alu_flags_czonENGL);
-            `DD " FLAGSREG czonENGL=%8b gated_flags_clk=%1b", status_register_czonENGL.Q, gated_flags_clk);
-            `DD " FLAGS _flag_do=%b _flag_di=%b", _flag_do, _flag_di);
+            `DD " FLAGS ALU _czonENGL=%8b ", alu_flags_czonENGL);
+            `DD " FLAGS REG _czonENGL=%8b gated_flags_clk=%1b", status_register_czonENGL.Q, gated_flags_clk);
+            `DD " FLAGS I/O _do=%b _di=%b", _flag_do, _flag_di);
             `DD " condition=%02d(%1s) _do_exec=%b _set_flags=%b", ctrl.condition, control::condname(ctrl.condition), ctrl._do_exec, _set_flags);
             `DD " MAR=%8b:%8b (0x%2x:%2x)", MARHI.Q, MARLO.Q, MARHI.Q, MARLO.Q);
-            `DD "  REGA:%08b", regFile.get(0),
+            `DD " REGA:%08b", regFile.get(0),
                  "  REGB:%08b", regFile.get(1),
                  "  REGC:%08b", regFile.get(2),
                  "  REGD:%08b", regFile.get(3)
                  );
-            `DD " PORTSEL=%8b", port_ctrl.port_sel_reg.Q);
+            `DD " PORTSEL=%8b (WR=%s  RD=%s)", port_ctrl.port_sel_reg.Q, 
+                    ports::portNameWR(port_ctrl.port_sel_reg.Q),
+                    ports::portNameRD(port_ctrl.port_sel_reg.Q)
+                );
+            `DD " PORT=%8b", port_ctrl.port_sel_reg.Q);
             `DD " TIMER1=%8b", timer1);
 
             `define LOGX_ADEV_SEL(DNAME) " _adev_``DNAME``=%1b", _adev_``DNAME``

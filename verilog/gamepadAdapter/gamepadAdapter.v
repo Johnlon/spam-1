@@ -57,17 +57,18 @@ module gamepadAdapter #(parameter CONTROL_FILE="gamepad.control") (
             controlFile = CONTROL_FILE;
         end
 
+        $display("%9t GAMEPAD ", $time, " opening file %s", controlFile);
         `ifndef verilator
                 fControl = $fopenr(controlFile); 
         `endif
 
-
         if (fControl == `NULL) // If error opening file 
         begin
-                $error("%9t ERROR ", $time, "failed opening file %s", controlFile);
+                $error("%9t ERROR ", $time, " failed opening file %s", controlFile);
                 `FINISH_AND_RETURN(1);
                 disable file_block; // Just quit 
         end
+        $display("%9t GAMEPAD ", $time, " file open");
 
         while (fControl != `NULL)  
         begin
@@ -85,7 +86,7 @@ module gamepadAdapter #(parameter CONTROL_FILE="gamepad.control") (
                     strInput = strip(line);
                     $display("%9t ", $time, "GAMECONTROLLER: CONTROL RX: // %-s", strInput);
                 end
-                else if (c == "c") // identify controller  eg    c0=byte
+                else if (c == "c") // identify controller  eg    c1=23
                 begin 
                     line="";
                     r = $fgets(line, fControl); 
