@@ -1307,10 +1307,10 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
+        | uint16 a = 0;
         | uint16 b = 0;
         | uint16 limit = 5;
         | labelFoo: while(true) {
-        |   uint16 a = 0;
         |   while(true) {
         |     labelBar: a = a + 1;
         |
