@@ -551,6 +551,22 @@ program {
                     putfuart(X, index >> 8)
                     putfuart(X, index)
                 }
+            } else if (N___ == $B000) { // DONE
+                // In the original COSMAC VIP interpreter, this instruction jumped to the address NNN plus the value in the register V0
+                uint16 v0 = registers[0];
+                uint16 jumpAddress = _NNN + v0; 
+
+                if (LOG == 1) {
+                    putfuart(C, 'J')
+                    putfuart(C, 'M')
+                    putfuart(C, 'P')
+                    putfuart(C, '=')
+                    putfuart(X, jumpAddress >> 8)
+                    putfuart(X, jumpAddress)
+                }
+
+                pc = jumpAddress - 2; // -2 because we inc at the bottom of the loop
+                
             } else if (N___ == $C000) { // DONE
                 // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Cxkk
                 // The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. 
