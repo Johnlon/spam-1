@@ -40,6 +40,9 @@ program {
         // = an array of 0 to 16 where byte 16 is 0
         var registers = [16: [0]];
 
+        // "schip" flags registers / also documented as "RPL  user flags"
+        var rplUserFlags = [16: [0]];
+
         // 16 x 2 bytes - two per locn
         var stack = [32: [0]];
 
@@ -929,6 +932,40 @@ program {
                     // NB THERE IS AN OPTIONAL LEGACY STEP HERE THAT SOME PROGS MIGHT RELY ON
                     //       index = if (LoadStoreBehaviour == Legacy) (st.index + xReg.ubyte + 1) else st.index
 
+//              Ambibuous as there are different impls of these op codes particularly Fx75
+//              FX75: As in SUPER-CHIP, store V0..VX in RPL user flags, but X is not limited to 7
+//              FX85: As in SUPER-CHIP, read V0..VX from RPL user flags, but X is not limited to 7
+//              https://chip-8.github.io/extensions/   CHIP8 extended = output V[X] to hex display
+                } else if (__NN == $75) {
+                    // implemented the schip variant
+                    if (LOG == 1) {
+                        putfuart(C, 'S')
+                        putfuart(C, 'T')
+                        putfuart(C, 'R')
+                        putfuart(C, 32)
+                        putfuart(X, _X__)
+                    }
+
+                    uint16 i = 0;
+                    while (i <= _X__) {
+                        rplUserFlags[i] = registers[i];
+                        i = i + 1;
+                    }
+
+                } else if (__NN == $85) {
+                    if (LOG == 1) {
+                        putfuart(C, 'L')
+                        putfuart(C, 'D')
+                        putfuart(C, 'R')
+                        putfuart(C, 32)
+                        putfuart(X, _X__)
+                    }
+
+                    uint16 i = 0;
+                    while (i <= _X__) {
+                        registers[i] = rplUserFlags[i];
+                        i = i + 1;
+                    }
 
                 } else {
                     // not impl
