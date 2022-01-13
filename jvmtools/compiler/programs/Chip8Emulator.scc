@@ -374,7 +374,9 @@ program {
                 }
                 if (___N != 0) {
                     // _X__ and __Y_ are only factors to this op and so ___N ought to be unused and 0
+// not meaningful as fars as I know to have a non zero as ___N but we'll ignore it
                     halt(opcode, 1)
+                    //halt(pc, 1)
                 }
                 if (x == y) {
                     pc = pc + 2;

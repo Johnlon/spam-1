@@ -23,7 +23,7 @@ class CPU {
     }
 
     @Volatile var timer1 : Int = 0
-    val countFreq = 60
+    val countFreq = 50
     val countIntervalMs = ((1.0/countFreq)*1000).toLong()
 
     constructor() {
@@ -101,8 +101,11 @@ class CPU {
     }
 
     var cycles = 0
-    var freq = 1000*1000
-    var intervalNs : Long = (1000000000 * (1.0/freq)).toLong()
+
+    // re instruction rate: https://github.com/ajor/chip8
+    //var freq = 1000*1000
+    //var intervalNs : Long = (1000000000 * (1.0/freq)).toLong()
+    var intervalNs : Long = 1 // approx same as 600 instructions per second
 
 
     fun cycle(terminalHandler: (String) -> Unit) {
