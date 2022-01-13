@@ -1235,7 +1235,7 @@ class SpamCCTest {
   }
 
   @Test
-  def whileLoopCond(): Unit = {
+  def whileLoopCondVarVsConst(): Unit = {
 
     val lines =
       """
@@ -1252,6 +1252,29 @@ class SpamCCTest {
       lines =>
         //        checkTransmittedL('h', lines, List("01", "00", "00", "01", "08", "0e"))
         checkTransmittedDecs(lines, List(9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
+    })
+  }
+
+
+  @Test
+  def whileLoopCondVarVsVar(): Unit = {
+
+    val lines =
+      """
+        |fun main() {
+        | uint16 a=3;
+        | uint16 zero=0;
+        | while(a>zero) {
+        |   putuart(a)
+        |   a=a-1;
+        | }
+        |}
+        |""".stripMargin
+
+    compile(lines, verbose = true, outputCheck = {
+      lines =>
+        //        checkTransmittedL('h', lines, List("01", "00", "00", "01", "08", "0e"))
+        checkTransmittedDecs(lines, List(3, 2, 1))
     })
   }
 

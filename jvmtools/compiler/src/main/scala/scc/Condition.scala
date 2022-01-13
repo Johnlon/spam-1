@@ -4,7 +4,9 @@ import asm.AluOp
 import scc.Scope.LABEL_NAME_SEPARATOR
 import scc.SpamCC.TWO_BYTE_STORAGE
 
-case class ConditionBlockBlockCompare(exprL: BlkCompoundAluExpr, compOp: String, exprR: BlkCompoundAluExpr) extends Block {
+trait ConditionBlock extends Block
+
+case class ConditionBlockBlockCompare(exprL: BlkCompoundAluExpr, compOp: String, exprR: BlkCompoundAluExpr) extends ConditionBlock {
 
   override def toString() = s"expr $compOp expr"
 
@@ -108,7 +110,7 @@ case class ConditionBlockBlockCompare(exprL: BlkCompoundAluExpr, compOp: String,
           s"$WORKLO = 0 _EQ", // set REG=0 if was EQ
 
           s"$checkLabel:",
-          s"$WORKLO = $WORKLO _S", // set _Z if condition was me
+          s"$WORKLO = $WORKLO _S" // set _Z if condition was met
           // sets _Z flag
         )
     }
@@ -116,7 +118,7 @@ case class ConditionBlockBlockCompare(exprL: BlkCompoundAluExpr, compOp: String,
   }
 }
 
-case class ConditionVarConstCompare(varName: String, compOp: String, konst: Int) extends Block {
+case class ConditionVarConstCompare(varName: String, compOp: String, konst: Int) extends ConditionBlock {
   override def toString() = s"$varName $compOp $konst"
 
   override def gen(depth: Int, parent: Scope): List[String] = {
@@ -148,7 +150,8 @@ case class ConditionVarConstCompare(varName: String, compOp: String, konst: Int)
           s"; compare hi",
           s"$WORKHI = [:$label + 1]",
           s"$WORKHI = $WORKHI $SignedComp (<$konst) _S",
-          s"; if was == then compare lo ",
+          s"; if upper byte is not EQ then we don't need to compare lower byte and we'll just retain the flags from the upper compare",
+          s"; if was == then need to compare lower byte and use its flags instead ",
           s"$WORKLO = [:$label]",
           s"$WORKLO = $WORKLO $UnsignedComp (> $konst) _EQ_S"
           // sets various flags

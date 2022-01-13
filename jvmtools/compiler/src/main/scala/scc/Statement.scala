@@ -157,23 +157,23 @@ case class DefUint16EqExpr(targetVar: String, block: Block) extends Block {
 }
 
 /** evaluates to 1 if condition is true otherwise 0 */
-case class DefUint16EqCondition(targetVar: String, flagToCheck: String, block: ConditionBlockBlockCompare) extends Block {
+case class DefUint16EqCondition(targetVar: String, condition: Condition) extends Block {
   override def gen(depth: Int, parent: Scope): Seq[String] = {
-    val stmts: Seq[String] = block.expr(depth + 1, parent)
+    val stmts: Seq[String] = condition.block.expr(depth + 1, parent)
 
     val labelTarget = parent.assignVarLabel(targetVar, IsVar16, data = TWO_BYTE_STORAGE).fqn
 
     val assign = List(
       s"[:$labelTarget] = 0",
       s"[:$labelTarget+1] = 0",
-      s"[:$labelTarget] = 1 $flagToCheck",
+      s"[:$labelTarget] = 1 ${condition.flagToCheck}"
     )
     stmts ++ assign
   }
 
   override def dump(depth: Int): List[(Int, String)] =
     List((depth, this.getClass.getSimpleName + "("), (depth + 1, targetVar)) ++
-      block.dump(depth + 1) ++
+      condition.block.dump(depth + 1) ++
       List((depth, ")"))
 }
 
@@ -737,7 +737,7 @@ case class CodeBlock(content: List[Block])
 
 }
 
-case class WhileCond(flagToCheck: String, conditionBlock: Block, content: Block)
+case class WhileCond(condition: Condition, content: Block)
   extends Block(nestedName = s"whileCond${Scope.nextInt}") {
 
   override def gen(depth: Int, parent: Scope): List[String] = {
@@ -745,7 +745,7 @@ case class WhileCond(flagToCheck: String, conditionBlock: Block, content: Block)
     val labelCheck = parent.toFqLabelPath("CHECK")
     val labelAfter = parent.toFqLabelPath("AFTER")
 
-    val condStatements = conditionBlock.expr(depth + 1, parent) // IMPORTANT TO USE THE PARENT DIRECTLY HERE AS THE CONDITION VAR IS DEFINED IN THE SURROUNDING CONTEXT
+    val condStatements = condition.block.expr(depth + 1, parent) // IMPORTANT TO USE THE PARENT DIRECTLY HERE AS THE CONDITION VAR IS DEFINED IN THE SURROUNDING CONTEXT
 
     val conditionalJump = {
       List(s"$labelCheck:") ++
@@ -754,7 +754,7 @@ case class WhileCond(flagToCheck: String, conditionBlock: Block, content: Block)
           s"""
              |; skip to end if condition NOT met
              |PCHITMP = <:$labelAfter
-             |PC =      >:$labelAfter ! $flagToCheck
+             |PC =      >:$labelAfter ! ${condition.flagToCheck}
                """)
     }
 
@@ -776,9 +776,9 @@ case class WhileCond(flagToCheck: String, conditionBlock: Block, content: Block)
 
   override def dump(depth: Int): List[(Int, String)] =
     List(
-      (depth, this.getClass.getSimpleName + "( " + flagToCheck)
+      (depth, this.getClass.getSimpleName + "( " + condition.flagToCheck)
     ) ++
-      conditionBlock.dump(depth + 1) ++
+      condition.block.dump(depth + 1) ++
       List(
         (depth, ")")
       ) ++
@@ -786,8 +786,7 @@ case class WhileCond(flagToCheck: String, conditionBlock: Block, content: Block)
 
 }
 
-case class IfCond(flagToCheck: String,
-                  conditionBlock: Block,
+case class IfCond(condition: Condition,
                   content: Block,
                   elseContent: List[Block]
                  )
@@ -798,7 +797,7 @@ case class IfCond(flagToCheck: String,
     val labelElse = parent.toFqLabelPath("ELSE")
     val labelBot = parent.toFqLabelPath("AFTER")
 
-    val condStatements = conditionBlock.expr(depth + 1, parent) // IMPORTANT TO USE THE PARENT DIRECTLY HERE AS THE CONDITION VAR IS DEFINED IN THE SURROUNDING CONTEXT
+    val condStatements = condition.block.expr(depth + 1, parent) // IMPORTANT TO USE THE PARENT DIRECTLY HERE AS THE CONDITION VAR IS DEFINED IN THE SURROUNDING CONTEXT
 
     val conditionalJump = {
       List(s"$labelCheck:") ++
@@ -806,9 +805,9 @@ case class IfCond(flagToCheck: String,
         condStatements ++
         split(
           s"""
-             |;; jump if !$flagToCheck
+             |;; jump if !${condition.flagToCheck}
              |PCHITMP = <:$labelElse
-             |PC = >:$labelElse ! $flagToCheck
+             |PC = >:$labelElse ! ${condition.flagToCheck}
               """)
     }
 
@@ -842,9 +841,9 @@ case class IfCond(flagToCheck: String,
 
   override def dump(depth: Int): List[(Int, String)] =
     List(
-      (depth, this.getClass.getSimpleName + "( " + flagToCheck)
+      (depth, this.getClass.getSimpleName + "( " + condition.flagToCheck)
     ) ++
-      conditionBlock.dump(depth + 1) ++
+      condition.block.dump(depth + 1) ++
       List(
         (depth, ")")
       ) ++

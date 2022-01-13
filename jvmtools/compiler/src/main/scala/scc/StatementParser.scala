@@ -162,9 +162,9 @@ class StatementParser {
 
   // special purpose
   def statementUInt16EqCondition: Parser[DefUint16EqCondition] = positioned {
-    "uint16" ~> name ~ "=" ~ conditionExpr <~ SEMICOLON ^^ {
-      case targetVar ~ _ ~ block =>
-        DefUint16EqCondition(targetVar, block._1, block._2)
+    "uint16" ~> name ~ "=" ~ conditionWithExpr <~ SEMICOLON ^^ {
+      case targetVar ~ _ ~ condition =>
+        DefUint16EqCondition(targetVar, condition)
     }
   }
 
@@ -401,9 +401,9 @@ class StatementParser {
   }
 
   def whileCond: Parser[Block] = positioned {
-    "while" ~ "(" ~> conditionWithConst ~ ")" ~! statement ^^ {
+    "while" ~ "(" ~> condition ~ ")" ~! statement ^^ {
       case cond ~ _ ~ content =>
-        WhileCond(cond._1, cond._2, content)
+        WhileCond(cond, content)
     }
   }
 
@@ -419,9 +419,9 @@ class StatementParser {
   }
 
   def ifCond: Parser[Block] = positioned {
-    "if" ~ "(" ~> conditionExpr ~ ")" ~! statement ~! opt(elseStatement) ^^ {
-      case cond ~ _ ~ content ~ elseContent =>
-        IfCond(cond._1, cond._2, content, elseContent.getOrElse(Nil))
+    "if" ~ "(" ~> condition ~ ")" ~! statement ~! opt(elseStatement) ^^ {
+      case condition ~ _ ~ content ~ elseContent =>
+        IfCond(condition, content, elseContent.getOrElse(Nil))
     }
   }
 
