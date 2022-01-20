@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 `ifndef RAM_V
 `define RAM_V
 // Consistent with AS6C1008, 6116 and 62256 RAM 

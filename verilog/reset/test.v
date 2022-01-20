@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 `include "../pc/pc.v"
 `include "../lib/assertion.v"
 `include "reset.v"

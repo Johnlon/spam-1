@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 `include "hct74109.v" 
 `include "../lib/assertion.v"
 `timescale 1ns/1ns

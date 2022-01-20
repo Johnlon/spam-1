@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 // verilator lint_off UNOPTFLAT
 
 // SEE Figure 5 - https://www-inst.eecs.berkeley.edu/~cs152/fa06/handouts/CummingsHDLCON1999_BehavioralDelays_Rev1_1.pdf

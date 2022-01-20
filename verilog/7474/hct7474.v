@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 // verilator lint_off UNOPTFLAT 
 `ifndef  V_7474
 `define  V_7474

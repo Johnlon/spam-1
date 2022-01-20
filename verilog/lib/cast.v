@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 
 // verilator lint_off WIDTH
 `ifndef V_CAST

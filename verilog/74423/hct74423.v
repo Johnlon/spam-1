@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 /*
 
 partial impl - for a single configuration where we get a negative pulse triggered by a positive edge

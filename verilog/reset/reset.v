@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 // see also ../../docs/reset_timings_waveform.json
 `include "../7474/hct7474.v"
 

@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 `ifndef V_74109
 `define V_74109
 // JK flipflop https://assets.nexperia.com/documents/data-sheet/74HC_HCT109.pdf

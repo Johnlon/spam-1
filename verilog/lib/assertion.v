@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 `ifndef LIB_ASSERTION
 `define LIB_ASSERTION
 

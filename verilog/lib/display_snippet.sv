@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 // SNIPPED TO INCLUDE IN BODY OF MODULE
 // adds this label to dumpfile and logging
 

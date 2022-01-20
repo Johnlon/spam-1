@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 // verilator lint_off ASSIGNDLY 
 // verilator lint_off UNOPTFLAT 
 // verilator lint_off WIDTH 

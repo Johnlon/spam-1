@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 
 `timescale 1ns / 10 ps 
 `define EOF 32'hFFFF_FFFF 

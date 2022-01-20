@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 
 `ifndef V_PORTS
 `define V_PORTS

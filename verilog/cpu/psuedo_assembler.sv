@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 
 `define OUT_ADEV_SEL(DNAME) output _adev_``DNAME``
 `define OUT_BDEV_SEL(DNAME) output _bdev_``DNAME``

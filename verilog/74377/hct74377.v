@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 `ifndef  V_74377
 `define  V_74377
 // based on https://raw.githubusercontent.com/TimRudy/ice-chips-verilog/master/source-7400/74377.v

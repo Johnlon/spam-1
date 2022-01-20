@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 // Quad 2-input multiplexer
 // https://assets.nexperia.com/documents/data-sheet/74HC_HCT157.pdf
 

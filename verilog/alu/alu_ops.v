@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 `ifndef ALU_OPS_V
 `define ALU_OPS_V
 

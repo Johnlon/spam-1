@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 // 4-16 decoder
 // https://assets.nexperia.com/documents/data-sheet/74HC_HCT154.pdf
                

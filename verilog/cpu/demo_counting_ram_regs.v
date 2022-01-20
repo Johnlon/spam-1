@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 
 //////////////// TO RUN TEST ... RUN AND GREP FOR  "OK" TO SEE COUNTER
 

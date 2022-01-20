@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 // FIXME MAKE ALL THE tri WIRES tri0
 //
 // CONSTANTS AND FUNCTIONS AND MACROS

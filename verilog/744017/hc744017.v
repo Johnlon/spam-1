@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 
 `timescale 1ns/1ns
 // https://assets.nexperia.com/documents/data-sheet/74HC_HCT4017.pdf

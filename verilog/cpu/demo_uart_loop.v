@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 
 
 //// RUN  and grep for OK to see counter incrementing

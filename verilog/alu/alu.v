@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 `ifndef  V_ALU
 `define  V_ALU
 /* verilator lint_off ASSIGNDLY */

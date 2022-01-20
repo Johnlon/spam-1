@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 `ifndef V_74139
 `define V_74139
 // DUAL 2 to 4 line decoder

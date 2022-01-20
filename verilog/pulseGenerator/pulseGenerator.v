@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 /*
  Generates low pulse following rising edge of clock.
 	 Delayed vs clk by the tPD of n4.

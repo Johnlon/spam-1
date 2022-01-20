@@ -1,3 +1,5 @@
+// License: Mozilla Public License : Version 2.0
+// Author : John Lonergan
 `include "../lib/assertion.v"
 `include "hct74163.v"
 
