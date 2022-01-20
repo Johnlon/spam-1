@@ -76,7 +76,7 @@ class CPU {
     fun hex(i: Int) = i.toString(16).padStart(2, '0')
 
     fun dump() {
-        val code = instructions[pc()]
+//        val code = instructions[pc()]
         //println("")
         //println("CYCLE: ${cycles} PC=${pc()} : ${code} ")
     }
@@ -84,7 +84,7 @@ class CPU {
     /* take pc as an arg as PC will already have been updated to the next instruction by the time we get called*/
     fun dumpState(pc: Int) {
         val code = instructions[pc]
-        val ramData = if (code.amode == Reg) ram[mar()] else ram[code.address]
+        //val ramData = if (code.amode == Reg) ram[mar()] else ram[code.address]
 
         /*
         print("CYCLE: ${cycles} PC=${pc.toString().padStart(5,' ')}(${pc.toString(16).padStart(2,'0')}) : ")
@@ -103,9 +103,9 @@ class CPU {
     var cycles = 0
 
     // re instruction rate: https://github.com/ajor/chip8
-    //var freq = 1000*1000
-    //var intervalNs : Long = (1000000000 * (1.0/freq)).toLong()
-    var intervalNs : Long = 1 // approx same as 600 instructions per second
+    var freq = 1000*1000
+    var intervalNs : Long = (1000000000 * (1.0/freq)).toLong()
+//    var intervalNs : Long = 1 // approx same as 600 instructions per second
 
 
     fun cycle(terminalHandler: (String) -> Unit) {
@@ -251,7 +251,7 @@ class CPU {
 
     fun nanosleep(i: Long) {
         val start = System.nanoTime()
-        var end: Long = 0
+        var end: Long
         do {
             end = System.nanoTime()
         } while (start + i >= end)

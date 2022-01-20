@@ -110,6 +110,8 @@ program {
             uint16 opcodelo = memory[pc + 1];
             uint16 opcode = (opcodehi << 8) + opcodelo;
 
+            halt(opcode, 5)
+
             uint16 control = readport(Gamepad1);
             if (control == 0) {
                 keyDown = $100; // no key pressed
