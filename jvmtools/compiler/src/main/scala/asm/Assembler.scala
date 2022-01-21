@@ -2,8 +2,10 @@ package asm
 
 import asm.AddressMode.Mode
 import asm.Ports.{ReadPort, WritePort}
+import org.anarres.cpp.{CppReader, DefaultPreprocessorListener}
+import org.apache.commons.io.IOUtils
 
-import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
+import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter, StringReader}
 import scala.io.Source
 
 object Assembler {
@@ -112,7 +114,9 @@ object Assembler {
 class Assembler extends InstructionParser with Knowing with Lines with Devices {
 
 
-  def assemble(code: String, quiet: Boolean = false): List[List[String]] = {
+  def assemble(raw: String, quiet: Boolean = false): List[List[String]] = {
+
+    val code = cpp(raw)
 
     val constantsRd = ReadPort.values.map(
       p => s"${p.asmPortName}: EQU ${p.id}"
@@ -157,6 +161,13 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     }
   }
 
+  def cpp(rawCode: String): String = {
+    val code = "#define jmp(label) \\\n PCHITMP = < :label \\\n PC      = > :label ; jmp label\n" + rawCode
+
+    val r = new CppReader(new StringReader(code))
+    r.getPreprocessor.setListener(new DefaultPreprocessorListener())
+    IOUtils.toString(r)
+  }
 
   private def logInstructions(filtered: List[Line]) = {
     filtered.zipWithIndex.foreach(
