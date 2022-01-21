@@ -438,7 +438,8 @@ class AssemblerTest {
     }
     catch {
       case e: RuntimeException =>
-        assertEqualsList("illegal instruction: target '[1000]' and source '[1]' cannot both be RAM", e.getMessage)
+        val message = e.getMessage
+        assertEqualsList("illegal instruction: target '[Known(1000, NoName)]' and source '[Known(1, NoName)]' cannot both be RAM", message)
     }
   }
 
@@ -446,7 +447,7 @@ class AssemblerTest {
   def `REGA_eq_PORT_ID_CONST`(): Unit = {
     // these two lines are equivalent
     val code = List(
-      "REGA = :PORT_RD_Random",
+      "REGA = :PORT_RD_Gamepad2",
       "END")
 
     val asm = new Assembler()
