@@ -14,6 +14,8 @@ l
 **/iuart.control
 **/iuart.out
 
+**/*.asm.rom*
+
 **/.old
 /verilog/_old/
 **/venv*/
