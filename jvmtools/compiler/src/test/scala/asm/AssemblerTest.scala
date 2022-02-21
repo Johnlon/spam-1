@@ -7,6 +7,31 @@ import org.junit.jupiter.api.Test
 class AssemblerTest {
 
   @Test
+  def `cppJmp`(): Unit = {
+    // test the injection of the jmp macro
+    val code = Seq(
+      "REGA = 0",
+      "label: ",
+      "REGB = 1",
+      "jmp(label)",
+      "REGC = 2",
+      "END"
+    )
+
+    val asm = new Assembler()
+    import asm._
+
+    assertEqualsList(Seq(
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 0),
+      inst(AluOp.PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 1),
+      inst(AluOp.PASS_B, TDevice.PCHITMP, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 0),
+      inst(AluOp.PASS_B, TDevice.PC, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 1),
+      inst(AluOp.PASS_B, TDevice.REGC, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 2),
+    ), instructions(code, asm))
+  }
+
+
+  @Test
   def `allow_positioning_of_data`(): Unit = {
     val code = Seq(
       "A:     STR \"A\"",
