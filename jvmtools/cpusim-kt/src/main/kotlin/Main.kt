@@ -76,9 +76,10 @@ class CPU {
     fun hex(i: Int) = i.toString(16).padStart(2, '0')
 
     fun dump() {
-//        val code = instructions[pc()]
-        //println("")
-        //println("CYCLE: ${cycles} PC=${pc()} : ${code} ")
+        if (1==1) {
+            val code = instructions[pc()]
+            println("CYCLE: ${cycles} PC=${pc()} : ${code} ")
+        }
     }
 
     /* take pc as an arg as PC will already have been updated to the next instruction by the time we get called*/
@@ -355,6 +356,7 @@ fun loadProgram(cpu: CPU, romFile: String) {
         cpu.instructions.add(inst)
         loc++
     }
+    println("LOADED " + loc + " INSTRUCTIONS")
 }
 
 fun decode(l: String): Instruction {

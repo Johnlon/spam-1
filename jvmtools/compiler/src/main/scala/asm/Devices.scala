@@ -2,7 +2,10 @@ package asm
 
 trait E {
   def enumName = {
-    this.getClass.getSimpleName.replaceAll("\\$", "")
+    // class asm.AluOp$A_AND_B$ becomes A_AND_B
+    this.getClass.getName
+      .replaceAll("\\$$", "")
+      .replaceAll(".*\\$", "")
   }
 
   override def toString = enumName
