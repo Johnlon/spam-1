@@ -28,7 +28,7 @@ todo:
 package scc
 
 import asm.EnumParserOps
-import org.anarres.cpp.{CppReader, DefaultPreprocessorListener}
+//import org.anarres.cpp.{CppReader, DefaultPreprocessorListener}
 import org.apache.commons.io.IOUtils
 
 import java.io.{File, PrintWriter, StringReader}
@@ -100,7 +100,8 @@ class SpamCC extends StatementParser with ExpressionParser with ConstExpressionP
   def compile(code: String): List[String] = {
     Scope.resetCount
 
-    val prep = cpp(code)
+    //val prep = cpp(code)
+    val prep = code
 
     parse(program, prep) match {
       case Success(matched, _) =>
@@ -117,10 +118,12 @@ class SpamCC extends StatementParser with ExpressionParser with ConstExpressionP
   }
 
 
+  /*
   def cpp(rawCode: String): String = {
     val r = new CppReader(new StringReader(rawCode))
     r.getPreprocessor.setListener(new DefaultPreprocessorListener())
     IOUtils.toString(r)
   }
+   */
 
 }

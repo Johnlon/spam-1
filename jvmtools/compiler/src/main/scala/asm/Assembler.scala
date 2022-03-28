@@ -2,7 +2,7 @@ package asm
 
 import asm.AddressMode.Mode
 import asm.Ports.{ReadPort, WritePort}
-import org.anarres.cpp.{CppReader, DefaultPreprocessorListener}
+//import org.anarres.cpp.{CppReader, DefaultPreprocessorListener}
 import org.apache.commons.io.IOUtils
 
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter, StringReader}
@@ -116,7 +116,8 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
 
   def assemble(raw: String, quiet: Boolean = false): List[List[String]] = {
 
-    val code = cpp(raw)
+    //val code = cpp(raw)
+    val code = raw
 
     val constantsRd = ReadPort.values.map(
       p => s"${p.asmPortName}: EQU ${p.id}"
@@ -161,6 +162,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     }
   }
 
+  /*
   def cpp(rawCode: String): String = {
     val code = "#define jmp(label) \\\n PCHITMP = < :label \\\n PC      = > :label ; jmp label\n" + rawCode
 
@@ -168,6 +170,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     r.getPreprocessor.setListener(new DefaultPreprocessorListener())
     IOUtils.toString(r)
   }
+  */
 
   private def logInstructions(filtered: List[Line]) = {
     filtered.zipWithIndex.foreach(

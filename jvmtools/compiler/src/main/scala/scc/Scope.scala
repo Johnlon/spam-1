@@ -7,12 +7,17 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 case class Scope private(parent: Scope,
-                         name: String,
+                         var name: String,
                          endLabel: Option[String] = None,
                          functions: ListBuffer[(Scope, DefFunction)] = ListBuffer.empty,
                          variables: mutable.ListBuffer[Variable],
                          consts: mutable.Map[String, Int]
                         ) {
+
+  // if not a numeric sequential name then use nested names as per the default
+  val SEQUENTIAL_NUMERIC_NAME = true
+  if (SEQUENTIAL_NUMERIC_NAME) name = "B" + Foo.next()
+
   if (!name.matches("^[a-zA-Z0-9_]+$")) {
     sys.error(s"invalid name ;'$name'")
   }
@@ -24,11 +29,15 @@ case class Scope private(parent: Scope,
     }
   }
 
+
   def blockName: String = {
-    if (parent != null) {
-      parent.blockName + "_" + name
-    } else
-      name
+    if (SEQUENTIAL_NUMERIC_NAME) name
+    else {
+      if (parent != null) {
+        parent.blockName + "_" + name
+      } else
+        name
+    }
   }
 
   def getEndLabel: Option[String] = endLabel.orElse(Option(parent).flatMap(_.getEndLabel))

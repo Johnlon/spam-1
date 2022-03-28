@@ -46,7 +46,7 @@ dependencies {
 
     implementation 'com.fazecast:jSerialComm:[2.0.0,3.0.0)'
 
-    implementation 'org.anarres:jcpp:1.4.14'
+    //implementation 'org.anarres:jcpp:1.4.14'
 
 }
 

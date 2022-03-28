@@ -1,8 +1,9 @@
-// Consider psuedo random using .. https://codebase64.org/doku.php?id=base:16bit_xorshift_random_generator
+
 
 
 program {
 
+// Consider psuedo random using .. https://codebase64.org/doku.php?id=base:16bit_xorshift_random_generator
     fun main() {
 
         uint16 SCREEN_BUF_BOT = $F00;
@@ -573,7 +574,7 @@ program {
                 pc = jumpAddress - 2; // -2 because we inc at the bottom of the loop
                 
             } else if (N___ == $C000) { // DONE
-                // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Cxkk
+                // http://devernay.free.fr/hacks/chip8/C8TECH10.HTML
                 // The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. 
                 // The results are stored in Vx. See instruction 8xy2 for more information on AND.
 
