@@ -33,7 +33,6 @@ case class BlkName(variableName: String) extends Block with IsStandaloneVarExpr 
 
 }
 
-
 case class BlkArrayElement(arrayName: String, indexExpr: Block) extends Block with IsStandaloneVarExpr {
   override def toString = s"$arrayName"
 
