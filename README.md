@@ -7,13 +7,13 @@ An 8 bit home brew CPU built using 1970's logic chips.
 
 This project is currently in it's 3rd incarnation. 
 
-Status: May 2022 this project is still live but I've been spending 
+*Status: May 2022 -* this project is still live but I've been spending 
 a bunch of time trying to port one or other C compiler to SPAM-1. 
 Tried LLVM and it's too hard and wasted a lot of time. Currently having
 a lot more success with VBCC. My own SpamCC language and compiler
 is cool but there is something special about being able to compile
 and use other people's code! I also have Gamepad input hardware
-almost integrated but that's held up be the compiler work.
+almost integrated but that's held up by the compiler work.
 
 ## CURRENT Design - Version 1c 
 
