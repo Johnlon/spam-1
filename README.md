@@ -12,8 +12,10 @@ This project is currently in it's 3rd incarnation.
 I'm currently working on what I hope is the final version.
 
 This version has a 48 bit instruction word spread across 6 ROM's. It's 48 bit instruction is read in a single clock cycle to avoid having to introduce instruction registers
-plus it's faster that way. The other big change is that I've included a bunch of features that are intended for exploration and learning such as including different kinds of 
-registers including common 8 bit flipflops plus a 74HCT670 register file, and also by having 5 buses!
+and complex decoding logic, plus one instruction per clock cycle is faster than fetching a multibyte instruction from 8 bit memory.
+
+The other big change is that I've included a bunch of features that are intended for exploration and learning such as including different design patterns for
+registers including common 8 bit flipflops for some registers plus a 74HCT670 based register file for other registers, and also by having 5 buses!
 
 ![Block Diagram](docs/final-block-diagram.png)
 
@@ -59,7 +61,7 @@ Leaning verilog and reworking most of the design has taken months, but as of Jun
 - ![bar3](docs/bar3.png) I will create some kind of higher level language compiler
 - ![bar3](docs/bar3.png) I want to simulate the hardware entirely first, using verilog
 - ![bar2](docs/bar2.png) I want to build it physically, or a more likely a derivative (update 2020: it has turned out to be a distant derivative of the original design)
-- ![bar0](docs/bar0.png) I want to attach some output devices - eg a UART / tty that respects VT codes
+- ![bar0](docs/bar2.png) I want to attach some output devices - eg a UART / tty that respects VT codes
 - ![bar0](docs/bar0.png) I want to hook it up to a basic graphics output using VGA - stretch
 - ![bar1](docs/bar1.png) I would like to extend it to play some kind of basic game (update 2021: I've got the simulator running a Chip8 emulator over the simulated UART onto a terminal)
 - ![bar0red](docs/bar0red.png) I want to finally complete it during 2020 (please!!!  update 2021 : failed on this big time!)
