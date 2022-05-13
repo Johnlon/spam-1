@@ -204,15 +204,12 @@ module test();
 
         `define CYCLE begin CLK_UP; #HALF_CLK CLK_DN; #HALF_CLK; noop(); end
         `define CLK_UP_DN(N) for (count =0; count < N; count++) begin CLK_UP; #HALF_CLK; CLK_DN; #HALF_CLK; noop(); end
-        CPU.PC.PCHI_7_4.count = 15;
-        CPU.PC.PCHI_3_0.count = 15;
-        CPU.PC.PCLO_7_4.count = 15;
-        CPU.PC.PCLO_3_0.count = 15;
-        #1000
 
         INIT_ROM();
         `DISPLAY("init : _RESET_SWITCH=0")
         _RESET_SWITCH = 0;
+        #1000
+
         CLK_DN;
         #1000
         CLK_UP;
