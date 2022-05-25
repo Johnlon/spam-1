@@ -1144,7 +1144,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    compile(lines, verbose = true, quiet = false, outputCheck = {
+    compile(lines, verbose = true, stripComments = false, outputCheck = {
       str =>
         checkTransmittedL('d', str, List("12", "34", "13", "35", "14", "36"))
     })
@@ -1401,7 +1401,7 @@ class SpamCCTest {
         |// END  COMMAND
         |""".stripMargin
 
-    compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    compile(lines, verbose = true, stripComments = true, outputCheck = str => {
       checkTransmittedChar(str, 'A')
       checkTransmittedChar(str, 'B')
       checkTransmittedChar(str, '?')
@@ -1433,7 +1433,7 @@ class SpamCCTest {
         |// END  COMMAND
         |""".stripMargin
 
-    compile(lines, quiet = true, outputCheck = {
+    compile(lines, stripComments = true, outputCheck = {
       lines =>
         checkTransmittedChars(lines, List("B"))
     })
@@ -1457,7 +1457,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual = compile(lines, timeout = 5, quiet = true).map(x => x.replaceAll("^\\s*", ""))
+    val actual = compile(lines, timeout = 5, stripComments = true).map(x => x.replaceAll("^\\s*", ""))
 
     val expected = split(
       """root_function_main___VAR_RETURN_HI: EQU   0
@@ -1510,7 +1510,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    compile(lines, verbose = true, stripComments = true, outputCheck = str => {
       val value: List[String] = "OddEvenOddEvenOddEvenOddEvenOddEven".toList.map(_.toString)
       checkTransmittedL('c', str, value)
     })
@@ -1548,7 +1548,7 @@ class SpamCCTest {
          |}
          |""".stripMargin
 
-    compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    compile(lines, verbose = true, stripComments = true, outputCheck = str => {
       val value: List[String] = "OddEvenOddEvenOddEvenOddEvenOddEven".toList.map(_.toString)
       checkTransmittedL('c', str, value)
     })
@@ -1579,7 +1579,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    compile(lines, verbose = false, quiet = true, outputCheck = str => {
+    compile(lines, verbose = false, stripComments = true, outputCheck = str => {
       checkTransmittedChar(str, 'A')
       checkTransmittedChar(str, 'B')
       checkTransmittedChar(str, 'C')
@@ -1607,7 +1607,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    compile(lines, verbose = true, stripComments = true, outputCheck = str => {
       checkTransmittedChars(str, Seq("A", "!", "C", "#"))
     })
   }
@@ -1631,7 +1631,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    compile(lines, verbose = true, stripComments = true, outputCheck = str => {
       checkTransmittedChar(str, 'A')
       checkTransmittedChar(str, 'B')
       checkTransmittedChar(str, 'C')
@@ -1684,7 +1684,7 @@ class SpamCCTest {
          |// END  COMMAND
          |""".stripMargin
 
-    compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    compile(lines, verbose = true, stripComments = true, outputCheck = str => {
       checkTransmittedDec(str, DO_RIGHT)
       checkTransmittedDec(str, DO_DOWN)
       checkTransmittedDec(str, DO_LEFT)
@@ -1705,7 +1705,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    compile(lines, verbose = true, quiet = true, outputCheck = str => {
+    compile(lines, verbose = true, stripComments = true, outputCheck = str => {
       checkTransmittedChar(str, 'A')
       checkTransmittedChar(str, 'B')
       checkTransmittedChar(str, 'C')
@@ -1723,7 +1723,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    compile(lines, timeout = 5, checkHalt = Some(HaltCode(65432, 123)), quiet = true)
+    compile(lines, timeout = 5, checkHalt = Some(HaltCode(65432, 123)), stripComments = true)
   }
 
   @Test
@@ -1738,6 +1738,6 @@ class SpamCCTest {
         |""".stripMargin
 
     //    expectHalt(() => compile(lines, timeout = 5, quiet = true), MAR = 65432, CODE = 123)
-    compile(lines, timeout = 5, checkHalt = Some(HaltCode(65432, 123)), quiet = true)
+    compile(lines, timeout = 5, checkHalt = Some(HaltCode(65432, 123)), stripComments = true)
   }
 }

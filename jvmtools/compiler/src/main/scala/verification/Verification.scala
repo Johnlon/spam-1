@@ -13,7 +13,7 @@ object Verification {
 
   def compile(linesRaw: String,
               verbose: Boolean = false,
-              quiet: Boolean = true,
+              stripComments: Boolean = true,
               dataIn: List[String] = List("t10000000"),
               outputCheck: List[String] => Unit = _ => {},
               checkHalt: Option[HaltCode] = Some(HaltCode(65535, 255)),
@@ -23,10 +23,27 @@ object Verification {
     val scc = new SpamCC
 
     val lines = "program {\n" + linesRaw + "\n}"
-    val actual: List[String] = scc.compile(lines)
+    val assemblyCode: List[String] = scc.compile(lines)
 
-    val str = actual.mkString("\n")
+    val str = assemblyCode.mkString("\n")
     println("ASSEMBLING:\n")
+    prettyPrintAsm(assemblyCode)
+
+    val asm = new Assembler
+    val roms = asm.assemble(str, stripComments = stripComments)
+
+    verifyRoms(verbose, dataIn, outputCheck, checkHalt, timeout, roms)
+
+    // ditch comments
+    val filtered = assemblyCode.filter { l =>
+      (!stripComments) || !l.matches("^\\s*;.*")
+    }
+    print("ASM RAN OK\n" + filtered.map(_.stripLeading()).mkString("\n"))
+
+    filtered
+  }
+
+  private def prettyPrintAsm(assemblyCode: List[String]):Unit = {
     var pc = 0
 
     val IsEqu = "^\\s*[a-zA-Z0-9_]+:\\s*EQU.*$".r
@@ -35,7 +52,7 @@ object Verification {
     val IsBytes = """^\s*[a-zA-Z0-9_]+:\s*BYTES\s.*$""".r
     val IsString = """^\s*[a-zA-Z0-9_]+:\s*STR\s.*$""".r
 
-    actual.foreach { l =>
+    assemblyCode.foreach { l =>
       if (IsComment.matches(l)) {
         println(s"${"".formatted("%5s")}  $l")
       }
@@ -66,14 +83,15 @@ object Verification {
         pc += 1
       }
     }
+  }
 
-    val asm = new Assembler
-    val roms = asm.assemble(str, quiet = quiet)
+  def verifyRoms(verbose: Boolean,
+                 uartDataIn: List[String],
+                 outputCheck: List[String] => Unit,
+                 checkHalt: Option[HaltCode],
+                 timeout: Int,
+                 roms: Seq[List[String]]): Unit = {
 
-    // ditch comments
-    val filtered = actual.filter { l =>
-      (!quiet) || !l.matches("^\\s*;.*")
-    }
 
     val tmpFileRom = new File("build", "spammcc-test.rom")
     val tmpUartControl = new File(VerilogUARTTerminal.uartControl)
@@ -81,14 +99,12 @@ object Verification {
     println("WRITING ROM TO :\n" + tmpFileRom)
     writeFile(roms, tmpFileRom)
 
-    writeUartControlFile(tmpUartControl, dataIn)
+    writeUartControlFile(tmpUartControl, uartDataIn)
     exec(tmpFileRom, tmpUartControl, verbose, outputCheck, checkHalt, timeout)
 
-    print("ASM RAN OK\n" + filtered.map(_.stripLeading()).mkString("\n"))
-    filtered
   }
 
-  def writeFile(roms: List[List[String]], tmpFileRom: File): Unit = {
+  def writeFile(roms: Seq[List[String]], tmpFileRom: File): Unit = {
     if (tmpFileRom.getParentFile.exists()) {
       if (!tmpFileRom.getParentFile.isDirectory) {
         sys.error("expected a directory : " + tmpFileRom.getParentFile.getAbsolutePath)
@@ -188,6 +204,6 @@ object Verification {
 
 case class HaltCode(mar: Int, alu: Int) {
   override def toString: String = {
-    s"HaltCode(mar:$mar, alu:$alu)"
+    s"HaltCode(mar:$mar [${mar.toHexString}], alu:$alu [b${alu.toBinaryString}, h${alu.toHexString}])"
   }
 }

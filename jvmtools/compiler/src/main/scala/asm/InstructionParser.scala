@@ -1,6 +1,6 @@
 package asm
 
-import AddressMode.{DIRECT, REGISTER}
+import asm.AddressMode.{DIRECT, REGISTER}
 import asm.ConditionMode.{Invert, Standard}
 
 import scala.language.postfixOps
@@ -12,8 +12,8 @@ object AddressMode extends Enumeration {
 }
 
 // expr "calculator" code taken from https://www.scala-lang.org/api/2.12.8/scala-parser-combinators/scala/util/parsing/combinator/RegexParsers.html
-trait EnumParserOps  {
-  self: JavaTokenParsers=>
+trait EnumParserOps {
+  self: JavaTokenParsers =>
   def enumToParser[A <: E](e: Seq[A]): Parser[A] = {
     // reverse sorted to put longer operators ahead of shorter ones otherwise shorter ones gobble
     val longestFirst: Seq[A] = e.sortBy(_.enumName).reverse
@@ -47,6 +47,14 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     longAluOps | shortAluOps
   }
 
+  // amended vs 'stringLiteral' to include the short form \0
+  def quotedString: Parser[String] = ("\"" + """([^"\x01-\x1F\x7F\\]|\\[\\'"0bfnrt]|\\u[a-fA-F0-9]{4})*""" + "\"").r ^^ {
+    s =>
+      val withoutQuotes = s.stripPrefix("\"").stripSuffix("\"")
+      val str = org.apache.commons.text.StringEscapeUtils.unescapeJava(withoutQuotes)
+      str
+  }
+
   def adev: Parser[ADevice] = enumToParser(ADevice.values)
 
   def bdev: Parser[BDevice] = enumToParser(BDevice.values)
@@ -57,7 +65,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
 
   def controlCode: Parser[Control] = enumToParser(Control.values)
 
-  def condition: Parser[Condition] = ("!"?) ~ (controlCode?) ^^ {
+  def condition: Parser[Condition] = ("!" ?) ~ (controlCode ?) ^^ {
     case mode ~ ctrl =>
       Condition(mode.map(_ => Invert).getOrElse(Standard), ctrl.getOrElse(Control._A))
   }
@@ -125,7 +133,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   // picks up literal numeric expressions where both sides are expr
   def expr: Parser[IsKnowable[KnownInt]] = factor ~ rep("*" ~ factor | "/" ~ factor | "&" ~ factor | "|" ~ factor | "+" ~ factor | "-" ~ factor) ^^ {
     case number ~ list =>
-      list.foldLeft(number) {
+      val value = list.foldLeft(number) {
         case (x, "*" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ * _, "*")
         case (x, "+" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ + _, "+")
         case (x, "/" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ / _, "/")
@@ -134,11 +142,13 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
         case (x, "|" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ | _, "|")
         case (x, op ~ y) => sys.error(s"sw error : missing handler for op '$op' for operand $x and $y")
       }
+      value
   }
 
   def ramDirect: Parser[RamDirect] = "[" ~ expr ~ "]" ^^ { case _ ~ v ~ _ => RamDirect(v) }
 
   def debug: Parser[Debug] = ";;" ~> ".*".r ^^ (a => Debug(a))
+
   def comment: Parser[Comment] = ";" ~> ".*".r ^^ (a => Comment(a))
 
   def targets: Parser[TExpression] = tdev | ramDirect
@@ -154,36 +164,55 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       Label(n)
   }
 
+  // .text added for compat with VBCC but at present is ignored - ie an empty block
+  // signals the start of program code
+//  def textSegmentBlock: Parser[TextSegment] = positioned {
+//    ".text" ^^ {
+//      ~ => TextSegment()
+//    }
+//  }
+
+  // .global added for compat with VBCC but at present is ignored - ie an empty block
+  // exports the symbol from the compilation unit
+  /*
+  def globalSymbolBlock: Parser[Block] = positioned {
+    ".global" ~> name ^^ (a => CodeBlock(List.empty))
+  }
+  */
+
   def eqInstruction: Parser[EquInstruction] = (name <~ ":" ~ "EQU") ~ expr ^^ {
     case n ~ konst =>
       rememberKnown(n, konst)
       EquInstruction(n, konst)
   }
 
-  // amended vs 'stringLiteral' to include the short form \0
-  def quotedString: Parser[String] = ("\"" + """([^"\x01-\x1F\x7F\\]|\\[\\'"0bfnrt]|\\u[a-fA-F0-9]{4})*""" + "\"").r ^^ {
-    s =>
-      val withoutQuotes = s.stripPrefix("\"").stripSuffix("\"")
-      val str = org.apache.commons.text.StringEscapeUtils.unescapeJava(withoutQuotes)
-      str
-  }
-
-  def strInstruction: Parser[List[Line]] = (name <~ ":" ~ "STR") ~ quotedString ^^ {
-    case a ~ b =>
+  def strInstruction: Parser[RamInitialisation] = (name <~ ":" ~ "STR") ~ quotedString ^^ {
+    case n ~ b =>
       val bytes = b.getBytes("UTF-8")
 
-      val stored = rememberKnown(a, Known(a, KnownByteArray(dataAddress, bytes.toList)))
+      val stored = rememberKnown(n, Known(n, KnownByteArray(dataAddress, bytes.toList)))
       dataAddress = stored.knownVal.value
 
+      /*
       Label(a) +: bytes.map { c => {
         val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), Known("", c))
         dataAddress += 1
         ni
       }
       }.toList
+      */
+
+      val ramInit = Comment("STR "+ n + " @ "+ dataAddress) +: bytes.map { c => {
+        val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), Known("", c))
+        dataAddress += 1
+        ni
+      }
+      }.toList
+
+      RamInitialisation(ramInit)
   }
 
-  def bytesInstruction: Parser[List[Line]] = (name <~ ":" ~ "BYTES" ~ "[") ~ repsep(expr, ",") <~ "]" ^^ {
+  def bytesInstruction: Parser[RamInitialisation] = (name <~ ":" ~ "BYTES" ~ "[") ~ repsep(expr, ",") <~ "]" ^^ {
     case n ~ expr =>
       if (expr.isEmpty) {
         sys.error(s"asm error: BYTES expression with label '$n' must have at least one byte but none were defined")
@@ -196,9 +225,10 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
         x < Byte.MinValue || x > 255
       }.foreach(x => sys.error(s"asm error: $x evaluates as out of range ${Byte.MinValue} to 255"))
 
-      rememberKnown(n, Known(n, KnownByteArray(pc, ints.map(_.toByte))))
+      val stored = rememberKnown(n, Known(n, KnownByteArray(dataAddress, ints.map(_.toByte))))
+      dataAddress = stored.knownVal.value //
 
-      Label(n) +: ints.map {
+      val ramInit = Comment("BYTES "+ n + " @ "+ dataAddress) +: ints.map {
         c => {
           // c.toByte will render between -128 and  +127
           // then name "c" will render as whatever int value was actually presented in the code (eg when c=255 then toByte = -1 )
@@ -209,6 +239,9 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
           ni
         }
       }
+
+
+      RamInitialisation(ramInit)
   }
 
   private def inst(t: TExpression, a: ADevice, op: AluOp, b: BExpression, f: Option[Condition], immed: Know[KnownInt]): Instruction = {
@@ -251,13 +284,25 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       inst(t, a, AluOp.PASS_A, BDevice.NU, f, Irrelevant())
   }
 
-  def line: Parser[List[Line]] = (strInstruction | bytesInstruction | eqInstruction | bInstruction | abInstructionImmed | abInstruction | aInstruction | bInstructionImmed | debug | comment | label) ^^ {
-    case x: List[_] => x.asInstanceOf[List[Line]]
-    case x: Line => List(x)
+  /*  merge single instruction and multi-inst instructions */
+  def line: Parser[Seq[Line]] = (strInstruction | bytesInstruction | eqInstruction | bInstruction | abInstructionImmed | abInstruction | aInstruction | bInstructionImmed | debug | comment | label) ^^ {
+    case x: RamInitialisation =>
+      x
+    case x: Seq[_] =>
+      x.asInstanceOf[Seq[Line]]
+    case x: Line =>
+      List(x)
+    case x =>
+      throw new MatchError(x + " is not a Line or Seq[Line] but is type " + x.getClass)
   }
 
-  def lines: Parser[List[Line]] = line ~ (line *) <~ "END" ^^ {
+  def lines: Parser[Seq[Line]] = line ~ (line *) <~ "END" ^^ {
     case a ~ b =>
-      a ++ b.flatten
+      val allLines: List[Seq[Line]] = a :: b
+
+      val inits = allLines.filter(i => i.isInstanceOf[RamInitialisation])
+      val code = allLines.filter(i => !i.isInstanceOf[RamInitialisation])
+      val reorganised = (inits ++ code).flatten
+      reorganised
   }
 }

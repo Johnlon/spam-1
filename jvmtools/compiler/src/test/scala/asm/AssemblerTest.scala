@@ -3,40 +3,165 @@ package asm
 import asm.AddressMode._
 import org.junit.jupiter.api.Assertions.{assertEquals, fail}
 import org.junit.jupiter.api.Test
+import verification.HaltCode
+import verification.Verification.verifyRoms
 
 class AssemblerTest {
 
   @Test
-  def `cppJmp`(): Unit = {
+  def `can I put vars at end`(): Unit = {
     // test the injection of the jmp macro
-    val code = Seq(
-      "REGA = 0",
-      "label: ",
-      "REGB = 1",
-      "jmp(label)",
-      "REGC = 2",
-      "END"
-    )
+    val cmpEq =
+      """
+        |
+        |MARLO=0
+        |MARHI=0
+        |
+        |REGA=[:INTA+3]
+        |NOOP = REGA A_MINUS_B_SIGNEDMAG [:INTB+3] _S
+        |
+        |REGA=[:INTA+2]
+        |NOOP = REGA A_MINUS_B           [:INTB+2] _EQ_S
+        |
+        |REGA=[:INTA+1]
+        |NOOP = REGA A_MINUS_B           [:INTB+1] _EQ_S
+        |
+        |REGA=[:INTA+0]
+        |NOOP = REGA A_MINUS_B           [:INTB+0] _EQ_S
+        |
+        |REGA=0
+        |REGA = REGA A_OR_B 1 _LT
+        |REGA = REGA A_OR_B 2 _GT
+        |REGA = REGA A_OR_B 4 _NE
+        |REGA = REGA A_OR_B 8 _EQ
+        |
+        |HALT = REGA
+        |
+        |HALT = 1 _LT
+        |HALT = 2 _GT
+        |HALT = 3 _NE
+        |HALT = 4 _EQ
+        |HALT = 5
+        |
+        |; these are data not instructions so they can be anywhere in the script
+        |INTA:       EQU       1
+        |INTA:       BYTES     [ 255,255,255,255 ]
+        |INTB:       BYTES     [ 0,0,0,0 ]
+        |STRING:     STR       "HELLO"
+        |
+        |END
+        """
+
+    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.length > 0)
 
     val asm = new Assembler()
-    import asm._
 
-    assertEqualsList(Seq(
-      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 0),
-      inst(AluOp.PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 1),
-      inst(AluOp.PASS_B, TDevice.PCHITMP, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 0),
-      inst(AluOp.PASS_B, TDevice.PC, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 1),
-      inst(AluOp.PASS_B, TDevice.REGC, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 2),
-    ), instructions(code, asm))
+    val roms = assemble(code, asm)
+
+    roms.zipWithIndex.foreach {
+      c => {
+        print(c._2.toString + "\t : " + c._1 + "\t " + asm.decode(c._1))
+      }
+    }
+
+    verifyRoms(
+      verbose = true,
+      uartDataIn = List(),
+      outputCheck = (output: List[String]) => {},
+      checkHalt = Some(HaltCode(0, 1|4)),
+      timeout = 200,
+      roms = roms);
   }
 
+  @Test
+  def `passingStatusFlagAcrossOpsToCreateAggregate4ByteCompare`(): Unit = {
+
+    val cmpEq =
+      """
+        |                   ;  LSB       MSB
+        |A:       BYTES     [ 255,255,255,255 ]
+        |B:       BYTES     [ 0,0,0,0 ]
+        |
+        |MARLO=0
+        |MARHI=0
+        |
+        |REGA=[:A+3]
+        |NOOP = REGA A_MINUS_B_SIGNEDMAG [:B+3] _S
+        |
+        |REGA=[:A+2]
+        |NOOP = REGA A_MINUS_B           [:B+2] _EQ_S
+        |
+        |REGA=[:A+1]
+        |NOOP = REGA A_MINUS_B           [:B+1] _EQ_S
+        |
+        |REGA=[:A+0]
+        |NOOP = REGA A_MINUS_B           [:B+0] _EQ_S
+        |
+        |REGA=0
+        |REGA = REGA A_OR_B 1 _LT
+        |REGA = REGA A_OR_B 2 _GT
+        |REGA = REGA A_OR_B 4 _NE
+        |REGA = REGA A_OR_B 8 _EQ
+        |
+        |HALT = REGA
+        |
+        |HALT = 1 _LT
+        |HALT = 2 _GT
+        |HALT = 3 _NE
+        |HALT = 4 _EQ
+        |HALT = 5
+        |
+        |END
+        |"""
+
+    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.length > 0)
+
+    val asm = new Assembler()
+
+    val roms = assemble(code, asm)
+
+    verifyRoms(
+      verbose = true,
+      uartDataIn = List(),
+      outputCheck = (output: List[String]) => {},
+      checkHalt = Some(HaltCode(0, 1|4)),
+      timeout = 200,
+      roms = roms);
+  }
+  /*
+    @Test
+    def `cppJmp`(): Unit = {
+      // test the injection of the jmp macro
+      val code = Seq(
+        "REGA = 0",
+        "label: ",
+        "REGB = 1",
+        "jmp(label)",
+        "REGC = 2",
+        "END"
+      )
+
+      val asm = new Assembler()
+      import asm._
+
+      assertEqualsList(Seq(
+        inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 0),
+        inst(AluOp.PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 1),
+        inst(AluOp.PASS_B, TDevice.PCHITMP, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 0),
+        inst(AluOp.PASS_B, TDevice.PC, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 1),
+        inst(AluOp.PASS_B, TDevice.REGC, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 2),
+      ), instructions(code, asm))
+    }
+   */
 
   @Test
   def `allow_positioning_of_data`(): Unit = {
     val code = Seq(
       "A:     STR \"A\"",
-      "POSN:  EQU 10",
-      "POSN:  STR \"PP\"",
+      "POSN:  EQU 10",        // sets the value of the label POSN to be address 10
+      "POSN:  STR \"PP\"",    // sets the data at POSN to be the data "PP"
+      "LENPP: EQU len(:POSN)",// sets asm var LENPP to be the length of the data POSN
+      "X:     BYTES [ len(:POSN), :LENPP ]",// sets twp data vytes , each the length of the data at POSN
       "B:     STR \"B\"",
       "END"
     )
@@ -44,12 +169,15 @@ class AssemblerTest {
     val asm = new Assembler()
     import asm._
 
+    val actual = instructions(code, asm)
     assertEqualsList(Seq(
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 0, 'A'.toByte),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 10, 'P'.toByte),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 11, 'P'.toByte),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 12, 'B'.toByte)
-    ), instructions(code, asm))
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 0, 'A'.toByte), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 10, 'P'.toByte), // DATA='P'
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 11, 'P'.toByte), // DATA='P'
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 12, 2), // byte = length of "PP"
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 13, 2), // byte = length of "PP" via LENPP
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 14, 'B'.toByte)
+    ), actual)
   }
 
   @Test
@@ -505,10 +633,19 @@ class AssemblerTest {
   }
 
   private def instructions(code: Seq[String], asm: Assembler): Seq[(AluOp, Any, Any, Any, Control, Mode, ConditionMode, Int, Byte)] = {
-    val roms = asm.assemble(code.mkString("\n")) // comments run to end of line
+    val roms: Seq[List[String]] = assemble(code, asm)
+    decode(roms, asm)
+  }
+
+  private def decode(roms: Seq[List[String]], asm: Assembler) = {
     roms.map(r =>
       asm.decode(r)
     )
+  }
+
+  private def assemble(code: Seq[String], asm: Assembler) = {
+    // comments run to end of line
+    asm.assemble(code.mkString("\n"))
   }
 
   def assertLabel(asm: Assembler, s: String, i: Some[Int]): Unit = {

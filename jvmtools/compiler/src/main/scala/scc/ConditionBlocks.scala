@@ -54,6 +54,7 @@ case class ConditionBlockBlockCompare(exprL: BlkCompoundAluExpr, compOp: String,
           // sets various flags
         )
       case ">=" =>
+        // TODO: CAN THIS BE MORE EFFICIENT BY FLIPPING TO < AND FLIPPING THE FLAG TO CHECK TO NEGATIVE LOGIC??
         val checkLabel = parent.fqnLabelPathUnique("checkGE")
         List(
           s"; condition : $compOp $exprL $exprR",

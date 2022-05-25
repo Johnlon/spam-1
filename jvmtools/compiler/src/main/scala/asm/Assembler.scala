@@ -52,7 +52,7 @@ object Assembler {
 
     val asm = new Assembler()
 
-    val roms: List[List[String]] = asm.assemble(code)
+    val roms: Seq[List[String]] = asm.assemble(code)
 
     println("writing roms")
 
@@ -114,7 +114,7 @@ object Assembler {
 class Assembler extends InstructionParser with Knowing with Lines with Devices {
 
 
-  def assemble(raw: String, quiet: Boolean = false): List[List[String]] = {
+  def assemble(raw: String, stripComments: Boolean = false): Seq[List[String]] = {
 
     //val code = cpp(raw)
     val code = raw
@@ -130,12 +130,14 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     val product = constantsWr.mkString("\n", "\n","\n") + constantsRd.mkString("\n", "\n","\n") + code
 
     parse(lines, product) match {
-      case Success(theCode, _) => {
+      case Success(theCode, _) =>
         println("Statements:")
+
+        // move any Ram init's to the front of the program so that ram is configured before regular program code
 
         val filtered = theCode.filter { l =>
           l match {
-            case Comment(_) if quiet =>
+            case Comment(_) if stripComments =>
               false
             case _ =>
               true
@@ -150,7 +152,6 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
         //instructions.zipWithIndex.foreach(l => println("CODE : " + l))
         println("Assembled: " + instructions.size + " instructions")
         instructions
-      }
 
       case msg: Failure => {
         sys.error(s"FAILURE: $msg ")
@@ -172,7 +173,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
   }
   */
 
-  private def logInstructions(filtered: List[Line]) = {
+  private def logInstructions(filtered: Seq[Line]) = {
     filtered.zipWithIndex.foreach(
       l => {
         val line: Line = l._1
@@ -183,7 +184,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     )
   }
 
-  private def assertAllResolved(theCode: List[Line]) = {
+  private def assertAllResolved(theCode: Seq[Line]) = {
     val unresolvedStatements = theCode.zipWithIndex.filter(s =>
       s._1.unresolved
     )

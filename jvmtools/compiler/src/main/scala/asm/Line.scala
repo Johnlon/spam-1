@@ -2,6 +2,9 @@ package asm
 
 import AddressMode.{DIRECT, Mode}
 
+import scala.collection.AbstractSeq
+import scala.util.parsing.input.Positional
+
 trait Lines {
   self: Knowing with Devices =>
 
@@ -104,13 +107,25 @@ trait Lines {
 
       if (string.length > len) {
         //System.err.println(this)
-        sys.error(s"${name} field length ${len}(${Math.pow(2, len).toInt}) exceeded by value ${value}(${Integer.parseInt(value, 2)})")
+        sys.error(s"${name} field max value ${len}(${Math.pow(2, len).toInt}) exceeded for value ${value}(${Integer.parseInt(value, 2)})")
       }
 
       string
     }
   }
 
+//
+//  case class TextSegment() extends Line with Positional {
+//
+//    def str = {
+//      s"""${this.getClass.getName}"""
+//    }
+//
+//    def unresolved = {
+//          false
+//    }
+//  }
+//
   case class EquInstruction(variable: String, value: IsKnowable[KnownInt]) extends Line {
 
     def str = {
@@ -125,6 +140,23 @@ trait Lines {
           false
       }
     }
+  }
+
+  /* these are repositionable to the start of the code so that the ram gets initialised */
+  case class RamInitialisation(inst: List[Line]) extends scala.collection.immutable.Seq[Line] {
+
+    def str = {
+      s"${this.getClass.getName} = $inst"
+    }
+
+    def unresolved = {
+        !inst.filter(i => i.unresolved).isEmpty
+    }
+
+    override def length: Int = inst.length
+    override def iterator: Iterator[Line] = inst.iterator
+
+    override def apply(i: Int): Line = inst(i)
   }
 
   case class Debug(comment: String) extends Line {
