@@ -7,6 +7,194 @@ import verification.HaltCode
 import verification.Verification.verifyRoms
 
 class AssemblerTest {
+  @Test
+  def labelAddressesArentMessedUpByMovingDataBlocksToStart(): Unit = {
+    // test the injection of the jmp macro
+    val cmpEq =
+      """
+        | ; PADDING SO THAT
+        | ; TEST
+        | PCHITMP = <:good
+        | PCLO = >:good
+        |
+        | ; PADDING SO THAT IF THE JUMP ENDS UP HERE BY ACCIDENT BECAUSE MOVING DATA AROUND RUINS THE OFFSETS THEN TEST FAILS
+        | ; IF OFFSETS ARE MESSED UP BY MOVING DATA TO START OF PROG THEN IT WILL JUMP SHORT OF THE good: LABEL AND END UP ON HALT=1
+        | HALT=1
+        | HALT=1
+        | HALT=1
+        |
+        | ; should get here
+        | good:
+        |
+        | ; and data should have been initialised
+        | REGA=[66]
+        | REGA=REGA - $BB _S
+        |
+        | HALT=$aa _Z ; << SUCCESS
+        |
+        | HALT=2
+        | HALT=2
+        | HALT=2
+        |
+        | ; THIS MUST BE INITIALISED ADDRESS 66 = BYTE BB BUT THAT MEANS IT MUST BE EXECUTED BEFORE ALL OTHER INSTRUCTIONS
+        | ; IF ARRANGING THAT MESSES UP ADDRESSES THEN WE WANT TO KNOW ABOUT IT
+        | data : EQU 66
+        | data : BYTES [$BB]
+        |
+        |END
+        """
+
+    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.length > 0)
+
+    val asm = new Assembler()
+
+    val roms = assemble(code, asm)
+
+    roms.zipWithIndex.foreach {
+      c => {
+        print(c._2.toString + "\t : " + c._1 + "\t " + asm.decode(c._1))
+      }
+    }
+
+    verifyRoms(
+      verbose = true,
+      uartDataIn = List(),
+      outputCheck = (output: List[String]) => {},
+      checkHalt = Some(HaltCode(0, 0xaa)),
+      timeout = 200,
+      roms = roms);
+  }
+  @Test
+  def vbcc(): Unit = {
+    // test the injection of the jmp macro
+    val cmpEq =
+      """
+        |_sub:
+        |
+        |        [:gpr12+0] = $00
+        |        [:gpr12+1] = $00
+        |        [:gpr12+2] = $00
+        |        [:gpr12+3] = $00
+        |
+        |        [:gpr3+0] = $00
+        |        [:gpr3+1] = $00
+        |        [:gpr3+2] = $00
+        |        [:gpr3+3] = $00
+        |
+        |l1:
+        |_main:
+        |
+        |        [:gpr11+0] = $af
+        |        [:gpr11+1] = $be
+        |        [:gpr11+2] = $00
+        |        [:gpr11+3] = $00
+        |
+        |        [:gpr12+0] = $fe
+        |        [:gpr12+1] = $fe
+        |        [:gpr12+2] = $00
+        |        [:gpr12+3] = $00
+        |
+        |        REGA=[:gpr11+3]
+        |        NOOP = REGA A_MINUS_B_SIGNEDMAG [:gpr12+3] _S
+        |        REGA=[:gpr11+2]
+        |        NOOP = REGA A_MINUS_B           [:gpr12+2] _EQ_S
+        |        REGA=[:gpr11+1]
+        |        NOOP = REGA A_MINUS_B           [:gpr12+1] _EQ_S
+        |        REGA=[:gpr11+0]
+        |        NOOP = REGA A_MINUS_B           [:gpr12+0] _EQ_S
+        |        REGA=0
+        |        REGA = REGA A_OR_B 1 _LT
+        |        REGA = REGA A_OR_B 2 _GT
+        |        REGA = REGA A_OR_B 4 _NE
+        |        REGA = REGA A_OR_B 8 _EQ
+        |
+        |        HALT = REGA ; HACK
+        |
+        |        PCHITMP = <:l6
+        |        PCLO = >:l6 _NE
+        |
+        |l5:
+        |
+        |        [:gpr11+0] = $aa
+        |        [:gpr11+1] = $00
+        |        [:gpr11+2] = $00
+        |        [:gpr11+3] = $00
+        |
+        |        PCHITMP = <:l7
+        |        PCLO = >:l7
+        |
+        |l6:
+        |
+        |
+        |
+        |
+        |l7:
+        |
+        |        [:gpr3+0] = $63
+        |        [:gpr3+1] = $00
+        |        [:gpr3+2] = $00
+        |        [:gpr3+3] = $00
+        |
+        |l3:
+        |        noreg : BYTES [0,0,0,0]
+        |        d4 : RESERVE 4
+        |        gpr0  : BYTES [0,0,0,0]
+        |        gpr1  : BYTES [0,0,0,0]
+        |        gpr2  : BYTES [0,0,0,0]
+        |        gpr3  : BYTES [0,0,0,0]
+        |        gpr4  : BYTES [0,0,0,0]
+        |        gpr5  : BYTES [0,0,0,0]
+        |        gpr6  : BYTES [0,0,0,0]
+        |        gpr7  : BYTES [0,0,0,0]
+        |        gpr8  : BYTES [0,0,0,0]
+        |        gpr9  : BYTES [0,0,0,0]
+        |        gpr10 : BYTES [0,0,0,0]
+        |        gpr11 : BYTES [0,0,0,0]
+        |        gpr12 : BYTES [0,0,0,0]
+        |        gpr13 : BYTES [0,0,0,0]
+        |        gpr14 : BYTES [0,0,0,0]
+        |        gpr15 : BYTES [0,0,0,0]
+        |        fpr0  : BYTES [0,0,0,0]
+        |        fpr1  : BYTES [0,0,0,0]
+        |        fpr2  : BYTES [0,0,0,0]
+        |        fpr3  : BYTES [0,0,0,0]
+        |        fpr4  : BYTES [0,0,0,0]
+        |        fpr5  : BYTES [0,0,0,0]
+        |        fpr6  : BYTES [0,0,0,0]
+        |        fpr7  : BYTES [0,0,0,0]
+        |        fpr8  : BYTES [0,0,0,0]
+        |        fpr9  : BYTES [0,0,0,0]
+        |        fpr10 : BYTES [0,0,0,0]
+        |        fpr11 : BYTES [0,0,0,0]
+        |        fpr12 : BYTES [0,0,0,0]
+        |        fpr13 : BYTES [0,0,0,0]
+        |        fpr14 : BYTES [0,0,0,0]
+        |        fpr15 : BYTES [0,0,0,0]
+        |        fp    : BYTES [0,0,0,0]
+        |        sp    : BYTES [0,0,0,0]
+        |END
+        """
+
+    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.length > 0)
+
+    val asm = new Assembler()
+
+    val roms = assemble(code, asm)
+
+    roms.zipWithIndex.foreach {
+      c => {
+        print(c._2.toString + "\t : " + c._1 + "\t " + asm.decode(c._1))
+      }
+    }
+
+    verifyRoms(
+      verbose = true,
+      uartDataIn = List(),
+      outputCheck = (output: List[String]) => {},
+      checkHalt = Some(HaltCode(0, 1|4)),
+      timeout = 200,
+      roms = roms);
+  }
 
   @Test
   def `can I put vars at end`(): Unit = {

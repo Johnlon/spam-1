@@ -71,7 +71,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   }
 
 
-  def name: Parser[String] = "[a-zA-Z][a-zA-Z0-9_]*".r ^^ (a => a)
+  def name: Parser[String] = "[a-zA-Z_][a-zA-Z0-9_]*".r ^^ (a => a)
 
   def pcref: Parser[Known[KnownInt]] = """.""" ^^ (v => Known("pc", pc))
 
@@ -161,16 +161,16 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   def label: Parser[Label] = name ~ ":" ^^ {
     case n ~ _ =>
       rememberKnown(n, Known(n, KnownInt(pc)))
-      Label(n)
+      Label(n, pc)
   }
 
   // .text added for compat with VBCC but at present is ignored - ie an empty block
   // signals the start of program code
-//  def textSegmentBlock: Parser[TextSegment] = positioned {
-//    ".text" ^^ {
-//      ~ => TextSegment()
-//    }
-//  }
+  //  def textSegmentBlock: Parser[TextSegment] = positioned {
+  //    ".text" ^^ {
+  //      ~ => TextSegment()
+  //    }
+  //  }
 
   // .global added for compat with VBCC but at present is ignored - ie an empty block
   // exports the symbol from the compilation unit
@@ -180,7 +180,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   }
   */
 
-  def eqInstruction: Parser[EquInstruction] = (name <~ ":" ~ "EQU") ~ expr ^^ {
+  def equInstruction: Parser[EquInstruction] = (name <~ ":" ~ "EQU") ~ expr ^^ {
     case n ~ konst =>
       rememberKnown(n, konst)
       EquInstruction(n, konst)
@@ -191,7 +191,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       val bytes = b.getBytes("UTF-8")
 
       val stored = rememberKnown(n, Known(n, KnownByteArray(dataAddress, bytes.toList)))
-      dataAddress = stored.knownVal.value
+      dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
 
       /*
       Label(a) +: bytes.map { c => {
@@ -202,7 +202,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       }.toList
       */
 
-      val ramInit = Comment("STR "+ n + " @ "+ dataAddress) +: bytes.map { c => {
+      val ramInit = Comment("STR " + n + " @ " + dataAddress) +: bytes.map { c => {
         val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), Known("", c))
         dataAddress += 1
         ni
@@ -212,6 +212,10 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       RamInitialisation(ramInit)
   }
 
+  // TODO - this is intiialised memory
+  // We also need uninitialised memory that won't cause program bloat with zeros - leave it to software to set initial values.
+  // This would be simply emitting a label with the right address during assembly - needa a size though
+  // label: RESERVE 4 ; reserve unititalised space for a long
   def bytesInstruction: Parser[RamInitialisation] = (name <~ ":" ~ "BYTES" ~ "[") ~ repsep(expr, ",") <~ "]" ^^ {
     case n ~ expr =>
       if (expr.isEmpty) {
@@ -226,9 +230,9 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       }.foreach(x => sys.error(s"asm error: $x evaluates as out of range ${Byte.MinValue} to 255"))
 
       val stored = rememberKnown(n, Known(n, KnownByteArray(dataAddress, ints.map(_.toByte))))
-      dataAddress = stored.knownVal.value //
+      dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
 
-      val ramInit = Comment("BYTES "+ n + " @ "+ dataAddress) +: ints.map {
+      val ramInit = Comment("BYTES " + n + " @ " + dataAddress) +: ints.map {
         c => {
           // c.toByte will render between -128 and  +127
           // then name "c" will render as whatever int value was actually presented in the code (eg when c=255 then toByte = -1 )
@@ -242,6 +246,28 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
 
 
       RamInitialisation(ramInit)
+  }
+
+  // TODO - this is intiialised memory
+  // We also need uninitialised memory that won't cause program bloat with zeros - leave it to software to set initial values.
+  // This would be simply emitting a label with the right address during assembly - needa a size though
+  // label: RESERVE 4 ; reserve unititalised space for a long
+  def reserveInstruction: Parser[Line] = name ~ (":" ~ "RESERVE") ~ expr ^^ {
+    case n ~ _ ~ expr =>
+
+      val x = expr.getVal.get.value
+
+      if (x < Byte.MinValue || x > 255) {
+        sys.error(s"asm error.filter { x =>: $x evaluates as out of range ${Byte.MinValue} to 255")
+      }
+
+      val stored = rememberKnown(n, Known(n, KnownInt(x)))
+      dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
+
+      val comment = Comment("RESERVE " + n + " @ " + dataAddress + " SIZE " + x)
+      dataAddress += x
+
+      comment
   }
 
   private def inst(t: TExpression, a: ADevice, op: AluOp, b: BExpression, f: Option[Condition], immed: Know[KnownInt]): Instruction = {
@@ -285,7 +311,10 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   }
 
   /*  merge single instruction and multi-inst instructions */
-  def line: Parser[Seq[Line]] = (strInstruction | bytesInstruction | eqInstruction | bInstruction | abInstructionImmed | abInstruction | aInstruction | bInstructionImmed | debug | comment | label) ^^ {
+  def line: Parser[Seq[Line]] = (reserveInstruction | strInstruction | bytesInstruction | equInstruction
+    | bInstruction | abInstructionImmed | abInstruction | aInstruction | bInstructionImmed
+    | debug | comment | label) ^^ {
+
     case x: RamInitialisation =>
       x
     case x: Seq[_] =>

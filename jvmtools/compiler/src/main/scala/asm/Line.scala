@@ -1,29 +1,26 @@
 package asm
 
-import AddressMode.{DIRECT, Mode}
-
-import scala.collection.AbstractSeq
-import scala.util.parsing.input.Positional
+import asm.AddressMode.{DIRECT, Mode}
 
 trait Lines {
   self: Knowing with Devices =>
 
-  var instNo = 0
+  var lineNo = 0
   var pc = 0
 
   sealed trait Line {
 
-    val instructionAddress = pc
     //println(s"""${Line.instNo.formatted("%03d")} pc:${instructionAddress.formatted("%04x")} : ${this.getClass.getName}  : ${this.str}""")
 
     def unresolved: Boolean
 
-    instNo += 1
+    lineNo += 1
   }
 
-  case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, condition: Condition, amode: Mode, address: Know[KnownInt], immed: Know[KnownInt])
+  final case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, condition: Condition, amode: Mode, address: Know[KnownInt], immed: Know[KnownInt])
     extends Line {
 
+    val instructionAddress = pc
     pc += 1
 
     (bdev, immed) match {
@@ -167,12 +164,10 @@ trait Lines {
     def unresolved = false
   }
 
-  case class Label(name: String) extends Line {
+  case class Label(name: String, pos: Int) extends Line {
 
     def unresolved = false
 
-    override def toString = {
-      s"Label(${name} @ ${instructionAddress})"
-    }
+    override def toString = s"Label($name @ $pos)"
   }
 }

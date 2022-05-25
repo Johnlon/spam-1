@@ -177,9 +177,12 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     filtered.zipWithIndex.foreach(
       l => {
         val line: Line = l._1
-        val address = line.instructionAddress
+        val address = line match {
+          case i: Instruction => i.instructionAddress.formatted("%04x")
+          case _ => "****"
+        }
         val index: Int = l._2
-        System.out.println(index.formatted("%03d") + " pc:" + address.formatted("%04x") + ":" + address.formatted("%05d") + ": " + line)
+        System.out.println(index.formatted("%03d") + " pc:" + address + ":" + address.formatted("%05d") + ": " + line)
       }
     )
   }
