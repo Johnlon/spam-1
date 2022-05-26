@@ -6,22 +6,18 @@ trait Lines {
   self: Knowing with Devices =>
 
   var sourceLines = 0
-  //var pc = 0
 
   sealed trait Line {
 
     def unresolved: Boolean
 
     sourceLines += 1
-    var sourceLineNumber = sourceLines
+    val sourceLineNumber: Int = sourceLines
   }
 
   final case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, condition: Condition, amode: Mode, address: Know[KnownInt], immed: Know[KnownInt])
     extends Line {
     var pc: Option[Int] = None
-
-    // val instructionAddress = pc
-    // pc += 1
 
     (bdev, immed) match {
       case (BDevice.IMMED, _: Irrelevant) =>
