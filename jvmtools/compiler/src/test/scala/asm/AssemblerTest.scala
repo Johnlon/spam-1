@@ -780,7 +780,7 @@ class AssemblerTest {
     catch {
       case e: RuntimeException =>
         val message = e.getMessage
-        assertEqualsList("illegal instruction: target '[Known(1000, NoName)]' and source '[Known(1, NoName)]' cannot both be RAM", message)
+        assertEqualsList("illegal instruction: target '[Known(1000, Name:decimal)]' and source '[Known(1, Name:decimal)]' cannot both be RAM", message)
     }
   }
 

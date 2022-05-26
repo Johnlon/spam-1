@@ -27,7 +27,7 @@ trait Knowing {
                     // IS OK TO REDEFINE THE VALUE OF WHAT IS AT THE POINTER FROM A VALUE TO AN ARRAY AT THAT LOCATION WITH THAT VALUE
 
                     // save data at predefined location
-                    Known(name, KnownByteArray(existingInt.value, newArr.data)).asInstanceOf[K]
+                    Known(ik.name, KnownByteArray(existingInt.value, newArr.data)).asInstanceOf[K]
                 }
               case None =>
                 sys.error(s"symbol '${name}' has already defined as ${existingInt} can't assign new value ${newValue}")
@@ -83,7 +83,9 @@ trait Knowing {
     def name: String
   }
 
-  sealed trait IsKnowable[T <: KnownValue] extends Know[T]
+  sealed trait IsKnowable[T <: KnownValue] extends Know[T] {
+    def rename(str: String): IsKnowable[T]
+  }
 
   case class KnownInt(value: Int) extends KnownValue {
     def toBinaryString: String = value.toBinaryString
@@ -113,14 +115,11 @@ trait Knowing {
   case class Known[T <: KnownValue : ClassTag](name: String, knownVal: T) extends IsKnowable[T] {
     type KV = T
 
-    if (knownVal.value == 66)
-      println("STOP")
-    if (name.isEmpty)
-      println("STOP")
-
     def eval = {
       this
     }
+
+    def rename(newName: String) = Known(newName, knownVal)
 
     def getVal = Some(knownVal)
 
@@ -147,6 +146,8 @@ trait Knowing {
         Unknown(name)
       )
     }
+
+    def rename(newName: String) = Knowable(newName, a)
 
     def getVal = a()
 
@@ -186,6 +187,8 @@ trait Knowing {
       }
     }
 
+    def rename(newName: String) = UniKnowable(a, op, newName)
+
     def getVal: Option[T] = a().getVal match {
       case Some(v) =>
         Some(op(v))
@@ -199,7 +202,13 @@ trait Knowing {
     }
   }
 
-  case class BiKnowable[T <: KnownValue : ClassTag, K1 <: KnownValue : ClassTag, K2 <: KnownValue : ClassTag](a: () => Know[K1], b: () => Know[K2], op: (K1, K2) => T, name: String) extends IsKnowable[T] {
+  case class BiKnowable[T <: KnownValue : ClassTag, K1 <: KnownValue : ClassTag, K2 <: KnownValue : ClassTag](
+                                                                                                               a: () => Know[K1],
+                                                                                                               b: () => Know[K2],
+                                                                                                               op: (K1, K2) => T,
+                                                                                                               name: String)
+    extends IsKnowable[T] {
+
     def eval: Know[T] = {
       val value = (a().eval, b().eval)
       value match {
@@ -213,6 +222,8 @@ trait Knowing {
           sys.error("UNMATCHED " + value)
       }
     }
+
+    def rename(newName: String) = BiKnowable(a, b, op, newName)
 
     def getVal = (a().getVal, b().getVal) match {
       case (Some(av), Some(bv)) =>

@@ -26,11 +26,6 @@ trait ConstExpressionParser {
   def charToken: Parser[Int] = "'" ~> """\\?.""".r <~ "'" ^^ {
     v =>
       val c = org.apache.commons.text.StringEscapeUtils.unescapeJava(v)
-//      val c = if (v == "\\n") {
-//        //"\n"
-//      } else {
-//        v
-//      }
       val i = c.codePointAt(0)
       if (i > 127) throw new RuntimeException(s"asm error: character '$v' (code:${v.toInt}) codepoint $i is outside the 0-127 range")
       i.toByte

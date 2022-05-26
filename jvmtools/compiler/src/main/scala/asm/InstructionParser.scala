@@ -87,11 +87,11 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     Known("", i.toByte)
   }
 
-  def hex: Parser[Known[KnownInt]] = "$" ~ "[0-9a-hA-H]+".r ^^ { case _ ~ v => Known("$" + v, Integer.valueOf(v, 16)) }
+  def hex: Parser[Known[KnownInt]] = "$" ~ "[0-9a-hA-H]+".r ^^ { case _ ~ v => Known("hex $" + v, Integer.valueOf(v, 16)) }
 
-  def bin: Parser[Known[KnownInt]] = "%" ~ "[01]+".r ^^ { case _ ~ v => Known("%" + v, Integer.valueOf(v, 2)) }
+  def bin: Parser[Known[KnownInt]] = "%" ~ "[01]+".r ^^ { case _ ~ v => Known("bin %" + v, Integer.valueOf(v, 2)) }
 
-  def oct: Parser[Known[KnownInt]] = "@" ~ "[0-7]+".r ^^ { case _ ~ v => Known("@" + v, Integer.valueOf(v, 8)) }
+  def oct: Parser[Known[KnownInt]] = "@" ~ "[0-7]+".r ^^ { case _ ~ v => Known("oct @" + v, Integer.valueOf(v, 8)) }
 
   def labelAddr: Parser[IsKnowable[KnownInt]] = ":" ~ name ^^ { case _ ~ v => forwardReference(v) }
 
@@ -185,28 +185,22 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
 
   def equInstruction: Parser[EquInstruction] = (name <~ ":" ~ "EQU") ~ expr ^^ {
     case n ~ konst =>
-      rememberKnown(n, konst)
-      EquInstruction(n, konst)
+      val renamed = konst.rename("EQU "+ n + " " + konst.name)
+      rememberKnown(n, renamed)
+      EquInstruction(n, renamed)
   }
 
   def strInstruction: Parser[RamInitialisation] = (name <~ ":" ~ "STR") ~ quotedString ^^ {
     case n ~ b =>
       val bytes = b.getBytes("UTF-8")
 
-      val stored = rememberKnown(n, Known(n, KnownByteArray(dataAddress, bytes.toList)))
+      val v = Known("STR "+ n, KnownByteArray(dataAddress, bytes.toList))
+
+      val stored = rememberKnown(n, v)
       dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
 
-      /*
-      Label(a) +: bytes.map { c => {
-        val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), Known("", c))
-        dataAddress += 1
-        ni
-      }
-      }.toList
-      */
-
       val ramInit = Comment("STR " + n + " @ " + dataAddress) +: bytes.map { c => {
-        val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), Known("", c))
+        val ni = inst(RamDirect(Known("BYTE-ADDR:" + n, dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), Known("STR-BYTE", c))
         dataAddress += 1
         ni
       }
@@ -226,7 +220,6 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       }
       val exprs: List[Know[KnownInt]] = expr
 
-//      val ints: List[Int] = exprs.map(_.getVal.get.value)
       val ints: List[(String, Int)] = exprs.map(x => (x.name, x.getVal.get.value))
 
       ints.filter { x =>
@@ -241,14 +234,13 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
         c => {
           // c.toByte will render between -128 and  +127
           // then name "c" will render as whatever int value was actually presented in the code (eg when c=255 then toByte = -1 )
-          val immed = Known(f"${c._1} ${c._2.toByte}%02X", c._2.toByte)
+          val immed = Known(f"${c._1}", c._2.toByte)
 
           val ni = inst(RamDirect(Known("BYTES " + n, dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), immed)
           dataAddress += 1
           ni
         }
       }
-
 
       RamInitialisation(ramInit)
   }
