@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test
 import verification.HaltCode
 import verification.Verification.verifyRoms
 
-// TODO - check if any initialised or uninitialised ranges overlap
-// review logic where datalocn pointer is reset by a prev statement
+// FIXME - check if any initialised or uninitialised ranges overlap
+// TODO review logic where datalocn pointer is reset by a prev statement
 
 class AssemblerTest {
   @Test

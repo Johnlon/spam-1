@@ -2,7 +2,6 @@ package asm
 
 import asm.AddressMode.Mode
 import asm.Ports.{ReadPort, WritePort}
-//import org.anarres.cpp.{CppReader, DefaultPreprocessorListener}
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import scala.io.Source
 
