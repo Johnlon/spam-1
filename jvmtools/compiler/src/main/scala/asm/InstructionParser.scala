@@ -199,7 +199,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       val stored = rememberKnown(n, v)
       dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
 
-      val ramInit = Comment("STR " + n + " @ " + dataAddress) +: bytes.map { c => {
+      val ramInit = Comment("STR " + n + " @ " + dataAddress + " size "+ b.length) +: bytes.map { c => {
         val ni = inst(RamDirect(Known("BYTE-ADDR:" + n, dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), Known("STR-BYTE", c))
         dataAddress += 1
         ni
@@ -230,7 +230,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       val stored = rememberKnown(n, v)
       dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
 
-      val ramInit = Comment("BYTES " + n + " @ " + dataAddress) +: ints.map {
+      val ramInit = Comment("BYTES " + n + " @ " + dataAddress + " size " + ints.size) +: ints.map {
         c => {
           // c.toByte will render between -128 and  +127
           // then name "c" will render as whatever int value was actually presented in the code (eg when c=255 then toByte = -1 )
@@ -252,17 +252,18 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   def reserveInstruction: Parser[Line] = name ~ (":" ~ "RESERVE") ~ expr ^^ {
     case n ~ _ ~ expr =>
 
-      val x = expr.getVal.get.value
+      val size = expr.getVal.get.value
 
-      if (x < Byte.MinValue || x > 255) {
-        sys.error(s"asm error.filter { x =>: $x evaluates as out of range ${Byte.MinValue} to 255")
+      if (size < Byte.MinValue || size > 255) {
+        sys.error(s"asm error.filter { x =>: $size evaluates as out of range ${Byte.MinValue} to 255")
       }
 
-      val stored = rememberKnown(n, Known(n, KnownInt(x)))
+      val v= Known("RESERVED "+ n, KnownInt(size))
+      val stored = rememberKnown(n, Known(n, KnownInt(dataAddress)))
       dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
 
-      val comment = Comment("RESERVE " + n + " @ " + dataAddress + " SIZE " + x)
-      dataAddress += x
+      val comment = Comment("RESERVE " + n + " @ " + dataAddress + " size " + size)
+      dataAddress += size
 
       comment
   }

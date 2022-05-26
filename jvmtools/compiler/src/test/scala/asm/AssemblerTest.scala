@@ -6,12 +6,16 @@ import org.junit.jupiter.api.Test
 import verification.HaltCode
 import verification.Verification.verifyRoms
 
+// TODO - check if any initialised or uninitialised ranges overlap
+// review logic where datalocn pointer is reset by a prev statement
+
 class AssemblerTest {
   @Test
   def labelAddressesArentMessedUpByMovingDataBlocksToStart(): Unit = {
     // test the injection of the jmp macro
     val cmpEq =
       """
+        | b8 : RESERVE 8
         | ; PADDING SO THAT
         | ; TEST
         | PCHITMP = <:good
@@ -40,7 +44,11 @@ class AssemblerTest {
         | ; IF ARRANGING THAT MESSES UP ADDRESSES THEN WE WANT TO KNOW ABOUT IT
         | data : EQU 66
         | data : BYTES [$BB]
-        |
+        | b2 : RESERVE 2
+        | b4 : RESERVE 4
+        | b6 : RESERVE 6
+        | d0: BYTES [$DD, @77, %10101010 ]
+        | d1: BYTES [$DD]
         |END
         """
 
