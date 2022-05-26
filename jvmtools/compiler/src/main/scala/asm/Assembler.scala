@@ -3,9 +3,7 @@ package asm
 import asm.AddressMode.Mode
 import asm.Ports.{ReadPort, WritePort}
 //import org.anarres.cpp.{CppReader, DefaultPreprocessorListener}
-import org.apache.commons.io.IOUtils
-
-import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter, StringReader}
+import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import scala.io.Source
 
 object Assembler {
@@ -127,7 +125,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
       p => s"${p.asmPortName}: EQU ${p.id}"
     ).toList
 
-    val product = constantsWr.mkString("\n", "\n","\n") + constantsRd.mkString("\n", "\n","\n") + code
+    val product = constantsWr.mkString("\n", "\n", "\n") + constantsRd.mkString("\n", "\n", "\n") + code
 
     parse(lines, product) match {
       case Success(theCode, _) =>
@@ -143,6 +141,23 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
               true
           }
         }
+
+        var pc = 0;
+        filtered.foreach(l => {
+          l match {
+            case l: Instruction =>
+              l.pc = Some(pc)
+              pc+=1
+            case l: Label =>
+              l.value = Some(pc)
+            case l: EquInstruction =>
+            // value is known at write time
+            case l: Debug =>
+              // no value
+            case l: Comment =>
+              // no value
+          }
+        })
 
         logInstructions(filtered)
 
@@ -177,12 +192,15 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     filtered.zipWithIndex.foreach(
       l => {
         val line: Line = l._1
+
         val address = line match {
-          case i: Instruction => i.instructionAddress.formatted("%04x")
-          case _ => "****"
+          case i: Instruction =>
+            i.pc.getOrElse(sys.error("pc not yet assigned to " + i)).formatted("pc %04x")
+          case _ =>
+            " " * 7
         }
         val index: Int = l._2
-        System.out.println(index.formatted("%03d") + " pc:" + address + ":" + address.formatted("%05d") + ": " + line)
+        System.out.println(s"""${index.formatted("%03d")} src=${line.sourceLineNumber.formatted("%-5d")}   $address : $line""")
       }
     )
   }
@@ -206,7 +224,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
   /* spaces permitted in input value for formatting reasons */
   private def decode[A <: Assembler](strIn: String) = {
 
-    val str = strIn.replaceAll(" ","")
+    val str = strIn.replaceAll(" ", "")
 
     val sitr = str.iterator.buffered
 

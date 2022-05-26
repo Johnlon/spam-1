@@ -73,12 +73,12 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
 
   def name: Parser[String] = "[a-zA-Z_][a-zA-Z0-9_]*".r ^^ (a => a)
 
-  def pcref: Parser[Known[KnownInt]] = """.""" ^^ (v => Known("pc", pc))
+  def pcref: Parser[Known[KnownInt]] = """.""" ^^ (v => sys.error("FIXME")) //Known("pc", pc))
 
   def dec: Parser[Known[KnownInt]] =
     """-?\d+""".r ^^ { v =>
       val vi = v.toInt
-      Known("", vi)
+      Known("decimal", vi)
     }
 
   def char: Parser[Known[KnownInt]] = "'" ~> ".".r <~ "'" ^^ { v =>
@@ -160,8 +160,11 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
 
   def label: Parser[Label] = name ~ ":" ^^ {
     case n ~ _ =>
-      rememberKnown(n, Known(n, KnownInt(pc)))
-      Label(n, pc)
+      //rememberKnown(n, Known(n, KnownInt(pc)))
+      //Label(n, pc)
+      val l = Label(n)
+      rememberKnown(n, Knowable(n, () => l.value.map(KnownInt)))
+      l
   }
 
   // .text added for compat with VBCC but at present is ignored - ie an empty block
@@ -223,22 +226,24 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       }
       val exprs: List[Know[KnownInt]] = expr
 
-      val ints: List[Int] = exprs.map(_.getVal.get.value)
+//      val ints: List[Int] = exprs.map(_.getVal.get.value)
+      val ints: List[(String, Int)] = exprs.map(x => (x.name, x.getVal.get.value))
 
       ints.filter { x =>
-        x < Byte.MinValue || x > 255
+        x._2 < Byte.MinValue || x._2 > 255
       }.foreach(x => sys.error(s"asm error: $x evaluates as out of range ${Byte.MinValue} to 255"))
 
-      val stored = rememberKnown(n, Known(n, KnownByteArray(dataAddress, ints.map(_.toByte))))
+      val v= Known("BYTES "+ n, KnownByteArray(dataAddress, ints.map(_._2.toByte)))
+      val stored = rememberKnown(n, v)
       dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
 
       val ramInit = Comment("BYTES " + n + " @ " + dataAddress) +: ints.map {
         c => {
           // c.toByte will render between -128 and  +127
           // then name "c" will render as whatever int value was actually presented in the code (eg when c=255 then toByte = -1 )
-          val immed = Known(f"${c.toByte}%02X", c.toByte)
+          val immed = Known(f"${c._1} ${c._2.toByte}%02X", c._2.toByte)
 
-          val ni = inst(RamDirect(Known("", dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), immed)
+          val ni = inst(RamDirect(Known("BYTES " + n, dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), immed)
           dataAddress += 1
           ni
         }

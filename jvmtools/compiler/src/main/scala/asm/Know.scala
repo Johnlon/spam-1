@@ -1,7 +1,7 @@
 package asm
 
 import scala.collection.mutable
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.ClassTag
 
 trait Knowing {
 
@@ -79,6 +79,8 @@ trait Knowing {
     def eval: Know[T] // none - means unknowable
 
     def getVal: Option[T]
+
+    def name: String
   }
 
   sealed trait IsKnowable[T <: KnownValue] extends Know[T]
@@ -111,13 +113,21 @@ trait Knowing {
   case class Known[T <: KnownValue : ClassTag](name: String, knownVal: T) extends IsKnowable[T] {
     type KV = T
 
+    if (knownVal.value == 66)
+      println("STOP")
+    if (name.isEmpty)
+      println("STOP")
+
     def eval = {
       this
     }
 
     def getVal = Some(knownVal)
 
-    override def toString(): String = s"""${this.getClass.getSimpleName}($knownVal, ${if (name.length > 0) "Name:" + name else "NoName"})"""
+    override def toString(): String = {
+      val sname = if (name.nonEmpty) "Name:" + name else "NoName"
+      s"${this.getClass.getSimpleName}($knownVal, $sname)"
+    }
   }
 
   /* something who's value is definitely unknown */
@@ -159,6 +169,8 @@ trait Knowing {
     }
 
     def getVal = Some(KnownInt(0))
+
+    val name = "Irrelevant"
 
     override def toString(): String = "Irrelevant"
   }

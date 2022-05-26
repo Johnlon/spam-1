@@ -5,23 +5,23 @@ import asm.AddressMode.{DIRECT, Mode}
 trait Lines {
   self: Knowing with Devices =>
 
-  var lineNo = 0
-  var pc = 0
+  var sourceLines = 0
+  //var pc = 0
 
   sealed trait Line {
 
-    //println(s"""${Line.instNo.formatted("%03d")} pc:${instructionAddress.formatted("%04x")} : ${this.getClass.getName}  : ${this.str}""")
-
     def unresolved: Boolean
 
-    lineNo += 1
+    sourceLines += 1
+    var sourceLineNumber = sourceLines
   }
 
   final case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, condition: Condition, amode: Mode, address: Know[KnownInt], immed: Know[KnownInt])
     extends Line {
+    var pc: Option[Int] = None
 
-    val instructionAddress = pc
-    pc += 1
+    // val instructionAddress = pc
+    // pc += 1
 
     (bdev, immed) match {
       case (BDevice.IMMED, _: Irrelevant) =>
@@ -111,19 +111,23 @@ trait Lines {
     }
   }
 
-//
-//  case class TextSegment() extends Line with Positional {
-//
-//    def str = {
-//      s"""${this.getClass.getName}"""
-//    }
-//
-//    def unresolved = {
-//          false
-//    }
-//  }
-//
-  case class EquInstruction(variable: String, value: IsKnowable[KnownInt]) extends Line {
+  //
+  //  case class TextSegment() extends Line with Positional {
+  //
+  //    def str = {
+  //      s"""${this.getClass.getName}"""
+  //    }
+  //
+  //    def unresolved = {
+  //          false
+  //    }
+  //  }
+  //
+  case class EquInstruction(variable: String, v: IsKnowable[KnownInt]) extends Line {
+
+    // name the value the same as the EQU
+    def value =
+      Knowable(variable, () => v.getVal)
 
     def str = {
       s"""${this.getClass.getName} ${variable} = ${value}"""
@@ -147,10 +151,11 @@ trait Lines {
     }
 
     def unresolved = {
-        !inst.filter(i => i.unresolved).isEmpty
+      !inst.filter(i => i.unresolved).isEmpty
     }
 
     override def length: Int = inst.length
+
     override def iterator: Iterator[Line] = inst.iterator
 
     override def apply(i: Int): Line = inst(i)
@@ -164,10 +169,12 @@ trait Lines {
     def unresolved = false
   }
 
-  case class Label(name: String, pos: Int) extends Line {
-
+  case class Label(name: String) extends Line {
+    // FIXME removed the pos field
     def unresolved = false
 
-    override def toString = s"Label($name @ $pos)"
+    var value: Option[Int] = None
+
+    override def toString = s"""Label($name @ ${value.getOrElse("NOT ASSIGNED")})"""
   }
 }
