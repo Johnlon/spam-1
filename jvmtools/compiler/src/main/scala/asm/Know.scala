@@ -158,8 +158,9 @@ trait Knowing {
       )
 
       val str = maybeString.getOrElse(
-        s"unknown(${name})"
-      )
+        //s"unknown(${name})"
+        "unknown"
+      ) + s"($name)"
       str
     }
   }

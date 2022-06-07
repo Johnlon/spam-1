@@ -80,10 +80,10 @@ package control;
     localparam [3:0] CONDITION_Z= 2; 
     localparam [3:0] CONDITION_O= 3; 
     localparam [3:0] CONDITION_N= 4; 
-    localparam [3:0] CONDITION_GT=5; 
-    localparam [3:0] CONDITION_LT=6; 
-    localparam [3:0] CONDITION_EQ=7; 
-    localparam [3:0] CONDITION_NE=8; 
+    localparam [3:0] CONDITION_EQ=5; 
+    localparam [3:0] CONDITION_NE=6; 
+    localparam [3:0] CONDITION_GT=7; 
+    localparam [3:0] CONDITION_LT=8; 
     localparam [3:0] CONDITION_DI=9; 
     localparam [3:0] CONDITION_DO=10; 
 
@@ -135,10 +135,10 @@ package control;
     function string tdevname([4:0] tdev); 
     begin
         case (tdev)
-            TDEV_rega: tdevname = "REGA"; // 1
-            TDEV_regb: tdevname = "REGB"; // 2
-            TDEV_regc: tdevname = "REGC"; // 3
-            TDEV_regd: tdevname = "REGD"; // 4
+            TDEV_rega: tdevname = "REGA";
+            TDEV_regb: tdevname = "REGB";
+            TDEV_regc: tdevname = "REGC";
+            TDEV_regd: tdevname = "REGD";
             TDEV_marlo: tdevname = "MARLO";
             TDEV_marhi: tdevname = "MARHI";
             TDEV_uart: tdevname = "UART";
@@ -146,8 +146,9 @@ package control;
             TDEV_halt: tdevname = "HALT";
 
             TDEV_vram: tdevname = "VRAM";
-            TDEV_portsel: tdevname = "PORTSEL";
             TDEV_port: tdevname = "PORT";
+            TDEV_portsel: tdevname = "PORTSEL";
+            TDEV_not_used12: tdevname = "NOOP";
             // not used
             TDEV_pchitmp: tdevname = "PCHITMP";
             TDEV_pclo: tdevname = "PCLO";
@@ -169,10 +170,10 @@ package control;
             CONDITION_Z: condname = "Z";
             CONDITION_O: condname = "O";
             CONDITION_N: condname = "N";
-            CONDITION_GT: condname = "GT";
-            CONDITION_LT: condname = "LT";
             CONDITION_EQ: condname = "EQ";
             CONDITION_NE: condname = "NE";
+            CONDITION_GT: condname = "GT";
+            CONDITION_LT: condname = "LT";
             CONDITION_DI: condname = "DI";
             CONDITION_DO: condname = "DO";
             default: begin

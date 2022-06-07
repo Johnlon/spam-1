@@ -11,6 +11,118 @@ import verification.Verification.verifyRoms
 
 class AssemblerTest {
   @Test
+  def vbccTest(): Unit = {
+    // test the injection of the jmp macro
+    val cmpEq =
+      """
+        |  [:sp]   = $ff
+        |  [:sp+1] = $ff
+        |  MARLO   = [:sp]
+        |  MARHI   = [:sp+1]
+        |	[:gpr6+0] = $9a
+        |	[:gpr6+1] = $02
+        |	[:gpr6+2] = $00
+        |	[:gpr6+3] = $00
+        |	REGA=[:gpr6+3]
+        |	NOOP = REGA A_MINUS_B_SIGNEDMAG $00 _S
+        |	REGA=[:gpr6+2]
+        |	NOOP = REGA A_MINUS_B           $00 _EQ_S
+        |	REGA=[:gpr6+1]
+        |	NOOP = REGA A_MINUS_B           $02 _EQ_S
+        |	REGA=[:gpr6+0]
+        |	NOOP = REGA A_MINUS_B           $9a _EQ_S
+        |	PCHITMP = <:l4
+        |	PCLO = >:l4 _EQ
+        |l3:
+        |	[:gpr0+0] = $01
+        |	[:gpr0+1] = $00
+        |	[:gpr0+2] = $00
+        |	[:gpr0+3] = $00
+        |	HALT = [:gpr0]
+        |
+        |l4:
+        |	[:gpr0+0] = $00
+        |	[:gpr0+1] = $00
+        |	[:gpr0+2] = $00
+        |	[:gpr0+3] = $00
+        |	HALT = [:gpr0]
+        |
+        |	[:gpr0+0] = $00
+        |	[:gpr0+1] = $00
+        |	[:gpr0+2] = $00
+        |	[:gpr0+3] = $00
+        |l1:
+        |	PCHITMP = RAM
+        |	MARLO   = MARLO + 1 _S
+        |	MARHI   = MARHI A_PLUS_B_PLUS_C 0
+        |	REGA    = RAM
+        |	MARLO   = MARLO + 1 _S
+        |	MARHI   = MARHI A_PLUS_B_PLUS_C 0
+        |	PCHITMP = REGA
+        |
+        |	gtmp1     :	RESERVE 4
+        |	gtmp2     :	RESERVE 4
+        |	ftmp1     :	RESERVE 8
+        |	ftmp2     :	RESERVE 8
+        |	gpr0      :	RESERVE 4
+        |	gpr1      :	RESERVE 4
+        |	gpr2      :	RESERVE 4
+        |	gpr3      :	RESERVE 4
+        |	gpr4      :	RESERVE 4
+        |	gpr5      :	RESERVE 4
+        |	gpr6      :	RESERVE 4
+        |	gpr7      :	RESERVE 4
+        |	gpr8      :	RESERVE 4
+        |	gpr9      :	RESERVE 4
+        |	gpr10     :	RESERVE 4
+        |	gpr11     :	RESERVE 4
+        |	gpr12     :	RESERVE 4
+        |	gpr13     :	RESERVE 4
+        |	gpr14     :	RESERVE 4
+        |	gpr15     :	RESERVE 4
+        |	fpr0      :	RESERVE 8
+        |	fpr1      :	RESERVE 8
+        |	fpr2      :	RESERVE 8
+        |	fpr3      :	RESERVE 8
+        |	fpr4      :	RESERVE 8
+        |	fpr5      :	RESERVE 8
+        |	fpr6      :	RESERVE 8
+        |	fpr7      :	RESERVE 8
+        |	fpr8      :	RESERVE 8
+        |	fpr9      :	RESERVE 8
+        |	fpr10     :	RESERVE 8
+        |	fpr11     :	RESERVE 8
+        |	fpr12     :	RESERVE 8
+        |	fpr13     :	RESERVE 8
+        |	fpr14     :	RESERVE 8
+        |	fpr15     :	RESERVE 8
+        |	sp_stash  :	RESERVE 2
+        |	sp        :	RESERVE 2
+        |END
+        | """
+
+    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.length > 0)
+
+    val asm = new Assembler()
+
+    val roms = assemble(code, asm)
+
+    roms.zipWithIndex.foreach {
+      c => {
+        print(c._2.toString + "\t : " + c._1 + "\t " + asm.decode(c._1) + "\n")
+      }
+    }
+
+    verifyRoms(
+      verbose = true,
+      uartDataIn = List(),
+      outputCheck = (output: List[String]) => {},
+      checkHalt = Some(HaltCode(0xffff, 0)),
+      timeout = 200,
+      roms = roms);
+  }
+
+  @Test
   def labelAddressesArentMessedUpByMovingDataBlocksToStart(): Unit = {
     // test the injection of the jmp macro
     val cmpEq =
@@ -39,6 +151,9 @@ class AssemblerTest {
         | HALT=2
         | HALT=2
         | HALT=2
+        |
+        | ;WRITE TO RAM REGISTER  !!!!!! FIXME
+        | [:b4] = 44
         |
         | ; THIS MUST BE INITIALISED ADDRESS 66 = BYTE BB BUT THAT MEANS IT MUST BE EXECUTED BEFORE ALL OTHER INSTRUCTIONS
         | ; IF ARRANGING THAT MESSES UP ADDRESSES THEN WE WANT TO KNOW ABOUT IT
@@ -72,6 +187,7 @@ class AssemblerTest {
       timeout = 200,
       roms = roms);
   }
+
   @Test
   def vbcc(): Unit = {
     // test the injection of the jmp macro
@@ -199,7 +315,7 @@ class AssemblerTest {
       verbose = true,
       uartDataIn = List(),
       outputCheck = (output: List[String]) => {},
-      checkHalt = Some(HaltCode(0, 1|4)),
+      checkHalt = Some(HaltCode(0, 1 | 4)),
       timeout = 200,
       roms = roms);
   }
@@ -264,7 +380,7 @@ class AssemblerTest {
       verbose = true,
       uartDataIn = List(),
       outputCheck = (output: List[String]) => {},
-      checkHalt = Some(HaltCode(0, 1|4)),
+      checkHalt = Some(HaltCode(0, 1 | 4)),
       timeout = 200,
       roms = roms);
   }
@@ -320,7 +436,7 @@ class AssemblerTest {
       verbose = true,
       uartDataIn = List(),
       outputCheck = (output: List[String]) => {},
-      checkHalt = Some(HaltCode(0, 1|4)),
+      checkHalt = Some(HaltCode(0, 1 | 4)),
       timeout = 200,
       roms = roms);
   }
@@ -341,11 +457,11 @@ class AssemblerTest {
       import asm._
 
       assertEqualsList(Seq(
-        inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 0),
-        inst(AluOp.PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 1),
-        inst(AluOp.PASS_B, TDevice.PCHITMP, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 0),
-        inst(AluOp.PASS_B, TDevice.PC, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 1),
-        inst(AluOp.PASS_B, TDevice.REGC, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 2),
+        inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.STANDARD, 0, 0),
+        inst(AluOp.PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.STANDARD, 0, 1),
+        inst(AluOp.PASS_B, TDevice.PCHITMP, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.STANDARD, 0, 0),
+        inst(AluOp.PASS_B, TDevice.PC, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.STANDARD, 0, 1),
+        inst(AluOp.PASS_B, TDevice.REGC, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.STANDARD, 0, 2),
       ), instructions(code, asm))
     }
    */
@@ -354,10 +470,10 @@ class AssemblerTest {
   def `allow_positioning_of_data`(): Unit = {
     val code = Seq(
       "A:     STR \"A\"",
-      "POSN:  EQU 10",        // sets the value of the label POSN to be address 10
-      "POSN:  STR \"PP\"",    // sets the data at POSN to be the data "PP"
-      "LENPP: EQU len(:POSN)",// sets asm var LENPP to be the length of the data POSN
-      "X:     BYTES [ len(:POSN), :LENPP ]",// sets twp data vytes , each the length of the data at POSN
+      "POSN:  EQU 10", // sets the value of the label POSN to be address 10
+      "POSN:  STR \"PP\"", // sets the data at POSN to be the data "PP"
+      "LENPP: EQU len(:POSN)", // sets asm var LENPP to be the length of the data POSN
+      "X:     BYTES [ len(:POSN), :LENPP ]", // sets twp data vytes , each the length of the data at POSN
       "B:     STR \"B\"",
       "END"
     )
@@ -367,12 +483,12 @@ class AssemblerTest {
 
     val actual = instructions(code, asm)
     assertEqualsList(Seq(
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 0, 'A'.toByte), // A
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 10, 'P'.toByte), // DATA='P'
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 11, 'P'.toByte), // DATA='P'
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 12, 2), // byte = length of "PP"
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 13, 2), // byte = length of "PP" via LENPP
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 14, 'B'.toByte)
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 0, 'A'.toByte), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 10, 'P'.toByte), // DATA='P'
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 11, 'P'.toByte), // DATA='P'
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 12, 2), // byte = length of "PP"
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 13, 2), // byte = length of "PP" via LENPP
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 14, 'B'.toByte)
     ), actual)
   }
 
@@ -452,7 +568,7 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 17)
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.STANDARD, 0, 17)
     ), instructions(code, asm))
   }
 
@@ -463,7 +579,7 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_A, TDevice.REGA, ADevice.UART, BDevice.NU, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
+      inst(AluOp.PASS_A, TDevice.REGA, ADevice.UART, BDevice.NU, Control._A, REGISTER, ConditionMode.STANDARD, 0, 0)
     ), instructions(code, asm))
   }
 
@@ -474,7 +590,7 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.RAM, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.RAM, Control._A, REGISTER, ConditionMode.STANDARD, 0, 0)
     ), instructions(code, asm))
   }
 
@@ -485,7 +601,7 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_B, TDevice.NOOP, ADevice.REGA, BDevice.RAM, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
+      inst(AluOp.PASS_B, TDevice.NOOP, ADevice.REGA, BDevice.RAM, Control._A, REGISTER, ConditionMode.STANDARD, 0, 0)
     ), instructions(code, asm))
   }
 
@@ -497,7 +613,7 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 17)
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.STANDARD, 0, 17)
     ), instructions(code, asm))
   }
 
@@ -509,7 +625,7 @@ class AssemblerTest {
 
     val value = instructions(code, asm)
     assertEqualsList(Seq(
-      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 27)
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.STANDARD, 0, 27)
     ), value)
   }
 
@@ -523,7 +639,7 @@ class AssemblerTest {
     import asm._
 
     val actual = instructions(code, asm)
-    assertEqualsList(Seq(inst(AluOp.PASS_A, TDevice.REGA, ADevice.REGB, BDevice.NU, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
+    assertEqualsList(Seq(inst(AluOp.PASS_A, TDevice.REGA, ADevice.REGB, BDevice.NU, Control._A, REGISTER, ConditionMode.STANDARD, 0, 0)
     ), actual)
   }
 
@@ -536,7 +652,7 @@ class AssemblerTest {
     val asm = new Assembler()
     import asm._
 
-    assertEqualsList(Seq(inst(AluOp.PASS_A, TDevice.REGA, ADevice.REGA, BDevice.NU, Control._A, REGISTER, ConditionMode.Standard, 0, 0)),
+    assertEqualsList(Seq(inst(AluOp.PASS_A, TDevice.REGA, ADevice.REGA, BDevice.NU, Control._A, REGISTER, ConditionMode.STANDARD, 0, 0)),
       instructions(code, asm))
   }
 
@@ -551,8 +667,8 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 1),
-      inst(AluOp.PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 255.toByte)
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.STANDARD, 0, 1),
+      inst(AluOp.PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.STANDARD, 0, 255.toByte)
     ), instructions(code, asm))
   }
 
@@ -570,11 +686,11 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A_S, REGISTER, ConditionMode.Invert, 0, 255.toByte),
-      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Invert, 0, 255.toByte),
-      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Invert, 0, 255.toByte),
-      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A_S, REGISTER, ConditionMode.Invert, 0, 255.toByte),
-      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 255.toByte)
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A_S, REGISTER, ConditionMode.INVERT, 0, 255.toByte),
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A, REGISTER, ConditionMode.INVERT, 0, 255.toByte),
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A, REGISTER, ConditionMode.INVERT, 0, 255.toByte),
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A_S, REGISTER, ConditionMode.INVERT, 0, 255.toByte),
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A, REGISTER, ConditionMode.STANDARD, 0, 255.toByte)
     ), instructions(code, asm))
   }
 
@@ -588,7 +704,7 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A_S, REGISTER, ConditionMode.Standard, 0, 255.toByte)
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.IMMED, Control._A_S, REGISTER, ConditionMode.STANDARD, 0, 255.toByte)
     ), instructions(code, asm))
   }
 
@@ -602,7 +718,7 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._A, REGISTER, ConditionMode.STANDARD, 0, 0)
     ), instructions(code, asm))
   }
 
@@ -616,7 +732,7 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._C_S, REGISTER, ConditionMode.Standard, 0, 0)
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.REGA, Control._C_S, REGISTER, ConditionMode.STANDARD, 0, 0)
     ), instructions(code, asm))
   }
 
@@ -630,7 +746,7 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.RAM, Control._C_S, DIRECT, ConditionMode.Standard, 1000, 0)
+      inst(AluOp.A_PLUS_B, TDevice.REGB, ADevice.REGC, BDevice.RAM, Control._C_S, DIRECT, ConditionMode.STANDARD, 1000, 0)
     ), instructions(code, asm))
   }
 
@@ -644,7 +760,7 @@ class AssemblerTest {
     import asm._
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_A, TDevice.RAM, ADevice.REGA, BDevice.NU, Control._C_S, DIRECT, ConditionMode.Standard, 1000, 0)
+      inst(AluOp.PASS_A, TDevice.RAM, ADevice.REGA, BDevice.NU, Control._C_S, DIRECT, ConditionMode.STANDARD, 1000, 0)
     ), instructions(code, asm))
   }
 
@@ -661,10 +777,10 @@ class AssemblerTest {
     assertEquals(Some(KnownByteArray(0, List(65, 66, 0, 10))), asm.labels("STRING1").getVal)
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 0, 'A'.toByte),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 1, 'B'.toByte),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 2, 0),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 3, '\n')
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 0, 'A'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 1, 'B'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 2, 0),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 3, '\n')
     ), compiled)
   }
 
@@ -707,19 +823,19 @@ class AssemblerTest {
     }
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 1),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 2),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 3),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, B_65),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, B_65),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, B_65),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, B_65),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, (-127).toByte), // 255 unsigned has same bit pattern as -1 signed
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 0.toByte), // 255 unsigned has same bit pattern as -1 signed
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, 127.toByte),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, nextPos, -128) // unsigned 128 has sae bit pattern as -128 twos compl
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, nextPos, 1),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, nextPos, 2),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, nextPos, 3),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, nextPos, B_65),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, nextPos, B_65),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, nextPos, B_65),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, nextPos, B_65),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, nextPos, 255.toByte), // 255 unsigned has same bit pattern as -1 signed
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, nextPos, (-127).toByte), // 255 unsigned has same bit pattern as -1 signed
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, nextPos, 0.toByte), // 255 unsigned has same bit pattern as -1 signed
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, nextPos, 127.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, nextPos, -128) // unsigned 128 has sae bit pattern as -128 twos compl
     ), compiled)
   }
 
@@ -764,13 +880,13 @@ class AssemblerTest {
     assertEquals(Some(KnownByteArray(2, List(67, 68))), asm.labels("YOURSTR").getVal)
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 0, 'A'.toByte),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 1, 'B'.toByte),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 2, 'C'.toByte),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 3, 'D'.toByte),
-      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 1),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 255, 2),
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.Standard, 255, 3)
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 0, 'A'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 1, 'B'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 2, 'C'.toByte),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 3, 'D'.toByte),
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.STANDARD, 0, 1),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 255, 2),
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 255, 3)
     ), compiled)
   }
 
@@ -805,7 +921,7 @@ class AssemblerTest {
     val assembled = instructions(code, asm)
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.Standard, 0, 2)
+      inst(AluOp.PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, Control._A, REGISTER, ConditionMode.STANDARD, 0, 2)
     ), assembled)
   }
 
@@ -823,12 +939,12 @@ class AssemblerTest {
     val assembled = instructions(code, asm)
 
     assertEqualsList(Seq(
-      inst(AluOp.PASS_A, TDevice.PORTSEL, ADevice.REGA, BDevice.NU, Control._A, REGISTER, ConditionMode.Standard, 0, 0),
-      inst(AluOp.PASS_A, TDevice.PORT, ADevice.REGA, BDevice.NU, Control._A, REGISTER, ConditionMode.Standard, 0, 0)
+      inst(AluOp.PASS_A, TDevice.PORTSEL, ADevice.REGA, BDevice.NU, Control._A, REGISTER, ConditionMode.STANDARD, 0, 0),
+      inst(AluOp.PASS_A, TDevice.PORT, ADevice.REGA, BDevice.NU, Control._A, REGISTER, ConditionMode.STANDARD, 0, 0)
     ), assembled)
   }
 
-  private def instructions(code: Seq[String], asm: Assembler): Seq[(AluOp, Any, Any, Any, Control, Mode, ConditionMode, Int, Byte)] = {
+  private def instructions(code: Seq[String], asm: Assembler): Seq[(AluOp, Any, Any, Any, Control, AddressMode, ConditionMode, Int, Byte)] = {
     val roms: Seq[List[String]] = assemble(code, asm)
     decode(roms, asm)
   }

@@ -62,7 +62,7 @@ module test();
         `TEXT(counter, "START OF MAIN LOOP BLOCK - ADD ONE TO MARLO");
         `INSTRUCTION(counter, B_PLUS_1, marlo, not_used, marlo, A, `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, 'z); 
 
-        `TEXT(counter, "CONDITIONAL ADD ONE TO MARHI");
+        `TEXT(counter, "CONDITIONAL C ADD ONE TO MARHI");
         `INSTRUCTION(counter, B_PLUS_1, marhi, not_used, marhi, C, `NA_FLAGS, `CM_STD, `NA_AMODE, 'z, 'z); 
 
         `TEXT(counter, "GOTO LOOP");

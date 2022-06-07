@@ -1,15 +1,19 @@
 package asm
 
-import asm.AddressMode.{DIRECT, REGISTER}
-import asm.ConditionMode.{Invert, Standard}
-
 import scala.language.postfixOps
 import scala.util.parsing.combinator._
 
-object AddressMode extends Enumeration {
-  type Mode = Value
-  val DIRECT, REGISTER = Value
+import asm.AddressMode.{DIRECT, REGISTER}
+import asm.ConditionMode.{INVERT, STANDARD}
+
+sealed class AddressMode(val code: String)
+
+object AddressMode {
+  case object DIRECT extends AddressMode("DIR")
+
+  case object REGISTER extends AddressMode("REG")
 }
+
 
 // expr "calculator" code taken from https://www.scala-lang.org/api/2.12.8/scala-parser-combinators/scala/util/parsing/combinator/RegexParsers.html
 trait EnumParserOps {
@@ -67,7 +71,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
 
   def condition: Parser[Condition] = ("!" ?) ~ (controlCode ?) ^^ {
     case mode ~ ctrl =>
-      Condition(mode.map(_ => Invert).getOrElse(Standard), ctrl.getOrElse(Control._A))
+      Condition(mode.map(_ => INVERT).getOrElse(STANDARD), ctrl.getOrElse(Control._A))
   }
 
 
@@ -87,6 +91,12 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     Known("", i.toByte)
   }
 
+  /*
+  Binary numbers use the % prefix (e.g. %1101).
+  Octal numbers use the @ prefix (e.g. @15).
+  Decimal numbers use no prefix (e.g. 13).
+  Hexadecimal numbers use the $ prefix (e.g. $0D).
+  */
   def hex: Parser[Known[KnownInt]] = "$" ~ "[0-9a-hA-H]+".r ^^ { case _ ~ v => Known("hex $" + v, Integer.valueOf(v, 16)) }
 
   def bin: Parser[Known[KnownInt]] = "%" ~ "[01]+".r ^^ { case _ ~ v => Known("bin %" + v, Integer.valueOf(v, 2)) }
@@ -185,7 +195,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
 
   def equInstruction: Parser[EquInstruction] = (name <~ ":" ~ "EQU") ~ expr ^^ {
     case n ~ konst =>
-      val renamed = konst.rename("EQU "+ n + " " + konst.name)
+      val renamed = konst.rename("EQU " + n + " " + konst.name)
       rememberKnown(n, renamed)
       EquInstruction(n, renamed)
   }
@@ -194,12 +204,12 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     case n ~ b =>
       val bytes = b.getBytes("UTF-8")
 
-      val v = Known("STR "+ n, KnownByteArray(dataAddress, bytes.toList))
+      val v = Known("STR " + n, KnownByteArray(dataAddress, bytes.toList))
 
       val stored = rememberKnown(n, v)
       dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
 
-      val ramInit = Comment("STR " + n + " @ " + dataAddress + " size "+ b.length) +: bytes.map { c => {
+      val ramInit = Comment("STR " + n + " @ " + dataAddress + " size " + b.length) +: bytes.map { c => {
         val ni = inst(RamDirect(Known("BYTE-ADDR:" + n, dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), Known("STR-BYTE", c))
         dataAddress += 1
         ni
@@ -226,7 +236,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
         x._2 < Byte.MinValue || x._2 > 255
       }.foreach(x => sys.error(s"asm error: $x evaluates as out of range ${Byte.MinValue} to 255"))
 
-      val v= Known("BYTES "+ n, KnownByteArray(dataAddress, ints.map(_._2.toByte)))
+      val v = Known("BYTES " + n, KnownByteArray(dataAddress, ints.map(_._2.toByte)))
       val stored = rememberKnown(n, v)
       dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
 
@@ -258,7 +268,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
         sys.error(s"asm error.filter { x =>: $size evaluates as out of range ${Byte.MinValue} to 255")
       }
 
-      val v= Known("RESERVED "+ n, KnownInt(size))
+      val v = Known("RESERVED " + n, KnownInt(size))
       val stored = rememberKnown(n, Known(n, KnownInt(dataAddress)))
       dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
 
@@ -269,7 +279,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   }
 
   private def inst(t: TExpression, a: ADevice, op: AluOp, b: BExpression, f: Option[Condition], immed: Know[KnownInt]): Instruction = {
-    val defaultCont = Condition(ConditionMode.Standard, Control._A)
+    val defaultCont = Condition(ConditionMode.STANDARD, Control._A)
 
     (t, b) match {
       case (t: TDevice, b: BDevice) =>

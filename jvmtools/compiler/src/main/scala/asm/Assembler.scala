@@ -1,7 +1,7 @@
 package asm
 
-import asm.AddressMode.Mode
 import asm.Ports.{ReadPort, WritePort}
+
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import scala.io.Source
 
@@ -146,15 +146,15 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
           l match {
             case l: Instruction =>
               l.pc = Some(pc)
-              pc+=1
+              pc += 1
             case l: Label =>
               l.value = Some(pc)
             case l: EquInstruction =>
             // value is known at write time
             case l: Debug =>
-              // no value
+            // no value
             case l: Comment =>
-              // no value
+            // no value
           }
         })
 
@@ -215,7 +215,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     }
   }
 
-  def decode[A <: Assembler](rom: List[String]): (AluOp, TDevice, ADevice, BDevice, Control, Mode, ConditionMode, Int, Byte) = {
+  def decode[A <: Assembler](rom: List[String]): (AluOp, TDevice, ADevice, BDevice, Control, AddressMode, ConditionMode, Int, Byte) = {
     val str = rom.mkString(" ");
     decode(str)
   }
@@ -233,7 +233,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     val bdev_2_0 = fromBin(sitr, 3)
     val cond = fromBin(sitr, 4)
     val f = fromBin(sitr, 1)
-    val condmode = if (fromBin(sitr, 1) == 1) ConditionMode.Invert else ConditionMode.Standard
+    val condmode = if (fromBin(sitr, 1) == 1) ConditionMode.INVERT else ConditionMode.STANDARD
     val bdev_3 = fromBin(sitr, 1)
     val tdev_4 = fromBin(sitr, 1)
     val m = if (fromBin(sitr, 1) == 1) AddressMode.DIRECT else AddressMode.REGISTER
@@ -254,11 +254,11 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
       addr,
       immed.toByte
     )
-    println(i)
+    //println( i)
     i
   }
 
-  def inst(passb: AluOp, ram: TDevice, nu: ADevice, immed: BDevice, a1: Control, direct: AddressMode.Value, cm: ConditionMode, addr: Int, byte: Byte) = {
+  def inst(passb: AluOp, ram: TDevice, nu: ADevice, immed: BDevice, a1: Control, direct: AddressMode, cm: ConditionMode, addr: Int, byte: Byte) = {
     (passb, ram, nu, immed, a1, direct, cm, addr, byte)
   }
 

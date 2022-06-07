@@ -1,6 +1,6 @@
 package asm
 
-import asm.AddressMode.{DIRECT, Mode}
+import asm.AddressMode.DIRECT
 
 trait Lines {
   self: Knowing with Devices =>
@@ -15,7 +15,7 @@ trait Lines {
     val sourceLineNumber: Int = sourceLines
   }
 
-  final case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, condition: Condition, amode: Mode, address: Know[KnownInt], immed: Know[KnownInt])
+  final case class Instruction(tdev: TDevice, adev: ADevice, bdev: BDevice, aluop: AluOp, condition: Condition, amode: AddressMode, address: Know[KnownInt], immed: Know[KnownInt])
     extends Line {
     var pc: Option[Int] = None
 
@@ -47,6 +47,9 @@ trait Lines {
     //      val fstr = control.toString
     //      s"""${instNo.formatted("%03d")} pc:${instructionAddress.formatted("%04x")} ${this.getClass.getName}(${tdev} = ${adev} ${aluop}$fstr ${bdev})  amode:${amode}   addr:${address.eval}  immed:${immed.eval}"""
     //    }
+    override def toString: String = {
+      f"Instruction($tdev%-8s, $adev%-6s, $bdev%-6s, $aluop%-10s, $condition, ${amode.code}%-4s, $address%10s, $immed%10s)"
+    }
 
     def unresolved = {
       val Aok = address.getVal match {

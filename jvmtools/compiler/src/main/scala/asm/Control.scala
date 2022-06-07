@@ -1,22 +1,22 @@
 package asm
 
-import asm.ConditionMode.Standard
+import asm.ConditionMode.STANDARD
 import asm.FlagControl.{NoSetFlag, SetFlag}
 
-sealed class ConditionMode(val bit: String)
+sealed class ConditionMode(val bit: String, val code: String)
 
 object ConditionMode {
-  case object Standard extends ConditionMode("0")
+  case object STANDARD extends ConditionMode("0", "STD")
 
-  case object Invert extends ConditionMode("1")
+  case object INVERT extends ConditionMode("1", "INV")
 }
 
 case class Condition private(mode: ConditionMode, cond: Control) extends E {
-  override def toString = s"$cond,$mode"
+  override def toString = f"$cond%-6s, ${mode.code}%3s"
 }
 
 object Condition {
-  val Default = Condition(Standard, Control._A)
+  val Default = Condition(STANDARD, Control._A)
 }
 
 sealed class FlagControl(val bit: Int) extends E
