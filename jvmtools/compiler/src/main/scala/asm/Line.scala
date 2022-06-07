@@ -48,7 +48,7 @@ trait Lines {
     //      s"""${instNo.formatted("%03d")} pc:${instructionAddress.formatted("%04x")} ${this.getClass.getName}(${tdev} = ${adev} ${aluop}$fstr ${bdev})  amode:${amode}   addr:${address.eval}  immed:${immed.eval}"""
     //    }
     override def toString: String = {
-      f"Instruction($tdev%-8s, $adev%-6s, $bdev%-6s, $aluop%-10s, $condition, ${amode.code}%-4s, $address%10s, $immed%10s)"
+      f"Instruction($tdev%-8s, $adev%-6s, $bdev%-6s, $aluop%-20s, $condition, ${amode.code}%-4s, $address%10s, $immed%10s)"
     }
 
     def unresolved = {
