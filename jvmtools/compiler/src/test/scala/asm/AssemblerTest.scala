@@ -748,6 +748,255 @@ class AssemblerTest {
       timeout = 200,
       roms = roms);
   }
+  @Test
+  def vbccTest5(): Unit = {
+    // test the injection of the jmp macro
+    val cmpEq =
+      """
+        |_main:
+        |; _main routine
+        |[:sp]   = $ff
+        |[:sp+1] = $ff
+        |MARLO   = [:sp]
+        |MARHI   = [:sp+1]
+        |; ALLOCREG - gpr7
+        |	; allocated: gtmp1 gtmp2 ftmp1 ftmp2 gpr7 sp_stash
+        |; ALLOCREG - gpr6
+        |	; allocated: gtmp1 gtmp2 ftmp1 ftmp2 gpr6 gpr7 sp_stash
+        |; ASSIGN type:i size:4
+        |	; assign into a var
+        |; assign step 1 - load to temp reg
+        |	; load_reg targ from KONST - reg size:4    src data size:4
+        |	[:gtmp2+0] = $9a
+        |	[:gtmp2+1] = $02
+        |	[:gtmp2+2] = $00
+        |	[:gtmp2+3] = $00
+        |; assign step 2 - store to var
+        |	; stash SP
+        |	[:sp_stash]   = MARLO
+        |	[:sp_stash+1] = MARHI
+        |	; adjust SP by offset 0 to point to var
+        |	; copy 4 bytes from temp register to memory
+        |	REGA  = [:gtmp2+0]
+        |	RAM   = REGA
+        |	MARLO = MARLO + 1 _S
+        |	MARHI = MARHI A_PLUS_B_PLUS_C 0
+        |	REGA  = [:gtmp2+1]
+        |	RAM   = REGA
+        |	MARLO = MARLO + 1 _S
+        |	MARHI = MARHI A_PLUS_B_PLUS_C 0
+        |	REGA  = [:gtmp2+2]
+        |	RAM   = REGA
+        |	MARLO = MARLO + 1 _S
+        |	MARHI = MARHI A_PLUS_B_PLUS_C 0
+        |	REGA  = [:gtmp2+3]
+        |	RAM   = REGA
+        |	MARLO = MARLO + 1 _S
+        |	MARHI = MARHI A_PLUS_B_PLUS_C 0
+        |	; restore SP
+        |	MARLO = [:sp_stash]
+        |	MARHI = [:sp_stash+1]
+        |; ALLOCREG - gpr0
+        |	; allocated: gtmp1 gtmp2 ftmp1 ftmp2 gpr0 gpr6 gpr7 sp_stash
+        |; ADDRESS todo
+        |	[:gpr7+0] = MARLO + (> 0) _S
+        |	[:gpr7+1] = MARHI A_PLUS_B_PLUS_C (< 0)
+        |	[:gpr7+2] = 0
+        |	[:gpr7+3] = 0
+        |; FREEREG - gpr0
+        |	; allocated: gtmp1 gtmp2 ftmp1 ftmp2 gpr6 gpr7 sp_stash
+        |; ASSIGN type:i size:4
+        |	; assign into a register
+        |	; stash SP
+        |	[:sp_stash]   = MARLO
+        |	[:sp_stash+1] = MARHI
+        |	MARLO = [:gpr7]
+        |	MARHI = [:gpr7+1]
+        |	REGA  = RAM
+        |	[:gpr6+0] = REGA
+        |	MARLO = MARLO + 1 _S
+        |	MARHI = MARHI A_PLUS_B_PLUS_C 0
+        |	REGA  = RAM
+        |	[:gpr6+1] = REGA
+        |	MARLO = MARLO + 1 _S
+        |	MARHI = MARHI A_PLUS_B_PLUS_C 0
+        |	REGA  = RAM
+        |	[:gpr6+2] = REGA
+        |	MARLO = MARLO + 1 _S
+        |	MARHI = MARHI A_PLUS_B_PLUS_C 0
+        |	REGA  = RAM
+        |	[:gpr6+3] = REGA
+        |	MARLO = MARLO + 1 _S
+        |	MARHI = MARHI A_PLUS_B_PLUS_C 0
+        |	MARLO = [:sp_stash]
+        |	MARHI = [:sp_stash+1]
+        |; COMPARE START ========
+        |	; ORIGINAL ASM: 		cmp.i	gpr6,666
+        |	; BRANCH-TYPE-WILL-BE beq
+        |	; NOTE ! This is a magnitude comparison NOT a subtraction so we start with the top digit
+        |	REGA=[:gpr6+3]
+        |	NOOP = REGA A_MINUS_B_SIGNEDMAG $00 _S
+        |	REGA=[:gpr6+2]
+        |	NOOP = REGA A_MINUS_B           $00 _EQ_S
+        |	REGA=[:gpr6+1]
+        |	NOOP = REGA A_MINUS_B           $02 _EQ_S
+        |	REGA=[:gpr6+0]
+        |	NOOP = REGA A_MINUS_B           $9a _EQ_S
+        |; BRANCH BLOCK eq
+        |	PCHITMP = <:_L4
+        |	PCLO    = >:_L4 _EQ
+        |; BRANCH TO LABEL _L4
+        |_L3:
+        |; ALLOCREG - gpr0
+        |	; allocated: gtmp1 gtmp2 ftmp1 ftmp2 gpr0 gpr6 gpr7 sp_stash
+        |; ASSIGN type:i size:4
+        |	; assign into a register
+        |	; load_reg targ from KONST - reg size:4    src data size:4
+        |	[:gpr0+0] = $01
+        |	[:gpr0+1] = $00
+        |	[:gpr0+2] = $00
+        |	[:gpr0+3] = $00
+        |; CALL INLINE ASM : halt(..)
+        |	HALT = [:gpr0]
+        |
+        |; FREEREG - gpr0
+        |	; allocated: gtmp1 gtmp2 ftmp1 ftmp2 gpr6 gpr7 sp_stash
+        |_L4:
+        |; COMPARE START ========
+        |	; ORIGINAL ASM: 		cmp.i	gpr6,666
+        |	; BRANCH-TYPE-WILL-BE bne
+        |	; NOTE ! This is a magnitude comparison NOT a subtraction so we start with the top digit
+        |	REGA=[:gpr6+3]
+        |	NOOP = REGA A_MINUS_B_SIGNEDMAG $00 _S
+        |	REGA=[:gpr6+2]
+        |	NOOP = REGA A_MINUS_B           $00 _EQ_S
+        |	REGA=[:gpr6+1]
+        |	NOOP = REGA A_MINUS_B           $02 _EQ_S
+        |	REGA=[:gpr6+0]
+        |	NOOP = REGA A_MINUS_B           $9a _EQ_S
+        |; BRANCH BLOCK ne
+        |	PCHITMP = <:_L6
+        |	PCLO    = >:_L6 _NE
+        |; BRANCH TO LABEL _L6
+        |_L5:
+        |; ALLOCREG - gpr0
+        |	; allocated: gtmp1 gtmp2 ftmp1 ftmp2 gpr0 gpr6 gpr7 sp_stash
+        |; ASSIGN type:i size:4
+        |	; assign into a register
+        |	; load_reg targ from KONST - reg size:4    src data size:4
+        |	[:gpr0+0] = $00
+        |	[:gpr0+1] = $00
+        |	[:gpr0+2] = $00
+        |	[:gpr0+3] = $00
+        |; CALL INLINE ASM : halt(..)
+        |	HALT = [:gpr0]
+        |
+        |; FREEREG - gpr0
+        |	; allocated: gtmp1 gtmp2 ftmp1 ftmp2 gpr6 gpr7 sp_stash
+        |_L6:
+        |; ALLOCREG - gpr0
+        |	; allocated: gtmp1 gtmp2 ftmp1 ftmp2 gpr0 gpr6 gpr7 sp_stash
+        |; ASSIGN type:i size:4
+        |	; assign into a register
+        |	; load_reg targ from KONST - reg size:4    src data size:4
+        |	[:gpr0+0] = $02
+        |	[:gpr0+1] = $00
+        |	[:gpr0+2] = $00
+        |	[:gpr0+3] = $00
+        |; CALL INLINE ASM : halt(..)
+        |	HALT = [:gpr0]
+        |
+        |; FREEREG - gpr0
+        |	; allocated: gtmp1 gtmp2 ftmp1 ftmp2 gpr6 gpr7 sp_stash
+        |; SETRETURN - zreg = gpr0
+        |	; load_reg targ from KONST - reg size:4    src data size:4
+        |	[:gpr0+0] = $00
+        |	[:gpr0+1] = $00
+        |	[:gpr0+2] = $00
+        |	[:gpr0+3] = $00
+        |_L1:
+        |; FUNCTION BOTTOM
+        |	; adjust SP to rewind over the variable stack by offset 12
+        |	MARLO = MARLO + (> 12) _S            ; add lo byte of offset
+        |	MARHI = MARHI A_PLUS_B_PLUS_C (< 12) ; add hi byte of offset plus any carry
+        |	; return
+        |	; pop PCHITMP
+        |	PCHITMP = RAM
+        |	MARLO   = MARLO + 1 _S
+        |	MARHI   = MARHI A_PLUS_B_PLUS_C 0
+        |	; pop PC
+        |	REGA    = RAM
+        |	MARLO   = MARLO + 1 _S
+        |	MARHI   = MARHI A_PLUS_B_PLUS_C 0
+        |	; pop 2 unused PC byes
+        |	MARLO   = MARLO + 2 _S
+        |	MARHI   = MARHI A_PLUS_B_PLUS_C 0
+        |	; do jump
+        |	PC      = REGA
+        |	; returned
+        |; registers
+        |	gtmp1     :	RESERVE 4
+        |	gtmp2     :	RESERVE 4
+        |	ftmp1     :	RESERVE 8
+        |	ftmp2     :	RESERVE 8
+        |	gpr0      :	RESERVE 4
+        |	gpr1      :	RESERVE 4
+        |	gpr2      :	RESERVE 4
+        |	gpr3      :	RESERVE 4
+        |	gpr4      :	RESERVE 4
+        |	gpr5      :	RESERVE 4
+        |	gpr6      :	RESERVE 4
+        |	gpr7      :	RESERVE 4
+        |	gpr8      :	RESERVE 4
+        |	gpr9      :	RESERVE 4
+        |	gpr10     :	RESERVE 4
+        |	gpr11     :	RESERVE 4
+        |	gpr12     :	RESERVE 4
+        |	gpr13     :	RESERVE 4
+        |	gpr14     :	RESERVE 4
+        |	gpr15     :	RESERVE 4
+        |	fpr0      :	RESERVE 8
+        |	fpr1      :	RESERVE 8
+        |	fpr2      :	RESERVE 8
+        |	fpr3      :	RESERVE 8
+        |	fpr4      :	RESERVE 8
+        |	fpr5      :	RESERVE 8
+        |	fpr6      :	RESERVE 8
+        |	fpr7      :	RESERVE 8
+        |	fpr8      :	RESERVE 8
+        |	fpr9      :	RESERVE 8
+        |	fpr10     :	RESERVE 8
+        |	fpr11     :	RESERVE 8
+        |	fpr12     :	RESERVE 8
+        |	fpr13     :	RESERVE 8
+        |	fpr14     :	RESERVE 8
+        |	fpr15     :	RESERVE 8
+        |	sp_stash  :	RESERVE 2
+        |	sp        :	RESERVE 2
+        |END
+        |
+        | """
+
+    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.length > 0)
+
+    val asm = new Assembler()
+
+    val roms = assemble(code, asm)
+
+    roms.zipWithIndex.foreach {
+      c => {
+        print(c._2.toString + "\t : " + c._1 + "\t " + asm.decode(c._1) + "\n")
+      }
+    }
+
+    verifyRoms(
+      verbose = true,
+      uartDataIn = List(),
+      outputCheck = (output: List[String]) => {},
+      checkHalt = Some(HaltCode(0xffff, 0)),
+      timeout = 200,
+      roms = roms);
+  }
 
   @Test
   def labelAddressesArentMessedUpByMovingDataBlocksToStart(): Unit = {
