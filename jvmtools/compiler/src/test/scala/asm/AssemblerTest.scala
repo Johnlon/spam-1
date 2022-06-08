@@ -11,6 +11,50 @@ import verification.Verification.verifyRoms
 
 class AssemblerTest {
   @Test
+  def vbccTestC1(): Unit = {
+
+    val c =
+      """
+        |void halt(__reg("gpr0") char) = "\tHALT = [:gpr0]\n";
+        |
+        |int main() {
+        |
+        |    int value = 666;
+        |
+        |    if (value!=666) {
+        |      halt(1);
+        |    }
+        |
+        |    halt(0);
+        |}
+        |  END
+        | """
+
+    runTest(c, Some(HaltCode(0xffff, 0)))
+  }
+
+  private def runTest(cmpEq: String, someCode: Some[HaltCode]) = {
+    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.length > 0)
+
+    val asm = new Assembler()
+
+    val roms = assemble(code, asm)
+    roms.zipWithIndex.foreach {
+      c => {
+        print(c._2.toString + "\t : " + c._1 + "\t " + asm.decode(c._1) + "\n")
+      }
+    }
+
+    verifyRoms(
+      verbose = true,
+      uartDataIn = List(),
+      outputCheck = (output: List[String]) => {},
+      checkHalt = someCode,
+      timeout = 200,
+      roms = roms);
+  }
+
+  @Test
   def vbccTest1(): Unit = {
     // test the injection of the jmp macro
     val cmpEq =
