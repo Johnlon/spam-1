@@ -212,7 +212,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     exprs.map(x => (x.name, x.getVal.get.value.toByte))
   }
 
-  def str8859Data = "STR8859" ~> quotedString <~ opt(comment) ^^ { str =>
+  def strData = "STR" ~> quotedString <~ opt(comment) ^^ { str =>
 
     // should be same len if all encode to 8 bits
     val bytes = str.getBytes("ISO-8859-1")
@@ -223,7 +223,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     str.iterator.map(_.toString).zip(bytes).toList
   }
 
-  def dataInstruction: Parser[RamInitialisation] = name ~ ":" ~ rep1(byteData|str8859Data) ^^ {
+  def dataInstruction: Parser[RamInitialisation] = name ~ ":" ~ rep1(byteData|strData) ^^ {
     case labelName ~  _ ~ expr  =>
 
       val data = expr.flatten

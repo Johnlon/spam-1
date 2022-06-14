@@ -84,8 +84,8 @@ class AssemblerTest {
       """
         |data1:
         |    BYTES [0,1,2,3]
-        |    STR8859 "£"  ; pound
-        |    STR8859 "John\0"
+        |    STR "£"  ; pound
+        |    STR "John\0"
         |    BYTES [4,5,6,7]
         |data2:
         |    BYTES [8,9,10]
