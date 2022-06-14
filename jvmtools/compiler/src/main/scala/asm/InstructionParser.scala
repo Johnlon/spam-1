@@ -1,10 +1,10 @@
 package asm
 
-import scala.language.postfixOps
-import scala.util.parsing.combinator._
-
 import asm.AddressMode.{DIRECT, REGISTER}
 import asm.ConditionMode.{INVERT, STANDARD}
+
+import scala.language.postfixOps
+import scala.util.parsing.combinator._
 
 sealed class AddressMode(val code: String)
 
@@ -200,17 +200,63 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       EquInstruction(n, renamed)
   }
 
-  def strInstruction: Parser[RamInitialisation] = (name <~ ":" ~ "STR") ~ quotedString ^^ {
-    case n ~ b =>
-      val bytes = b.getBytes("UTF-8")
+  def byteData = ("BYTES" ~ "[") ~> repsep(expr, ",") <~ "]" ~ opt(comment) ^^ { expr =>
+    val exprs: List[Know[KnownInt]] = expr
 
-      val v = Known("STR " + n, KnownByteArray(dataAddress, bytes.toList))
+    val ints: List[(String, Int)] = exprs.map(x => (x.name, x.getVal.get.value))
 
-      val stored = rememberKnown(n, v)
+    ints.filter { x =>
+      x._2 < 0x00 || x._2 > 0xff
+    }.foreach(x => sys.error(s"asm error: $x (0x${x._2.toHexString}) evaluates as out of range for a byte 0x00 to 0xff"))
+
+    exprs.map(x => (x.name, x.getVal.get.value.toByte))
+  }
+
+  def str8859Data = "STR8859" ~> quotedString <~ opt(comment) ^^ { str =>
+
+    // should be same len if all encode to 8 bits
+    val bytes = str.getBytes("ISO-8859-1")
+    if (bytes.length != str.length) {
+      sys.error(s"asm error: '$str' contains non ISO 8859-1 characters")
+    }
+
+    str.iterator.map(_.toString).zip(bytes).toList
+  }
+
+  def dataInstruction: Parser[RamInitialisation] = name ~ ":" ~ rep1(byteData|str8859Data) ^^ {
+    case labelName ~  _ ~ expr  =>
+
+      val data = expr.flatten
+      val bytes = data.map(_._2)
+
+      val v = Known("DATA " + labelName, KnownByteArray(dataAddress, bytes))
+
+      val stored = rememberKnown(labelName, v)
       dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
 
-      val ramInit = Comment("STR " + n + " @ " + dataAddress + " size " + b.length) +: bytes.map { c => {
-        val ni = inst(RamDirect(Known("BYTE-ADDR:" + n, dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), Known("STR-BYTE", c))
+      val ramInit = Comment("STR " + labelName + " @ " + dataAddress + " size " + data.length) +:
+        data.map { c => {
+          val ni = inst(RamDirect(Known("DATA:" + labelName, dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), Known(c._1, c._2))
+          dataAddress += 1
+          ni
+        }
+        }
+
+      RamInitialisation(ramInit)
+  }
+
+  def strInstruction: Parser[RamInitialisation] = (name <~ ":" ~ "STR") ~ quotedString ^^ {
+    case labelName ~ expr =>
+
+      val bytes = expr.getBytes("UTF-8")
+
+      val v = Known("STR " + labelName, KnownByteArray(dataAddress, bytes.toList))
+
+      val stored = rememberKnown(labelName, v)
+      dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
+
+      val ramInit = Comment("STR " + labelName + " @ " + dataAddress + " size " + expr.length) +: bytes.map { c => {
+        val ni = inst(RamDirect(Known("BYTE-ADDR:" + labelName, dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), Known("STR-BYTE", c))
         dataAddress += 1
         ni
       }
@@ -220,13 +266,10 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   }
 
   // TODO - this is intiialised memory
-  // We also need uninitialised memory that won't cause program bloat with zeros - leave it to software to set initial values.
-  // This would be simply emitting a label with the right address during assembly - needa a size though
-  // label: RESERVE 4 ; reserve unititalised space for a long
   def bytesInstruction: Parser[RamInitialisation] = (name <~ ":" ~ "BYTES" ~ "[") ~ repsep(expr, ",") <~ "]" ^^ {
-    case n ~ expr =>
+    case labelName ~ expr =>
       if (expr.isEmpty) {
-        sys.error(s"asm error: BYTES expression with label '$n' must have at least one byte but none were defined")
+        sys.error(s"asm error: BYTES expression with label '$labelName' must have at least one byte but none were defined")
       }
       val exprs: List[Know[KnownInt]] = expr
 
@@ -236,17 +279,17 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
         x._2 < Byte.MinValue || x._2 > 255
       }.foreach(x => sys.error(s"asm error: $x evaluates as out of range ${Byte.MinValue} to 255"))
 
-      val v = Known("BYTES " + n, KnownByteArray(dataAddress, ints.map(_._2.toByte)))
-      val stored = rememberKnown(n, v)
+      val v = Known("BYTES " + labelName, KnownByteArray(dataAddress, ints.map(_._2.toByte)))
+      val stored = rememberKnown(labelName, v)
       dataAddress = stored.knownVal.value // reset auto data layout back to this position - do we really wanna do that?
 
-      val ramInit = Comment("BYTES " + n + " @ " + dataAddress + " size " + ints.size) +: ints.map {
+      val ramInit = Comment("BYTES " + labelName + " @ " + dataAddress + " size " + ints.size) +: ints.map {
         c => {
           // c.toByte will render between -128 and  +127
           // then name "c" will render as whatever int value was actually presented in the code (eg when c=255 then toByte = -1 )
           val immed = Known(f"${c._1}", c._2.toByte)
 
-          val ni = inst(RamDirect(Known("BYTES " + n, dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), immed)
+          val ni = inst(RamDirect(Known("BYTES " + labelName, dataAddress)), ADevice.NU, AluOp.PASS_B, BDevice.IMMED, Some(Condition.Default), immed)
           dataAddress += 1
           ni
         }
@@ -319,7 +362,10 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   }
 
   /*  merge single instruction and multi-inst instructions */
-  def line: Parser[Seq[Line]] = (reserveInstruction | strInstruction | bytesInstruction | equInstruction
+  def line: Parser[Seq[Line]] = (reserveInstruction
+//    | strInstruction | bytesInstruction
+    | dataInstruction
+    | equInstruction
     | bInstruction | abInstructionImmed | abInstruction | aInstruction | bInstructionImmed
     | debug | comment | label) ^^ {
 
