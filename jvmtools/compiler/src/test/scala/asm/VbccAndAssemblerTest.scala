@@ -1,6 +1,6 @@
 package asm
 
-import org.junit.jupiter.api.Assertions.{assertEquals, fail}
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Test
 import verification.HaltCode
 import verification.Verification.verifyRoms
@@ -24,7 +24,7 @@ class VbccAndAssemblerTest {
               halt(1);
             }
         
-            halt(0);
+            return 0;
         }
         
         """
@@ -61,7 +61,7 @@ class VbccAndAssemblerTest {
               halt(4);
             }
 
-            halt(0);
+            return 0;
         }
         """
 
@@ -89,7 +89,7 @@ int main() {
       halt(1);
     }
 
-    halt(0);
+    return 0;
 }
         """
 
@@ -113,7 +113,7 @@ int main() {
     int sum = adder(1,2);
 
     if (sum == 3) {
-      halt(0);
+      return 0;;
     }
 
     halt(sum);
@@ -142,7 +142,7 @@ int main() {
       halt(1);
     }
     if (other == 666) {
-      halt(0);
+      return 0;
     }
 
     halt(2);
@@ -168,11 +168,104 @@ int main() {
     int other = *pValue;
 
     if (other == 1234567890) {
-      halt(0);
+      return 0;
     }
 
     halt(1);
 }
+        """
+
+    runTest(c, Some(HaltCode(0xffff, 0)))
+  }
+
+
+  @Test
+  def vbccTestC7(): Unit = {
+
+    val c =
+      """
+void halt(__reg("gpr0") char) = "\tHALT = [:gpr0]\n";
+void halt3(__reg("gpr0") char, // MARLO
+           __reg("gpr1") char, // MARHI
+           __reg("gpr2") char) // ALU
+            = "\tMARLO = [:gpr1]\n\tMARHI = [:gpr2]\n\tHALT = [:gpr0]\n";
+
+int main() {
+
+    // not using inline initialiser works ok
+    int value[2];
+    value[0] = 1234567890;
+    value[1] = 987654321;
+
+    int value1 = value[0];
+    int value2 = value[1];
+
+    if (value1 != 1234567890) {
+      halt(1);
+    }
+
+    if (value2 != 987654321) {
+      halt(2);
+    }
+
+// not yet supported
+//    if (*value != 1234567890) {
+//      halt(3);
+//    }
+
+    int dref1 = *value;
+    if (dref1 != 1234567890) {
+      halt(3);
+    }
+
+    int dref2 = *(value+1);
+    if (dref2 != 987654321) {
+      halt(3);
+    }
+
+    int * iPtr = value;
+    int idptr = *iPtr;
+    if (idptr !=  1234567890) {
+      halt(3);
+    }
+
+    iPtr ++;
+    idptr = *iPtr;
+    if (idptr !=  987654321) {
+      halt(3);
+    }
+
+// not supported
+//    if (value[0] != 1234567890) {
+//      halt(4);
+//    }
+//    if (value[1] != 987654321) {
+//      halt(5);
+//    }
+
+// not supported
+//    int* ptr = value;
+//    if (ptr[0] != 1234567890) {
+//      halt(6);
+//    }
+//    ptr+=1;
+//    if (*ptr != 987654321) {
+//      halt(7);
+//    }
+
+    return 0;
+}
+        """
+    runTest(c, Some(HaltCode(0xffff, 0)))
+  }
+
+  @Test
+  def vbccTestC8(): Unit = {
+
+    val c =
+      """
+MAKE SURE IM EXTENDING AND UNWINDING STACK PROPERLY FOR LOCAL VARS.
+See "gen_code() frame=20"
         """
 
     runTest(c, Some(HaltCode(0xffff, 0)))
@@ -213,7 +306,8 @@ int main() {
 
     val assembler = new Assembler()
 
-    val roms = assemble(assembly, assembler)
+    val roms = assembler.assemble(assembly.mkString("\n"))
+
     roms.zipWithIndex.foreach {
       c => {
         print(c._2.toString + "\t : " + c._1 + "\t " + assembler.decode(c._1) + "\n")
@@ -229,27 +323,4 @@ int main() {
       roms = roms);
   }
 
-  private def instructions(code: Seq[String], asm: Assembler): Seq[(AluOp, Any, Any, Any, Control, AddressMode, ConditionMode, Int, Byte)] = {
-    val roms: Seq[List[String]] = assemble(code, asm)
-    decode(roms, asm)
-  }
-
-  private def decode(roms: Seq[List[String]], asm: Assembler) = {
-    roms.map(r =>
-      asm.decode(r)
-    )
-  }
-
-  private def assemble(code: Seq[String], asm: Assembler) = {
-    // comments run to end of line
-    asm.assemble(code.mkString("\n"))
-  }
-
-  def assertLabel(asm: Assembler, s: String, i: Some[Int]): Unit = {
-    assertEquals(i.map(asm.KnownInt), asm.labels(s).getVal)
-  }
-
-  def assertEqualsList[T](expected: IterableOnce[T], actual: IterableOnce[T]): Unit = {
-    assertEquals(expected.iterator.mkString("\n"), actual.iterator.mkString("\n"))
-  }
 }

@@ -204,6 +204,8 @@ object Verification {
 
 case class HaltCode(mar: Int, alu: Int) {
   override def toString: String = {
-    s"HaltCode(mar:$mar [${mar.toHexString}], alu:$alu [b${alu.toBinaryString}, h${alu.toHexString}])"
+    val str = "00000000" + alu.toBinaryString
+    val bin = str.substring(str.length-8)
+    f"HaltCode(mar:$mar%-5d (0x$mar%04x), alu:$alu%-3d (b$bin, 0x$alu%02x))"
   }
 }
