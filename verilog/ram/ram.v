@@ -76,20 +76,22 @@ end
 
   if (LOG)
     always @(Mem[A]) begin
-        if (!_WE) $display("%9t ", $time, "RAM : UPDATE - RAM[0x%04x]=%08b(%1d)     Mem[A]=%02h", A, D, D , Mem[A]);
+        if (!_WE) $display("%9t ", $time, "RAM : UPDATED - RAM[0x%04x]=%08b(%1d)     Mem[A] is %02h", A, D, D , Mem[A]);
     end
 
   if (LOG) 
   always @(delayedA) begin
-     $display("%9t ", $time, "RAM : DETAIL _OE=%1b _delayedOE=%1b _WE=%1b _delayedWE=%1b A=%04x delayedA=%04h D=%8b m0=%8b m1=%8b m2=%8b", 
-                    _OE, _delayedOE, _WE, _delayedWE, A, delayedA, D, Mem[0], Mem[1], Mem[2]);
+     //$display("%9t ", $time, "RAM : DETAIL _OE=%1b _delayedOE=%1b _WE=%1b _delayedWE=%1b A=%04x delayedA=%04h D=%8b m0=%8b m1=%8b m2=%8b", 
+     //               _OE, _delayedOE, _WE, _delayedWE, A, delayedA, D, Mem[0], Mem[1], Mem[2]);
+     $display("%9t ", $time, "RAM : DETAIL _OE=%1b _delayedOE=%1b _WE=%1b _delayedWE=%1b A=%04x delayedA=%04h D=%8b",
+                    _OE, _delayedOE, _WE, _delayedWE, A, delayedA, D);
   end
 
   always @(_WE or _OE or D or A or delayedA)
   begin
      if (!_WE) begin
         Mem[A] = D;
-        if (LOG) $display("%9t ", $time, "RAM : WRITE - RAM[0x%04x]=%08b     Mem[A]=%02h", A, D , Mem[A]);
+        if (LOG) $display("%9t ", $time, "RAM : WRITE   - RAM[0x%04x]=%08b     Mem[A] is %02h", A, D , Mem[A]);
      end
      else if (!_OE) begin
         if (LOG) $display("%9t ", $time, "RAM : READ - D=%08b  A=%04h  delayed : %08d=RAM[0x%04x]", D, A, delayedMemRead, delayedA);

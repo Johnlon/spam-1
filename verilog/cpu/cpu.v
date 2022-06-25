@@ -187,7 +187,7 @@ module cpu(
 // verilator lint_off PINMISSING
     wire #(8) _gated_ram_in = _phase_exec | _ram_in; // DONE - THIS IS ON THE RAM BOARD
     //OK to leave _OE enabled all the time as ram data sheet says WE override it
-    ram #(.AWIDTH(16), .LOG(0), .UNDEFINED_VALUE(1'b0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // DONE
+    ram #(.AWIDTH(16), .LOG(1), .UNDEFINED_VALUE(1'b0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // DONE
 // verilator lint_on PINMISSING
     
 `ifndef verilator
@@ -439,24 +439,19 @@ module cpu(
             `define DD $display ("%9t ", $time,  "DUMP  ", 
 
             `DD " phase_exec=%1d", phase_exec);
-            `DD " PC=%1d (0x%4h) PCHItmp=%d (%2x)", pc_addr, pc_addr, PC.PCHITMP, PC.PCHITMP);
+            `DD " PC=%1d (PC=0x%4h) PCHItmp=%d (%2x)", pc_addr, pc_addr, PC.PCHITMP, PC.PCHITMP);
             `DD " instruction=%08b:%08b:%08b:%08b:%08b:%08b", ctrl.instruction_6, ctrl.instruction_5, ctrl.instruction_4, ctrl.instruction_3, ctrl.instruction_2, ctrl.instruction_1);
-            `DD " address_bus=0x%4x", address_bus);
-            `DD " address_mode=%1s", control::fAddrMode(_addrmode_register));
-            `DD " rom=%08b:%08b:%08b:%08b:%08b:%08b",  ctrl.rom_6.D, ctrl.rom_5.D, ctrl.rom_4.D, ctrl.rom_3.D, ctrl.rom_2.D, ctrl.rom_1.D);
-            `DD " immed8=%08b", ctrl.immed8);
-            `DD " ram=%08b", ram64.D);
+            `DD " condition=%02d(%1s) _do_exec=%b _set_flags=%b", ctrl.condition, control::condname(ctrl.condition), ctrl._do_exec, _set_flags);
             `DD " tdev=%5b(%s)", targ_dev, control::tdevname(targ_dev),
                 " adev=%3b(%s)", abus_dev, control::adevname(abus_dev),
                 " bdev=%4b(%s)", bbus_dev,control::bdevname(bbus_dev),
                 " alu_op=%5b(%s)", alu_op, alu_ops::aluopName(alu_op)
             );            
-            `DD " abus=%8b bbus=%8b alu_result_bus=%8b", abus, bbus, alu_result_bus);
-            `DD " FLAGS ALU _czonENGL=%8b ", alu_flags_czonENGL);
-            `DD " FLAGS REG _czonENGL=%8b gated_flags_clk=%1b", status_register_czonENGL.Q, gated_flags_clk);
-            `DD " FLAGS I/O _do=%b _di=%b", _flag_do, _flag_di);
-            `DD " condition=%02d(%1s) _do_exec=%b _set_flags=%b", ctrl.condition, control::condname(ctrl.condition), ctrl._do_exec, _set_flags);
-            `DD " MAR=%8b:%8b (0x%2x:%2x)", MARHI.Q, MARLO.Q, MARHI.Q, MARLO.Q);
+            `DD " immed8=%-d (0x%02x)", ctrl.immed8, ctrl.immed8);
+            `DD " abus=%-d bbus=%-d alu_result_bus=%-d", abus, bbus, alu_result_bus);
+            `DD " ram=%-d (0x%02x)", ram64.D, ram64.D, " address_bus=%0d (%04x) mode=%1s", address_bus, address_bus, control::amode(_addrmode_register));
+            `DD " flags alu _czonENGL=%8b ", alu_flags_czonENGL, " registered=%8b gated_flags_clk=%1b", status_register_czonENGL.Q, gated_flags_clk, " _do=%b _di=%b", _flag_do, _flag_di);
+            `DD " MAR=%d:%d (0x%02x:%02x)", MARHI.Q, MARLO.Q, MARHI.Q, MARLO.Q);
             `DD " REGA:%08b", regFile.get(0),
                  "  REGB:%08b", regFile.get(1),
                  "  REGC:%08b", regFile.get(2),
@@ -472,7 +467,7 @@ module cpu(
             `define LOGX_ADEV_SEL(DNAME) " _adev_``DNAME``=%1b", _adev_``DNAME``
             `define LOGX_BDEV_SEL(DNAME) " _bdev_``DNAME``=%1b", _bdev_``DNAME``
             `define LOGX_TDEV_SEL(DNAME) " _``DNAME``_in=%1b",  _``DNAME``_in
-            $display("%9t", $time, " DUMP   WIRES ", `CONTROL_WIRES(LOGX, `COMMA));
+            // $display("%9t", $time, " DUMP   WIRES ", `CONTROL_WIRES(LOGX, `COMMA));
     endtask 
 
 endmodule : cpu

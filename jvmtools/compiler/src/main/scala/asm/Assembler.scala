@@ -188,18 +188,23 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
   */
 
   private def logInstructions(filtered: Seq[Line]) = {
+    val widIdx = math.log10(filtered.size).toInt+1
+    val widPc = math.log10(filtered.collect{case l: Instruction => l}.map(_.pc.getOrElse(0)).max).toInt+1
+
     filtered.zipWithIndex.foreach(
       l => {
         val line: Line = l._1
 
         val address = line match {
           case i: Instruction =>
-            i.pc.getOrElse(sys.error("pc not yet assigned to " + i)).formatted("pc %04x")
+            val pc = i.pc.getOrElse(sys.error("pc not yet assigned to " + i))
+            s"pc %04x %${widPc}d".format(pc,pc)
+
           case _ =>
-            " " * 7
+            " ".*(3+4+1+widPc)
         }
         val index: Int = l._2
-        System.out.println(s"""${index.formatted("%03d")} src=${line.sourceLineNumber.formatted("%-5d")}   $address : $line""")
+        System.out.println(s"""${index.formatted("%03d")} src=${line.sourceLineNumber.formatted(s"%-${widIdx}d")} $address : $line""")
       }
     )
   }

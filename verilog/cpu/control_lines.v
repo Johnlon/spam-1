@@ -202,10 +202,18 @@ package control;
 
     function string fAddrMode(_addrmode_register); 
     begin
+/*
+            if (_addrmode_register == 0) fAddrMode = "REG" 
+            else if (_addrmode_register == 1) fAddrMode = "DIR" 
+            else fAddrMode = "unknown";
+*/
+
             if ($isunknown(_addrmode_register)) 
                 fAddrMode = "unknown";
-            else
-                fAddrMode = _addrmode_register == 0? "REG" : "DIR";
+            else begin
+                fAddrMode = (_addrmode_register == 0) ? "REG" : "DIR";
+            end
+
     end
     //function string fAddrMode(_addrmode_register, _addrmode_direct); 
     //begin

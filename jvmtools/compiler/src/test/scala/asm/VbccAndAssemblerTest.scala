@@ -185,10 +185,6 @@ int main() {
     val c =
       """
 void halt(__reg("gpr0") char) = "\tHALT = [:gpr0]\n";
-void halt3(__reg("gpr0") char, // MARLO
-           __reg("gpr1") char, // MARHI
-           __reg("gpr2") char) // ALU
-            = "\tMARLO = [:gpr1]\n\tMARHI = [:gpr2]\n\tHALT = [:gpr0]\n";
 
 int main() {
 
@@ -208,10 +204,17 @@ int main() {
       halt(2);
     }
 
-// not yet supported
-//    if (*value != 1234567890) {
-//      halt(3);
-//    }
+    ////////////
+
+    if (*value != 1234567890) {
+      return 1;
+    }
+
+    if (*(value+1) != 987654321) {
+      return 1;
+    }
+
+    ////////////
 
     int dref1 = *value;
     if (dref1 != 1234567890) {
@@ -222,6 +225,8 @@ int main() {
     if (dref2 != 987654321) {
       halt(3);
     }
+
+    ////////////
 
     int * iPtr = value;
     int idptr = *iPtr;
@@ -235,23 +240,25 @@ int main() {
       halt(3);
     }
 
-// not supported
-//    if (value[0] != 1234567890) {
-//      halt(4);
-//    }
-//    if (value[1] != 987654321) {
-//      halt(5);
-//    }
+    ////////////
 
-// not supported
-//    int* ptr = value;
-//    if (ptr[0] != 1234567890) {
-//      halt(6);
-//    }
-//    ptr+=1;
-//    if (*ptr != 987654321) {
-//      halt(7);
-//    }
+    if (value[0] != 1234567890) {
+      halt(4);
+    }
+    if (value[1] != 987654321) {
+      halt(5);
+    }
+
+    ////////////
+
+    int* ptr = value;
+    if (ptr[0] != 1234567890) {
+      halt(6);
+    }
+    ptr+=1;
+    if (*ptr != 987654321) {
+      halt(7);
+    }
 
     return 0;
 }
@@ -264,11 +271,170 @@ int main() {
 
     val c =
       """
-MAKE SURE IM EXTENDING AND UNWINDING STACK PROPERLY FOR LOCAL VARS.
-See "gen_code() frame=20"
+void halt(__reg("gpr0") char) = "\tHALT = [:gpr0]\n";
+
+int main() {
+
+    // array initialiser
+    int value[] = { 1234567890, 987654321 };
+
+    int value1 = value[0];
+    int value2 = value[1];
+
+    if (value1 != 1234567890) {
+      halt(1);
+    }
+
+    if (value2 != 987654321) {
+      halt(2);
+    }
+
+    return 0;
+}
+        """
+    runTest(c, Some(HaltCode(0xffff, 0)))
+  }
+
+
+  @Test
+  def vbccTestC9(): Unit = {
+
+    val c =
+      """
+int main() {
+
+    // not using inline initialiser works ok
+    int value[] = { 1234567890, 987654321 };
+
+    if (*value != 1234567890) {
+      return 1;
+    }
+    if (*value == 1234567890) {
+      return 0;
+    }
+
+    return 2;
+}
+        """
+    runTest(c, Some(HaltCode(0xffff, 0)))
+  }
+
+  /*
+    kitchen sink of call stack, passing, reg preservation and so on.
+    */
+  @Test
+  def vbccCall(): Unit = {
+
+    val c =
+      """
+// cannot use \n in the asm as this terminates it !!
+void halt2(__reg("ghalt1") char marlo, __reg("ghalt2") char alu) = "\tMARHI=0\tMARLO=[:ghalt1]\tHALT=[:ghalt2]\n";
+
+int more(int moreParam) {
+  return moreParam;
+}
+
+int sub(int subParamA, int subParamB) {
+  int subLocalA = subParamA;
+
+  int sum = subLocalA + subParamB;
+  int ret = more(sum);
+
+  return ret;
+}
+
+int main() {
+  int localA = 10;
+  int localB = 11;
+
+  // call a function - does subroutine trample local var?
+  int subRet = sub(3, 4);
+
+  if (subRet != 7)  {
+    halt2(subRet, 7);
+  }
+
+  subRet = sub(localA, localB);
+
+  if (subRet != 21)  {
+    halt2(subRet, 21);
+  }
+
+  if (localA != 10)  {
+    halt2(localA, 10);
+  }
+
+  if (localB != 11)  {
+    halt2(localB, 11);
+  }
+
+  return 66;
+}
+ """
+
+    runTest(c, Some(HaltCode(0xffff, 66)))
+  }
+
+
+  /*
+    I found this function halted with MAR=4 ALU=88 because main and sub both used gpr6 and the
+    value of "check" was in gpr6 so got overwritten. By passing a as '3' in the 'a != 3'
+   */
+  @Test
+  def vbccLoopsForever(): Unit = {
+
+    val c =
+      """
+// cannot use \n in the asm as this terminates it !!
+void halt2(__reg("ghalt1") char marlo, __reg("ghalt2") char alu) = "\tMARHI=0\tMARLO=[:ghalt1]\tHALT=[:ghalt2]\n";
+
+int more(int unused) {
+  return unused;
+}
+
+int sub(int a, int b) {
+  int subA = a;
+  int subB = b;
+
+  if (a != 3)  {
+    more(a);
+  }
+
+  if (a != 3)  {
+    halt2(a, 13);
+  }
+  if (b != 4)  {
+    halt2(17, 14);
+  }
+  if (subA != 3)  {
+    halt2(subA, 23);
+  }
+  if (subB != 4)  {
+    halt2(subB, 24);
+  }
+  return 99;
+}
+
+int main() {
+  int localA = 10;
+
+  int check = 88;
+  // call a function - does subroutine trample local var r?
+  sub(3, 4);
+
+  if (localA != 88)  {
+    halt2(localA, 88);
+  }
+
+  if (check != 101)  {
+    halt2(check, 99);
+  }
+
+  return 66;
+}
         """
 
-    runTest(c, Some(HaltCode(0xffff, 0)))
+    runTest(c, Some(HaltCode(0xffff, 66)))
   }
 
   private def vbcc(c: String): List[String] = {

@@ -175,6 +175,7 @@ endfunction
     end
     endtask
 
+
     task CLK_DN; 
     begin
         // ENTER EXEC PHASE
@@ -187,7 +188,9 @@ endfunction
             //$display("%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
             if (CPU.ctrl._do_exec == 0) begin
                 $display("%9t", $time, " EXECUTING ..."); 
+                $display("%9t", $time, " ---------"); 
                 $display("%9t ", $time, "CYCLES %-6d : PC=%5d  %1s", opcount, {CPU.PCHI, CPU.PCLO}, CPU.disasm(data));
+                $display("%9t", $time, " ---------"); 
                 $display("%6s ", "", "= aaaaattt taaabbbC CCCFIbtM AAAAAAAA AAAAAAAA IIIIIIII");
                 $display("%6s ", "", "= %8b %8b %8b %8b %8b %8b", 
                     data[47:40],
@@ -203,8 +206,7 @@ endfunction
             end
 
 
-            //$display("\n%9t", $time, " DECOMPILE %s", CPU.ctrl.decode(1).display()); 
-            CPU.DUMP; 
+            //CPU.DUMP; 
         
             //$display("%9t", $time, " -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  - -  -  -  -  ");
         end
@@ -321,7 +323,7 @@ endfunction
     task DUMP;
             DUMP_OP;
             `DD " phase=%1b", CPU.phase_exec);
-            `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
+            `DD " PC=%01d (PC=0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
             `DD " address_bus=0x%4x (%d) ", CPU.address_bus, CPU.address_bus);
             `DD " abus=%8b(%d) bbus=%8b(%d) alu_result_bus=%8b(%d)", CPU.abus, CPU.abus, CPU.bbus, CPU.bbus, CPU.alu_result_bus, CPU.alu_result_bus);
             `DD " FLAGS ALU        czonENGL=%8b ", CPU.alu_flags_czonENGL);
