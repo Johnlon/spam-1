@@ -97,7 +97,7 @@ fun createRegisterView(): ScrollableJTable {
     tab.border = BorderFactory.createLineBorder(Color.RED)
 
     dataModel.names.forEachIndexed { i, w ->
-        tab.table.columnModel.getColumn(i).preferredWidth = 50
+        tab.table.columnModel.getColumn(i).preferredWidth = dataModel.names[i].width
     }
     val sz = tab.table.columnModel.columns.toList().sumOf { it.preferredWidth } + 20
     tab.preferredSize = Dimension(sz, 300)
@@ -276,6 +276,13 @@ class ObservableList<T>(val wrapped: MutableList<T>) : MutableList<T> by wrapped
 
 }
 
+data class RamData(
+    val addr: Int=0,
+    var value: Int=0,
+    var prev: Int=0,
+    var clk: Int=0
+)
+
 data class InstructionData(
     val clk: Int,
     val pc: Int,
@@ -301,8 +308,8 @@ data class InstructionData(
 data class RegisterData(
     val clk: Int,
     val pc: Int,
-    val mar: Int=0,
-    val rega: Int=0,
+    val mar: Int=65535,
+    val rega: Int=255,
     val regb: Int=0,
     val regc: Int=0,
     val regd: Int=0,
@@ -326,7 +333,7 @@ class InstructionTableModel : AbstractTableModel() {
         ColDef("SET", 30, "%s", "setf"),
         ColDef("AM", 30, "%s", "amode"),
         ColDef("?", 25, "%s", "cond"),
-        ColDef("INV", 25, "%s"),
+        ColDef("INV", 30, "%s"),
         ColDef("c", 25, "%d", "carry"),
         ColDef("z", 25, "%d", "zero"),
         ColDef("o", 25, "%d", "overflow"),
@@ -358,7 +365,7 @@ class InstructionTableModel : AbstractTableModel() {
         }
         val v = po.first().call(i)
 
-        return cd.format.format(v)
+        return cd.format.format(v, v)
     }
 
     override fun getColumnName(column: Int): String {
@@ -372,13 +379,13 @@ class RegisterTableModel : AbstractTableModel() {
     val names = listOf(
         ColDef("Clk", 90, "%d"),
         ColDef("PC", 70, "%d"),
-        ColDef("MAR", 70, "0x%04x"),
-        ColDef("REGA", 50, "0x%02x"),
-        ColDef("REGB", 50, "0x%02x"),
-        ColDef("REGC", 50, "0x%02x"),
-        ColDef("REGD", 50, "0x%02x"),
-        ColDef("HALT", 50, "0x%02x"),
-        ColDef("ALU", 50, "0x%02x"),
+        ColDef("MAR", 90, "0x%04x %5d"),
+        ColDef("REGA", 60, "0x%02x %3d"),
+        ColDef("REGB", 60, "0x%02x %3d"),
+        ColDef("REGC", 60, "0x%02x %3d"),
+        ColDef("REGD", 60, "0x%02x %3d"),
+        ColDef("HALT", 60, "0x%02x %3d"),
+        ColDef("ALU", 60, "0x%02x %3d"),
     )
 
     override fun getColumnCount(): Int {
@@ -400,7 +407,7 @@ class RegisterTableModel : AbstractTableModel() {
         }
         val v = po.first().call(i)
 
-        return cd.format.format(v)
+        return cd.format.format(v, v)
     }
 
     override fun getColumnName(column: Int): String {
@@ -410,63 +417,54 @@ class RegisterTableModel : AbstractTableModel() {
 
 class RamTableModel : AbstractTableModel() {
     val recentUpdates = ObservableList(mutableListOf<Int>())
+    var data = (0..RamSize).map { RamData(addr = it, clk = it) }.toMutableList()
 
-    var ram = (0..RamSize).toMutableList()
-    var ramPrev = (0..RamSize).toMutableList()
-    var clk = (0..RamSize).toMutableList()
-
-    init {
-        clk.fill(1234567890)
-    }
+    val names = listOf(
+        ColDef("Addr", 90, "0x%04d %5d"),
+        ColDef("Value", 70, "0x%02d %3d"),
+        ColDef("Prev", 90, "0x%02x %3d"),
+        ColDef("Clk", 90, "%d")
+    )
 
     override fun getColumnCount(): Int {
-        return 4
+        return names.size
     }
 
     override fun getRowCount(): Int {
-        return RamSize
+        return data.size
     }
 
     override fun getValueAt(row: Int, col: Int): Any {
-        val addr = RamSize - row
+        val pos = data.size - row - 1
 
-        val value = if (col == 0) {
-            addr
-        } else if (col == 1) {
-            ram[addr] % 256
-        } else if (col == 2) {
-            ramPrev[addr] % 256
-        } else {
-            clk[addr]
+        val cd = names[col]
+        val i = data[pos]
+        val po = RamData::class.members.filter { it.name.lowercase() == cd.field.lowercase() }
+        if (po.isEmpty()) {
+            error("field " + cd.name + " not found")
         }
+        val v = po.first().call(i)
 
-        return if (col == 0) {
-            "0x%04x (%5d)".format(value, value)
-        } else if (col == 1 || col == 2) {
-            "0x%02x (%3d)".format(value, value)
-        } else {
-            "%d".format(value)
-        }
+        return cd.format.format(v, v)
     }
 
     override fun setValueAt(aValue: Any?, rowIndex: Int, columnIndex: Int) {
         val addr = RamSize - rowIndex
 
         if (columnIndex == 1) {
-            ramPrev[addr] = ram[addr]
+            data[addr].prev = data[addr].value
 
-            val update = aValue?.toString()?.toInt() ?: ram[addr]
-            ram[addr] = update
+            val update = aValue?.toString()?.toInt() ?: data[addr].value
+            data[addr].value = update
 
             recentUpdates.add(addr)
             this.fireTableCellUpdated(rowIndex, columnIndex)
         }
     }
 
-    val names = mutableListOf("Addr", "Value", "Prev", "Clk")
 
     override fun getColumnName(column: Int): String {
-        return names[column]
+        return names[column].name
     }
 
     override fun isCellEditable(rowIndex: Int, columnIndex: Int): Boolean {
