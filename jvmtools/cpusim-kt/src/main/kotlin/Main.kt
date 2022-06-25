@@ -8,8 +8,6 @@ import java.io.File
 
 fun prog(cpu: CPU) {
     assemble(
-        cpu.rom,
-        cpu.instructions,
         Instruction(
             Op.B, TDev.marlo, ADev.marhi, BDev.immed, Cond.A, Keep, Std, Dir, 0xffff, 0x0
         ),
@@ -41,28 +39,38 @@ fun prog(cpu: CPU) {
 }
 
 
-fun loadProgram(cpu: CPU, romFile: String) {
+fun loadProgram(romFile: String) : Pair<List<Long>, List<Instruction>> {
     var loc = 0
+
+    val rom = mutableListOf<Long>()
+    val instructions = mutableListOf<Instruction>()
     File(romFile).forEachLine { line ->
-        cpu.rom.add(line.toLong(2))
+        rom.add(line.toLong(2))
         val inst = decode(line)
         println("${loc} = ${inst}")
-        cpu.instructions.add(inst)
+        instructions.add(inst)
         loc++
     }
     println("LOADED " + loc + " INSTRUCTIONS")
+    return Pair(rom, instructions)
 }
 
 
 fun main(_args: Array<String>) {
     println("START")
 
-    val cpu = CPU()
     //prog(cpu)
-    loadProgram(cpu, "c:/Users/johnl/OneDrive/simplecpu/jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
+    val (rom, inst) =loadProgram("c:/Users/johnl/OneDrive/simplecpu/jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
+
+    main()
+    while (debugger.get() == null) {
+        Thread.sleep(100)
+    }
+    val cpu = CPU(debugger = debugger.get(), rom = rom, instructions = inst)
 
     val t = InProcessTerminal(cpu::gamepadHandler)
     t.main(_args)
+
     cpu.run(t::handleLine)
 }
 

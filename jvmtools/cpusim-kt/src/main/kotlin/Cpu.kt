@@ -2,7 +2,21 @@ import java.io.File
 import java.util.regex.Pattern
 import kotlin.concurrent.thread
 
-class CPU {
+interface Debugger {
+    fun onDebug(code: InstructionExec, commit: () -> Unit): Unit
+}
+
+object NoOpDebugger : Debugger {
+    override fun onDebug(code: InstructionExec, commit: () -> Unit): Unit {
+        commit.invoke()
+    }
+}
+
+class CPU(
+    val debugger: Debugger = NoOpDebugger,
+    val rom: List<Long>,
+    val instructions: List<Instruction>
+) {
 
     companion object {
         fun loadAlu(aluRom: MutableList<Int>) {
@@ -15,18 +29,22 @@ class CPU {
         }
     }
 
-    @Volatile var timer1 : Int = 0
-    val countFreq = 50
-    val countIntervalMs = ((1.0/countFreq)*1000).toLong()
 
-    constructor() {
+    @Volatile
+    var timer1: Int = 0
+    val countFreq = 50
+    val countIntervalMs = ((1.0 / countFreq) * 1000).toLong()
+
+    private val aluRom = mutableListOf<Int>()
+
+    init {
         loadAlu(aluRom)
 
-        thread(isDaemon=true, start=true) {
-            while(true) {
+        thread(isDaemon = true, start = true) {
+            while (true) {
                 Thread.sleep(countIntervalMs)
                 if (timer1 > 0) {
-                    timer1 --
+                    timer1--
                 }
             }
         }
@@ -34,10 +52,6 @@ class CPU {
 
     lateinit var lastOp: Op
 
-    val aluRom = mutableListOf<Int>()
-
-    val rom = mutableListOf<Long>(65536)
-    val instructions = mutableListOf<Instruction>()
 
     val ram = IntArray(65536) { 0 }
     var pcLo: Int = 0
@@ -53,6 +67,7 @@ class CPU {
         }
     }
 
+    var haltVal: Int=0
     var marlo: Int = 0
     var marhi: Int = 0
     fun mar() = (marhi shl 8) + marlo
@@ -69,7 +84,7 @@ class CPU {
     fun hex(i: Int) = i.toString(16).padStart(2, '0')
 
     fun dump() {
-        if (1==1) {
+        if (1 == 1) {
             val code = instructions[pc()]
             println("CYCLE: ${cycles} PC=${pc()} : ${code} ")
         }
@@ -97,8 +112,8 @@ class CPU {
     var cycles = 0
 
     // re instruction rate: https://github.com/ajor/chip8
-    var freq = 1000*1000
-    var intervalNs : Long = (1000000000 * (1.0/freq)).toLong()
+    var freq = 1000 * 1000
+    var intervalNs: Long = (1000000000 * (1.0 / freq)).toLong()
 //    var intervalNs : Long = 1 // approx same as 600 instructions per second
 
 
@@ -159,55 +174,83 @@ class CPU {
         val doExec = if (shouldInvert) !condMatch else condMatch
 
         val curPc = pc()
+        val (aluVal, newFlags, effectiveOp) = alu(aluRom, i.aluOp, flags.contains(Cond.C), aval, bval)
 
-        if (doExec) {
-            val (aluVal, newFlags, effectiveOp) = alu(aluRom, i.aluOp, flags.contains(Cond.C), aval, bval)
-            lastOp = effectiveOp
+        var code = InstructionExec(
+            clk = cycles, pc = curPc, doExec = doExec,
+            aval = aval, bval = bval, alu = aluVal,
+            instruction = i,
+            regIn = Registers(marhi= marhi, marlo=marlo, rega, regb, regc, regd, pchi=pcHi, pclo = pcLo, pchitmp = pcHitmp, portSel = portsel, timer1 = timer1, halt = haltVal),
+            flagsIn = Flags(
+                carry = flags.contains(Cond.C),
+                zero = flags.contains(Cond.Z),
+                overflow = flags.contains(Cond.O),
+                negative = flags.contains(Cond.N),
+                gt = flags.contains(Cond.GT),
+                lt = flags.contains(Cond.LT),
+                eq = flags.contains(Cond.EQ),
+                ne = flags.contains(Cond.NE),
+                datain = false,
+                dataout = false,
+            )
+        )
 
-            if (i.setFlags == Flag.Set) {
-                flags = newFlags
-            }
-            if (!flags.contains(Cond.DO)) flags.add(Cond.DO)
-            if (!flags.contains(Cond.DI) and (rnd == 1)) flags.add(Cond.DI)
+        debugger.onDebug(code) {
 
-            when (i.t) {
-                TDev.rega -> rega = aluVal
-                TDev.regb -> regb = aluVal
-                TDev.regc -> regc = aluVal
-                TDev.regd -> regd = aluVal
-                TDev.marlo -> marlo = aluVal
-                TDev.marhi -> marhi = aluVal
-                TDev.uart -> uartOut(aluVal, terminalHandler)
-                TDev.ram -> if (i.amode == AMode.Dir) ram[i.address] = aluVal else ram[mar()] = aluVal
-                TDev.halt -> halt(aluVal)
-                TDev.vram -> TODO()
-                TDev.port -> {
-                    when (portsel) {
-                        WritePort.Timer1.id ->
-                            timer1 = aluVal
-                        WritePort.Timer2.id ->
-                            TODO()
-                        WritePort.Parallel.id ->
-                            TODO()
-                        else -> TODO()
+            if (doExec) {
+//                val (aluVal, newFlags, effectiveOp) = alu(aluRom, i.aluOp, flags.contains(Cond.C), aval, bval)
+
+                lastOp = effectiveOp
+
+                if (i.setFlags == Flag.Set) {
+                    flags = newFlags
+                }
+
+                // TODO - for now always set data out enabled
+                if (!flags.contains(Cond.DO)) flags.add(Cond.DO)
+
+                // TODO - for now randomly set date in available
+                if (!flags.contains(Cond.DI) and (rnd == 1)) flags.add(Cond.DI)
+
+                when (i.t) {
+                    TDev.rega -> rega = aluVal
+                    TDev.regb -> regb = aluVal
+                    TDev.regc -> regc = aluVal
+                    TDev.regd -> regd = aluVal
+                    TDev.marlo -> marlo = aluVal
+                    TDev.marhi -> marhi = aluVal
+                    TDev.uart -> uartOut(aluVal, terminalHandler)
+                    TDev.ram -> if (i.amode == AMode.Dir) ram[i.address] = aluVal else ram[mar()] = aluVal
+                    TDev.halt -> halt(aluVal)
+                    TDev.vram -> TODO()
+                    TDev.port -> {
+                        when (portsel) {
+                            WritePort.Timer1.id ->
+                                timer1 = aluVal
+                            WritePort.Timer2.id ->
+                                TODO()
+                            WritePort.Parallel.id ->
+                                TODO()
+                            else -> TODO()
+                        }
+                    }
+                    TDev.portsel -> {
+                        portsel = aluVal
+                    }
+                    TDev.not_used12 -> {} // no op
+                    TDev.pchitmp -> pcHitmp = aluVal
+                    TDev.pclo -> {
+                        pcLo = aluVal
+                        jumped = true
+                    }
+                    TDev.pc -> {
+                        pcLo = aluVal
+                        pcHi = pcHitmp
+                        jumped = true
                     }
                 }
-                TDev.portsel -> {
-                    portsel = aluVal
-                }
-                TDev.not_used12 -> {} // no op
-                TDev.pchitmp -> pcHitmp = aluVal
-                TDev.pclo -> {
-                    pcLo = aluVal
-                    jumped = true
-                }
-                TDev.pc -> {
-                    pcLo = aluVal
-                    pcHi = pcHitmp
-                    jumped = true
-                }
-            }
 
+            }
         }
         dumpState(curPc)
 
@@ -218,6 +261,7 @@ class CPU {
         // slow down
         delay()
     }
+
 
     var lastTime = System.nanoTime()
     fun delay() {
@@ -286,7 +330,7 @@ class CPU {
         val start = System.currentTimeMillis()
         while (!halted) {
             cycle(terminalHandler)
-            if (cycles %1000000 == 0) printRate(start)
+            if (cycles % 1000000 == 0) printRate(start)
         }
         printRate(start)
     }
@@ -298,6 +342,7 @@ class CPU {
     }
 
     private fun halt(aluValue: Int) {
+        haltVal = aluValue
         println("==========================================")
         println("HALTING....")
         println("HALTCODE MAR ${marhi.toString(16)}:${marlo.toString(16)}  ALUCODE ${aluValue.toString(16)}")

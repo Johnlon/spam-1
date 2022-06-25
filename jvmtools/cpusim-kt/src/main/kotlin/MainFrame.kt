@@ -3,6 +3,7 @@ import java.awt.BorderLayout.*
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
 import java.util.*
+import java.util.concurrent.atomic.AtomicReference
 import javax.swing.*
 import javax.swing.JOptionPane.QUESTION_MESSAGE
 import javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
@@ -15,12 +16,23 @@ import javax.swing.table.TableCellRenderer
 val RamSize = 65535
 val StateSize = 100
 
+val progModel = InstructionTableModel()
+val regModel = RegisterTableModel()
+val ramModel = RamTableModel()
+
+var registerView: ScrollableJTable? = null
+var progView: ScrollableJTable? = null
+var controllerView: Component? = null
+
+val debugger = AtomicReference<Debugger>()
 
 fun main() {
 //    UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel")
 //te    UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel")
 
-    EventQueue.invokeLater(::createAndShowGUI)
+    EventQueue.invokeAndWait(::createAndShowGUI)
+
+
 }
 
 private fun createAndShowGUI() {
@@ -40,27 +52,65 @@ private fun createAndShowGUI() {
     menuFile.add(menuLoad)
     menuFile.add(menuSave)
 
+    mainPain.add(createMemoryView(), WEST)
 
-
-        mainPain.add(createMemoryView(), WEST)
+    registerView = createRegisterView()
+    progView = createInstructionView()
+    controllerView = createControlView()
 
     mainPain.add(object : BPanel() { init {
         add(object : BPanel() { init {
             add(
                 object : BPanel() { init {
-                    add(createRegisterView(), EAST)
+                    add(registerView, EAST)
                 }
                 },
                 NORTH
             )
-            add(createInstructionView(), CENTER)
-            add(createControlView(), SOUTH)
+            add(progView, CENTER)
+            add(controllerView, SOUTH)
         }
         })
     }
     }, EAST)
 
     mainframe.config()
+
+    val dbg = object : Debugger {
+        override fun onDebug(code: InstructionExec, commit: () -> Unit) {
+            commit.invoke()
+            progModel.add(
+                InstructionData(
+                    clk = code.clk,
+                    pc = code.pc,
+                    doExec = code.doExec,
+                    targ = code.instruction.t.name,
+                    left = code.instruction.a.name,
+                    right = code.instruction.b.name,
+                    op = code.instruction.aluOp.name,
+                    setf = code.instruction.setFlags.name,
+                    amode = code.instruction.amode.name,
+                    cond = code.instruction.condition.name,
+                    inv = code.instruction.conditionInvert.name,
+                    carry = code.flagsIn.carry,
+                    zero = code.flagsIn.zero,
+                    overflow = code.flagsIn.overflow,
+                    negative = code.flagsIn.negative,
+                    gt = code.flagsIn.gt,
+                    lt = code.flagsIn.lt,
+                    eq = code.flagsIn.eq,
+                    ne = code.flagsIn.ne,
+                    datain = code.flagsIn.datain,
+                    dataout = code.flagsIn.dataout,
+                )
+            )
+            progView?.repaint()
+        }
+
+    }
+    mainframe.repaint()
+
+    debugger.set(dbg)
 }
 
 val ByteStringsText = (0..255).map { "0x%02x %3d".format(it, it) }.toList().toTypedArray()
@@ -104,14 +154,13 @@ fun createRegisterView(): ScrollableJTable {
 
     val table = JTable()
 
-    val dataModel = RegisterTableModel()
-    table.model = dataModel
+    table.model = regModel
 
     val tab = ScrollableJTable(table)
     tab.border = BorderFactory.createLineBorder(Color.RED)
 
-    dataModel.names.forEachIndexed { i, w ->
-        tab.table.columnModel.getColumn(i).preferredWidth = dataModel.names[i].width
+    regModel.names.forEachIndexed { i, w ->
+        tab.table.columnModel.getColumn(i).preferredWidth = regModel.names[i].width
     }
     val sz = tab.table.columnModel.columns.toList().sumOf { it.preferredWidth } + 20
     tab.preferredSize = Dimension(sz, 300)
@@ -195,18 +244,17 @@ fun createInstructionView(): ScrollableJTable {
                 row, column
             )
 
-            setValueAt(123,1,2)
+            setValueAt(123, 1, 2)
             return c
         }
     }
 
 
-    val dataModel = InstructionTableModel()
-    table.model = dataModel
+    table.model = progModel
 
     val tab = ScrollableJTable(table)
 
-    dataModel.names.forEachIndexed { i, w ->
+    progModel.names.forEachIndexed { i, w ->
         tab.table.columnModel.getColumn(i).preferredWidth = w.width
     }
     val sz = tab.table.columnModel.columns.toList().sumOf { it.preferredWidth } + 20
@@ -244,10 +292,9 @@ fun createMemoryView(): ScrollableJTable {
     }
 
 
-    val dataModel = RamTableModel()
-    table.model = dataModel
+    table.model = ramModel
 
-    val tab = ScrollableJTable(table, RamScrollBar(dataModel))
+    val tab = ScrollableJTable(table, RamScrollBar(ramModel))
 
     tab.table.columnModel.getColumn(0).preferredWidth = 90
     tab.table.columnModel.getColumn(1).preferredWidth = 70
@@ -310,7 +357,7 @@ class DialogByteEditor(val title: String) : AbstractCellEditor(), TableCellEdito
             }
 
             newInput = selected
-            if (newInput!=oldValue) fireEditingStopped()
+            if (newInput != oldValue) fireEditingStopped()
             else fireEditingCanceled()
         }
     }
@@ -355,8 +402,7 @@ data class RamData(
     var clk: Int = 0
 )
 
-data class InstructionData(
-    val clk: Int,
+data class InstructionDecode(
     val pc: Int,
     val targ: String = "RAM",
     val left: String = "REGA",
@@ -366,16 +412,56 @@ data class InstructionData(
     val amode: String = "DIR",
     val cond: String = "A",
     val inv: String = "",
-    val carry: Int = 0,
-    val zero: Int = 0,
-    val overflow: Int = 0,
-    val negative: Int = 0,
-    val gt: Int = 0,
-    val lt: Int = 0,
-    val eq: Int = 0,
-    val ne: Int = 0,
-    val datain: Int = 0,
-    val dataout: Int = 0
+)
+
+data class Flags(
+    val carry: Boolean,
+    val zero: Boolean,
+    val overflow: Boolean,
+    val negative: Boolean,
+    val gt: Boolean,
+    val lt: Boolean,
+    val eq: Boolean,
+    val ne: Boolean,
+    val datain: Boolean,
+    val dataout: Boolean
+)
+
+data class InstructionExec(
+    val clk: Int,
+    val pc: Int,
+    val instruction: Instruction,
+    val alu: Int,
+    val aval: Int,
+    val bval: Int,
+    val doExec: Boolean = true,
+    val regIn : Registers,
+    val flagsIn: Flags, // flags input to instruction
+    val flagsOut: Flags? = null // flags resulting from instruction
+)
+
+data class InstructionData(
+    val clk: Int,
+    val pc: Int,
+    val doExec: Boolean,
+    val targ: String = "RAM",
+    val left: String = "REGA",
+    val op: String = "A_MINUS_B_MINUS_C",
+    val right: String = "IMMED",
+    val setf: String = "",
+    val amode: String = "DIR",
+    val cond: String = "A",
+    val inv: String = "",
+    val carry: Boolean,
+    val zero: Boolean,
+    val overflow: Boolean,
+    val negative: Boolean,
+    val gt: Boolean,
+    val lt: Boolean,
+    val eq: Boolean,
+    val ne: Boolean,
+    val datain: Boolean,
+    val dataout: Boolean,
 )
 
 data class RegisterData(
@@ -390,11 +476,34 @@ data class RegisterData(
     val alu: Int = 0
 )
 
+data class Registers(
+    val marhi: Int = 0,
+    val marlo: Int = 0,
+    val rega: Int = 255,
+    val regb: Int = 0,
+    val regc: Int = 0,
+    val regd: Int = 0,
+    val portSel: Int = 0,
+    val timer1: Int = 0,
+    val uartOut: Int = 0,
+    val pchitmp: Int = 0,
+    val pchi: Int = 0,
+    val pclo: Int = 0,
+    val halt: Int = 0,
+    val alu: Int = 0
+)
+
 data class ColDef(val name: String, val width: Int, val format: String, val field: String = name)
 
 class InstructionTableModel : AbstractTableModel() {
 
-    var data = (0..StateSize).map { InstructionData(clk = it, pc = it) }.toMutableList()
+    //var data = (0..StateSize).map { InstructionData(clk = it, pc = it) }.toMutableList()
+    var data = mutableListOf<InstructionData>()
+
+    fun add(inst: InstructionData) {
+        data.add(inst)
+        fireTableDataChanged()
+    }
 
     val names = listOf(
         ColDef("Clk", 90, "%d"),
@@ -407,16 +516,16 @@ class InstructionTableModel : AbstractTableModel() {
         ColDef("AM", 30, "%s", "amode"),
         ColDef("?", 25, "%s", "cond"),
         ColDef("INV", 30, "%s"),
-        ColDef("c", 25, "%d", "carry"),
-        ColDef("z", 25, "%d", "zero"),
-        ColDef("o", 25, "%d", "overflow"),
-        ColDef("n", 25, "%d", "negative"),
-        ColDef("G", 25, "%d", "gt"),
-        ColDef("L", 25, "%d", "lt"),
-        ColDef("E", 25, "%d", "eq"),
-        ColDef("N", 25, "%d", "ne"),
-        ColDef("DI", 25, "%d", "datain"),
-        ColDef("DO", 25, "%d", "dataout")
+        ColDef("c", 25, "%b", "carry"),
+        ColDef("z", 25, "%b", "zero"),
+        ColDef("o", 25, "%b", "overflow"),
+        ColDef("n", 25, "%b", "negative"),
+        ColDef("G", 25, "%b", "gt"),
+        ColDef("L", 25, "%b", "lt"),
+        ColDef("E", 25, "%b", "eq"),
+        ColDef("N", 25, "%b", "ne"),
+        ColDef("DI", 25, "%b", "datain"),
+        ColDef("DO", 25, "%b", "dataout")
     )
 
     override fun getColumnCount(): Int {
@@ -424,7 +533,7 @@ class InstructionTableModel : AbstractTableModel() {
     }
 
     override fun getRowCount(): Int {
-        return StateSize
+        return data.size
     }
 
     override fun getValueAt(row: Int, col: Int): Any {
@@ -489,7 +598,7 @@ class RegisterTableModel : AbstractTableModel() {
 }
 
 interface TableRendering {
-   fun render(col:Int, row: Int) : String
+    fun render(col: Int, row: Int): String
 }
 
 class RamTableModel : AbstractTableModel() {
@@ -570,7 +679,7 @@ class RamScrollBar(val data: RamTableModel) : MetalScrollBarUI() {
 
         for (i in data.recentUpdates.wrapped) {
             val pos = 1 - ((i * 1.0) / data.data.size)
-            g.fillRect(0, trackBounds.y + (pos * trackBounds.height).toInt() - (5/2), trackBounds.width, 5)
+            g.fillRect(0, trackBounds.y + (pos * trackBounds.height).toInt() - (5 / 2), trackBounds.width, 5)
         }
     }
 }

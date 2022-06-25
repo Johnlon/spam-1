@@ -31,10 +31,11 @@ data class Instruction(
 }
 
 fun assemble(
-    rom: MutableList<Long>,
-    instructions: MutableList<Instruction>,
     vararg prog: Instruction
-) {
+) : Pair<List<Long>, List<Instruction>>
+{
+    val rom=  mutableListOf<Long>()
+    val instructions=  mutableListOf<Instruction>()
     var l = 0
 
     prog.forEach { inst ->
@@ -58,5 +59,8 @@ fun assemble(
         rom.add(str.toLong(2))
         instructions.add(inst)
         l++
+
     }
+
+    return Pair(rom, instructions)
 }
