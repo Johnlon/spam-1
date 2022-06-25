@@ -28,7 +28,21 @@ private fun createAndShowGUI() {
     val mainframe = MainFrame("SPAM-1 Simulator")
     val mainPain = mainframe.contentPane
 
-    mainPain.add(createMemoryView(), WEST)
+    val menuBar = JMenuBar()
+    mainframe.jMenuBar = menuBar
+    val menuFile = JMenu("File");
+    val menuEdit = JMenu("Edit");
+    menuBar.add(menuFile)
+    menuBar.add(menuEdit)
+
+    val menuLoad = JMenuItem("Load..")
+    val menuSave = JMenuItem("Save..")
+    menuFile.add(menuLoad)
+    menuFile.add(menuSave)
+
+
+
+        mainPain.add(createMemoryView(), WEST)
 
     mainPain.add(object : BPanel() { init {
         add(object : BPanel() { init {
@@ -49,7 +63,7 @@ private fun createAndShowGUI() {
     mainframe.config()
 }
 
-val ByteStringsText = (0..255).map { "0x%02x (%3d)".format(it, it) }.toList().toTypedArray()
+val ByteStringsText = (0..255).map { "0x%02x %3d".format(it, it) }.toList().toTypedArray()
 
 abstract class BPanel : JPanel() {
     init {
@@ -108,9 +122,61 @@ fun createRegisterView(): ScrollableJTable {
 fun createControlView(): Component {
 
     var pane = JPanel()
+    val layout = GroupLayout(pane)
+    pane.layout = layout
+
+    layout.setAutoCreateGaps(true)
+    layout.setAutoCreateContainerGaps(true)
+
+    val asmLabel = JLabel("ASM")
+    asmLabel.font = asmLabel.font.deriveFont(20.0f).deriveFont(Font.PLAIN)
+
+    val asmText = JTextField("REGA = REGA A_MINUS_B_MINUS_C 23 _C_S !")
+    asmText.font = Font(Font.MONOSPACED, Font.PLAIN, 20)
+    asmText.preferredSize = Dimension(300, 20)
+    asmText.isEditable = false
+
+    val nextBtn = JButton("Next")
+    val runBtn = JButton("Run")
+
+    val labelStep = JLabel("Advance Clocks")
+    val textStep = JTextField("10")
+    textStep.maximumSize = Dimension(50, 30)
+
+    val labelBrkClk = JLabel("Break Clk")
+    val textBrkClk = JTextField("10")
+    textBrkClk.maximumSize = Dimension(70, 30)
+
+    val labelBrkPC = JLabel("Break PC")
+    val textBrkPC = JTextField("10")
+    textBrkPC.maximumSize = Dimension(70, 30)
+
+    layout.setHorizontalGroup(
+        layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup().addComponent(asmLabel).addComponent(asmText))
+            .addGroup(
+                layout.createSequentialGroup().addComponent(nextBtn).addComponent(runBtn).addGap(30)
+                    .addComponent(labelStep).addComponent(textStep).addGap(30)
+                    .addComponent(labelBrkClk).addComponent(textBrkClk).addGap(30)
+                    .addComponent(labelBrkPC).addComponent(textBrkPC).addGap(200)
+            )
+    )
+
+    layout.setVerticalGroup(
+        layout.createSequentialGroup()
+            .addGroup(
+                layout.createParallelGroup(GroupLayout.Alignment.BASELINE).addComponent(asmLabel).addComponent(asmText)
+            )
+            .addGroup(
+                layout.createParallelGroup().addComponent(nextBtn).addComponent(runBtn)
+                    .addComponent(labelStep).addComponent(textStep)
+                    .addComponent(labelBrkClk).addComponent(textBrkClk)
+                    .addComponent(labelBrkPC).addComponent(textBrkPC)
+            )
+    )
+
     pane.preferredSize = Dimension(1, 100)
 
-    pane.add(JLabel("foo"))
 
     return pane
 }
@@ -128,9 +194,10 @@ fun createInstructionView(): ScrollableJTable {
                 renderer,
                 row, column
             )
+
+            setValueAt(123,1,2)
             return c
         }
-
     }
 
 
@@ -143,7 +210,7 @@ fun createInstructionView(): ScrollableJTable {
         tab.table.columnModel.getColumn(i).preferredWidth = w.width
     }
     val sz = tab.table.columnModel.columns.toList().sumOf { it.preferredWidth } + 20
-    tab.preferredSize = Dimension(sz, 300)
+    tab.preferredSize = Dimension(sz, 250)
 
     return tab
 }
@@ -163,7 +230,10 @@ fun createMemoryView(): ScrollableJTable {
                 renderer,
                 row, column
             )
-            if ((model as RamTableModel).recentUpdates.contains(addr)) {
+
+            val shouldTint = getColumnName(column) == "Value"
+
+            if (shouldTint && (model as RamTableModel).recentUpdates.contains(addr)) {
                 c.background = Color.RED
             } else {
                 c.background = Color.WHITE
@@ -177,7 +247,7 @@ fun createMemoryView(): ScrollableJTable {
     val dataModel = RamTableModel()
     table.model = dataModel
 
-    val tab = ScrollableJTable(table, MyScrollBarUI(dataModel))
+    val tab = ScrollableJTable(table, RamScrollBar(dataModel))
 
     tab.table.columnModel.getColumn(0).preferredWidth = 90
     tab.table.columnModel.getColumn(1).preferredWidth = 70
@@ -233,13 +303,15 @@ class DialogByteEditor(val title: String) : AbstractCellEditor(), TableCellEdito
                 oldValue
             ) as Int?
 
-            if (selected == null) {
+            if (selected == -1) {
+                selected = oldValue
+            } else if (selected == null) {
                 selected = oldValue
             }
 
             newInput = selected
-
-            fireEditingStopped()
+            if (newInput!=oldValue) fireEditingStopped()
+            else fireEditingCanceled()
         }
     }
 
@@ -277,10 +349,10 @@ class ObservableList<T>(val wrapped: MutableList<T>) : MutableList<T> by wrapped
 }
 
 data class RamData(
-    val addr: Int=0,
-    var value: Int=0,
-    var prev: Int=0,
-    var clk: Int=0
+    val addr: Int = 0,
+    var value: Int = 0,
+    var prev: Int = 0,
+    var clk: Int = 0
 )
 
 data class InstructionData(
@@ -305,16 +377,17 @@ data class InstructionData(
     val datain: Int = 0,
     val dataout: Int = 0
 )
+
 data class RegisterData(
     val clk: Int,
     val pc: Int,
-    val mar: Int=65535,
-    val rega: Int=255,
-    val regb: Int=0,
-    val regc: Int=0,
-    val regd: Int=0,
-    val halt: Int=0,
-    val alu: Int=0
+    val mar: Int = 65535,
+    val rega: Int = 255,
+    val regb: Int = 0,
+    val regc: Int = 0,
+    val regd: Int = 0,
+    val halt: Int = 0,
+    val alu: Int = 0
 )
 
 data class ColDef(val name: String, val width: Int, val format: String, val field: String = name)
@@ -415,13 +488,17 @@ class RegisterTableModel : AbstractTableModel() {
     }
 }
 
+interface TableRendering {
+   fun render(col:Int, row: Int) : String
+}
+
 class RamTableModel : AbstractTableModel() {
     val recentUpdates = ObservableList(mutableListOf<Int>())
     var data = (0..RamSize).map { RamData(addr = it, clk = it) }.toMutableList()
 
     val names = listOf(
         ColDef("Addr", 90, "0x%04d %5d"),
-        ColDef("Value", 70, "0x%02d %3d"),
+        ColDef("Value", 70, "0x%02x %3d"),
         ColDef("Prev", 90, "0x%02x %3d"),
         ColDef("Clk", 90, "%d")
     )
@@ -473,7 +550,7 @@ class RamTableModel : AbstractTableModel() {
 }
 
 
-class MyScrollBarUI(val data: RamTableModel) : MetalScrollBarUI() {
+class RamScrollBar(val data: RamTableModel) : MetalScrollBarUI() {
     val self = this
 
     val obs = object : Observer {
@@ -492,13 +569,13 @@ class MyScrollBarUI(val data: RamTableModel) : MetalScrollBarUI() {
         g.color = Color.RED
 
         for (i in data.recentUpdates.wrapped) {
-            val pos = 1 - ((i * 1.0) / RamSize)
-            g.fillRect(0, (pos * trackBounds.height).toInt(), trackBounds.width, 2)
+            val pos = 1 - ((i * 1.0) / data.data.size)
+            g.fillRect(0, trackBounds.y + (pos * trackBounds.height).toInt() - (5/2), trackBounds.width, 5)
         }
     }
 }
 
-class ScrollableJTable(val table: JTable, val scrollBarUI: MyScrollBarUI? = null) : JPanel() {
+class ScrollableJTable(val table: JTable, val scrollBarUI: RamScrollBar? = null) : JPanel() {
 
     init {
         initializeUI()
@@ -513,7 +590,7 @@ class ScrollableJTable(val table: JTable, val scrollBarUI: MyScrollBarUI? = null
         // Turn off JTable's auto resize so that JScrollPane will show a horizontal scroll bar.
         table.autoResizeMode = JTable.AUTO_RESIZE_OFF
         val pane = JScrollPane(table)
-        add(pane, BorderLayout.CENTER)
+        add(pane, CENTER)
 
         if (scrollBarUI != null) pane.verticalScrollBar.setUI(scrollBarUI)
 
