@@ -181,18 +181,7 @@ class CPU(
             aval = aval, bval = bval, alu = aluVal,
             instruction = i,
             regIn = Registers(marhi= marhi, marlo=marlo, rega, regb, regc, regd, pchi=pcHi, pclo = pcLo, pchitmp = pcHitmp, portSel = portsel, timer1 = timer1, halt = haltVal),
-            flagsIn = Flags(
-                carry = flags.contains(Cond.C),
-                zero = flags.contains(Cond.Z),
-                overflow = flags.contains(Cond.O),
-                negative = flags.contains(Cond.N),
-                gt = flags.contains(Cond.GT),
-                lt = flags.contains(Cond.LT),
-                eq = flags.contains(Cond.EQ),
-                ne = flags.contains(Cond.NE),
-                datain = false,
-                dataout = false,
-            )
+            flagsIn = flags
         )
 
         debugger.onDebug(code) {

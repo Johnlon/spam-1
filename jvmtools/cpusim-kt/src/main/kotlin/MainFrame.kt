@@ -84,24 +84,15 @@ private fun createAndShowGUI() {
                     clk = code.clk,
                     pc = code.pc,
                     doExec = code.doExec,
-                    targ = code.instruction.t.name,
-                    left = code.instruction.a.name,
-                    right = code.instruction.b.name,
+                    targ = "%-7s".format(code.instruction.t.name) +  " " + "%3d".format(code.alu),
+                    left = "%-7s".format(code.instruction.a.name) +  " " + "%3d".format(code.aval),
+                    right = "%-7s".format(code.instruction.b.name) +  " " + "%3d".format(code.bval),
                     op = code.instruction.aluOp.name,
                     setf = code.instruction.setFlags.name,
                     amode = code.instruction.amode.name,
                     cond = code.instruction.condition.name,
                     inv = code.instruction.conditionInvert.name,
-                    carry = code.flagsIn.carry,
-                    zero = code.flagsIn.zero,
-                    overflow = code.flagsIn.overflow,
-                    negative = code.flagsIn.negative,
-                    gt = code.flagsIn.gt,
-                    lt = code.flagsIn.lt,
-                    eq = code.flagsIn.eq,
-                    ne = code.flagsIn.ne,
-                    datain = code.flagsIn.datain,
-                    dataout = code.flagsIn.dataout,
+                    flags = code.flagsIn.map { it.name }.joinToString(" ")
                 )
             )
             progView?.repaint()
@@ -435,33 +426,23 @@ data class InstructionExec(
     val aval: Int,
     val bval: Int,
     val doExec: Boolean = true,
-    val regIn : Registers,
-    val flagsIn: Flags, // flags input to instruction
-    val flagsOut: Flags? = null // flags resulting from instruction
+    val regIn: Registers,
+    val flagsIn: List<Cond>
 )
 
 data class InstructionData(
     val clk: Int,
     val pc: Int,
     val doExec: Boolean,
-    val targ: String = "RAM",
-    val left: String = "REGA",
-    val op: String = "A_MINUS_B_MINUS_C",
-    val right: String = "IMMED",
-    val setf: String = "",
-    val amode: String = "DIR",
-    val cond: String = "A",
-    val inv: String = "",
-    val carry: Boolean,
-    val zero: Boolean,
-    val overflow: Boolean,
-    val negative: Boolean,
-    val gt: Boolean,
-    val lt: Boolean,
-    val eq: Boolean,
-    val ne: Boolean,
-    val datain: Boolean,
-    val dataout: Boolean,
+    val targ: String,
+    val left: String,
+    val op: String,
+    val right: String,
+    val setf: String,
+    val amode: String,
+    val cond: String,
+    val inv: String,
+    val flags: String
 )
 
 data class RegisterData(
@@ -508,24 +489,15 @@ class InstructionTableModel : AbstractTableModel() {
     val names = listOf(
         ColDef("Clk", 90, "%d"),
         ColDef("PC", 70, "%d"),
-        ColDef("TARG", 70, "%s"),
-        ColDef("LEFT", 70, "%s"),
-        ColDef("OP", 130, "%s"),
-        ColDef("RIGHT", 70, "%s"),
-        ColDef("SET", 30, "%s", "setf"),
-        ColDef("AM", 30, "%s", "amode"),
-        ColDef("?", 25, "%s", "cond"),
-        ColDef("INV", 30, "%s"),
-        ColDef("c", 25, "%b", "carry"),
-        ColDef("z", 25, "%b", "zero"),
-        ColDef("o", 25, "%b", "overflow"),
-        ColDef("n", 25, "%b", "negative"),
-        ColDef("G", 25, "%b", "gt"),
-        ColDef("L", 25, "%b", "lt"),
-        ColDef("E", 25, "%b", "eq"),
-        ColDef("N", 25, "%b", "ne"),
-        ColDef("DI", 25, "%b", "datain"),
-        ColDef("DO", 25, "%b", "dataout")
+        ColDef("Targ", 70, "%s"),
+        ColDef("Left", 70, "%s"),
+        ColDef("Operation", 130, "%s", "op"),
+        ColDef("Right", 70, "%s"),
+        ColDef("SetF", 40, "%s"),
+        ColDef("aMode", 40, "%s", "amode"),
+        ColDef("Cond",  40, "%s"),
+        ColDef("Inv", 30, "%s"),
+        ColDef("Flags", 100, "%s")
     )
 
     override fun getColumnCount(): Int {
