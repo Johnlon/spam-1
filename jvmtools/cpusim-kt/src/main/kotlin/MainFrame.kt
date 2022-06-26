@@ -7,22 +7,65 @@ import java.util.concurrent.atomic.AtomicReference
 import javax.swing.*
 import javax.swing.JOptionPane.QUESTION_MESSAGE
 import javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+import javax.swing.event.TableModelEvent
+import javax.swing.event.TableModelListener
 import javax.swing.plaf.metal.MetalScrollBarUI
-import javax.swing.table.AbstractTableModel
-import javax.swing.table.TableCellEditor
-import javax.swing.table.TableCellRenderer
-
+import javax.swing.table.*
 
 val RamSize = 65535
-val StateSize = 100
 
-val progModel = InstructionTableModel()
-val regModel = RegisterTableModel()
 val ramModel = RamTableModel()
+val program = mutableListOf<Instruction>()
 
 var registerView: ScrollableJTable? = null
+var currentInstView: JTable? = null
 var progView: ScrollableJTable? = null
 var controllerView: Component? = null
+
+fun mkExecModel(): DefaultTableModel {
+    val dtm = DefaultTableModel()
+    dtm.addColumn("data")
+    return dtm
+}
+
+val execModel = mkExecModel()
+
+val regModel = RegModel(execModel)
+
+fun addExec(exec: InstructionExec) {
+    execModel.addRow(arrayOf(exec))
+}
+
+fun currentExec(): InstructionExec {
+    return getExec(execModel.rowCount - 1)
+}
+
+fun getExec(row: Int): InstructionExec {
+    try {
+        if (execModel.rowCount > 0) {
+            val r = execModel.getValueAt(row, 0);
+            return r as InstructionExec
+        }
+        return InstructionExec(
+            clk = 0,
+            pc = 0,
+            alu = 0,
+            aval = 0,
+            bval = 0,
+            doExec = true,
+            regIn = Registers(clk = 0, pc = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            flagsIn = emptyList(),
+            flagsOut = emptyList(),
+            effectiveOp = Op.A
+        )
+    } catch (ex: Exception) {
+        throw ex
+    }
+}
+
+interface ColWidth {
+    fun getWidth(col: Int): Int
+}
 
 val debugger = AtomicReference<Debugger>()
 
@@ -31,8 +74,6 @@ fun main() {
 //te    UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel")
 
     EventQueue.invokeAndWait(::createAndShowGUI)
-
-
 }
 
 private fun createAndShowGUI() {
@@ -55,7 +96,8 @@ private fun createAndShowGUI() {
     mainPain.add(createMemoryView(), WEST)
 
     registerView = createRegisterView()
-    progView = createInstructionView()
+    progView = createProgView()
+    currentInstView = createCurrentInstView()
     controllerView = createControlView()
 
     mainPain.add(object : BPanel() { init {
@@ -67,7 +109,14 @@ private fun createAndShowGUI() {
                 },
                 NORTH
             )
-            add(progView, CENTER)
+            add(
+                object : BPanel() { init {
+                    add(currentInstView, NORTH)
+                    add(progView, CENTER)
+                }
+                },
+                CENTER
+            )
             add(controllerView, SOUTH)
         }
         })
@@ -77,8 +126,17 @@ private fun createAndShowGUI() {
     mainframe.config()
 
     val dbg = object : Debugger {
+        override fun instructions(code: List<Instruction>) {
+            program.addAll(code)
+        }
+
         override fun onDebug(code: InstructionExec, commit: () -> Unit) {
+            addExecState(code)
+            progView?.repaint()
+
             commit.invoke()
+
+            /*
             progModel.add(
                 InstructionData(
                     clk = code.clk,
@@ -95,7 +153,7 @@ private fun createAndShowGUI() {
                     flags = code.flagsIn.map { it.name }.joinToString(" ")
                 )
             )
-            progView?.repaint()
+            */
         }
 
     }
@@ -143,17 +201,16 @@ class MainFrame(title: String) : JFrame() {
 
 fun createRegisterView(): ScrollableJTable {
 
-    val table = JTable()
-
-    table.model = regModel
+    val table = JTable(regModel)
+    execModel.addTableModelListener(table)
 
     val tab = ScrollableJTable(table)
     tab.border = BorderFactory.createLineBorder(Color.RED)
 
-    regModel.names.forEachIndexed { i, w ->
-        tab.table.columnModel.getColumn(i).preferredWidth = regModel.names[i].width
+    regModel.cols.forEachIndexed { i, w ->
+        tab.table.columnModel.getColumn(i).preferredWidth = regModel.getWidth(i)
     }
-    val sz = tab.table.columnModel.columns.toList().sumOf { it.preferredWidth } + 20
+    val sz = 20 + tab.table.columnModel.columns.toList().sumOf { it.preferredWidth }
     tab.preferredSize = Dimension(sz, 300)
 
     return tab
@@ -221,34 +278,172 @@ fun createControlView(): Component {
     return pane
 }
 
-fun createInstructionView(): ScrollableJTable {
+val instNames = listOf(
+    ColDef("PC", 70, "%d"),
+    ColDef("Targ", 70, "%s", "t"),
+    ColDef("Left", 70, "%s"),
+    ColDef("Operation", 110, "%s", "aluop"),
+    ColDef("Right", 70, "%s", "b"),
+    ColDef("SetF", 40, "%s", "setflags"),
+    ColDef("aMode", 50, "%s", "amode"),
+    ColDef("Cond", 40, "%s", "condition"),
+    ColDef("Inv", 30, "%s", "conditioninvert"),
+    ColDef("Immed", 70, "<html>0x%02x<br/>%3d</html>")
+)
 
-    val table = object : JTable() {
-        override fun prepareRenderer(
-            renderer: TableCellRenderer?,
-            row: Int,
-            column: Int
-        ): Component? {
+fun createCurrentInstView(): JTable {
 
-            val c = super.prepareRenderer(
-                renderer,
-                row, column
-            )
+    val progModel = object : AbstractTableModel() {
 
-            setValueAt(123, 1, 2)
-            return c
+        override fun getColumnCount(): Int {
+            return instNames.size
+        }
+
+        override fun getRowCount(): Int {
+            return 1
+        }
+
+        override fun getValueAt(row: Int, col: Int): Any {
+
+            val currentExec = currentExec()
+            val pc = currentExec.pc
+            val i = program[pc]
+
+            val cd = instNames[col]
+            val nameLower = cd.name.lowercase()
+
+            return when (nameLower) {
+                "pc" -> {
+                    pc.toString()
+                }
+                "targ" -> {
+                    "<html>%s<br/>0x%02x</html>".format(i.t.name, currentExec.alu)
+                }
+                "left" -> {
+                    "<html>%s<br/>0x%02x</html>".format(i.a.name, currentExec.aval)
+                }
+                "right" -> {
+                    "<html>%s<br/>0x%02x</html>".format(i.b.name, currentExec.bval)
+                }
+                "operation" -> {
+                    if (i.aluOp != currentExec.effectiveOp && row == 0) "<html>%s<br/>%s</html>".format(
+                        i.aluOp.name,
+                        currentExec.effectiveOp
+                    )
+                    else i.aluOp.name
+                }
+                "setf" -> {
+                    i.setFlags.name
+                }
+                "amode" -> {
+                    i.amode.name
+                }
+                "cond" -> {
+                    i.condition.name
+                }
+                "inv" -> {
+                    i.conditionInvert.name
+                }
+                "immed" -> {
+                    "0x%02x".format(i.immed)
+                }
+                else -> {
+                    "bad column " + nameLower
+                }
+            }
+        }
+
+        override fun getColumnName(column: Int): String {
+            return instNames[column].name
         }
     }
 
+    val table = JTable(progModel)
+    table.font = Font(Font.MONOSPACED, Font.PLAIN, 10)
+    execModel.addTableModelListener(table)
 
-    table.model = progModel
+    instNames.forEachIndexed { i, w ->
+        table.columnModel.getColumn(i).preferredWidth = w.width
+    }
+    table.columnModel.getColumn(instNames.size - 1).preferredWidth += 20 // stretch the last col where the scroll bar would have been
+    val sz = table.columnModel.columns.toList().sumOf { it.preferredWidth }
+    table.preferredSize = Dimension(sz, 35)
 
+    table.setRowHeight(35);//Try set height to 15 (I've tried higher)
+
+    table.background = Color(200, 255, 200)
+    return table
+}
+
+fun createProgView(): ScrollableJTable {
+
+    val progModel = object : AbstractTableModel() {
+
+        override fun getColumnCount(): Int {
+            return instNames.size
+        }
+
+        override fun getRowCount(): Int {
+            return program.size
+        }
+
+        override fun getValueAt(row: Int, col: Int): Any {
+            val pos = program.size - row - 1
+            val i = program[pos]
+
+            val cd = instNames[col]
+            val nameLower = cd.name.lowercase()
+
+            return when (nameLower) {
+                "pc" -> {
+                    row.toString()
+                }
+                "targ" -> {
+                    i.t.name
+                }
+                "left" -> {
+                    i.a.name
+                }
+                "right" -> {
+                    i.b.name
+                }
+                "operation" -> {
+                    i.aluOp.name
+                }
+                "setf" -> {
+                    i.setFlags.name
+                }
+                "amode" -> {
+                    i.amode.name
+                }
+                "cond" -> {
+                    i.condition.name
+                }
+                "inv" -> {
+                    i.conditionInvert.name
+                }
+                "immed" -> {
+                    "0x%02x".format(i.immed)
+                }
+                else -> {
+                    "bad column " + nameLower
+                }
+            }
+        }
+
+        override fun getColumnName(column: Int): String {
+            return instNames[column].name
+        }
+    }
+
+    val table = JTable(progModel)
     val tab = ScrollableJTable(table)
 
-    progModel.names.forEachIndexed { i, w ->
-        tab.table.columnModel.getColumn(i).preferredWidth = w.width
+    instNames.forEachIndexed { i, w ->
+        table.columnModel.getColumn(i).preferredWidth = w.width + 20
     }
-    val sz = tab.table.columnModel.columns.toList().sumOf { it.preferredWidth } + 20
+    table.columnModel.getColumn(instNames.size - 1).preferredWidth += 20 // stretch the last col where the scroll bar would have been
+    val sz = table.columnModel.columns.toList().sumOf { it.preferredWidth }
     tab.preferredSize = Dimension(sz, 250)
 
     return tab
@@ -421,7 +616,6 @@ data class Flags(
 data class InstructionExec(
     val clk: Int,
     val pc: Int,
-    val instruction: Instruction,
     val alu: Int,
     val aval: Int,
     val bval: Int,
@@ -432,6 +626,8 @@ data class InstructionExec(
     val effectiveOp: Op
 )
 
+
+/*
 data class InstructionData(
     val clk: Int,
     val pc: Int,
@@ -446,133 +642,162 @@ data class InstructionData(
     val inv: String,
     val flags: String
 )
-
-data class RegisterData(
-    val clk: Int,
-    val pc: Int,
-    val mar: Int = 65535,
-    val rega: Int = 255,
-    val regb: Int = 0,
-    val regc: Int = 0,
-    val regd: Int = 0,
-    val halt: Int = 0,
-    val alu: Int = 0
-)
+ */
 
 data class Registers(
-    val marhi: Int = 0,
-    val marlo: Int = 0,
-    val rega: Int = 255,
-    val regb: Int = 0,
-    val regc: Int = 0,
-    val regd: Int = 0,
-    val portSel: Int = 0,
-    val timer1: Int = 0,
-    val uartOut: Int = 0,
-    val pchitmp: Int = 0,
-    val pchi: Int = 0,
-    val pclo: Int = 0,
-    val halt: Int = 0,
-    val alu: Int = 0
+    val clk: Int,
+    val pc: Int,
+    val pchitmp: Int,
+    val pchi: Int,
+    val pclo: Int,
+    val marhi: Int,
+    val marlo: Int,
+    val rega: Int,
+    val regb: Int,
+    val regc: Int,
+    val regd: Int,
+    val portSel: Int,
+    val timer1: Int,
+    val halt: Int,
+    val alu: Int
 )
 
 data class ColDef(val name: String, val width: Int, val format: String, val field: String = name)
 
+/*
 class InstructionTableModel : AbstractTableModel() {
 
-    //var data = (0..StateSize).map { InstructionData(clk = it, pc = it) }.toMutableList()
-    var data = mutableListOf<InstructionData>()
+    override fun getColumnCount(): Int {
+        return instNames.size
+    }
 
-    fun add(inst: InstructionData) {
-        data.add(inst)
+    override fun getRowCount(): Int {
+        return program.size
+    }
+
+    override fun getValueAt(row: Int, col: Int): Any {
+        val pos = program.size - row - 1
+
+        val cd = instNames[col]
+        if (cd.name.lowercase() == "pc") {
+            return row
+        }
+
+        val i = program[pos]
+        val po = Instruction::class.members.filter { it.name.lowercase() == cd.field.lowercase() }
+        if (po.isEmpty()) {
+            System.err.println("field " + cd.name + " not found")
+            System.exit(1)
+            error("field " + cd.name + " not found")
+        }
+        val v = po.first().call(i)
+
+        if (cd.name.lowercase() == "cond") {
+            if (v == Cond.A) {
+                return ""
+            }
+        }
+        if (cd.name.lowercase() == "inv") {
+            if (v == CInv.Std) {
+                return ""
+            }
+        }
+        return cd.format.format(v, v)
+    }
+
+    override fun getColumnName(column: Int): String {
+        return instNames[column].name
+    }
+}
+ */
+
+fun fmt2(i: Int) = "0x%02x %3d".format(i, i)
+
+class RegModel(val execMode: TableModel) : AbstractTableModel(), ColWidth, TableModelListener {
+
+    init {
+        execModel.addTableModelListener(this)
+    }
+
+    val cols = listOf(
+        ColDef("clk", 90, "%d"),
+        ColDef("pc", 70, "%d"),
+        ColDef("pchitmp", 70, "%d"),
+        ColDef("mar", 90, "0x%04x %5d"),
+        ColDef("rega", 60, "0x%02x %3d"),
+        ColDef("regb", 60, "0x%02x %3d"),
+        ColDef("regc", 60, "0x%02x %3d"),
+        ColDef("regd", 60, "0x%02x %3d"),
+        ColDef("halt", 60, "0x%02x %3d"),
+        ColDef("portsel", 60, "0x%02x %3d"),
+        ColDef("halt", 60, "0x%02x %3d"),
+        ColDef("alu", 60, "0x%02x %3d"),
+    )
+
+    override fun getColumnCount() = cols.size
+
+    override fun getColumnName(column: Int) = cols[column].name
+
+    override fun getRowCount() = execModel.rowCount
+
+    override fun getValueAt(rowIndex: Int, columnIndex: Int): Any {
+        val colName = getColumnName(columnIndex).lowercase()
+        val pos = execModel.rowCount - rowIndex - 1
+        val data = getExec(pos)
+
+        // Registers
+
+        return when (colName) {
+            "clk" -> {
+                data.clk
+            }
+            "pc" -> {
+                data.pc
+                val mar = (data.regIn.pchi * 256) + data.regIn.pclo
+                "0x%04x %5d".format(mar, mar)
+            }
+            "pchitmp" -> {
+                fmt2(data.regIn.pchitmp)
+            }
+            "mar" -> {
+                val mar = (data.regIn.marhi * 256) + data.regIn.marlo
+                "0x%04x %5d".format(mar, mar)
+            }
+            "rega" -> {
+                fmt2(data.regIn.rega)
+            }
+            "regb" -> {
+                fmt2(data.regIn.regb)
+            }
+            "regc" -> {
+                fmt2(data.regIn.regc)
+            }
+            "regd" -> {
+                fmt2(data.regIn.regd)
+            }
+            "portSel" -> {
+                fmt2(data.regIn.portSel)
+            }
+            "timer1" -> {
+                fmt2(data.regIn.timer1)
+            }
+            "halt" -> {
+                fmt2(data.regIn.halt)
+            }
+            "alu" -> {
+                fmt2(data.regIn.alu)
+            }
+            else -> {
+                "bad column " + colName
+            }
+        }
+    }
+
+    override fun getWidth(col: Int): Int = cols[col].width
+
+    override fun tableChanged(e: TableModelEvent?) {
         fireTableDataChanged()
     }
-
-    val names = listOf(
-        ColDef("Clk", 90, "%d"),
-        ColDef("PC", 70, "%d"),
-        ColDef("Targ", 70, "%s"),
-        ColDef("Left", 70, "%s"),
-        ColDef("Operation", 130, "%s", "op"),
-        ColDef("Right", 70, "%s"),
-        ColDef("SetF", 40, "%s"),
-        ColDef("aMode", 40, "%s", "amode"),
-        ColDef("Cond",  40, "%s"),
-        ColDef("Inv", 30, "%s"),
-        ColDef("Flags", 100, "%s")
-    )
-
-    override fun getColumnCount(): Int {
-        return names.size
-    }
-
-    override fun getRowCount(): Int {
-        return data.size
-    }
-
-    override fun getValueAt(row: Int, col: Int): Any {
-        val pos = data.size - row - 1
-
-        val cd = names[col]
-        val i = data[pos]
-        val po = InstructionData::class.members.filter { it.name.lowercase() == cd.field.lowercase() }
-        if (po.isEmpty()) {
-            error("field " + cd.name + " not found")
-        }
-        val v = po.first().call(i)
-
-        return cd.format.format(v, v)
-    }
-
-    override fun getColumnName(column: Int): String {
-        return names[column].name
-    }
-}
-
-class RegisterTableModel : AbstractTableModel() {
-    var data = (0..StateSize).map { RegisterData(clk = it, pc = it) }.toMutableList()
-
-    val names = listOf(
-        ColDef("Clk", 90, "%d"),
-        ColDef("PC", 70, "%d"),
-        ColDef("MAR", 90, "0x%04x %5d"),
-        ColDef("REGA", 60, "0x%02x %3d"),
-        ColDef("REGB", 60, "0x%02x %3d"),
-        ColDef("REGC", 60, "0x%02x %3d"),
-        ColDef("REGD", 60, "0x%02x %3d"),
-        ColDef("HALT", 60, "0x%02x %3d"),
-        ColDef("ALU", 60, "0x%02x %3d"),
-    )
-
-    override fun getColumnCount(): Int {
-        return names.size
-    }
-
-    override fun getRowCount(): Int {
-        return data.size
-    }
-
-    override fun getValueAt(row: Int, col: Int): Any {
-        val pos = data.size - row - 1
-
-        val cd = names[col]
-        val i = data[pos]
-        val po = RegisterData::class.members.filter { it.name.lowercase() == cd.field.lowercase() }
-        if (po.isEmpty()) {
-            error("field " + cd.name + " not found")
-        }
-        val v = po.first().call(i)
-
-        return cd.format.format(v, v)
-    }
-
-    override fun getColumnName(column: Int): String {
-        return names[column].name
-    }
-}
-
-interface TableRendering {
-    fun render(col: Int, row: Int): String
 }
 
 class RamTableModel : AbstractTableModel() {
@@ -681,3 +906,12 @@ class ScrollableJTable(val table: JTable, val scrollBarUI: RamScrollBar? = null)
     }
 }
 
+
+fun addExecState(state: InstructionExec) {
+    addExec(state)
+    currentInstView?.repaint()
+    registerView?.repaint()
+
+    progView?.table?.getSelectionModel()?.setSelectionInterval(state.pc, state.pc)
+    progView?.table?.scrollRectToVisible(Rectangle(progView?.table?.getCellRect(state.pc, 0, true)));
+}

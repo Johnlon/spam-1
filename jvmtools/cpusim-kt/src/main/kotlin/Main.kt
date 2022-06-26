@@ -60,13 +60,20 @@ fun main(_args: Array<String>) {
     println("START")
 
     //prog(cpu)
-    val (rom, inst) =loadProgram("c:/Users/johnl/OneDrive/simplecpu/jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
+//    val (rom, inst) =loadProgram("c:/Users/johnl/OneDrive/simplecpu/jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
+    val prog = File("../../jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
+    println("Program : " + prog.absolutePath)
+    val (rom, inst) =loadProgram(prog.path)
+    program.addAll(inst)
 
     main()
+
     while (debugger.get() == null) {
         Thread.sleep(100)
     }
+
     val cpu = CPU(debugger = debugger.get(), rom = rom, instructions = inst)
+
 
     val t = InProcessTerminal(cpu::gamepadHandler)
     t.main(_args)

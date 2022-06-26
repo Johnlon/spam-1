@@ -7,7 +7,7 @@ internal class AluTest {
     fun compare() {
         val aluRom = mutableListOf<Int>()
 
-        CPU.loadAlu(aluRom)
+        loadAlu(aluRom)
 
         (Op.values()).forEach { op ->
             listOf(true, false).forEach { cin ->

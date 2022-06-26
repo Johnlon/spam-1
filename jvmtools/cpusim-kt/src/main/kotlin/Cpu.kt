@@ -16,23 +16,22 @@ object NoOpDebugger : Debugger {
     }
 }
 
+fun loadAlu(aluRom: MutableList<Int>) {
+    val romFile = File("../../../simplecpu/verilog/alu/roms/alu-hex.rom")
+    println("ALU rom: " + romFile.absolutePath)
+    romFile.forEachLine { line ->
+        val words = line.trim().split(" ")
+        words.forEach { word ->
+            aluRom.add(word.toInt(16))
+        }
+    }
+}
+
 class CPU(
     val debugger: Debugger = NoOpDebugger,
     val rom: List<Long>,
-    val instructions: List<Instruction>
+    val instructions: List<Instruction>,
 ) {
-
-    companion object {
-        fun loadAlu(aluRom: MutableList<Int>) {
-            File("c:/Users/johnl/OneDrive/simplecpu/verilog/alu/roms/alu-hex.rom").forEachLine { line ->
-                val words = line.trim().split(" ")
-                words.forEach { word ->
-                    aluRom.add(word.toInt(16))
-                }
-            }
-        }
-    }
-
 
     @Volatile
     var timer1: Int = 0
@@ -71,7 +70,7 @@ class CPU(
         }
     }
 
-    var haltVal: Int=0
+    var haltVal: Int = 0
     var marlo: Int = 0
     var marhi: Int = 0
     fun mar() = (marhi shl 8) + marlo
@@ -183,8 +182,23 @@ class CPU(
         var code = InstructionExec(
             clk = cycles, pc = curPc, doExec = doExec,
             aval = aval, bval = bval, alu = aluVal,
-            instruction = i,
-            regIn = Registers(marhi= marhi, marlo=marlo, rega, regb, regc, regd, pchi=pcHi, pclo = pcLo, pchitmp = pcHitmp, portSel = portsel, timer1 = timer1, halt = haltVal),
+            regIn = Registers(
+                clk = cycles,
+                pc = pc(),
+                pchitmp = pcHitmp,
+                portSel = portsel,
+                timer1 = timer1,
+                marhi = marhi,
+                marlo = marlo,
+                rega = rega,
+                regb = regb,
+                regc = regc,
+                regd = regd,
+                pchi = pcHi,
+                pclo = pcLo,
+                halt = haltVal,
+                alu = aluVal
+            ),
             flagsIn = flags,
             flagsOut = newFlags,
             effectiveOp = effectiveOp
