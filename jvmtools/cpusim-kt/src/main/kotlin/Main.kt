@@ -3,6 +3,7 @@ import CInv.Inv
 import CInv.Std
 import Flag.Keep
 import Flag.Set
+import java.awt.EventQueue
 import java.io.File
 
 
@@ -59,6 +60,15 @@ fun loadProgram(romFile: String) : Pair<List<Long>, List<Instruction>> {
 fun main(_args: Array<String>) {
     println("START")
 
+    Thread.setDefaultUncaughtExceptionHandler(object: Thread.UncaughtExceptionHandler {
+        override fun uncaughtException(t: Thread?, e: Throwable?) {
+            e?.printStackTrace()
+            println(e)
+            System.exit(1)
+        }
+
+    })
+
     //prog(cpu)
 //    val (rom, inst) =loadProgram("c:/Users/johnl/OneDrive/simplecpu/jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
     val prog = File("../../jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
@@ -73,7 +83,6 @@ fun main(_args: Array<String>) {
     }
 
     val cpu = CPU(debugger = debugger.get(), rom = rom, instructions = inst)
-
 
     val t = InProcessTerminal(cpu::gamepadHandler)
     t.main(_args)

@@ -13,7 +13,7 @@
 `define COMMA ,
 
 module test();
-    bit doSim = 0; 
+    bit doSim = 1; 
 
     import alu_ops::*;
     import control::*;

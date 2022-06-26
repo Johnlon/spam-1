@@ -3,6 +3,7 @@ import java.awt.BorderLayout.*
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
 import java.util.*
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicReference
 import javax.swing.*
 import javax.swing.JOptionPane.QUESTION_MESSAGE
@@ -156,6 +157,17 @@ private fun createAndShowGUI() {
             */
         }
 
+        override fun observeRam(ram: ObservableList<Int>) {
+            ram.addObserver(object: Observer {
+                override fun update(o: Observable?, arg: Any?) {
+                    val idx = arg as Int
+                    val ramVal = ram.get(idx)
+                    val viewPos = RamSize - idx - 1
+                    ramModel.setValueAt(ramVal, viewPos, 1) // col 1 is the ram value
+                }
+            } )
+        }
+
     }
     mainframe.repaint()
 
@@ -248,6 +260,9 @@ fun createControlView(): Component {
     val textBrkPC = JTextField("10")
     textBrkPC.maximumSize = Dimension(70, 30)
 
+    val resetRecentUpdates = JButton("Reset Recent")
+    resetRecentUpdates.addActionListener { a -> ramModel.recentUpdates.clear() }
+
     layout.setHorizontalGroup(
         layout.createParallelGroup(GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup().addComponent(asmLabel).addComponent(asmText))
@@ -255,7 +270,8 @@ fun createControlView(): Component {
                 layout.createSequentialGroup().addComponent(nextBtn).addComponent(runBtn).addGap(30)
                     .addComponent(labelStep).addComponent(textStep).addGap(30)
                     .addComponent(labelBrkClk).addComponent(textBrkClk).addGap(30)
-                    .addComponent(labelBrkPC).addComponent(textBrkPC).addGap(200)
+                    .addComponent(labelBrkPC).addComponent(textBrkPC).addGap(30)
+                    .addComponent(resetRecentUpdates).addGap(100)
             )
     )
 
@@ -269,6 +285,7 @@ fun createControlView(): Component {
                     .addComponent(labelStep).addComponent(textStep)
                     .addComponent(labelBrkClk).addComponent(textBrkClk)
                     .addComponent(labelBrkPC).addComponent(textBrkPC)
+                    .addComponent(resetRecentUpdates)
             )
     )
 
@@ -477,7 +494,6 @@ fun createMemoryView(): ScrollableJTable {
 
     }
 
-
     table.model = ramModel
 
     val tab = ScrollableJTable(table, RamScrollBar(ramModel))
@@ -573,12 +589,18 @@ class ObservableList<T>(val wrapped: MutableList<T>) : MutableList<T> by wrapped
     override fun add(element: T): Boolean {
         if (wrapped.add(element)) {
             setChanged()
-            notifyObservers()
+            notifyObservers(wrapped.size-1)
             return true
         }
         return false
     }
 
+    override fun set(index: Int, element: T): T {
+        var ret: T = wrapped.set(index, element)
+        setChanged()
+        notifyObservers(index)
+        return ret
+    }
 }
 
 data class RamData(
@@ -586,31 +608,6 @@ data class RamData(
     var value: Int = 0,
     var prev: Int = 0,
     var clk: Int = 0
-)
-
-data class InstructionDecode(
-    val pc: Int,
-    val targ: String = "RAM",
-    val left: String = "REGA",
-    val op: String = "A_MINUS_B_MINUS_C",
-    val right: String = "IMMED",
-    val setf: String = "",
-    val amode: String = "DIR",
-    val cond: String = "A",
-    val inv: String = "",
-)
-
-data class Flags(
-    val carry: Boolean,
-    val zero: Boolean,
-    val overflow: Boolean,
-    val negative: Boolean,
-    val gt: Boolean,
-    val lt: Boolean,
-    val eq: Boolean,
-    val ne: Boolean,
-    val datain: Boolean,
-    val dataout: Boolean
 )
 
 data class InstructionExec(
@@ -801,8 +798,8 @@ class RegModel(val execMode: TableModel) : AbstractTableModel(), ColWidth, Table
 }
 
 class RamTableModel : AbstractTableModel() {
-    val recentUpdates = ObservableList(mutableListOf<Int>())
-    var data = (0..RamSize).map { RamData(addr = it, clk = it) }.toMutableList()
+    val recentUpdates = ObservableList(CopyOnWriteArrayList<Int>())
+    val data = (0 .. RamSize).map { RamData(addr = it, clk = it) }.reversed().toMutableList()
 
     val names = listOf(
         ColDef("Addr", 90, "0x%04d %5d"),
@@ -820,7 +817,7 @@ class RamTableModel : AbstractTableModel() {
     }
 
     override fun getValueAt(row: Int, col: Int): Any {
-        val pos = data.size - row - 1
+        val pos = row // read with reverse order to write
 
         val cd = names[col]
         val i = data[pos]
@@ -834,15 +831,15 @@ class RamTableModel : AbstractTableModel() {
     }
 
     override fun setValueAt(aValue: Any?, rowIndex: Int, columnIndex: Int) {
-        val addr = RamSize - rowIndex
+        val pos = data.size - rowIndex - 1 // write with reverse order to read
 
         if (columnIndex == 1) {
-            data[addr].prev = data[addr].value
+            data[pos].prev = data[pos].value
 
-            val update = aValue?.toString()?.toInt() ?: data[addr].value
-            data[addr].value = update
+            val update = aValue?.toString()?.toInt() ?: data[pos].value
+            data[pos].value = update
 
-            recentUpdates.add(addr)
+            recentUpdates.add(pos)
             this.fireTableCellUpdated(rowIndex, columnIndex)
         }
     }

@@ -5,6 +5,7 @@ import kotlin.concurrent.thread
 interface Debugger {
     fun instructions(code: List<Instruction>): Unit
     fun onDebug(code: InstructionExec, commit: () -> Unit): Unit
+    fun observeRam(ram: ObservableList<Int>)
 }
 
 object NoOpDebugger : Debugger {
@@ -13,6 +14,9 @@ object NoOpDebugger : Debugger {
 
     override fun onDebug(code: InstructionExec, commit: () -> Unit): Unit {
         commit.invoke()
+    }
+
+    override fun observeRam(ram: ObservableList<Int>) {
     }
 }
 
@@ -40,23 +44,10 @@ class CPU(
 
     private val aluRom = mutableListOf<Int>()
 
-    init {
-        loadAlu(aluRom)
-
-        thread(isDaemon = true, start = true) {
-            while (true) {
-                Thread.sleep(countIntervalMs)
-                if (timer1 > 0) {
-                    timer1--
-                }
-            }
-        }
-    }
 
     lateinit var lastOp: Op
 
-
-    val ram = IntArray(65536) { 0 }
+    val ram = ObservableList((0..65535).map { x -> 0 }.toMutableList())
     var pcLo: Int = 0
     var pcHi: Int = 0
     var pcHitmp: Int = 0
@@ -115,10 +106,23 @@ class CPU(
     var cycles = 0
 
     // re instruction rate: https://github.com/ajor/chip8
-    var freq = 1000 * 1000
-    var intervalNs: Long = (1000000000 * (1.0 / freq)).toLong()
+    val freq = 1000 * 1000
+    val intervalNs: Long = (1000000000 * (1.0 / freq)).toLong()
 //    var intervalNs : Long = 1 // approx same as 600 instructions per second
 
+    init {
+        loadAlu(aluRom)
+        debugger.observeRam(ram)
+
+        thread(isDaemon = true, start = true) {
+            while (true) {
+                Thread.sleep(countIntervalMs)
+                if (timer1 > 0) {
+                    timer1--
+                }
+            }
+        }
+    }
 
     fun cycle(terminalHandler: (String) -> Unit) {
 
@@ -151,7 +155,11 @@ class CPU(
             BDev.marlo -> marlo
             BDev.marhi -> marhi
             BDev.immed -> i.immed
-            BDev.ram -> if (i.amode == AMode.Dir) ram[i.address] else ram[mar()]
+            BDev.ram ->
+                if (i.amode == AMode.Dir)
+                    ram[i.address]
+                else
+                    ram[mar()]
             BDev.not_used -> 0
             BDev.vram -> 0
             BDev.port -> {
@@ -229,7 +237,12 @@ class CPU(
                     TDev.marlo -> marlo = aluVal
                     TDev.marhi -> marhi = aluVal
                     TDev.uart -> uartOut(aluVal, terminalHandler)
-                    TDev.ram -> if (i.amode == AMode.Dir) ram[i.address] = aluVal else ram[mar()] = aluVal
+                    TDev.ram -> {
+                        if (i.amode == AMode.Dir)
+                            ram[i.address] = aluVal
+                        else
+                            ram[mar()] = aluVal
+                    }
                     TDev.halt -> halt(aluVal)
                     TDev.vram -> TODO()
                     TDev.port -> {
@@ -340,6 +353,7 @@ class CPU(
         while (!halted) {
             cycle(terminalHandler)
             if (cycles % 1000000 == 0) printRate(start)
+            Thread.sleep(1)
         }
         printRate(start)
     }
