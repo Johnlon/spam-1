@@ -3,10 +3,14 @@ import java.util.regex.Pattern
 import kotlin.concurrent.thread
 
 interface Debugger {
+    fun instructions(code: List<Instruction>): Unit
     fun onDebug(code: InstructionExec, commit: () -> Unit): Unit
 }
 
 object NoOpDebugger : Debugger {
+    override fun instructions(code: List<Instruction>) {
+    }
+
     override fun onDebug(code: InstructionExec, commit: () -> Unit): Unit {
         commit.invoke()
     }
@@ -181,7 +185,9 @@ class CPU(
             aval = aval, bval = bval, alu = aluVal,
             instruction = i,
             regIn = Registers(marhi= marhi, marlo=marlo, rega, regb, regc, regd, pchi=pcHi, pclo = pcLo, pchitmp = pcHitmp, portSel = portsel, timer1 = timer1, halt = haltVal),
-            flagsIn = flags
+            flagsIn = flags,
+            flagsOut = newFlags,
+            effectiveOp = effectiveOp
         )
 
         debugger.onDebug(code) {

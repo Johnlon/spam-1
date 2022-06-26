@@ -425,9 +425,11 @@ data class InstructionExec(
     val alu: Int,
     val aval: Int,
     val bval: Int,
-    val doExec: Boolean = true,
+    val doExec: Boolean,
     val regIn: Registers,
-    val flagsIn: List<Cond>
+    val flagsIn: List<Cond>,
+    val flagsOut: List<Cond>,
+    val effectiveOp: Op
 )
 
 data class InstructionData(
