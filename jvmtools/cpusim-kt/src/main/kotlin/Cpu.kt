@@ -389,3 +389,34 @@ fun decode(l: String): Instruction {
         slice(l, 7, 0),
     )
 }
+
+fun disasm(i: Instruction): String {
+
+    val btxt = when (i.b) {
+        BDev.immed -> "0x%02x(%d)".format(i.immed, i.immed)
+        BDev.ram -> if (i.amode == AMode.Dir)
+            "[0x%04x(%d)]".format(i.address, i.address)
+        else
+            "[MAR]"
+        else -> i.b.name
+    }
+
+    val ttxt = when (i.t) {
+        TDev.ram -> if (i.amode == AMode.Dir)
+            "[0x%04x(%d)]".format(i.address, i.address)
+        else
+            "[MAR]"
+        else -> i.t.name
+    }
+
+    val op = when (i.aluOp) {
+        Op.B -> ttxt + " = " + btxt
+        Op.A -> ttxt + " = " + i.a.name
+        else -> ttxt + " = " + i.a.name + " " + i.aluOp.name + " " + btxt
+    }
+
+    val inv = if (i.conditionInvert == CInv.Inv) "!" else ""
+    val set = if (i.setFlags == Flag.Set) "_S" else ""
+
+    return op + " " + inv + " " + i.condition + " " + set
+}

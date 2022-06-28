@@ -31,6 +31,12 @@ data class Instruction(
 }
 
 fun assemble(
+    prog: Collection<Instruction>
+) : Pair<List<Long>, List<Instruction>> {
+    return assemble(*prog.toTypedArray())
+}
+
+fun assemble(
     vararg prog: Instruction
 ) : Pair<List<Long>, List<Instruction>>
 {

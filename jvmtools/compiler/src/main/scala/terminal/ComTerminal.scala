@@ -167,7 +167,7 @@ object ComTerminal extends Terminal {
     }
 
     val buttons = new BoxPanel(Orientation.Horizontal) {
-      contents ++= Seq(brefresh, bpaint, bstop, bnext, btnTest)
+      contents ++= Seq(brefresh, bpaint, bstop, bnext, bclk, btnTest)
     }
 
     val label = new BoxPanel(Orientation.Horizontal) {

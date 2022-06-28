@@ -169,6 +169,7 @@ abstract class Terminal extends SimpleSwingApplication {
   val bpaint = new Button("Paint")
   val bstop = new Button("Stop")
   val bnext = new Button("Next")
+  val bclk = new Button("Clk")
   val breplay = new Button("Replay")
 
   //    def send(c: Char, sendDelay: Boolean = true): Unit = {
@@ -196,7 +197,7 @@ abstract class Terminal extends SimpleSwingApplication {
 
     //plot(DO_CENTRE)
 
-    listenTo(textArea.keys, brefresh, bpaint, bstop, bnext, breplay)
+    listenTo(textArea.keys, brefresh, bpaint, bstop, bnext, bclk, breplay)
 
     def updateStopButton() = {
       if (stopped) {

@@ -71,7 +71,8 @@ fun main(_args: Array<String>) {
 
     //prog(cpu)
 //    val (rom, inst) =loadProgram("c:/Users/johnl/OneDrive/simplecpu/jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
-    val prog = File("../../jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
+//    val prog = File("../../jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
+    val prog = File("C:\\Users\\johnl\\work\\simplecpu\\jvmtools\\compiler\\build\\spammcc-test.rom")
     println("Program : " + prog.absolutePath)
     val (rom, inst) =loadProgram(prog.path)
     program.addAll(inst)

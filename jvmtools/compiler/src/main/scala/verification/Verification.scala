@@ -94,9 +94,10 @@ object Verification {
 
 
     val tmpFileRom = new File("build", "spammcc-test.rom")
+
     val tmpUartControl = new File(VerilogUARTTerminal.uartControl)
 
-    println("WRITING ROM TO :\n" + tmpFileRom)
+    println("WRITING ROM TO :\n" + tmpFileRom.getAbsolutePath)
     writeFile(roms, tmpFileRom)
 
     writeUartControlFile(tmpUartControl, uartDataIn)

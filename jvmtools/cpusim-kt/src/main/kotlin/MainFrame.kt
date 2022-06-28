@@ -2,8 +2,11 @@ import java.awt.*
 import java.awt.BorderLayout.*
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicReference
 import javax.swing.*
 import javax.swing.JOptionPane.QUESTION_MESSAGE
@@ -13,7 +16,8 @@ import javax.swing.event.TableModelListener
 import javax.swing.plaf.metal.MetalScrollBarUI
 import javax.swing.table.*
 
-val RamSize = 65535
+
+val RamSize = 65536
 
 val ramModel = RamTableModel()
 val program = mutableListOf<Instruction>()
@@ -22,6 +26,7 @@ var registerView: ScrollableJTable? = null
 var currentInstView: JTable? = null
 var progView: ScrollableJTable? = null
 var controllerView: Component? = null
+var memoryView: ScrollableJTable? = null
 
 fun mkExecModel(): DefaultTableModel {
     val dtm = DefaultTableModel()
@@ -77,6 +82,8 @@ fun main() {
     EventQueue.invokeAndWait(::createAndShowGUI)
 }
 
+val clksRemaining = Semaphore(0)
+
 private fun createAndShowGUI() {
 
     val mainframe = MainFrame("SPAM-1 Simulator")
@@ -94,13 +101,13 @@ private fun createAndShowGUI() {
     menuFile.add(menuLoad)
     menuFile.add(menuSave)
 
-    mainPain.add(createMemoryView(), WEST)
-
+    memoryView = createMemoryView(regModel)
     registerView = createRegisterView()
     progView = createProgView()
     currentInstView = createCurrentInstView()
     controllerView = createControlView()
 
+    mainPain.add(memoryView, WEST)
     mainPain.add(object : BPanel() { init {
         add(object : BPanel() { init {
             add(
@@ -135,37 +142,20 @@ private fun createAndShowGUI() {
             addExecState(code)
             progView?.repaint()
 
+            clksRemaining.acquire()
+
             commit.invoke()
 
-            /*
-            progModel.add(
-                InstructionData(
-                    clk = code.clk,
-                    pc = code.pc,
-                    doExec = code.doExec,
-                    targ = "%-7s".format(code.instruction.t.name) +  " " + "%3d".format(code.alu),
-                    left = "%-7s".format(code.instruction.a.name) +  " " + "%3d".format(code.aval),
-                    right = "%-7s".format(code.instruction.b.name) +  " " + "%3d".format(code.bval),
-                    op = code.instruction.aluOp.name,
-                    setf = code.instruction.setFlags.name,
-                    amode = code.instruction.amode.name,
-                    cond = code.instruction.condition.name,
-                    inv = code.instruction.conditionInvert.name,
-                    flags = code.flagsIn.map { it.name }.joinToString(" ")
-                )
-            )
-            */
         }
 
         override fun observeRam(ram: ObservableList<Int>) {
-            ram.addObserver(object: Observer {
+            ram.addObserver(object : Observer {
                 override fun update(o: Observable?, arg: Any?) {
                     val idx = arg as Int
                     val ramVal = ram.get(idx)
-                    val viewPos = RamSize - idx - 1
-                    ramModel.setValueAt(ramVal, viewPos, 1) // col 1 is the ram value
+                    ramModel.setValueAt(ramVal, idx, 1) // col 1 is the ram value
                 }
-            } )
+            })
         }
 
     }
@@ -228,6 +218,8 @@ fun createRegisterView(): ScrollableJTable {
     return tab
 }
 
+val asmText = JTextField("Assembly")
+
 fun createControlView(): Component {
 
     var pane = JPanel()
@@ -240,7 +232,6 @@ fun createControlView(): Component {
     val asmLabel = JLabel("ASM")
     asmLabel.font = asmLabel.font.deriveFont(20.0f).deriveFont(Font.PLAIN)
 
-    val asmText = JTextField("REGA = REGA A_MINUS_B_MINUS_C 23 _C_S !")
     asmText.font = Font(Font.MONOSPACED, Font.PLAIN, 20)
     asmText.preferredSize = Dimension(300, 20)
     asmText.isEditable = false
@@ -249,19 +240,35 @@ fun createControlView(): Component {
     val runBtn = JButton("Run")
 
     val labelStep = JLabel("Advance Clocks")
+
+    val IntFilter = object : KeyAdapter() {
+        override fun keyTyped(e: KeyEvent) {
+            val c = e.keyChar
+            if ((c < '0' || c > '9') && c.code != KeyEvent.VK_BACK_SPACE) {
+                e.consume() // if it's not a number, ignore the event
+            }
+        }
+    }
+
     val textStep = JTextField("10")
+    textStep.addKeyListener(IntFilter)
     textStep.maximumSize = Dimension(50, 30)
 
     val labelBrkClk = JLabel("Break Clk")
-    val textBrkClk = JTextField("10")
+    val textBrkClk = JTextField("")
+    textBrkClk.addKeyListener(IntFilter)
     textBrkClk.maximumSize = Dimension(70, 30)
 
     val labelBrkPC = JLabel("Break PC")
-    val textBrkPC = JTextField("10")
+    val textBrkPC = JTextField("")
+    textBrkPC.addKeyListener(IntFilter)
     textBrkPC.maximumSize = Dimension(70, 30)
 
     val resetRecentUpdates = JButton("Reset Recent")
-    resetRecentUpdates.addActionListener { a -> ramModel.recentUpdates.clear() }
+    resetRecentUpdates.addActionListener { a ->
+        ramModel.recentUpdates.clear()
+        memoryView?.repaint()
+    }
 
     layout.setHorizontalGroup(
         layout.createParallelGroup(GroupLayout.Alignment.LEADING)
@@ -291,6 +298,12 @@ fun createControlView(): Component {
 
     pane.preferredSize = Dimension(1, 100)
 
+    nextBtn.addActionListener { a ->
+        clksRemaining.release(1)
+    }
+    runBtn.addActionListener { a ->
+        clksRemaining.release((textStep.text ?: "0").toInt())
+    }
 
     return pane
 }
@@ -302,9 +315,10 @@ val instNames = listOf(
     ColDef("Operation", 110, "%s", "aluop"),
     ColDef("Right", 70, "%s", "b"),
     ColDef("SetF", 40, "%s", "setflags"),
-    ColDef("aMode", 50, "%s", "amode"),
     ColDef("Cond", 40, "%s", "condition"),
     ColDef("Inv", 30, "%s", "conditioninvert"),
+    ColDef("aMode", 50, "%s", "amode"),
+    ColDef("Address", 70, "%s"),
     ColDef("Immed", 70, "<html>0x%02x<br/>%3d</html>")
 )
 
@@ -322,7 +336,7 @@ fun createCurrentInstView(): JTable {
 
         override fun getValueAt(row: Int, col: Int): Any {
 
-            val currentExec = currentExec()
+            val currentExec: InstructionExec = currentExec()
             val pc = currentExec.pc
             val i = program[pc]
 
@@ -334,13 +348,13 @@ fun createCurrentInstView(): JTable {
                     pc.toString()
                 }
                 "targ" -> {
-                    "<html>%s<br/>0x%02x</html>".format(i.t.name, currentExec.alu)
+                    "<html>%s<br/>0x%02x %3d</html>".format(i.t.name, currentExec.alu, currentExec.alu)
                 }
                 "left" -> {
-                    "<html>%s<br/>0x%02x</html>".format(i.a.name, currentExec.aval)
+                    "<html>%s<br/>0x%02x %3d</html>".format(i.a.name, currentExec.aval, currentExec.aval)
                 }
                 "right" -> {
-                    "<html>%s<br/>0x%02x</html>".format(i.b.name, currentExec.bval)
+                    "<html>%s<br/>0x%02x %3d</html>".format(i.b.name, currentExec.bval, currentExec.bval)
                 }
                 "operation" -> {
                     if (i.aluOp != currentExec.effectiveOp && row == 0) "<html>%s<br/>%s</html>".format(
@@ -361,8 +375,11 @@ fun createCurrentInstView(): JTable {
                 "inv" -> {
                     i.conditionInvert.name
                 }
+                "address" -> {
+                    "0x%04x %5d".format(i.address, i.address)
+                }
                 "immed" -> {
-                    "0x%02x".format(i.immed)
+                    "0x%02x %3d".format(i.immed, i.immed)
                 }
                 else -> {
                     "bad column " + nameLower
@@ -405,7 +422,7 @@ fun createProgView(): ScrollableJTable {
         }
 
         override fun getValueAt(row: Int, col: Int): Any {
-            val pos = program.size - row - 1
+            val pos = row
             val i = program[pos]
 
             val cd = instNames[col]
@@ -439,8 +456,11 @@ fun createProgView(): ScrollableJTable {
                 "inv" -> {
                     i.conditionInvert.name
                 }
+                "address" -> {
+                    "0x%04x %5d".format(i.address, i.address)
+                }
                 "immed" -> {
-                    "0x%02x".format(i.immed)
+                    "0x%02x %3d".format(i.immed, i.immed)
                 }
                 else -> {
                     "bad column " + nameLower
@@ -466,7 +486,7 @@ fun createProgView(): ScrollableJTable {
     return tab
 }
 
-fun createMemoryView(): ScrollableJTable {
+fun createMemoryView(regModel: TableModel): ScrollableJTable {
 
     val table = object : JTable() {
         override fun prepareRenderer(
@@ -475,38 +495,54 @@ fun createMemoryView(): ScrollableJTable {
             column: Int
         ): Component? {
 
-            val addr = RamSize - row
+            val addr = row
 
             val c = super.prepareRenderer(
                 renderer,
                 row, column
             )
 
-            val shouldTint = getColumnName(column) == "Value"
-
-            if (shouldTint && (model as RamTableModel).recentUpdates.contains(addr)) {
+            val isValue = getColumnName(column) == "Value"
+            if (isValue && (model as RamTableModel).recentUpdates.contains(addr)) {
                 c.background = Color.RED
             } else {
-                c.background = Color.WHITE
+                val isAddr = getColumnName(column) == "Address"
+                val marValue = currentExec().regIn.mar
+                val isMarRow = addr == marValue
+                if (isAddr && isMarRow) {
+                    c.background = Color.YELLOW
+                } else {
+                    c.background = Color.WHITE
+                }
             }
             return c
         }
-
     }
+
+    val tml = object: TableModelListener {
+        override fun tableChanged(e: TableModelEvent?) {
+            ramModel.fireTableDataChanged()
+        }
+    }
+    regModel.addTableModelListener(tml)
+    execModel.addTableModelListener(tml)
 
     table.model = ramModel
 
+    // turn it into a scrollable table
     val tab = ScrollableJTable(table, RamScrollBar(ramModel))
-
-    tab.table.columnModel.getColumn(0).preferredWidth = 90
-    tab.table.columnModel.getColumn(1).preferredWidth = 70
-    tab.table.columnModel.getColumn(2).preferredWidth = 70
-    tab.table.columnModel.getColumn(3).preferredWidth = 100
 
     tab.table.columnModel.getColumn(1).cellEditor = DialogByteEditor("Value")
 
-    val sz = tab.table.columnModel.columns.toList().sumOf { it.preferredWidth }
+    ramModel.cols.forEachIndexed { i, w ->
+        tab.table.columnModel.getColumn(i).preferredWidth = ramModel.getWidth(i)
+    }
+    val sz = 20 + tab.table.columnModel.columns.toList().sumOf { it.preferredWidth }
+
     tab.preferredSize = Dimension(sz, 700)
+
+    table.setAutoCreateRowSorter(true); // sorting of the rows on a particular column
+
     return tab
 }
 
@@ -589,7 +625,7 @@ class ObservableList<T>(val wrapped: MutableList<T>) : MutableList<T> by wrapped
     override fun add(element: T): Boolean {
         if (wrapped.add(element)) {
             setChanged()
-            notifyObservers(wrapped.size-1)
+            notifyObservers(wrapped.size - 1)
             return true
         }
         return false
@@ -604,10 +640,11 @@ class ObservableList<T>(val wrapped: MutableList<T>) : MutableList<T> by wrapped
 }
 
 data class RamData(
-    val addr: Int = 0,
+    val address: Int = 0,
     var value: Int = 0,
     var prev: Int = 0,
-    var clk: Int = 0
+    var clk: Int = 0,
+    var comment: String = ""
 )
 
 data class InstructionExec(
@@ -622,24 +659,6 @@ data class InstructionExec(
     val flagsOut: List<Cond>,
     val effectiveOp: Op
 )
-
-
-/*
-data class InstructionData(
-    val clk: Int,
-    val pc: Int,
-    val doExec: Boolean,
-    val targ: String,
-    val left: String,
-    val op: String,
-    val right: String,
-    val setf: String,
-    val amode: String,
-    val cond: String,
-    val inv: String,
-    val flags: String
-)
- */
 
 data class Registers(
     val clk: Int,
@@ -657,56 +676,11 @@ data class Registers(
     val timer1: Int,
     val halt: Int,
     val alu: Int
-)
+) {
+    val mar = (marhi * 256) + marlo
+}
 
 data class ColDef(val name: String, val width: Int, val format: String, val field: String = name)
-
-/*
-class InstructionTableModel : AbstractTableModel() {
-
-    override fun getColumnCount(): Int {
-        return instNames.size
-    }
-
-    override fun getRowCount(): Int {
-        return program.size
-    }
-
-    override fun getValueAt(row: Int, col: Int): Any {
-        val pos = program.size - row - 1
-
-        val cd = instNames[col]
-        if (cd.name.lowercase() == "pc") {
-            return row
-        }
-
-        val i = program[pos]
-        val po = Instruction::class.members.filter { it.name.lowercase() == cd.field.lowercase() }
-        if (po.isEmpty()) {
-            System.err.println("field " + cd.name + " not found")
-            System.exit(1)
-            error("field " + cd.name + " not found")
-        }
-        val v = po.first().call(i)
-
-        if (cd.name.lowercase() == "cond") {
-            if (v == Cond.A) {
-                return ""
-            }
-        }
-        if (cd.name.lowercase() == "inv") {
-            if (v == CInv.Std) {
-                return ""
-            }
-        }
-        return cd.format.format(v, v)
-    }
-
-    override fun getColumnName(column: Int): String {
-        return instNames[column].name
-    }
-}
- */
 
 fun fmt2(i: Int) = "0x%02x %3d".format(i, i)
 
@@ -718,15 +692,15 @@ class RegModel(val execMode: TableModel) : AbstractTableModel(), ColWidth, Table
 
     val cols = listOf(
         ColDef("clk", 90, "%d"),
-        ColDef("pc", 70, "%d"),
+        ColDef("pc", 90, "%d"),
         ColDef("pchitmp", 70, "%d"),
         ColDef("mar", 90, "0x%04x %5d"),
         ColDef("rega", 60, "0x%02x %3d"),
         ColDef("regb", 60, "0x%02x %3d"),
         ColDef("regc", 60, "0x%02x %3d"),
         ColDef("regd", 60, "0x%02x %3d"),
-        ColDef("halt", 60, "0x%02x %3d"),
         ColDef("portsel", 60, "0x%02x %3d"),
+        ColDef("timer1", 60, "0x%02x %3d"),
         ColDef("halt", 60, "0x%02x %3d"),
         ColDef("alu", 60, "0x%02x %3d"),
     )
@@ -772,7 +746,7 @@ class RegModel(val execMode: TableModel) : AbstractTableModel(), ColWidth, Table
             "regd" -> {
                 fmt2(data.regIn.regd)
             }
-            "portSel" -> {
+            "portsel" -> {
                 fmt2(data.regIn.portSel)
             }
             "timer1" -> {
@@ -797,19 +771,20 @@ class RegModel(val execMode: TableModel) : AbstractTableModel(), ColWidth, Table
     }
 }
 
-class RamTableModel : AbstractTableModel() {
+class RamTableModel : AbstractTableModel(), ColWidth {
     val recentUpdates = ObservableList(CopyOnWriteArrayList<Int>())
-    val data = (0 .. RamSize).map { RamData(addr = it, clk = it) }.reversed().toMutableList()
+    val data = (0..(RamSize-1)).map { RamData(address = it, clk = it) }.toMutableList()
 
-    val names = listOf(
-        ColDef("Addr", 90, "0x%04d %5d"),
+    val cols = listOf(
+        ColDef("Address", 90, "0x%04x %5d"),
         ColDef("Value", 70, "0x%02x %3d"),
         ColDef("Prev", 90, "0x%02x %3d"),
-        ColDef("Clk", 90, "%d")
+        ColDef("Clk", 90, "%d"),
+        ColDef("Comment", 200, "%s")
     )
 
     override fun getColumnCount(): Int {
-        return names.size
+        return cols.size
     }
 
     override fun getRowCount(): Int {
@@ -819,7 +794,7 @@ class RamTableModel : AbstractTableModel() {
     override fun getValueAt(row: Int, col: Int): Any {
         val pos = row // read with reverse order to write
 
-        val cd = names[col]
+        val cd = cols[col]
         val i = data[pos]
         val po = RamData::class.members.filter { it.name.lowercase() == cd.field.lowercase() }
         if (po.isEmpty()) {
@@ -831,7 +806,8 @@ class RamTableModel : AbstractTableModel() {
     }
 
     override fun setValueAt(aValue: Any?, rowIndex: Int, columnIndex: Int) {
-        val pos = data.size - rowIndex - 1 // write with reverse order to read
+//        val pos = data.size - rowIndex - 1 // write with reverse order to read
+        val pos = rowIndex // write with reverse order to read
 
         if (columnIndex == 1) {
             data[pos].prev = data[pos].value
@@ -840,18 +816,23 @@ class RamTableModel : AbstractTableModel() {
             data[pos].value = update
 
             recentUpdates.add(pos)
-            this.fireTableCellUpdated(rowIndex, columnIndex)
+        } else if (columnIndex == 4) {
+            data[rowIndex].comment = aValue as String
         }
+        this.fireTableCellUpdated(rowIndex, columnIndex)
     }
 
 
     override fun getColumnName(column: Int): String {
-        return names[column].name
+        return cols[column].name
     }
 
     override fun isCellEditable(rowIndex: Int, columnIndex: Int): Boolean {
-        return columnIndex == 1
+        return getColumnName(columnIndex).lowercase() == "value"
+                || getColumnName(columnIndex).lowercase() == "comment"
     }
+
+    override fun getWidth(col: Int): Int = cols[col].width
 }
 
 
@@ -909,6 +890,14 @@ fun addExecState(state: InstructionExec) {
     currentInstView?.repaint()
     registerView?.repaint()
 
-    progView?.table?.getSelectionModel()?.setSelectionInterval(state.pc, state.pc)
-    progView?.table?.scrollRectToVisible(Rectangle(progView?.table?.getCellRect(state.pc, 0, true)));
+    val tab = progView?.table
+
+    tab?.getSelectionModel()?.setSelectionInterval(state.pc, state.pc)
+
+    val pageSize: Int = (tab!!.getParent()!!.getSize()!!.getHeight()!!.toInt() / (tab!!.getRowHeight()))
+    val halfPage = pageSize / 2
+
+    progView?.table?.scrollRectToVisible(Rectangle(progView?.table?.getCellRect(state.pc + halfPage, 0, true)));
+
+    asmText.text = disasm(program.get(state.pc))
 }

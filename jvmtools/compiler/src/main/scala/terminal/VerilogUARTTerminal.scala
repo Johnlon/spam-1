@@ -8,9 +8,9 @@ object VerilogUARTTerminal extends UARTTerminal {
 
   val replay = true
 
-  val uartOut = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.out"
-  val uartControl = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\uart.control"
-  val gamepadControl = "C:\\Users\\johnl\\OneDrive\\simplecpu\\verilog\\cpu\\gamepad.control"
+  val uartOut = "C:\\Users\\johnl\\work\\simplecpu\\verilog\\cpu\\uart.out"
+  val uartControl = "C:\\Users\\johnl\\work\\simplecpu\\verilog\\cpu\\uart.control"
+  val gamepadControl = "C:\\Users\\johnl\\work\\simplecpu\\verilog\\cpu\\gamepad.control"
 
   val uartControlStream = new PrintStream(new FileOutputStream(uartControl, true))
   val gamepadControlStream = new PrintStream(new FileOutputStream(gamepadControl, true))

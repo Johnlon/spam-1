@@ -4,8 +4,6 @@ import kotlin.test.assertEquals
 internal class AssembleTest {
     @Test
     fun testAsm() {
-        val rom = mutableListOf<Long>()
-        val inst = mutableListOf<Instruction>()
         val code = Instruction(
             Op.A_MINUS_B_BCD,
             TDev.halt,
@@ -18,11 +16,8 @@ internal class AssembleTest {
             0xaaaa,
             0xff
         )
-        assemble(
-            rom,
-            inst,
-            code
-        )
+
+        val (rom, inst) = assemble(code)
 
         val expected = "11111 1000 101 110 1001 1 0 0 0 1 10101010 10101010 11111111"
             .replace("\\s".toRegex(), "")
