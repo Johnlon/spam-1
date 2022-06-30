@@ -85,9 +85,15 @@ fun main(_args: Array<String>) {
 
     val cpu = CPU(debugger = debugger.get(), rom = rom, instructions = inst)
 
-    val t = InProcessTerminal(cpu::gamepadHandler)
-    t.main(_args)
-
-    cpu.run(t::handleLine)
+    val showGraphics = false
+    if (showGraphics) {
+        val t = InProcessTerminal(cpu::gamepadHandler)
+        t.main(_args)
+        cpu.run(t::handleLine)
+    } else {
+        cpu.run {
+            s: String  -> {}
+        }
+    }
 }
 

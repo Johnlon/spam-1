@@ -418,5 +418,5 @@ fun disasm(i: Instruction): String {
     val inv = if (i.conditionInvert == CInv.Inv) "!" else ""
     val set = if (i.setFlags == Flag.Set) "_S" else ""
 
-    return op + " " + inv + " " + i.condition + " " + set
+    return op + " " + inv + " _" + i.condition + " " + set
 }

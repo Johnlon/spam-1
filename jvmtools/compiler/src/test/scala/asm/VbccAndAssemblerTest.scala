@@ -378,10 +378,12 @@ int main() {
 
   /*
     I found this function halted with MAR=4 ALU=88 because main and sub both used gpr6 and the
-    value of "check" was in gpr6 so got overwritten. By passing a as '3' in the 'a != 3'
+    value of "check" was in gpr6 so got overwritten. By passing a as '3' in the 'a != 3'.
+    And then there was a bug in jumping across pages cos I was assigning to PCLO instead of PC so jump didn't load pchitmp
+
    */
   @Test
-  def vbccLoopsForever(): Unit = {
+  def jumpAcrossPages(): Unit = {
 
     val c =
       """
@@ -422,12 +424,12 @@ int main() {
   // call a function - does subroutine trample local var r?
   sub(3, 4);
 
-  if (localA != 88)  {
-    halt2(localA, 88);
+  if (localA != 10)  {
+    halt2(localA, 10);
   }
 
-  if (check != 101)  {
-    halt2(check, 99);
+  if (check != 88)  {
+    halt2(check, 88);
   }
 
   return 66;

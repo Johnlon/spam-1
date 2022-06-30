@@ -1,9 +1,11 @@
 import java.awt.*
 import java.awt.BorderLayout.*
+import java.awt.Color.*
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
+import java.io.File
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Semaphore
@@ -87,6 +89,7 @@ val clksRemaining = Semaphore(0)
 private fun createAndShowGUI() {
 
     val mainframe = MainFrame("SPAM-1 Simulator")
+    mainframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     val mainPain = mainframe.contentPane
 
     val menuBar = JMenuBar()
@@ -204,10 +207,9 @@ class MainFrame(title: String) : JFrame() {
 fun createRegisterView(): ScrollableJTable {
 
     val table = JTable(regModel)
-    execModel.addTableModelListener(table)
+    execModel.addTableModelListener { e -> regModel.fireTableDataChanged() }
 
     val tab = ScrollableJTable(table)
-    tab.border = BorderFactory.createLineBorder(Color.RED)
 
     regModel.cols.forEachIndexed { i, w ->
         tab.table.columnModel.getColumn(i).preferredWidth = regModel.getWidth(i)
@@ -309,17 +311,17 @@ fun createControlView(): Component {
 }
 
 val instNames = listOf(
-    ColDef("PC", 70, "%d"),
-    ColDef("Targ", 70, "%s", "t"),
-    ColDef("Left", 70, "%s"),
-    ColDef("Operation", 110, "%s", "aluop"),
-    ColDef("Right", 70, "%s", "b"),
-    ColDef("SetF", 40, "%s", "setflags"),
-    ColDef("Cond", 40, "%s", "condition"),
-    ColDef("Inv", 30, "%s", "conditioninvert"),
-    ColDef("aMode", 50, "%s", "amode"),
-    ColDef("Address", 70, "%s"),
-    ColDef("Immed", 70, "<html>0x%02x<br/>%3d</html>")
+    ColDef("PC", 70),
+    ColDef("Targ", 70),
+    ColDef("Left", 70),
+    ColDef("Operation", 110),
+    ColDef("Right", 70),
+    ColDef("SetF", 40),
+    ColDef("Cond", 60),
+    ColDef("Inv", 30),
+    ColDef("aMode", 50),
+    ColDef("Address", 70),
+    ColDef("Immed", 70),
 )
 
 fun createCurrentInstView(): JTable {
@@ -345,7 +347,7 @@ fun createCurrentInstView(): JTable {
 
             return when (nameLower) {
                 "pc" -> {
-                    pc.toString()
+                    "<html>%d<br/>%s</html>".format(pc, if (currentExec.doExec) "exec .." else "skip ..")
                 }
                 "targ" -> {
                     "<html>%s<br/>0x%02x %3d</html>".format(i.t.name, currentExec.alu, currentExec.alu)
@@ -370,7 +372,10 @@ fun createCurrentInstView(): JTable {
                     i.amode.name
                 }
                 "cond" -> {
-                    i.condition.name
+                    "<html>%s<br/>%s</html>".format(
+                        if (i.condition == Cond.A) "*" else i.condition.name,
+                        currentExec.flagsIn.filter { it != Cond.A }.joinToString(" ")
+                    )
                 }
                 "inv" -> {
                     i.conditionInvert.name
@@ -393,19 +398,27 @@ fun createCurrentInstView(): JTable {
     }
 
     val table = JTable(progModel)
-    table.font = Font(Font.MONOSPACED, Font.PLAIN, 10)
+    table.font = Font(Font.MONOSPACED, Font.BOLD, 12)
     execModel.addTableModelListener(table)
 
     instNames.forEachIndexed { i, w ->
         table.columnModel.getColumn(i).preferredWidth = w.width
     }
-    table.columnModel.getColumn(instNames.size - 1).preferredWidth += 20 // stretch the last col where the scroll bar would have been
+    table.columnModel.getColumn(instNames.size - 1).preferredWidth += 20// stretch the last col where the scroll bar would have been
+
     val sz = table.columnModel.columns.toList().sumOf { it.preferredWidth }
     table.preferredSize = Dimension(sz, 35)
 
     table.setRowHeight(35);//Try set height to 15 (I've tried higher)
 
     table.background = Color(200, 255, 200)
+    table.border = BorderFactory.createLineBorder(Color.BLUE)
+
+    // align cell contents to top
+    val topAlign = DefaultTableCellRenderer()
+    topAlign.verticalAlignment = JLabel.TOP
+    table.columnModel.columns.iterator().forEach { c -> c.cellRenderer = topAlign }
+
     return table
 }
 
@@ -477,7 +490,7 @@ fun createProgView(): ScrollableJTable {
     val tab = ScrollableJTable(table)
 
     instNames.forEachIndexed { i, w ->
-        table.columnModel.getColumn(i).preferredWidth = w.width + 20
+        table.columnModel.getColumn(i).preferredWidth = w.width + 21
     }
     table.columnModel.getColumn(instNames.size - 1).preferredWidth += 20 // stretch the last col where the scroll bar would have been
     val sz = table.columnModel.columns.toList().sumOf { it.preferredWidth }
@@ -496,30 +509,46 @@ fun createMemoryView(regModel: TableModel): ScrollableJTable {
         ): Component? {
 
             val addr = row
+            val invAddr = RamSize - row - 1
 
             val c = super.prepareRenderer(
                 renderer,
                 row, column
             )
 
-            val isValue = getColumnName(column) == "Value"
+            var bgIsRed = false
+
+            val isValue = getColumnName(column) == "value"
             if (isValue && (model as RamTableModel).recentUpdates.contains(addr)) {
-                c.background = Color.RED
+                c.background = RED
+                bgIsRed = true
             } else {
-                val isAddr = getColumnName(column) == "Address"
+                val isAddr = getColumnName(column) == "address"
                 val marValue = currentExec().regIn.mar
-                val isMarRow = addr == marValue
+                val isMarRow = invAddr == marValue
                 if (isAddr && isMarRow) {
-                    c.background = Color.YELLOW
+                    c.background = YELLOW
                 } else {
-                    c.background = Color.WHITE
+                    c.background = WHITE
                 }
+            }
+
+            if (invAddr == program[currentExec().pc].address) {
+                if (bgIsRed) c.foreground = BLACK
+                else c.foreground = RED
+                c.font = c.font.deriveFont(Font.BOLD)
+//                c.graphics.color = BLUE
+//                c.graphics.drawRect(c.bounds.x, c.bounds.y, c.bounds.width, c.bounds.height)
+            } else {
+                c.font = c.font.deriveFont(Font.PLAIN)
+                c.foreground = BLACK
+//                c.graphics.clearRect(c.bounds.x, c.bounds.y, c.bounds.width, c.bounds.height)
             }
             return c
         }
     }
 
-    val tml = object: TableModelListener {
+    val tml = object : TableModelListener {
         override fun tableChanged(e: TableModelEvent?) {
             ramModel.fireTableDataChanged()
         }
@@ -532,7 +561,7 @@ fun createMemoryView(regModel: TableModel): ScrollableJTable {
     // turn it into a scrollable table
     val tab = ScrollableJTable(table, RamScrollBar(ramModel))
 
-    tab.table.columnModel.getColumn(1).cellEditor = DialogByteEditor("Value")
+    tab.table.columnModel.getColumn(1).cellEditor = DialogByteEditor("value")
 
     ramModel.cols.forEachIndexed { i, w ->
         tab.table.columnModel.getColumn(i).preferredWidth = ramModel.getWidth(i)
@@ -640,7 +669,7 @@ class ObservableList<T>(val wrapped: MutableList<T>) : MutableList<T> by wrapped
 }
 
 data class RamData(
-    val address: Int = 0,
+    val address: Int,
     var value: Int = 0,
     var prev: Int = 0,
     var clk: Int = 0,
@@ -680,7 +709,7 @@ data class Registers(
     val mar = (marhi * 256) + marlo
 }
 
-data class ColDef(val name: String, val width: Int, val format: String, val field: String = name)
+data class ColDef(val name: String, val width: Int)
 
 fun fmt2(i: Int) = "0x%02x %3d".format(i, i)
 
@@ -691,18 +720,19 @@ class RegModel(val execMode: TableModel) : AbstractTableModel(), ColWidth, Table
     }
 
     val cols = listOf(
-        ColDef("clk", 90, "%d"),
-        ColDef("pc", 90, "%d"),
-        ColDef("pchitmp", 70, "%d"),
-        ColDef("mar", 90, "0x%04x %5d"),
-        ColDef("rega", 60, "0x%02x %3d"),
-        ColDef("regb", 60, "0x%02x %3d"),
-        ColDef("regc", 60, "0x%02x %3d"),
-        ColDef("regd", 60, "0x%02x %3d"),
-        ColDef("portsel", 60, "0x%02x %3d"),
-        ColDef("timer1", 60, "0x%02x %3d"),
-        ColDef("halt", 60, "0x%02x %3d"),
-        ColDef("alu", 60, "0x%02x %3d"),
+        ColDef("clk", 90),
+        ColDef("pc", 90),
+        ColDef("pchitmp", 60),
+        ColDef("mar", 90),
+        ColDef("rega", 60),
+        ColDef("regb", 60),
+        ColDef("regc", 60),
+        ColDef("regd", 60),
+        ColDef("portsel", 60),
+        ColDef("timer1", 60),
+        ColDef("halt", 60),
+        ColDef("alu", 60),
+        ColDef("flags", 110),
     )
 
     override fun getColumnCount() = cols.size
@@ -758,6 +788,9 @@ class RegModel(val execMode: TableModel) : AbstractTableModel(), ColWidth, Table
             "alu" -> {
                 fmt2(data.regIn.alu)
             }
+            "flags" -> {
+                "%s".format(data.flagsOut.filter { it != Cond.A }.joinToString(" "))
+            }
             else -> {
                 "bad column " + colName
             }
@@ -772,54 +805,90 @@ class RegModel(val execMode: TableModel) : AbstractTableModel(), ColWidth, Table
 }
 
 class RamTableModel : AbstractTableModel(), ColWidth {
+
     val recentUpdates = ObservableList(CopyOnWriteArrayList<Int>())
-    val data = (0..(RamSize-1)).map { RamData(address = it, clk = it) }.toMutableList()
+    val data = (0..(RamSize - 1)).map { RamData(address = it) }.toMutableList()
+
+    init {
+        restore()
+    }
 
     val cols = listOf(
-        ColDef("Address", 90, "0x%04x %5d"),
-        ColDef("Value", 70, "0x%02x %3d"),
-        ColDef("Prev", 90, "0x%02x %3d"),
-        ColDef("Clk", 90, "%d"),
-        ColDef("Comment", 200, "%s")
+        ColDef("address", 90),
+        ColDef("value", 60),
+        ColDef("prev", 60),
+        ColDef("clk", 90),
+        ColDef("comment", 200),
     )
+
+    fun save() {
+        val txt = data
+            .mapIndexed { idx, d -> Pair(idx, d.comment) }
+            .filterNot { it.second.isEmpty() }
+            .map { it.first.toString() + "=" + it.second }
+            .joinToString("\n")
+        File("comments.txt").writeText(txt)
+    }
+
+    fun restore() {
+        val comments = File("comments.txt")
+        if (comments.exists()) {
+            comments.useLines { lines ->
+                lines.toList().forEach {
+                    val parts = it.split("=".toRegex(), 2)
+                    val idx = parts[0].toInt()
+                    val comment = parts[1]
+                    data[idx].comment = comment
+                }
+            }
+        }
+    }
 
     override fun getColumnCount(): Int {
         return cols.size
     }
 
     override fun getRowCount(): Int {
-        return data.size
+        return RamSize
     }
 
-    override fun getValueAt(row: Int, col: Int): Any {
-        val pos = row // read with reverse order to write
+    override fun getValueAt(rowIndex: Int, colIndex: Int): Any {
+        val pos = RamSize - rowIndex - 1 // read with reverse order to write
 
-        val cd = cols[col]
         val i = data[pos]
-        val po = RamData::class.members.filter { it.name.lowercase() == cd.field.lowercase() }
-        if (po.isEmpty()) {
-            error("field " + cd.name + " not found")
-        }
-        val v = po.first().call(i)
 
-        return cd.format.format(v, v)
+        val colName = getColumnName(colIndex)
+        return when (colName) {
+            "address" -> "0x%04x %4d".format(i.address, i.address)
+            "value" -> fmt2(i.value)
+            "prev" -> fmt2(i.prev)
+            "clk" -> i.clk
+            "comment" -> i.comment
+            else -> {
+                "bad column " + colIndex
+            }
+        }
     }
 
     override fun setValueAt(aValue: Any?, rowIndex: Int, columnIndex: Int) {
-//        val pos = data.size - rowIndex - 1 // write with reverse order to read
-        val pos = rowIndex // write with reverse order to read
+        val pos = RamSize - rowIndex - 1 // read with reverse order to write
 
-        if (columnIndex == 1) {
-            data[pos].prev = data[pos].value
+        val columnName = getColumnName(columnIndex)
+        if (columnName == "value") {
+            data[rowIndex].prev = data[rowIndex].value
 
-            val update = aValue?.toString()?.toInt() ?: data[pos].value
-            data[pos].value = update
+            val update = aValue?.toString()?.toInt() ?: data[rowIndex].value
+            data[rowIndex].value = update
 
             recentUpdates.add(pos)
-        } else if (columnIndex == 4) {
-            data[rowIndex].comment = aValue as String
+        } else if (columnName == "comment") {
+            data[pos].comment = aValue as String
         }
+        data[pos].clk = currentExec().clk
+
         this.fireTableCellUpdated(rowIndex, columnIndex)
+
+        save()
     }
 
 
@@ -890,14 +959,13 @@ fun addExecState(state: InstructionExec) {
     currentInstView?.repaint()
     registerView?.repaint()
 
+    // move PC row into middle of view
     val tab = progView?.table
-
     tab?.getSelectionModel()?.setSelectionInterval(state.pc, state.pc)
-
     val pageSize: Int = (tab!!.getParent()!!.getSize()!!.getHeight()!!.toInt() / (tab!!.getRowHeight()))
     val halfPage = pageSize / 2
-
     progView?.table?.scrollRectToVisible(Rectangle(progView?.table?.getCellRect(state.pc + halfPage, 0, true)));
 
+    // update disasm view
     asmText.text = disasm(program.get(state.pc))
 }
