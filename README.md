@@ -15,6 +15,8 @@ is cool but there is something special about being able to compile
 and use other people's code! I also have Gamepad input hardware
 almost integrated but that's held up by the compiler work.
 
+VBCC port : https://github.com/Johnlon/spam-1-vbcc/tree/main/demo contains example test programs.
+
 ## CURRENT Design - Version 1c 
 
 I'm currently working on what I hope is the final version.
