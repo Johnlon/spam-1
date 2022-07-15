@@ -70,7 +70,7 @@ fi
 
 #vvp -N -i $rootname.vvp "$@" &
 
-$vvp -N -i $rootname.vvp +rom=$ROM &
+$vvp -N -i $rootname.vvp +rom=$ROM +uart_out_mode=2 &
 
 # timeout to prenent orphanned processes when Java test harness goes away
 

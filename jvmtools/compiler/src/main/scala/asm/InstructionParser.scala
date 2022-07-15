@@ -206,7 +206,8 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     val ints: List[(String, Int)] = exprs.map(x => (x.name, x.getVal.get.value))
 
     ints.filter { x =>
-      x._2 < 0x00 || x._2 > 0xff
+      //x._2 < 0x00 || x._2 > 0xff
+      x._2 < Byte.MinValue || x._2 > 0xff
     }.foreach(x => sys.error(s"asm error: $x (0x${x._2.toHexString}) evaluates as out of range for a byte 0x00 to 0xff"))
 
     exprs.map(x => (x.name, x.getVal.get.value.toByte))

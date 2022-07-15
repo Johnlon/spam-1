@@ -1,4 +1,2 @@
-c1=10
-#100000
-c1=20
-#1000
+/ forcing random value to a fixed value for testing
+r=7b

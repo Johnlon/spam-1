@@ -372,6 +372,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               val endLabel = scope.fqnLabelPathUnique("end")
 
               // https://www.tutorialspoint.com/8085-program-to-divide-two-16-bit-numbers#:~:text=8085%20has%20no%20division%20operation.&text=To%20perform%2016%2Dbit%20division,stored%20at%20FC02%20and%20FC03.
+              // https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
               List(
 
                 s"; DIVIDE OPERATION     quotient = dividend / divisor    << but this algo accumulates the quotient in the dividend location",
@@ -381,7 +382,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"    $TMP1 = [:$temporaryVarLabel+1]",
                 s"    [$dividendHi] = $TMP1",
                 s"    [$divisorLo] = $WORKLO",
-                s"    [$divisorHi] = $WORKHI _S", // sets Z f the top byte of divisor is 0; Z used n 8 bt optimisation below
+                s"    [$divisorHi] = $WORKHI _S", // NOTE !! sets Z f the top byte of divisor is 0; Z used n 8 bt optimisation below
 
                 s"; FAST MODE CHECK: if both are 8 bit then use direct ALU op",
                 s";   skip FAST MODE if divisor > 8 bit",
@@ -392,14 +393,14 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"    PCHITMP = < :$longMethod",
                 s"    PC      = > :$longMethod ! _Z",
 
-                s"; FAST MODE: execution",
+                s"; FAST MODE: 8 bit execution",
                 s"    [$dividendHi] = 0",
                 s"    $TMP1   =   [$dividendLo]",
                 s"    [$dividendLo] = $TMP1 / $WORKLO", // at this point it is assumed that TMP1 = dividendlo and WORKLO = divisorlo
                 s"    PCHITMP = < :$endLabel",
                 s"    PC      = > :$endLabel",
 
-                s"; SLOW MODE using complicated algo I don't understand fully",
+                s"; SLOW MODE: 16 bit - using complicated algo I don't understand fully",
                 s"  $longMethod:",
                 s"; lda #0 -- NO NEED FOR LDA 0 IN SPAM1 IMPL AS I CAN DIRECTLY ASSIGN VARS BELOW",
 

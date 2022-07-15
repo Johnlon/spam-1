@@ -338,17 +338,17 @@ So we end up with [ 0 0 9 0 0 0 0 0 0 0 0 0 0 0 0 1 2 ]
 * */
 case class LocatedData(relLocation: Int, data: Seq[Byte]) extends Positional
 
-case class DefVarEqLocatedData(target: String, locatedData: Seq[LocatedData]) extends Block {
+case class DefVarEqLocatedData(target: String, absAddress: Option[Int], relativeLocatedData: Seq[LocatedData]) extends Block {
 
   private val data = {
-    val sortedByAddr = locatedData.sortBy(x => x.relLocation)
-    val extent: Int = locatedData.map(c => c.relLocation + c.data.size).sorted.lastOption.getOrElse(0)
+    val sortedByAddr = relativeLocatedData.sortBy(x => x.relLocation)
+    val extent: Int = relativeLocatedData.map(c => c.relLocation + c.data.size).sorted.lastOption.getOrElse(0)
 
     val data = (0 until extent).map(_ => 0.toByte).toBuffer
 
     sortedByAddr.foreach {
-      case LocatedData(addr, d) =>
-        var pos = addr
+      case LocatedData(relAddr, d) =>
+        var pos = relAddr
         d.foreach {
           f =>
             data(pos) = f
@@ -360,20 +360,20 @@ case class DefVarEqLocatedData(target: String, locatedData: Seq[LocatedData]) ex
 
   private val escaped = data.map(b => f"$b%02X").mkString(" ")
 
-  override def toString = s"statementVarDataLocated( $target, [$locatedData] )"
+  override def toString = s"statementVarDataLocated( $target, $absAddress, [$relativeLocatedData] )"
 
   override def gen(depth: Int, parent: Scope): List[String] = {
-    locatedData.foreach { data =>
+    relativeLocatedData.foreach { data =>
       if (data.relLocation == 0 && data.data.isEmpty) {
         sys.error(s"located data at offset ${data.relLocation} cannot be empty at : " + data.pos.asInstanceOf[OffsetPosition].lineContents)
       }
     }
 
     // nothing to do but record the data with current scope - data will be laid out later
-    parent.assignVarLabel(target, IsData, data)
+    parent.assignVarLabel(target, IsData, data, absAddress)
 
     List(
-      s"""; var $target = [$escaped]"""
+      s"""; var $target =  @ $absAddress [$escaped] """
     )
   }
 }
@@ -419,6 +419,24 @@ case class HaltVar(srcVarName: String, num: Byte)
     )
   }
 }
+
+case class HaltVarVar(srcVarName: String, srcVarName2: String)
+  extends Block(nestedName = s"haltVarVar_${srcVarName}_${srcVarName2}") {
+
+  override def gen(depth: Int, parent: Scope): List[String] = {
+
+    val srcFqn = parent.getVarLabel(srcVarName).fqn
+    val srcFqn2 = parent.getVarLabel(srcVarName2).fqn
+
+    List(
+      s"; Halt : MAR = $srcFqn ; code = $srcVarName2",
+      s"MARHI = [:$srcFqn + 1]",
+      s"MARLO = [:$srcFqn]",
+      s"HALT = [:$srcFqn2]" // lo byte only
+    )
+  }
+}
+
 
 case class Puts(varName: String)
   extends Block(nestedName = s"puts_${varName}_") {
@@ -493,7 +511,7 @@ case class Putuart(block: Block) extends Block(nestedName = "putuartGeneral") wi
 }
 
 /** 25% fewer instructions than basic case */
-case class PutfuartCont(code: Char, konst: Int) extends Block(nestedName = "putfuartGeneral") {
+case class PutfuartConst(code: Char, konst: Int) extends Block(nestedName = "putfuartGeneral") {
   override def gen(depth: Int, parent: Scope): Seq[String] = {
     val labelWait1 = parent.fqnLabelPathUnique("wait1")
     val labelWait2 = parent.fqnLabelPathUnique("wait2")
@@ -1089,15 +1107,25 @@ case class Program(fns: List[Block]) {
     }
 
     val varlist = variables.flatMap {
-      case Variable(name, fqn, address, bytes, typ) =>
+      case Variable(name, fqn, address, bytes, typ, isAutoAddress) =>
         val byteString = bytes.map(_.toInt).mkString(", ")
 
-        Seq(
+        val decl: Seq[String] = Seq(
           //s";VARIABLE $typ : $name : $fqn",
           s";;VARIABLE $typ : $name",
           s"$fqn: EQU   $address",
-          s"$fqn: BYTES [$byteString]"
         )
+
+        val defn : Seq[String]= if (byteString.nonEmpty) {
+          Seq(
+            s"$fqn: BYTES [$byteString]"
+          )
+         } else {
+          Nil
+        }
+
+        decl ++ defn
+
     }.toList
 
     val jumpToMain = split(

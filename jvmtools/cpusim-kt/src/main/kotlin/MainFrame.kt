@@ -7,7 +7,7 @@ import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.io.File
 import java.util.*
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicReference
 import javax.swing.*
@@ -21,14 +21,26 @@ import javax.swing.table.*
 
 val RamSize = 65536
 
-val ramModel = RamTableModel()
+val recentUpdates = ObservableSet<Int>(HashSet())
+
+val showMemView = false
+val enableRamTable = false
+val ramIllustration = createRamIllustration()
+
+// hack for testing ...
+//val foo = (1..65535).forEach{ idx ->
+//    recentUpdates.add( idx )
+//}
+
 val program = mutableListOf<Instruction>()
+
+val ramModel = RamTableModel()
 
 var registerView: ScrollableJTable? = null
 var currentInstView: JTable? = null
 var progView: ScrollableJTable? = null
 var controllerView: Component? = null
-var memoryView: ScrollableJTable? = null
+var ramView: ScrollableJTable? = null
 
 fun mkExecModel(): DefaultTableModel {
     val dtm = DefaultTableModel()
@@ -77,11 +89,8 @@ interface ColWidth {
 
 val debugger = AtomicReference<Debugger>()
 
-fun main() {
-//    UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel")
-//te    UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel")
-
-    EventQueue.invokeAndWait(::createAndShowGUI)
+fun simUI() {
+    createAndShowGUI()
 }
 
 val clksRemaining = Semaphore(0)
@@ -104,13 +113,13 @@ private fun createAndShowGUI() {
     menuFile.add(menuLoad)
     menuFile.add(menuSave)
 
-    memoryView = createMemoryView(regModel)
+    ramView = createMemoryView(regModel)
     registerView = createRegisterView()
     progView = createProgView()
     currentInstView = createCurrentInstView()
     controllerView = createControlView()
 
-    mainPain.add(memoryView, WEST)
+    mainPain.add(ramView, WEST)
     mainPain.add(object : BPanel() { init {
         add(object : BPanel() { init {
             add(
@@ -135,6 +144,7 @@ private fun createAndShowGUI() {
     }, EAST)
 
     mainframe.config()
+
 
     val dbg = object : Debugger {
         override fun instructions(code: List<Instruction>) {
@@ -163,8 +173,14 @@ private fun createAndShowGUI() {
 
     }
     mainframe.repaint()
+//    mainframe.hide()
 
     debugger.set(dbg)
+
+//    val mmView = MainFrame("Memory Map")
+//    mmView.contentPane.add(memoryGrid.second, CENTER)
+//    mmView.config()
+//    mmView.repaint()
 }
 
 val ByteStringsText = (0..255).map { "0x%02x %3d".format(it, it) }.toList().toTypedArray()
@@ -268,8 +284,11 @@ fun createControlView(): Component {
 
     val resetRecentUpdates = JButton("Reset Recent")
     resetRecentUpdates.addActionListener { a ->
-        ramModel.recentUpdates.clear()
-        memoryView?.repaint()
+        recentUpdates.clear()
+        ramView?.repaint()
+        if (ramIllustration != null) {
+            ramIllustration.second.repaint()
+        }
     }
 
     layout.setHorizontalGroup(
@@ -519,7 +538,7 @@ fun createMemoryView(regModel: TableModel): ScrollableJTable {
             var bgIsRed = false
 
             val isValue = getColumnName(column) == "value"
-            if (isValue && (model as RamTableModel).recentUpdates.contains(addr)) {
+            if (isValue && recentUpdates.contains(addr)) {
                 c.background = RED
                 bgIsRed = true
             } else {
@@ -553,10 +572,14 @@ fun createMemoryView(regModel: TableModel): ScrollableJTable {
             ramModel.fireTableDataChanged()
         }
     }
-    regModel.addTableModelListener(tml)
-    execModel.addTableModelListener(tml)
+
+    if (enableRamTable) {
+        regModel.addTableModelListener(tml)
+        execModel.addTableModelListener(tml)
+    }
 
     table.model = ramModel
+
 
     // turn it into a scrollable table
     val tab = ScrollableJTable(table, RamScrollBar(ramModel))
@@ -666,6 +689,43 @@ class ObservableList<T>(val wrapped: MutableList<T>) : MutableList<T> by wrapped
         notifyObservers(index)
         return ret
     }
+}
+
+class ObservableSet<T>(val wrapped: Set<T>) : Observable() {
+    private val map = ConcurrentHashMap<T, T>()
+
+    init {
+        wrapped.forEach { v ->
+            map.put(v, v)
+        }
+    }
+
+    fun add(element: T): Boolean {
+        if (!map.contains(element)) {
+            map.put(element, element)
+            setChanged()
+            notifyObservers(element)
+            return true
+        }
+        return false
+    }
+
+    fun contains(t: T) = map.contains(t)
+
+    fun clear() {
+        map.clear()
+        setChanged()
+        notifyObservers()
+    }
+
+    fun size() = map.size
+//
+//    override fun set(index: Int, element: T): T {
+//        var ret: T = wrapped.set(index, element)
+//        setChanged()
+//        notifyObservers(index)
+//        return ret
+//    }
 }
 
 data class RamData(
@@ -804,13 +864,19 @@ class RegModel(val execMode: TableModel) : AbstractTableModel(), ColWidth, Table
     }
 }
 
-class RamTableModel : AbstractTableModel(), ColWidth {
+open class RamTableModel : AbstractTableModel(), ColWidth {
 
-    val recentUpdates = ObservableList(CopyOnWriteArrayList<Int>())
     val data = (0..(RamSize - 1)).map { RamData(address = it) }.toMutableList()
 
     init {
         restore()
+        if (ramIllustration != null) {
+            recentUpdates.addObserver(object : Observer {
+                override fun update(o: Observable?, arg: Any?) {
+                    ramIllustration!!.second.repaint()
+                }
+            })
+        }
     }
 
     val cols = listOf(
@@ -884,7 +950,7 @@ class RamTableModel : AbstractTableModel(), ColWidth {
         } else if (columnName == "comment") {
             data[pos].comment = aValue as String
         }
-        data[pos].clk = currentExec().clk
+        data[rowIndex].clk = currentExec().clk
 
         this.fireTableCellUpdated(rowIndex, columnIndex)
 
@@ -915,7 +981,7 @@ class RamScrollBar(val data: RamTableModel) : MetalScrollBarUI() {
     }
 
     init {
-        data.recentUpdates.addObserver(obs)
+        recentUpdates.addObserver(obs)
     }
 
     override fun paintTrack(g: Graphics, c: JComponent, trackBounds: Rectangle) {
@@ -923,7 +989,7 @@ class RamScrollBar(val data: RamTableModel) : MetalScrollBarUI() {
         super.paintTrack(g, c, trackBounds)
         g.color = Color.RED
 
-        for (i in data.recentUpdates.wrapped) {
+        for (i in recentUpdates.wrapped) {
             val pos = 1 - ((i * 1.0) / data.data.size)
             g.fillRect(0, trackBounds.y + (pos * trackBounds.height).toInt() - (5 / 2), trackBounds.width, 5)
         }
@@ -968,4 +1034,79 @@ fun addExecState(state: InstructionExec) {
 
     // update disasm view
     asmText.text = disasm(program.get(state.pc))
+}
+
+class GridCellRenderer : DefaultTableCellRenderer() {
+    override fun getTableCellRendererComponent(
+        table: JTable,
+        value: Any,
+        isSelected: Boolean,
+        hasFocus: Boolean,
+        row: Int,
+        col: Int
+    ): Component {
+
+        //Cells are by default rendered as a JLabel.
+        val l = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col) as JLabel
+
+        //Get the status for the current row.
+        //val tableModel = table.model as DefaultTableModel
+        if (col % 2 == 0) l.background = GREEN
+
+        //Return the JLabel which renders the cell.
+        return l
+    }
+}
+
+fun createRamIllustration(): Pair<TableModel, JFrame>? {
+    if (showMemView) {
+
+        val memMap = object : AbstractTableModel() {
+            override fun getRowCount(): Int {
+                return 256
+            }
+
+            override fun getColumnCount(): Int {
+                return 256
+            }
+
+            override fun getValueAt(rowIndex: Int, columnIndex: Int): Any {
+                val offset = (rowIndex * 256) + columnIndex
+                return recentUpdates.contains(offset)
+            }
+        }
+
+        val pane = object : JFrame() {
+            init {
+                setVisible(false);
+                title = "RAM View"
+            }
+
+            override fun paint(g: Graphics) {
+                g.color = RED
+                val topMargin = 50
+                val leftMargin = 50
+                val size = 1
+                g.drawRect(leftMargin - 10, topMargin - 10, (256 * size) + 20, (256 * size) + 20);
+
+                for (x in 0 until 256)
+                    for (y in 0 until 256) {
+                        if (x < memMap.columnCount && y < memMap.rowCount) {
+                            if (memMap.getValueAt(y, x) as Boolean) {
+                                g.fillRect(leftMargin + (size * x), topMargin + (size * y), size, size);
+                            }
+                        }
+                    }
+            }
+        }
+
+        //pane.size = Dimension(870, 880)
+        pane.size = Dimension(370, 380)
+
+        pane.setVisible(true);
+
+        return Pair(memMap, pane)
+    }
+
+    return null
 }

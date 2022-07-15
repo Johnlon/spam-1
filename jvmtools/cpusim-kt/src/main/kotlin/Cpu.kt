@@ -116,7 +116,7 @@ class CPU(
 
         thread(isDaemon = true, start = true) {
             while (true) {
-                Thread.sleep(countIntervalMs)
+//                Thread.sleep(countIntervalMs)
                 if (timer1 > 0) {
                     timer1--
                 }
@@ -353,7 +353,7 @@ class CPU(
         while (!halted) {
             cycle(terminalHandler)
             if (cycles % 1000000 == 0) printRate(start)
-            Thread.sleep(1)
+//            Thread.sleep(1)
         }
         printRate(start)
     }

@@ -6,13 +6,18 @@ if [ -z $scc_file ]; then
     exit 1
 fi
 
-java -classpath ../build/libs/jvmtools.jar  scc/SpamCC $scc_file
+HERE=$(readlink -f $(dirname $0))
+
+pwd
+export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
+
+$JAVA_HOME/bin/java -classpath $HERE/../build/libs/compiler.jar  scc/SpamCC $scc_file
 if [ $? -ne 0 ]; then
     echo error
     exit 1
 fi
 
-java -classpath ../build/libs/jvmtools.jar  asm/Assembler $scc_file.asm
+$JAVA_HOME/bin/java -classpath $HERE/../build/libs/compiler.jar  asm/Assembler $scc_file.asm
 if [ $? -ne 0 ]; then
     echo error
     exit 1

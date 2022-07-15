@@ -50,8 +50,8 @@ class StatementParser {
       statementConst |
       statementUInt16EqExpr |
       statementUInt16EqCondition |
-      statementVarDataLocated |
-      statementVarData |
+      statementVarLocatedDatasource |
+      statementVarDatasource |
       //      statementVarEqVarOpVar |
       //      statementVarEqVar |
       //      statementVarEqVarOpConst |
@@ -59,17 +59,19 @@ class StatementParser {
       //      statementVarEqConst |
       //      statementVarEqOp |
       statementRef |
-      statementLetVarEqConst |
-      statementLetVarEqVar |
-      statementLetVarEqExpr |
-      statementLetStringIndexEqExpr |
-      statementPutuartVarOptimisation | statementPutuartConstOptimisation | stmtPutuartGeneral |
-      statementWritePort |
-      stmtPutfuartGeneral | stmtPutfuartConst |
-      statementPutsName |
-      statementHalt | statementHaltVar |
-      whileCond | whileTrue |
-      ifCond |
+        statementLetVarEqConst |
+        statementLetVarEqVar |
+        statementLetVarEqExpr |
+        statementLetStringIndexEqExpr |
+        statementPutuartVarOptimisation | statementPutuartConstOptimisation | stmtPutuartGeneral |
+        statementWritePort |
+        stmtPutfuartGeneral | stmtPutfuartConst |
+        statementPutsName |
+        statementHalt |
+        statementHaltVar |
+         statementHaltVarVar |
+        whileCond | whileTrue |
+        ifCond |
       breakOut | functionCall ^^ {
       s =>
         s
@@ -227,17 +229,26 @@ class StatementParser {
   def dataSourceFile: Parser[Seq[Byte]] =
     "file(" ~> stringValue <~ ")" ^^ {
       fileName => {
-        if (fileName.trim.length == 0) {
-          sys.error("illegal datasource:   file(<blank or null>)")
+        if (fileName.trim.isEmpty) {
+          System.err.println("illegal datasource:   file(<blank or null>)")
+          sys.exit(1)
         }
         val path = Paths.get(fileName)
+        if (!path.toFile.exists()) {
+          System.err.println("\nnot found " + fileName)
+          sys.exit(1)
+        }
+        System.err.println("\nloading " + fileName)
         try {
           Files.readAllBytes(path).toSeq
         } catch {
-          case _: Throwable =>
-            sys.error("can't read data source '"
-              + fileName
-              + "' (path:" + path.toFile.getPath + ", abs:" + path.toFile.getAbsolutePath + ")")
+          case e: Throwable =>
+
+            System.err.println("\ncan't read data source '"
+            + fileName
+            + "' (path:" + path.toFile.getPath + ", abs:" + path.toFile.getAbsolutePath + ")")
+
+            sys.exit(1)
         }
       }
     }
@@ -274,34 +285,40 @@ class StatementParser {
   def dataSource: Parser[Seq[Byte]] = dataSourceFile | dataSourceHexFile | dataSourceString | dataSourceBytes
 
   /*
-  STRING:     STR     "ABC\n\0\u0000"
-  BYTE_ARR:   BYTES   [ 'A', 65 ,$41, %10101010 ] ; parse as hex bytes and then treat as per STR
-  */
-  def statementVarData: Parser[DefVarEqData] = positioned {
-    "var" ~> name ~ ("=" ~ "[") ~ dataSource <~ ("]" ~ SEMICOLON) ^^ {
-      case target ~ _ ~ str =>
-        DefVarEqData(target, str)
-    }
-  }
-
-  /*
+  positions are relative to the start of the variable, not absolute memory.
   it is an illegal situation to have a zero length data at index 0 - we can't usefully declare a zero bytes of data at index 0.
   at other indexes the datasource can be zero length in which case it is merely a means to ensure capacity upto but excluding that index without specifying data.
   */
-  def locatedData: Parser[LocatedData] = positioned {
+  def locatedDatasource: Parser[LocatedData] = positioned {
     constExpression ~ (":" ~ "[") ~ opt(dataSource) <~ "]" ^^ {
       case offset ~ _ ~ ds =>
         LocatedData(offset, ds.getOrElse(Nil))
     }
   }
 
+
+  def address: Parser[Int] = {
+    "@" ~> constExpression ^^ (address => address)
+  }
+
+
+  /*
+  STRING:     STR     "ABC\n\0\u0000"
+  BYTE_ARR:   BYTES   [ 'A', 65 ,$41, %10101010 ] ; parse as hex bytes and then treat as per STR
+  */
+  def statementVarDatasource: Parser[DefVarEqData] = positioned {
+    "var" ~> name ~ ("=" ~ "[") ~ dataSource <~ ("]" ~ SEMICOLON) ^^ {
+      case target ~ _ ~ str =>
+        DefVarEqData(target, str)
+    }
+  }
   // permits any mix of data and comments
-  def statementVarDataLocated: Parser[Block] = positioned {
-    "var" ~> name ~ ("=" ~ "[") ~ rep1(locatedData | blockComment | lineComment) <~ ("]" ~ SEMICOLON) ^^ {
+  def statementVarLocatedDatasource: Parser[Block] = positioned {
+    "var" ~> name ~ "=" ~ opt(address) ~ "[" ~ rep1(locatedDatasource | blockComment | lineComment) <~ ("]" ~ SEMICOLON) ^^ {
       // doesn't preserve the comments - too much hassle
-      case target ~ _ ~ dataL =>
+      case target ~ _ ~ absLocation ~ _ ~ dataL =>
         val d = dataL.collect { case b: LocatedData => b }
-        DefVarEqLocatedData(target, d)
+        DefVarEqLocatedData(target, absLocation, d)
     }
   }
 
@@ -326,6 +343,14 @@ class StatementParser {
         HaltVar(varName, num.toByte)
     }
   }
+
+  def statementHaltVarVar: Parser[Block] = positioned {
+    "halt" ~ "(" ~> name ~ "," ~ name <~ ")" ^^ {
+      case varName ~ _ ~ varName2 =>
+        HaltVarVar(varName, varName2)
+    }
+  }
+
 
 
   def statementWritePort: Parser[Block] = positioned {
@@ -371,7 +396,7 @@ class StatementParser {
 
   def stmtPutfuartConst: Parser[Block] = positioned {
     "putfuart" ~ "(" ~> fmtChar ~ ", " ~ constExpression <~ ")" ^^ {
-      case code ~ _ ~ block => PutfuartCont(code, block)
+      case code ~ _ ~ block => PutfuartConst(code, block)
     }
   }
 
@@ -439,7 +464,7 @@ class StatementParser {
     }
   }
 
-  def program: Parser[Program] = "program" ~ "{" ~> ((statementUInt16EqExpr | statementVarData | statementVarDataLocated | lineComment | blockComment | functionDef) +) <~ "}" ^^ {
+  def program: Parser[Program] = "program" ~ "{" ~> ((statementUInt16EqExpr | statementVarDatasource | statementVarLocatedDatasource | lineComment | blockComment | functionDef) +) <~ "}" ^^ {
     fns => Program(fns)
   }
 

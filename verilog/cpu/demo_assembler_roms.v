@@ -31,7 +31,7 @@
 
 module test();
 
-    parameter LOG = 1;
+    parameter LOG = 0;
 
     string rom;
     initial begin
@@ -166,7 +166,7 @@ endfunction
         if (_RESET_SWITCH) icount++; else icount=0;
 
         if (LOG) $display("\n%9t", $time, " END OF EXECUTE VALUES"); 
-        CPU.DUMP; 
+        if (LOG) CPU.DUMP; 
 
         if (LOG) $display("\n%9t", $time, " CLK GOING HIGH  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ INSTRUCTION %1d", icount); 
         if (LOG) $display("\n%9t", $time, " ENTERING FETCH"); 

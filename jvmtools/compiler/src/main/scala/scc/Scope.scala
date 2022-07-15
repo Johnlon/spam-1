@@ -16,7 +16,7 @@ case class Scope private(parent: Scope,
 
   // if not a numeric sequential name then use nested names as per the default
   val SEQUENTIAL_NUMERIC_NAME = true
-  if (SEQUENTIAL_NUMERIC_NAME) name = "B" + Foo.next()
+  if (SEQUENTIAL_NUMERIC_NAME) name = "B" + Scope.nextBlk
 
   if (!name.matches("^[a-zA-Z0-9_]+$")) {
     sys.error(s"invalid name ;'$name'")
@@ -89,7 +89,7 @@ case class Scope private(parent: Scope,
     consts.get(constName)
   }
 
-  def assignVarLabel(name: String, typ: VarType, data: Seq[Byte] = ONE_BYTE_STORAGE): Variable = {
+  def assignVarLabel(name: String, typ: VarType, data: Seq[Byte] = ONE_BYTE_STORAGE, absAddress: Option[Int] = None): Variable = {
     assert(typ != IsVar16 || data.length == 2)
     assert(typ != IsVar8 || data.length == 1)
 
@@ -105,8 +105,11 @@ case class Scope private(parent: Scope,
       sys.error(s"cannot redefine '$name' as label\n ${newFqn} because it is already defined with label\n ${existing.fqn}\n with initial value 0x${existing.address.toHexString}(${existing.address} dec)")
     }
 
-    val address = variables.lastOption.map(v => v.address + v.bytes.length).getOrElse(0)
-    val v = Variable(name, newFqn, address, data, typ)
+    // get the address after the end of last allocated object that is NOT using abs addressing
+    val nextAutoAddress: Int = variables.filter(_.isAutoAddress).lastOption.map(v => v.address + v.bytes.length).getOrElse(0)
+    val address = absAddress.getOrElse(nextAutoAddress)
+
+    val v = Variable(name, newFqn, address, data, typ, absAddress.isEmpty)
     variables.append(v)
     v
   }
@@ -157,8 +160,17 @@ object Scope {
   final val LABEL_NAME_SEPARATOR = "_"
 
   private[this] var idx = 0
+  private[this] var blk = 0
 
-  def resetCount: Unit = idx = 0
+  def resetCount: Unit = {
+    idx = 0
+    blk = 0
+  }
+
+  def nextBlk: Int = {
+    blk += 1
+    blk
+  }
 
   def nextInt: Int = {
     idx += 1

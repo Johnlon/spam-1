@@ -19,8 +19,12 @@
 
 `define PRINTMODE_ASCII 1
 `define PRINTMODE_NOCTRL 2
+`define PRINTMODE_CHARS 3
 
-module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80, PRINTMODE=`PRINTMODE_NOCTRL, LOG=0, CONTROL_FILE="uart.control", EXIT_ON_BAD_TIMING=0)  (
+module um245r #(parameter T3=50, T4=1, T5=25, T6=80, T11=25, T12=80, 
+                  //PRINTMODE=`PRINTMODE_NOCTRL, 
+                  //PRINTMODE=`PRINTMODE_CHARS, 
+                  LOG=0, CONTROL_FILE="uart.control", EXIT_ON_BAD_TIMING=0)  (
     inout [7:0] D,    // Input data
     input WR,        // Writes data on -ve edge
     input _RD,        // When goes from high to low then the FIFO data is placed onto D (equates to _OE)
@@ -53,6 +57,13 @@ string uart_out_file;
 initial begin
     if (! $value$plusargs("uart_out_file=%s", uart_out_file)) begin
         uart_out_file="uart.out";
+    end
+end
+
+integer uart_out_mode;
+initial begin
+    if (! $value$plusargs("uart_out_mode=%d", uart_out_mode)) begin
+        uart_out_mode=2;
     end
 end
 
@@ -116,13 +127,13 @@ assign  _RXF = !(unreadDataAvailable && _RXF_SUPPRESS && _MR);
 assign #T3 D= _RD? 8'bzzzzzzzz: totalBytesReceived > 0 ? Drx : 8'bxzxzxzxz; // xzxzxzxz is a distinctive signal that we're reading uninitialised data
 
 function [7:0] printable([7:0] c);
-    if (PRINTMODE==`PRINTMODE_ASCII) begin
+    if (uart_out_mode==`PRINTMODE_ASCII) begin
         if (c == 0) return 32;
         else if ($isunknown(c)) return 32; 
         else if (c < 32 && c != 12 && c != 13) return 32; // allow CR/LF
         else if (c >= 128) return 32;
     end
-    if (PRINTMODE==`PRINTMODE_NOCTRL) begin
+    if (uart_out_mode==`PRINTMODE_NOCTRL) begin
         if (c == 0) return 32;
         else if ($isunknown(c)) return 32; 
         else if (c < 32 ) return 32; 
@@ -150,7 +161,12 @@ always @(negedge WR) begin
             $display("%9t ", $time, "UART: TRANSMITTING [h:%02x] [c:%c] [b:%08b] [d:%1d]", D, printable(D), D, D);
         //    if (LOG) $display("%9t ", $time, "UART: TRANSMITTING h%02x (b=%08b)", D, D, D);
 
-            $fwrite(fOut, "%02x\n", D);
+            if (uart_out_mode==`PRINTMODE_CHARS) begin
+              $fwrite(fOut, "%c", D);
+            end else begin
+              $fwrite(fOut, "%02x\n", D);
+            end
+
             $fflush(fOut);
 
             #T11 // -WR to _TXE inactive delay

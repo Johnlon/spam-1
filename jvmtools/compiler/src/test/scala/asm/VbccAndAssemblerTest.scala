@@ -383,6 +383,77 @@ int main() {
 
    */
   @Test
+  def arrayAccess(): Unit = {
+
+    val c =
+      """
+// cannot use \n in the asm as this terminates it !!
+void halt2(__reg("ghalt1") char marlo, __reg("ghalt2") char alu) = "\tMARHI=0\tMARLO=[:ghalt1]\tHALT=[:ghalt2]\n";
+
+int main() {
+
+  int a = 0x01020304;
+  char * c = (char*)(&a);
+
+  int i = c[0];
+
+  if (i != 1)  {
+    halt2(i, 1);
+  }
+
+  return 66;
+}
+        """
+
+    runTest(c, Some(HaltCode(0xffff, 66)))
+  }
+
+  @Test
+  def primes(): Unit = {
+
+    val c =
+      """
+// cannot use \n in the asm as this terminates it !!
+void halt2(__reg("ghalt1") char marlo, __reg("ghalt2") char alu) = "\tMARHI=0\tMARLO=[:ghalt1]\tHALT=[:ghalt2]\n";
+
+int main()
+{
+  int i, a = 1, count;
+
+
+  while(a <= 100)
+  {
+    count = 0;
+    i = 2;
+    while(i <= a/2)
+    {
+      if(a%i == 0)
+      {
+        count++;
+	break;
+      }
+      i++;
+    }
+    if(count == 0 && a != 1 )
+    {
+	printf(" %d ", a);
+    }
+    a++;
+  }
+  return 0;
+}
+        """
+
+    runTest(c, Some(HaltCode(0xffff, 66)))
+  }
+
+  /*
+    I found this function halted with MAR=4 ALU=88 because main and sub both used gpr6 and the
+    value of "check" was in gpr6 so got overwritten. By passing a as '3' in the 'a != 3'.
+    And then there was a bug in jumping across pages cos I was assigning to PCLO instead of PC so jump didn't load pchitmp
+
+   */
+  @Test
   def jumpAcrossPages(): Unit = {
 
     val c =

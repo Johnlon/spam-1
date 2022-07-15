@@ -16,15 +16,16 @@ fi
 HERE=$(readlink -f $(dirname $0))
 
 pwd
+export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
 
 set -x
-java -DCHIP8_FILENAME=$chip8_prog -classpath $HERE/../build/libs/compiler.jar  scc/SpamCC $scc_file
+$JAVA_HOME/bin/java -DCHIP8_FILENAME=$chip8_prog -classpath $HERE/../build/libs/compiler.jar  scc/SpamCC $scc_file
 if [ $? -ne 0 ]; then
     echo error
     exit 1
 fi
 
-java -classpath $HERE/../build/libs/compiler.jar  asm/Assembler $scc_file.asm
+$JAVA_HOME/bin/java -classpath $HERE/../build/libs/compiler.jar  asm/Assembler $scc_file.asm
 if [ $? -ne 0 ]; then
     echo error
     exit 1

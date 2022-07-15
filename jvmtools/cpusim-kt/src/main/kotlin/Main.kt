@@ -3,7 +3,6 @@ import CInv.Inv
 import CInv.Std
 import Flag.Keep
 import Flag.Set
-import java.awt.EventQueue
 import java.io.File
 
 
@@ -69,15 +68,14 @@ fun main(_args: Array<String>) {
 
     })
 
-    //prog(cpu)
-//    val (rom, inst) =loadProgram("c:/Users/johnl/OneDrive/simplecpu/jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
-//    val prog = File("../../jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
-    val prog = File("C:\\Users\\johnl\\work\\simplecpu\\jvmtools\\compiler\\build\\spammcc-test.rom")
+    //val prog = File("../../jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
+    //val prog = File("c:/Users/johnl/work/simplecpu/jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
+    val prog = File("c:/Users/johnl/work/simplecpu/jvmtools/compiler/programs/Mandelbrot.scc.asm.rom")
     println("Program : " + prog.absolutePath)
     val (rom, inst) =loadProgram(prog.path)
     program.addAll(inst)
 
-    main()
+    simUI()
 
     while (debugger.get() == null) {
         Thread.sleep(100)

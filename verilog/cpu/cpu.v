@@ -187,7 +187,7 @@ module cpu(
 // verilator lint_off PINMISSING
     wire #(8) _gated_ram_in = _phase_exec | _ram_in; // DONE - THIS IS ON THE RAM BOARD
     //OK to leave _OE enabled all the time as ram data sheet says WE override it
-    ram #(.AWIDTH(16), .LOG(1), .UNDEFINED_VALUE(1'b0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // DONE
+    ram #(.AWIDTH(16), .LOG(0), .UNDEFINED_VALUE(1'b0)) ram64(._WE(_gated_ram_in), ._OE(1'b0), .A(address_bus)); // DONE
 // verilator lint_on PINMISSING
     
 `ifndef verilator
