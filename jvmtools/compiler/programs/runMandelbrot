@@ -1,0 +1,21 @@
+#!/bin/bash
+
+HERE=$(readlink -f $(dirname $0))
+echo $HERE
+
+set -e
+
+echo 't100000' >  $HERE/../../../verilog/cpu/uart.control
+echo >  $HERE/../../../verilog/cpu/uart.out
+
+./scc.sh  Mandelbrot.scc
+if [ $? -ne 0 ]; then
+    echo error
+    exit 1
+fi
+
+$HERE/../../../verilog/spamcc_sim.sh  100000 $HERE/../../../verilog/cpu/demo_assembler_roms.v Mandelbrot.scc.asm.rom
+if [ $? -ne 0 ]; then
+    echo error
+    exit 1
+fi
