@@ -643,11 +643,11 @@ class AssemblerTest {
     val asm = new Assembler()
 
     try {
-      instructions(code, asm)
+      val decoded = instructions(code, asm)
       fail("expected an error")
     } catch {
       case ex: RuntimeException =>
-        val err = "BYTES expression with label 'ILLEGAL' must have at least one byte but none were defined"
+        val err = "at least one byte but none were defined"
         if (!ex.getMessage.contains(err)) {
           sys.error("expected error : " + err)
         }

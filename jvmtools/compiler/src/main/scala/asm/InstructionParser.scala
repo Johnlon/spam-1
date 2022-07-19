@@ -226,8 +226,11 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
 
   def dataInstruction: Parser[RamInitialisation] = name ~ ":" ~ rep1(byteData|strData) ^^ {
     case labelName ~  _ ~ expr  =>
-
       val data = expr.flatten
+
+      if (data.isEmpty) {
+        sys.error(s"asm error: BYTES or String expression with label '$labelName' must have at least one byte but none were defined, or use an EQU instead")
+      }
       val bytes = data.map(_._2)
 
       val v = Known("DATA " + labelName, KnownByteArray(dataAddress, bytes))

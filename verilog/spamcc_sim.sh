@@ -68,9 +68,14 @@ if [ $? != 0 ] ; then
     exit 1
 fi
 
+
+if [ -z $UART_MODE ] ; then
+UART_MODE=2
+fi
+
 #vvp -N -i $rootname.vvp "$@" &
 
-$vvp -N -i $rootname.vvp +rom=$ROM +uart_out_mode=2 &
+$vvp -N -i $rootname.vvp +rom=$ROM +uart_out_mode=$UART_MODE &
 
 # timeout to prenent orphanned processes when Java test harness goes away
 
