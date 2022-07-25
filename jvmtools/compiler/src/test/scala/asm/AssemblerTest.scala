@@ -1,6 +1,9 @@
 package asm
 
 import asm.AddressMode._
+import asm.AluOp.PASS_B
+import asm.ConditionMode.STANDARD
+import asm.Control._A
 import org.junit.jupiter.api.Assertions.{assertEquals, fail}
 import org.junit.jupiter.api.Test
 import verification.HaltCode
@@ -10,6 +13,71 @@ import verification.Verification.verifyRoms
 // TODO review logic where datalocn pointer is reset by a prev statement
 
 class AssemblerTest {
+
+  @Test
+  def macroTest(): Unit = {
+    // test the injection of the jmp macro
+    val prog =
+      """
+        |; some leading asm
+        |.macro FOO_0
+        | MARHI = <12345
+        | MARLO = >12345
+        |.endmacro
+        |
+        |.macro FOO_1 arg1
+        | MARHI = <:arg1
+        | MARLO = >:arg1
+        |.endmacro
+        |
+        |.macro FOO_2 arg1 arg2
+        | MARHI = <arg1
+        | MARLO = >:arg2
+        |.endmacro
+        |
+        |; some trailing asm
+        |
+        |FOO_0
+        |FOO_1 label
+        |FOO_2 12345 label
+        |
+        |label:
+        |
+        |; some ending asm
+        |END
+        """
+
+    val code = prog.split("\\|").map(x => x.trim).filter(_.length > 0)
+
+    val asm = new Assembler()
+
+    val roms = assemble(code, asm)
+
+    roms.zipWithIndex.foreach {
+      c => {
+        print(c._2.toString + "\t : " + c._1 + "\t " + asm.decode(c._1))
+      }
+    }
+
+    val d = roms.map {
+      c => asm.decode(c)
+    }
+
+    import asm._
+    assertEquals(
+      d,
+      List(
+        (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 48),
+        (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 57),
+        (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 0),
+        (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 6),
+        (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 48),
+        (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 6)
+
+      )
+    )
+  }
+
 
   @Test
   def labelAddressesArentMessedUpByMovingDataBlocksToStart(): Unit = {

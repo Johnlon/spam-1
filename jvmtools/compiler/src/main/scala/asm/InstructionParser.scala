@@ -224,8 +224,8 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     str.iterator.map(_.toString).zip(bytes).toList
   }
 
-  def dataInstruction: Parser[RamInitialisation] = name ~ ":" ~ rep1(byteData|strData) ^^ {
-    case labelName ~  _ ~ expr  =>
+  def dataInstruction: Parser[RamInitialisation] = name ~ ":" ~ rep1(byteData | strData) ^^ {
+    case labelName ~ _ ~ expr =>
       val data = expr.flatten
 
       if (data.isEmpty) {
@@ -366,12 +366,13 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   }
 
   /*  merge single instruction and multi-inst instructions */
-  def line: Parser[Seq[Line]] = (reserveInstruction
-//    | strInstruction | bytesInstruction
-    | dataInstruction
-    | equInstruction
-    | bInstruction | abInstructionImmed | abInstruction | aInstruction | bInstructionImmed
-    | debug | comment | label) ^^ {
+  def line: Parser[Seq[Line]] = (
+    reserveInstruction
+      //    | strInstruction | bytesInstruction
+      | dataInstruction
+      | equInstruction
+      | bInstruction | abInstructionImmed | abInstruction | aInstruction | bInstructionImmed
+      | debug | comment | label) ^^ {
 
     case x: RamInitialisation =>
       x
@@ -392,4 +393,5 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       val reorganised = (inits ++ code).flatten
       reorganised
   }
+
 }

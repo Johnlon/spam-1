@@ -3,6 +3,8 @@ package asm
 import asm.Ports.{ReadPort, WritePort}
 
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.io.Source
 
 object Assembler {
@@ -110,11 +112,90 @@ object Assembler {
 
 class Assembler extends InstructionParser with Knowing with Lines with Devices {
 
+  case class AsmMacro(name: String, args: List[String], text: List[String])
+
+  def preprocess(lines: String): Seq[String] = {
+
+    val split = lines.split("(\n|\r\n)")
+
+    val macros = mutable.HashMap[String, AsmMacro]()
+
+    var name = ""
+    var args = List[String]()
+    val macroLines = ListBuffer[String]()
+    val nonMacroLines = ListBuffer[String]()
+
+    split.foreach {
+      l =>
+        if (l.startsWith(".macro")) {
+          val words = l.split("\\s+").toBuffer
+          words.remove(0)
+          name = words(0)
+          words.remove(0)
+          args = words.toList
+        } else if (l.startsWith(".endmacro")) {
+          macros.put(name, AsmMacro(name, args, macroLines.toList))
+          name = ""
+          args = List[String]()
+          macroLines.clear()
+        } else {
+          if (name.isEmpty) {
+            nonMacroLines.append(l)
+          } else {
+            macroLines.append(l)
+          }
+        }
+    }
+
+    val productLines = ListBuffer[String]()
+
+    nonMacroLines.foreach { l =>
+      val words = l.split("\\s+")
+      if (words.nonEmpty) {
+        val firstWord = words(0)
+        val m = macros.get(firstWord)
+
+        if (m.isDefined) {
+          // macro match
+          val matchedMacro = m.get
+          if (words.size - 1 != matchedMacro.args.size) {
+            throw new AssertionError(s"macro ${matchedMacro.name} expected ${matchedMacro.args.size} args but got ${words.size - 1}")
+          }
+
+          val argVals = words.takeRight(words.size - 1)
+          val argsMap = matchedMacro.args.zip(argVals).map {
+            nv =>
+              val aKey = nv._1
+              val aVal = nv._2
+              (aKey, aVal)
+          }
+
+          matchedMacro.text.foreach {
+            mLine =>
+              var l = mLine
+              argsMap.foreach { kv =>
+                val k = kv._1
+                val v = kv._2
+                l = l.replaceAll(k, v)
+              }
+              productLines.append(l)
+          }
+
+        } else {
+          productLines.append(l)
+        }
+      }
+    }
+
+    productLines.toSeq
+
+  }
 
   def assemble(raw: String, stripComments: Boolean = false): Seq[List[String]] = {
 
+    val code = preprocess(raw)
+
     //val code = cpp(raw)
-    val code = raw
 
     val constantsRd = ReadPort.values.map(
       p => s"${p.asmPortName}: EQU ${p.id}"
@@ -124,7 +205,8 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
       p => s"${p.asmPortName}: EQU ${p.id}"
     ).toList
 
-    val product = constantsWr.mkString("\n", "\n", "\n") + constantsRd.mkString("\n", "\n", "\n") + code
+    val product = constantsWr.mkString("\n", "\n", "\n") + constantsRd.mkString("\n", "\n", "\n") + code.mkString("\n")
+
 
     parse(lines, product) match {
       case Success(theCode, _) =>
@@ -188,9 +270,9 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
   */
 
   private def logInstructions(filtered: Seq[Line]) = {
-    val widIdx = math.log10(filtered.size).toInt+1
+    val widIdx = math.log10(filtered.size).toInt + 1
     val instructions = filtered.collect { case l: Instruction => l }
-    val widPc = math.log10(instructions.map(_.pc.getOrElse(0)).maxOption.getOrElse(0)+1).toInt+1
+    val widPc = math.log10(instructions.map(_.pc.getOrElse(0)).maxOption.getOrElse(0) + 1).toInt + 1
 
     filtered.zipWithIndex.foreach(
       l => {
@@ -199,9 +281,9 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
         val address = line match {
           case i: Instruction =>
             val pc = i.pc.getOrElse(sys.error("pc not yet assigned to " + i))
-              s"pc %04x %${widPc}d".format(pc,pc)
+            s"pc %04x %${widPc}d".format(pc, pc)
           case _ =>
-            " ".*(3+4+1+widPc)
+            " ".*(3 + 4 + 1 + widPc)
         }
         val index: Int = l._2
         System.out.println(s"""${index.formatted("%03d")} src=${line.sourceLineNumber.formatted(s"%-${widIdx}d")} $address : $line""")
