@@ -781,7 +781,7 @@ module test();
         assign b = 8'h10;
         assign _flag_c_in = 1'bx;
         PD;
-        `Equals(o, 8'h0F);
+        `Equals(o, 8'h0F); // 0f00
         `FLAGS(NE|GT) 
 
         ////////////////////////////////////////////////////////////// A_TIMES_B_LO
