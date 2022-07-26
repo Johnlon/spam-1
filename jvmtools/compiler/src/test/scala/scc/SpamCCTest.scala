@@ -4,7 +4,7 @@ import org.hamcrest.CoreMatchers.containsString
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.jupiter.api.Assertions.{assertEquals, assertThrows}
 import org.junit.jupiter.api.MethodOrderer.MethodName
-import org.junit.jupiter.api.{Test, TestMethodOrder}
+import org.junit.jupiter.api.{Nested, Test, TestMethodOrder}
 import terminal.TerminalStates._
 import verification.Checks._
 import verification.HaltCode
@@ -1462,7 +1462,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    val actual = compile(lines, timeout = 5, stripComments = true).map(x => x.replaceAll("^\\s*", ""))
+    val actual = compile(lines, timeout = 50, stripComments = true).map(x => x.replaceAll("^\\s*", ""))
 
     val expected = split(
       """B2___VAR_RETURN_HI: EQU   0
@@ -1718,6 +1718,209 @@ class SpamCCTest {
     })
   }
 
+  @Nested
+  class Multiply {
+    @Test
+    def negMathsPosPosMult(): Unit = {
+
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = 2;
+          | uint16 b = 3;
+          | uint16 c = a * b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(6, 6)), stripComments = true)
+    }
+
+    @Test
+    def negMathsNegPosMult(): Unit = {
+
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = -2;
+          | uint16 b = 3;
+          | uint16 c = a * b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(0xfffa, 0xfa)), stripComments = true)
+    }
+
+
+    @Test
+    def negMathsPosNegMult(): Unit = {
+
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = 2;
+          | uint16 b = -3;
+          | uint16 c = a * b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(-6, -6)), stripComments = true)
+    }
+
+    @Test
+    def negMathsNegNegMult(): Unit = {
+
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = -2;
+          | uint16 b = -3;
+          | uint16 c = a * b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(6, 6)), stripComments = true)
+    }
+  }
+
+  @Nested
+  class Division {
+
+    @Test
+    def negMathsLongPosPosDiv(): Unit = {
+
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = 2570; // $0a0a
+          | uint16 b = 1025; // $401
+          | uint16 c = a / b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(2, 2)), stripComments = true)
+    }
+
+    def negMathsLongPosNegDiv(): Unit = {
+
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = 2570; // $0a0a
+          | uint16 b = -1025; // $401
+          | uint16 c = a / b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(-2, -2)), stripComments = true)
+    }
+
+    def negMathsLongNegPosDiv(): Unit = {
+
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = -2570; // $0a0a
+          | uint16 b = 1025; // $401
+          | uint16 c = a / b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(-2, -2)), stripComments = true)
+    }
+
+    @Test
+    def negMathsLongNegNegDiv(): Unit = {
+
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = -2570; // $0a0a
+          | uint16 b = -1025; // $401
+          | uint16 c = a / b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(2, 2)), stripComments = true)
+    }
+
+
+    @Test
+    def negMathsSmallPosPosDiv(): Unit = {
+
+      // can got via fast all positive 8 bit route
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = 8;
+          | uint16 b = 2;
+          | uint16 c = a / b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(4, 4)), stripComments = true)
+    }
+
+    @Test
+    def negMathsSmallNegNegDiv(): Unit = {
+
+      // since upper byte is !=0 (cos two compl) then will go via slow route
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = -8;
+          | uint16 b = -2;
+          | uint16 c = a / b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(4, 4)), stripComments = true)
+    }
+
+    @Test
+    def negMathsSmallNegPosDiv(): Unit = {
+
+      // since upper byte is !=0 (cos two compl) then will go via slow route
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = -8;
+          | uint16 b = 2;
+          | uint16 c = a / b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(-4, -4)), stripComments = true)
+    }
+
+    @Test
+    def negMathSmallPosNegDiv(): Unit = {
+
+      // since upper byte is !=0 (cos two compl) then will go via slow route
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = 8;
+          | uint16 b = -2;
+          | uint16 c = a / b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(-4, -4)), stripComments = true)
+    }
+  }
+
   @Test
   def halt(): Unit = {
 
@@ -1728,7 +1931,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    compile(lines, timeout = 5, checkHalt = Some(HaltCode(65432, 123)), stripComments = true)
+    compile(lines, timeout = 50, checkHalt = Some(HaltCode(65432, 123)), stripComments = true)
   }
 
   @Test
@@ -1742,7 +1945,7 @@ class SpamCCTest {
         |}
         |""".stripMargin
 
-    //    expectHalt(() => compile(lines, timeout = 5, quiet = true), MAR = 65432, CODE = 123)
-    compile(lines, timeout = 5, checkHalt = Some(HaltCode(65432, 123)), stripComments = true)
+    //    expectHalt(() => compile(lines, timeout = 50, quiet = true), MAR = 65432, CODE = 123)
+    compile(lines, timeout = 50, checkHalt = Some(HaltCode(65432, 123)), stripComments = true)
   }
 }

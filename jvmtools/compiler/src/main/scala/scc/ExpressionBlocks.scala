@@ -2,7 +2,7 @@ package scc
 
 import asm.Ports.{ReadPort, WritePort}
 import scc.Scope.LABEL_NAME_SEPARATOR
-import scc.SpamCC.{TWO_BYTE_STORAGE, split}
+import scc.SpamCC.{ONE_BYTE_STORAGE, TWO_BYTE_STORAGE, split}
 
 case class BlkName(variableName: String) extends Block with IsStandaloneVarExpr {
   override def toString = s"$variableName"
@@ -364,12 +364,16 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               val remainderLo = ":" + scope.assignVarLabel("remainder", IsVar16, TWO_BYTE_STORAGE).fqn
               val remainderHi = s"($remainderLo + 1)"
 
+              val sign = ":" + scope.assignVarLabel("sign", IsVar8, ONE_BYTE_STORAGE).fqn
+
               val loopVar = ":" + scope.assignVarLabel("loopVar", IsVar16, TWO_BYTE_STORAGE).fqn
 
               val longMethod = scope.fqnLabelPathUnique("longDivideMethod")
               val divLoopLabel = scope.fqnLabelPathUnique("divLoop")
               val skipLabel = scope.fqnLabelPathUnique("skip")
+              val endLongLabel = scope.fqnLabelPathUnique("endLong")
               val endLabel = scope.fqnLabelPathUnique("end")
+              val division = scope.fqnLabelPathUnique("division")
 
               // https://www.tutorialspoint.com/8085-program-to-divide-two-16-bit-numbers#:~:text=8085%20has%20no%20division%20operation.&text=To%20perform%2016%2Dbit%20division,stored%20at%20FC02%20and%20FC03.
               // https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
@@ -382,7 +386,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"    $TMP1 = [:$temporaryVarLabel+1]",
                 s"    [$dividendHi] = $TMP1",
                 s"    [$divisorLo] = $WORKLO",
-                s"    [$divisorHi] = $WORKHI _S", // NOTE !! sets Z f the top byte of divisor is 0; Z used n 8 bt optimisation below
+                s"    [$divisorHi] = $WORKHI _S", // NOTE !! sets Z f the top byte of divisor is 0; Z used n 8 bit optimisation below
 
                 s"; FAST MODE CHECK: if both are 8 bit then use direct ALU op",
                 s";   skip FAST MODE if divisor > 8 bit",
@@ -393,7 +397,7 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"    PCHITMP = < :$longMethod",
                 s"    PC      = > :$longMethod ! _Z",
 
-                s"; FAST MODE: 8 bit execution",
+                s"; FAST MODE POSITIVE < 256 : 8 bit execution",
                 s"    [$dividendHi] = 0",
                 s"    $TMP1   =   [$dividendLo]",
                 s"    [$dividendLo] = $TMP1 / $WORKLO", // at this point it is assumed that TMP1 = dividendlo and WORKLO = divisorlo
@@ -402,6 +406,54 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
 
                 s"; SLOW MODE: 16 bit - using complicated algo I don't understand fully",
                 s"  $longMethod:",
+
+                // https://electronics.stackexchange.com/questions/270920/binary-division-with-signed-numbers
+                // Signed integer divide is almost always done by taking absolute values, dividing, and then correcting the signs of quotient and remainder, or at least was in earlier CPUs.
+                s"; Algo:work out sign of result then convert to abs values for division and then convert back to signed",
+                s"; Prep:work out sign of result",
+                s"    $TMP1        = [$dividendHi]",
+                s"    $TMP1        = $TMP1 A_AND_B 128",
+                s"    $TMP2        = [$divisorHi]",
+                s"    $TMP2        = $TMP2 A_AND_B 128",
+                s"    [$sign]      = $TMP1 A_XOR_B $TMP2", // set 0 if they are same sign ie +ve result
+                s"    ;HALT         = [$sign]",
+                s"    ",
+                s"; Prep:work out abs value of dividend",
+                s"  ${division}_prep_dividend:",
+                s"    $TMP1       = [$dividendHi] _S",
+                s"    PCHITMP     = < :${division}_prep_divisor",
+                s"    PC          = > :${division}_prep_divisor ! _N ; jump next if is positive",
+                s"    ; 2's complement",
+                s"    $TMP1         = [$dividendLo]",
+                s"    $TMP1         = $TMP1 A_XOR_B $$ff",
+                s"    [$dividendLo] = $TMP1 A_PLUS_B 1 _S",
+                s"    $TMP1         = [$dividendHi]",
+                s"    $TMP1         = $TMP1 A_XOR_B $$ff",
+                s"    [$dividendHi] = $TMP1 A_PLUS_B_PLUS_C 0",
+
+                s"    ;MARHI         = [$dividendHi]",
+                s"    ;MARLO         = [$dividendLo]",
+                s"    ;HALT          = 99",
+
+                s"    ",
+                s"; Prep:work out abs value of divisor",
+                s"  ${division}_prep_divisor:",
+                s"    $TMP1       = [$divisorHi] _S",
+                s"    PCHITMP     = < :${division}",
+                s"    PC          = > :${division} ! _N ; jump next if is positive",
+                s"    ; 2's complement",
+                s"    $TMP1         = [$divisorLo]",
+                s"    $TMP1         = $TMP1 A_XOR_B $$ff",
+                s"    [$divisorLo] = $TMP1 A_PLUS_B 1 _S",
+                s"    $TMP1         = [$divisorHi]",
+                s"    $TMP1         = $TMP1 A_XOR_B $$ff",
+                s"    [$divisorHi] = $TMP1 A_PLUS_B_PLUS_C 0",
+                s"    ",
+                s"    ;MARHI         = [$divisorHi]",
+                s"    ;MARLO         = [$divisorLo]",
+                s"    ;HALT          = 99",
+
+                s"  $division:",
                 s"; lda #0 -- NO NEED FOR LDA 0 IN SPAM1 IMPL AS I CAN DIRECTLY ASSIGN VARS BELOW",
 
                 s"; sta remainder",
@@ -480,13 +532,29 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"    PCHITMP = < :$divLoopLabel ; not equal so branch",
                 s"    PC      = > :$divLoopLabel ! _Z",
 
+                s"  ; done long division so now adjust sign if necessary",
+                s"  $endLongLabel:",
+                s"    ",
+                s"    ; fix sign of result - if result should be neg then 2's comp the result which is held in the dividend reg's",
+                s"    NOOP    = [$sign] _S",
+                s"    PCHITMP = < :$endLabel",
+                s"    PC      = > :$endLabel ! _N ; jump to end if is +ve",
+                s"    $TMP1         = [$dividendLo]",
+                s"    $TMP1         = $TMP1 A_XOR_B $$ff",
+                s"    [$dividendLo] = $TMP1 A_PLUS_B 1 _S",
+                s"    $TMP1         = [$dividendHi]",
+                s"    $TMP1         = $TMP1 A_XOR_B $$ff",
+                s"    [$dividendHi] = $TMP1 A_PLUS_B_PLUS_C 0",
+                s"    ",
+
                 s"  $endLabel:",
 
                 s"    $TMP1 = [$dividendLo]",
                 s"    [:$temporaryVarLabel] = $TMP1",
                 s"    $TMP1 = [$dividendHi]",
-                s"    [:$temporaryVarLabel+1] = $TMP1"
-              )
+                s"    [:$temporaryVarLabel+1] = $TMP1",
+                s"    "
+          )
             case x =>
               sys.error("NOT IMPL ALU OP '" + x + "'")
           }

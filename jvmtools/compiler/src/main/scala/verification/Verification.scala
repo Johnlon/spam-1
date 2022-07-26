@@ -38,12 +38,15 @@ object Verification {
     val filtered = assemblyCode.filter { l =>
       (!stripComments) || !l.matches("^\\s*;.*")
     }
-    print("ASM RAN OK\n" + filtered.map(_.stripLeading()).mkString("\n"))
+
+//    if (verbose) {
+//      print("ASM RAN OK\n" + filtered.map(_.stripLeading()).mkString("\n"))
+//    }
 
     filtered
   }
 
-  private def prettyPrintAsm(assemblyCode: List[String]):Unit = {
+  private def prettyPrintAsm(assemblyCode: List[String]): Unit = {
     var pc = 0
 
     val IsEqu = "^\\s*[a-zA-Z0-9_]+:\\s*EQU.*$".r
@@ -159,6 +162,8 @@ object Verification {
       }
     }
 
+    var cycles = -1
+
     val logger = ProcessLogger.apply(
       fout = output => {
         addLine("OUT:" + output)
@@ -169,6 +174,13 @@ object Verification {
           halted.set(HaltCode(marHaltCode.toInt, aluHaltCode.toInt))
         }
         if (verbose) println("\t   \t: " + output)
+
+        val CyclesPattern =".*CYCLES ([0-9]+) .*".r
+
+        output match {
+          case CyclesPattern(c) => cycles = c.toInt
+          case _ =>
+        }
       },
       ferr = output => {
         addLine("ERR:" + output)
@@ -181,6 +193,7 @@ object Verification {
     val process = pb.run(logger)
     val ex = process.exitValue()
     println("EXIT CODE " + ex)
+    println("CYCLE COUNT " + cycles)
 
     if (ex == 127) {
       println("CANT FIND EXEC")
@@ -203,10 +216,15 @@ object Verification {
   }
 }
 
-case class HaltCode(mar: Int, alu: Int) {
+case class HaltCode private(mar: Short, alu: Byte) {
   override def toString: String = {
     val str = "00000000" + alu.toBinaryString
-    val bin = str.substring(str.length-8)
-    f"HaltCode(mar:$mar%-5d (0x$mar%04x), alu:$alu%-3d (b$bin, 0x$alu%02x))"
+    val bin = str.substring(str.length - 8)
+    f"HaltCode(mar:${mar & 0xffff}%-5d (0x${mar & 0xffff}%04x), alu:$alu%-3d (b$bin, 0x${alu & 0xff}%02x))"
+  }
+}
+object HaltCode {
+  def apply(mar: Int, alu: Int): HaltCode = {
+    new HaltCode((mar & 0xffff).toShort, (alu & 0xff).toByte)
   }
 }
