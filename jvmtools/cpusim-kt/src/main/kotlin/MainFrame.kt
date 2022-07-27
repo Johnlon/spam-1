@@ -18,13 +18,15 @@ import javax.swing.event.TableModelListener
 import javax.swing.plaf.metal.MetalScrollBarUI
 import javax.swing.table.*
 
+val enableMemIllustration = false
+val enableRamTable = false
+val enableRegTable = false
+val enableProgTable = false
 
 val RamSize = 65536
 
 val recentUpdates = ObservableSet<Int>(HashSet())
 
-val showMemView = false
-val enableRamTable = false
 val ramIllustration = createRamIllustration()
 
 // hack for testing ...
@@ -36,11 +38,11 @@ val program = mutableListOf<Instruction>()
 
 val ramModel = RamTableModel()
 
-var registerView: ScrollableJTable? = null
+var registerTable: ScrollableJTable? = null
 var currentInstView: JTable? = null
-var progView: ScrollableJTable? = null
-var controllerView: Component? = null
-var ramView: ScrollableJTable? = null
+var progTable: ScrollableJTable? = null
+var buttonsView: Component? = null
+var ramTable: ScrollableJTable? = null
 
 fun mkExecModel(): DefaultTableModel {
     val dtm = DefaultTableModel()
@@ -113,31 +115,37 @@ private fun createAndShowGUI() {
     menuFile.add(menuLoad)
     menuFile.add(menuSave)
 
-    ramView = createMemoryView(regModel)
-    registerView = createRegisterView()
-    progView = createProgView()
+    ramTable = createRamTable(regModel)
+    registerTable = createRegisterView()
+    progTable = createProgView()
     currentInstView = createCurrentInstView()
-    controllerView = createControlView()
+    buttonsView = createButtonsView()
 
-    mainPain.add(ramView, WEST)
+    if (ramTable != null) {
+        mainPain.add(ramTable, WEST)
+    }
     mainPain.add(object : BPanel() { init {
         add(object : BPanel() { init {
-            add(
-                object : BPanel() { init {
-                    add(registerView, EAST)
-                }
-                },
-                NORTH
-            )
+            if (registerTable != null) {
+                add(
+                    object : BPanel() { init {
+                        add(registerTable, EAST)
+                    }
+                    },
+                    NORTH
+                )
+            }
             add(
                 object : BPanel() { init {
                     add(currentInstView, NORTH)
-                    add(progView, CENTER)
+                    if (progTable != null) {
+                        add(progTable, CENTER)
+                    }
                 }
                 },
                 CENTER
             )
-            add(controllerView, SOUTH)
+            add(buttonsView, SOUTH)
         }
         })
     }
@@ -153,7 +161,7 @@ private fun createAndShowGUI() {
 
         override fun onDebug(code: InstructionExec, commit: () -> Unit) {
             addExecState(code)
-            progView?.repaint()
+            progTable?.repaint()
 
             clksRemaining.acquire()
 
@@ -220,7 +228,11 @@ class MainFrame(title: String) : JFrame() {
 }
 
 
-fun createRegisterView(): ScrollableJTable {
+fun createRegisterView(): ScrollableJTable? {
+
+    if (!enableRegTable) {
+        return null
+    }
 
     val table = JTable(regModel)
     execModel.addTableModelListener { e -> regModel.fireTableDataChanged() }
@@ -238,7 +250,7 @@ fun createRegisterView(): ScrollableJTable {
 
 val asmText = JTextField("Assembly")
 
-fun createControlView(): Component {
+fun createButtonsView(): Component {
 
     var pane = JPanel()
     val layout = GroupLayout(pane)
@@ -268,24 +280,28 @@ fun createControlView(): Component {
         }
     }
 
-    val textStep = JTextField("10")
+    val textStep = JTextField("1000000")
     textStep.addKeyListener(IntFilter)
     textStep.maximumSize = Dimension(50, 30)
+    textStep.preferredSize = Dimension(50, 30)
+    textStep.size = Dimension(50, 30)
 
     val labelBrkClk = JLabel("Break Clk")
     val textBrkClk = JTextField("")
     textBrkClk.addKeyListener(IntFilter)
     textBrkClk.maximumSize = Dimension(70, 30)
+    textBrkClk.preferredSize = Dimension(70, 30)
 
     val labelBrkPC = JLabel("Break PC")
     val textBrkPC = JTextField("")
     textBrkPC.addKeyListener(IntFilter)
     textBrkPC.maximumSize = Dimension(70, 30)
+    textBrkPC.preferredSize = Dimension(70, 30)
 
     val resetRecentUpdates = JButton("Reset Recent")
     resetRecentUpdates.addActionListener { a ->
         recentUpdates.clear()
-        ramView?.repaint()
+        ramTable?.repaint()
         if (ramIllustration != null) {
             ramIllustration.second.repaint()
         }
@@ -317,7 +333,7 @@ fun createControlView(): Component {
             )
     )
 
-    pane.preferredSize = Dimension(1, 100)
+    pane.preferredSize = Dimension(1000, 100)
 
     nextBtn.addActionListener { a ->
         clksRemaining.release(1)
@@ -441,7 +457,11 @@ fun createCurrentInstView(): JTable {
     return table
 }
 
-fun createProgView(): ScrollableJTable {
+fun createProgView(): ScrollableJTable? {
+
+    if (!enableProgTable) {
+        return null
+    }
 
     val progModel = object : AbstractTableModel() {
 
@@ -518,84 +538,86 @@ fun createProgView(): ScrollableJTable {
     return tab
 }
 
-fun createMemoryView(regModel: TableModel): ScrollableJTable {
-
-    val table = object : JTable() {
-        override fun prepareRenderer(
-            renderer: TableCellRenderer?,
-            row: Int,
-            column: Int
-        ): Component? {
-
-            val addr = row
-            val invAddr = RamSize - row - 1
-
-            val c = super.prepareRenderer(
-                renderer,
-                row, column
-            )
-
-            var bgIsRed = false
-
-            val isValue = getColumnName(column) == "value"
-            if (isValue && recentUpdates.contains(addr)) {
-                c.background = RED
-                bgIsRed = true
-            } else {
-                val isAddr = getColumnName(column) == "address"
-                val marValue = currentExec().regIn.mar
-                val isMarRow = invAddr == marValue
-                if (isAddr && isMarRow) {
-                    c.background = YELLOW
-                } else {
-                    c.background = WHITE
-                }
-            }
-
-            if (invAddr == program[currentExec().pc].address) {
-                if (bgIsRed) c.foreground = BLACK
-                else c.foreground = RED
-                c.font = c.font.deriveFont(Font.BOLD)
-//                c.graphics.color = BLUE
-//                c.graphics.drawRect(c.bounds.x, c.bounds.y, c.bounds.width, c.bounds.height)
-            } else {
-                c.font = c.font.deriveFont(Font.PLAIN)
-                c.foreground = BLACK
-//                c.graphics.clearRect(c.bounds.x, c.bounds.y, c.bounds.width, c.bounds.height)
-            }
-            return c
-        }
-    }
-
-    val tml = object : TableModelListener {
-        override fun tableChanged(e: TableModelEvent?) {
-            ramModel.fireTableDataChanged()
-        }
-    }
+fun createRamTable(regModel: TableModel): ScrollableJTable? {
 
     if (enableRamTable) {
+        val table = object : JTable() {
+            override fun prepareRenderer(
+                renderer: TableCellRenderer?,
+                row: Int,
+                column: Int
+            ): Component? {
+
+                val addr = row
+                val invAddr = RamSize - row - 1
+
+                val c = super.prepareRenderer(
+                    renderer,
+                    row, column
+                )
+
+                var bgIsRed = false
+
+                val isValue = getColumnName(column) == "value"
+                if (isValue && recentUpdates.contains(addr)) {
+                    c.background = RED
+                    bgIsRed = true
+                } else {
+                    val isAddr = getColumnName(column) == "address"
+                    val marValue = currentExec().regIn.mar
+                    val isMarRow = invAddr == marValue
+                    if (isAddr && isMarRow) {
+                        c.background = YELLOW
+                    } else {
+                        c.background = WHITE
+                    }
+                }
+
+                if (invAddr == program[currentExec().pc].address) {
+                    if (bgIsRed) c.foreground = BLACK
+                    else c.foreground = RED
+                    c.font = c.font.deriveFont(Font.BOLD)
+//                c.graphics.color = BLUE
+//                c.graphics.drawRect(c.bounds.x, c.bounds.y, c.bounds.width, c.bounds.height)
+                } else {
+                    c.font = c.font.deriveFont(Font.PLAIN)
+                    c.foreground = BLACK
+//                c.graphics.clearRect(c.bounds.x, c.bounds.y, c.bounds.width, c.bounds.height)
+                }
+                return c
+            }
+        }
+
+        val tml = object : TableModelListener {
+            override fun tableChanged(e: TableModelEvent?) {
+                ramModel.fireTableDataChanged()
+            }
+        }
+
         regModel.addTableModelListener(tml)
         execModel.addTableModelListener(tml)
+
+        table.model = ramModel
+
+
+        // turn it into a scrollable table
+        val tab = ScrollableJTable(table, RamScrollBar(ramModel))
+
+        tab.table.columnModel.getColumn(1).cellEditor = DialogByteEditor("value")
+
+        ramModel.cols.forEachIndexed { i, w ->
+            tab.table.columnModel.getColumn(i).preferredWidth = ramModel.getWidth(i)
+        }
+        val sz = 20 + tab.table.columnModel.columns.toList().sumOf { it.preferredWidth }
+
+        tab.preferredSize = Dimension(sz, 700)
+
+        table.setAutoCreateRowSorter(true); // sorting of the rows on a particular column
+
+        return tab
+    } else {
+        return null
     }
-
-    table.model = ramModel
-
-
-    // turn it into a scrollable table
-    val tab = ScrollableJTable(table, RamScrollBar(ramModel))
-
-    tab.table.columnModel.getColumn(1).cellEditor = DialogByteEditor("value")
-
-    ramModel.cols.forEachIndexed { i, w ->
-        tab.table.columnModel.getColumn(i).preferredWidth = ramModel.getWidth(i)
-    }
-    val sz = 20 + tab.table.columnModel.columns.toList().sumOf { it.preferredWidth }
-
-    tab.preferredSize = Dimension(sz, 700)
-
-    table.setAutoCreateRowSorter(true); // sorting of the rows on a particular column
-
-    return tab
 }
 
 
@@ -1023,14 +1045,16 @@ class ScrollableJTable(val table: JTable, val scrollBarUI: RamScrollBar? = null)
 fun addExecState(state: InstructionExec) {
     addExec(state)
     currentInstView?.repaint()
-    registerView?.repaint()
+    registerTable?.repaint()
 
     // move PC row into middle of view
-    val tab = progView?.table
-    tab?.getSelectionModel()?.setSelectionInterval(state.pc, state.pc)
-    val pageSize: Int = (tab!!.getParent()!!.getSize()!!.getHeight()!!.toInt() / (tab!!.getRowHeight()))
-    val halfPage = pageSize / 2
-    progView?.table?.scrollRectToVisible(Rectangle(progView?.table?.getCellRect(state.pc + halfPage, 0, true)));
+    if (progTable != null) {
+        val tab = progTable?.table
+        tab?.getSelectionModel()?.setSelectionInterval(state.pc, state.pc)
+        val pageSize: Int = (tab!!.getParent()!!.getSize()!!.getHeight()!!.toInt() / (tab!!.getRowHeight()))
+        val halfPage = pageSize / 2
+        progTable?.table?.scrollRectToVisible(Rectangle(progTable?.table?.getCellRect(state.pc + halfPage, 0, true)));
+    }
 
     // update disasm view
     asmText.text = disasm(program.get(state.pc))
@@ -1059,7 +1083,7 @@ class GridCellRenderer : DefaultTableCellRenderer() {
 }
 
 fun createRamIllustration(): Pair<TableModel, JFrame>? {
-    if (showMemView) {
+    if (enableMemIllustration) {
 
         val memMap = object : AbstractTableModel() {
             override fun getRowCount(): Int {
