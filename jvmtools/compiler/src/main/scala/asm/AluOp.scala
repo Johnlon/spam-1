@@ -31,8 +31,8 @@ object AluOp  {
     object A_DIV_B extends AluOp(18, "/")
     object A_MOD_B extends AluOp(19, "%")
     object A_LSL_B extends AluOp(20, "<<")
-    object A_LSR_B extends AluOp(21, ">>")
-    object A_ASR_B extends AluOp(22, ">>>")
+    object A_LSR_B extends AluOp(21, ">>") // Javascript uses >> for signed so should have used >>> here
+    object A_ASR_B extends AluOp(22, ">>>") // Javascript uses >>> for unsigned shift so should be >> here
     object A_RLC_B extends AluOp(23, "<-")
     object A_RRC_B extends AluOp(24, "->")
     object A_AND_B extends AluOp(25, "&")
