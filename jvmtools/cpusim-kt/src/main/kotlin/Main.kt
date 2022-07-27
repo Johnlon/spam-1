@@ -39,7 +39,7 @@ fun prog(cpu: CPU) {
 }
 
 
-fun loadProgram(romFile: String) : Pair<List<Long>, List<Instruction>> {
+fun loadProgram(romFile: String): Pair<List<Long>, List<Instruction>> {
     var loc = 0
 
     val rom = mutableListOf<Long>()
@@ -59,7 +59,7 @@ fun loadProgram(romFile: String) : Pair<List<Long>, List<Instruction>> {
 fun main(_args: Array<String>) {
     println("START")
 
-    Thread.setDefaultUncaughtExceptionHandler(object: Thread.UncaughtExceptionHandler {
+    Thread.setDefaultUncaughtExceptionHandler(object : Thread.UncaughtExceptionHandler {
         override fun uncaughtException(t: Thread?, e: Throwable?) {
             e?.printStackTrace()
             println(e)
@@ -72,7 +72,7 @@ fun main(_args: Array<String>) {
     //val prog = File("c:/Users/johnl/work/simplecpu/jvmtools/compiler/programs/Chip8Emulator.scc.asm.rom")
     val prog = File("c:/Users/johnl/work/simplecpu/jvmtools/compiler/programs/Mandelbrot.scc.asm.rom")
     println("Program : " + prog.absolutePath)
-    val (rom, inst) =loadProgram(prog.path)
+    val (rom, inst) = loadProgram(prog.path)
     program.addAll(inst)
 
     simUI()
@@ -89,8 +89,17 @@ fun main(_args: Array<String>) {
         t.main(_args)
         cpu.run(t::handleLine)
     } else {
-        cpu.run {
-            s: String  -> {}
+        var n=0
+        cpu.run { s: String ->
+            // TERMINAL
+            val c: Char = Integer.parseInt(s, 16).toChar()
+            print( c )
+            //print(" " + s )
+            System.out.flush()
+
+            n = n + 1
+//            if (n%5 == 0) print(" ")
+            //if (s == "0a") println("")
         }
     }
 }
