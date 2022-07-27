@@ -10,11 +10,12 @@ l
 **/a.out
 **/*.v.out
 **/*.class
-**/igamepad.control
-**/iuart.control
-**/iuart.out
+**/gamepad.control
+**/uart.control
+**/uart.out
 
 **/*.asm.rom*
+**/*.scc.asm
 
 **/.old
 /verilog/_old/
