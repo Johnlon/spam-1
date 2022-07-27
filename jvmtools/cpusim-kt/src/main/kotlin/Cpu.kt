@@ -78,7 +78,7 @@ class CPU(
     fun hex(i: Int) = i.toString(16).padStart(2, '0')
 
     fun dump() {
-        if (1 == 1) {
+        if (1 == 0) {
             val code = instructions[pc()]
             println("CYCLE: ${cycles} PC=${pc()} : ${code} ")
         }
