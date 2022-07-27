@@ -407,6 +407,66 @@ class SpamCCTest {
   }
 
   @Test
+  def varASR(): Unit = {
+
+    val lines =
+      """
+        |
+        |fun main(x) {
+        |
+        | uint16 positive = %0100000101000010;
+        |
+        | putuart(positive)
+        | putuart(positive >>> 0)
+        | putuart(positive >>> 1)
+        | putuart(positive >>> 2)
+        | putuart(positive >>> 3)
+        | putuart(positive >>> 8)
+        | putuart(positive >>> 9)
+        | putuart(positive >>> 16)
+        |
+        | uint16 negative = %1100000101000010;
+        |
+        | putuart(negative)
+        | putuart(negative >>> 0)
+        | putuart(negative >>> 1)
+        | putuart(negative >>> 2)
+        | putuart(negative >>> 3)
+        | putuart(negative >>> 8)
+        | putuart(negative >>> 9)
+        | putuart(negative >>> 16)
+        |
+        }
+        |
+        |""".stripMargin
+
+    compile(lines, verbose = true, outputCheck = {
+      str =>
+
+        checkTransmittedL('d', str, List(
+          // pos
+          toDecStr("01000010"),
+          toDecStr("01000010"),
+          toDecStr("10100001"),
+          toDecStr("01010000"),
+          toDecStr("00101000"),
+          toDecStr("01000001"),
+          toDecStr("00100000"),
+          toDecStr("00000000"),
+          // neg
+          toDecStr("01000010"),
+          toDecStr("01000010"),
+          toDecStr("10100001"),
+          toDecStr("01010000"),
+          toDecStr("00101000"),
+          toDecStr("11000001"),
+          toDecStr("11100000"),
+          toDecStr("11111111"),
+        ))
+    })
+  }
+
+  @Test
   def varLSLAll(): Unit = {
 
     val lines =

@@ -243,11 +243,71 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 s"$TMP1 = [:$temporaryVarLabel + 1]",
                 s"[:$temporaryVarLabel + 1] = $TMP1 $op $WORKHI"
               )
+            case ">>>" => // ARITHMETIC SHIFT
+              val shiftLoop = scope.fqnLabelPathUnique("shiftLoop")
+              val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
+
+              constRight match {
+                case Some(0) =>
+                  List("; ignoring shift right 0 as it's a noop")
+                case Some(n) if n < 8 =>
+                  // fast
+                  val MASK = "1" + "1" * n + "0" * (7-n)
+                  List(
+                    s"$TMP1 = [:$temporaryVarLabel + 1] _S",
+                    s"$TMP2 = $TMP1 << ${8 - n}",
+                    s"$TMP1 = $TMP1 >> $n",
+                    s"[:$temporaryVarLabel + 1] = $TMP1",
+                    s"[:$temporaryVarLabel + 1] = $TMP1 A_OR_B %$MASK _N ; optionally sign extend left side",
+                    s"$TMP1 = [:$temporaryVarLabel]",
+                    s"$TMP1 = $TMP1 >> $n",
+                    s"[:$temporaryVarLabel] = $TMP1 A_OR_B $TMP2",
+                  )
+                case Some(8) =>
+                  // fast
+                  List(
+                    s"$TMP1 = [:$temporaryVarLabel + 1] _S",
+                    s"[:$temporaryVarLabel + 1] = 0",
+                    s"[:$temporaryVarLabel + 1] = $$ff _N ; assign if was negative",
+                    s"[:$temporaryVarLabel] = $TMP1",
+                )
+                case _ =>
+                  // slow
+                  List(
+                    s"$shiftLoop:",
+                    // hi/lo has been set to the shift amt
+                    s"; is loop done?",
+                    s"NOOP = $WORKHI | $WORKLO _S",
+                    s"PCHITMP = < :$endLoop",
+                    s"PC = > :$endLoop _Z", // do a shift if LO or HI != 0
+
+                    s"; count down loop",
+                    s"$WORKLO = $WORKLO A_MINUS_B 1 _S",
+                    s"$WORKHI = $WORKHI A_MINUS_B_MINUS_C 0",
+
+                    s"; do one shift",
+                    s"$TMP1 = [:$temporaryVarLabel + 1]",
+                    s"[:$temporaryVarLabel + 1] = $TMP1 A_ASR_B 1 _S",
+                    s"$TMP2 = $TMP1 << 7", // move the lowest bit into the top position so we can add to the shifted lower byte
+
+                    s"; LSR lo byte and OR the carry",
+                    s"$TMP1 = [:$temporaryVarLabel]",
+                    s"$TMP1 = $TMP1 A_LSR_B 1",
+                    s"[:$temporaryVarLabel] = $TMP1  | $TMP2",
+
+                    s"; loop again",
+                    s"PCHITMP = < :$shiftLoop",
+                    s"PC = > :$shiftLoop",
+                    s"$endLoop:",
+                  )
+              }
             case ">>" =>
               val shiftLoop = scope.fqnLabelPathUnique("shiftLoop")
               val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
 
               constRight match {
+                case Some(0) =>
+                  List("; ignoring shift right 0 as it's a noop")
                 case Some(n) if n < 8 =>
                   // fast
                   List(
@@ -282,8 +342,8 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
 
                     s"; do one shift",
                     s"$TMP1 = [:$temporaryVarLabel + 1]",
-                    s"$TMP2 = $TMP1 << 7", // move the lowest bit into the top position so we can add to the shifted lower byte
                     s"[:$temporaryVarLabel + 1] = $TMP1 A_LSR_B 1 _S",
+                    s"$TMP2 = $TMP1 << 7", // move the lowest bit into the top position so we can add to the shifted lower byte
 
                     s"; LSR load lo byte and or in the carry",
                     s"$TMP1 = [:$temporaryVarLabel]",
@@ -301,6 +361,8 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               val endLoop = scope.fqnLabelPathUnique("endShiftLoop")
 
               constRight match {
+                case Some(0) =>
+                  List("; ignoring shift left 0 as it's a noop")
                 case Some(n) if n < 8 =>
                   // fast
                   List(

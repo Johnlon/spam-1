@@ -469,7 +469,7 @@ class StatementParser {
   }
 
   def aluOp: Parser[String] = {
-    val shortAluOps = {
+    val shortAluOps : Parser[AluOp] = {
       // reverse sorted to put longer operators ahead of shorter ones otherwise shorter ones gobble
       val reverseSorted = AluOp.values.filter(_.isAbbreviated).sortBy(x => x.abbrev).reverse.toList
       reverseSorted map {
