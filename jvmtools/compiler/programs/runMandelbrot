@@ -14,6 +14,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+#export UART_MODE=3
+
 $HERE/../../../verilog/spamcc_sim.sh  100000 $HERE/../../../verilog/cpu/demo_assembler_roms.v Mandelbrot.scc.asm.rom
 if [ $? -ne 0 ]; then
     echo error

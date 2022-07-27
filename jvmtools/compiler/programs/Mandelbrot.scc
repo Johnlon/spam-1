@@ -3,18 +3,39 @@ program {
 
     fun main() {
 
-        var screen = @ $1000 [
-                      // not initialised
-                    ];
+/*
+      uint16   s1 = $ffbc;
+      uint16   s2 = s1 << 1;
+      uint16   s3 = s1 * 2;
 
+putuart(s2>>8)
+putuart(s2)
+putuart(s3>>8)
+putuart(s3)
+halt(9,9)
+*/
+
+
+        uint16 logFrom=27;
+        uint16 log=0;
+
+        uint16 X1=$00e0;
+        uint16 X2=$0090;
+        uint16 Y1=$00c0;
+        uint16 Y2=$0060;
+        uint16 LIMIT=$0100;
+
+        var Chr = [ ".:-=X$#@ " ];
+        uint16 ITERS = 9; // number of chars in Chr
 
         uint16 py=0;
         while (py <= 21) {
           uint16 px=0;
 
           while (px <= 31) {
-            uint16 x0 = ((px * $380) >> 5) - $240;   
-            uint16 y0 = ((py * $300) >> 4) - $180;    
+            uint16 x0 = ((px * X1) / 32) - X2;
+            uint16 y0 = ((py * Y1) / 22) - Y2;
+
 
             uint16 x=0;
             uint16 y=0;
@@ -23,33 +44,100 @@ program {
             uint16 xSqr = 0;
             uint16 ySqr = 0;
 
+/*if (log >= logFrom) {
+  putuart($aa)
+  putuart(x0>>8)
+  putuart(x0)
+  putuart(y0>>8)
+  putuart(y0)
+}
+*/
 
-            while (i < 6) {
-              xSqr = (x*x)>>8;
-              ySqr = (y*y)>>8;
+            while (i < ITERS) {
+              xSqr = (x*x)>>>6;
+              ySqr = (y*y)>>>6;
 
-              if (i == 1) if ( px == 1 ) if ( py ==1 )  {
-                halt(xSqr, px)
-              }
+/*
+if (log >= logFrom) {
+  putuart($22)
+  putuart(x>>8)
+  putuart(x)
+  putuart(xSqr>>8)
+  putuart(xSqr)
+  putuart(y>>8)
+  putuart(y)
+  putuart(ySqr>>8)
+  putuart(ySqr)
 
-              if ((xSqr + ySqr) > $400) {
+  uint16 p = (xSqr + ySqr);
+  putuart(p>>8)
+  putuart(p)
+
+}
+*/
+
+              if ((xSqr + ySqr) > LIMIT) {
                 break
               }
 
               uint16 xt = xSqr - ySqr + x0;
-              y = (((x * y)>>8) << 1) + y0;
+/*
+if (log >= logFrom) {
+  uint16 diff = xSqr - ySqr;
+  putuart($33)
+  putuart(i)
+
+  putuart(diff>>8)
+  putuart(diff)
+  putuart(xt>>8)
+  putuart(xt)
+
+  putuart(x>>8)
+  putuart(x)
+  putuart(y>>8)
+  putuart(y)
+
+  uint16 mul = x * y;
+  putuart(mul>>8)
+  putuart(mul)
+  uint16 mul6 = mul >>> 6;
+  putuart(mul6>>8)
+  putuart(mul6)
+  uint16 mul61 = mul6 << 1;
+  putuart(mul61>>8)
+  putuart(mul61)
+
+  uint16 mul61y = mul61 + y0;
+  putuart(mul61y>>8)
+  putuart(mul61y)
+}
+*/
+              y = (((x * y)>>>6) * 2) + y0;
               x = xt;
 
               i = i + 1;
             }
+
+/*
+if (log >= logFrom) {
+  putuart($88)
+  putuart(x>>8)
+  putuart(x)
+  putuart(xSqr>>8)
+  putuart(xSqr)
+  halt(99, 99)
+}
+*/
+
             i = i - 1;
 
 
-            screen[(py<<5) + px] = i;
-            putuart(32+i)
+            uint16 c = Chr[i];
+            putuart(c)
 
             px = px + 1;
 
+            log = log + 1;
           }
           py = py + 1;
           putuart('\n')
