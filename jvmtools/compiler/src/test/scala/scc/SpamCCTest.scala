@@ -487,6 +487,15 @@ class SpamCCTest {
         | putuart( b << 8 )
         | putuart( ((b << 1)) >> 1  )
         |
+        | // bug noticed in mandelbrot work << is broken for 16 bits and this number happens to illustrate the issue
+        | uint16 init = $ffbc;
+        | uint16 expected =$ff78;
+        |
+        | uint16 actual = init << 1;
+        |
+        | if (actual != expected) {
+        |   halt(actual, 99)
+        | }
         |}
         |
         |""".stripMargin

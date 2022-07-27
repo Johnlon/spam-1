@@ -366,13 +366,13 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
                 case Some(n) if n < 8 =>
                   // fast
                   List(
-                    s"$TMP1 = [:$temporaryVarLabel + 1]",
+                    s"$TMP1 = [:$temporaryVarLabel ]",
                     s"$TMP2 = $TMP1 >> ${8 - n}",
                     s"$TMP1 = $TMP1 << $n",
-                    s"[:$temporaryVarLabel + 1] = $TMP1",
-                    s"$TMP1 = [:$temporaryVarLabel]",
+                    s"[:$temporaryVarLabel ] = $TMP1",
+                    s"$TMP1 = [:$temporaryVarLabel + 1]",
                     s"$TMP1 = $TMP1 << $n",
-                    s"[:$temporaryVarLabel] = $TMP1 A_OR_B $TMP2",
+                    s"[:$temporaryVarLabel + 1] = $TMP1 A_OR_B $TMP2",
                   )
                 case Some(8) =>
                   // fast
