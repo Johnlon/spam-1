@@ -4,6 +4,25 @@ program {
     fun main() {
 
 /*
+
+//ff ff 
+//fe ff 
+//ff fe
+
+  uint16 xmul = $ffc7;
+  uint16 xmul6 = xmul >>> 6;
+  putuart(xmul6>>8)
+  putuart(xmul6)
+  uint16 xmul61 = xmul6 << 1;
+  putuart(xmul61>>8)
+  putuart(xmul61)
+  uint16 xmul6t = xmul6 *2;
+  putuart(xmul6t>>8)
+  putuart(xmul6t)
+  halt(1,1)
+*/
+
+/*
       uint16   s1 = $ffbc;
       uint16   s2 = s1 << 1;
       uint16   s3 = s1 * 2;
@@ -16,7 +35,7 @@ halt(9,9)
 */
 
 
-        uint16 logFrom=27;
+        uint16 logFrom=26;
         uint16 log=0;
 
         uint16 X1=$00e0;
@@ -25,15 +44,16 @@ halt(9,9)
         uint16 Y2=$0060;
         uint16 LIMIT=$0100;
 
-        var Chr = [ ".:-=X$#@ " ];
-        uint16 ITERS = 9; // number of chars in Chr
+        //var Chr = [ ".:-=X$#@ " ];
+        var Chr = [ "123456789ABCD " ];
+        uint16 ITERS = 14; // number of chars in Chr
 
         uint16 py=0;
         while (py <= 21) {
           uint16 px=0;
 
           while (px <= 31) {
-            uint16 x0 = ((px * X1) / 32) - X2;
+            uint16 x0 = ((px * X1) >>> 5) - X2;
             uint16 y0 = ((py * Y1) / 22) - Y2;
 
 
@@ -76,7 +96,11 @@ if (log >= logFrom) {
 }
 */
 
-              if ((xSqr + ySqr) > LIMIT) {
+              uint16 sum = xSqr + ySqr;
+              if (sum >= LIMIT) {
+                break
+              }
+              if (sum < 0) {
                 break
               }
 
@@ -112,23 +136,26 @@ if (log >= logFrom) {
   putuart(mul61y)
 }
 */
-              y = (((x * y)>>>6) * 2) + y0;
+              y = (((x * y)>>>6) << 1) + y0; // SPAM1 BUG using << 1 doesn't produce same result as *2 - TODO MAKE THIS << and compare to c program
               x = xt;
 
               i = i + 1;
             }
 
 /*
-if (log >= logFrom) {
+if (log == logFrom) {
   putuart($88)
   putuart(x>>8)
   putuart(x)
   putuart(xSqr>>8)
   putuart(xSqr)
+  putuart(y>>8)
+  putuart(y)
+  putuart(ySqr>>8)
+  putuart(ySqr)
   halt(99, 99)
 }
 */
-
             i = i - 1;
 
 
