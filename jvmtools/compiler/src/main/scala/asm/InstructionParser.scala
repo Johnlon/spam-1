@@ -85,8 +85,16 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       Known("decimal", vi)
     }
 
-  def char: Parser[Known[KnownInt]] = "'" ~> ".".r <~ "'" ^^ { v =>
-    val i = v.codePointAt(0)
+  def char: Parser[Known[KnownInt]] = "'" ~> "\\\\?.".r <~ "'" ^^ { v =>
+
+    val str = if (v.startsWith("\\")) {
+      org.apache.commons.text.StringEscapeUtils.unescapeJava(v)
+    } else {
+      v
+    }
+
+    //val i = v.codePointAt(0)
+    val i = str.codePointAt(0)
     if (i > 127) throw new RuntimeException(s"asm error: character '$v' codepoint $i is outside the 0-127 range")
     Known("", i.toByte)
   }

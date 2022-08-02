@@ -127,13 +127,15 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
 
     split.foreach {
       l =>
-        if (l.startsWith(".macro")) {
-          val words = l.split("\\s+").toBuffer
+        val trimmed = l.trim
+
+        if (trimmed.startsWith(".macro")) {
+          val words = trimmed.split("\\s+").toBuffer
           words.remove(0)
           name = words(0)
           words.remove(0)
           args = words.toList
-        } else if (l.startsWith(".endmacro")) {
+        } else if (trimmed.startsWith(".endmacro")) {
           macros.put(name, AsmMacro(name, args, macroLines.toList))
           name = ""
           args = List[String]()
@@ -150,7 +152,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     val productLines = ListBuffer[String]()
 
     nonMacroLines.foreach { l =>
-      val words = l.split("\\s+")
+      val words = l.trim.split("\\s+")
       if (words.nonEmpty) {
         val firstWord = words(0)
         val m = macros.get(firstWord)
@@ -176,7 +178,7 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
               argsMap.foreach { kv =>
                 val k = kv._1
                 val v = kv._2
-                l = l.replaceAll(k, v)
+                l = l.replace(k, v)
               }
               productLines.append(l)
           }

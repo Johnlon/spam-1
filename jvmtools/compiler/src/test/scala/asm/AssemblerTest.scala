@@ -43,6 +43,12 @@ class AssemblerTest {
         |
         |label:
         |
+        |.macro X Y
+        |  REGA = Y
+        |.endmacro
+        |
+        |X '\n'
+        |
         |; some ending asm
         |END
         """
@@ -72,7 +78,8 @@ class AssemblerTest {
         (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 0),
         (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 6),
         (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 48),
-        (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 6)
+        (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 6),
+        (PASS_B, TDevice.REGA,  ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 10),
 
       )
     )
@@ -121,6 +128,10 @@ class AssemblerTest {
         | b6 : RESERVE 6
         | d0: BYTES [$DD, @77, %10101010 ]
         | d1: BYTES [$DD]
+        | commented: BYTES [$DD,
+        |           @77,
+        |           %10101010
+        |           ]
         |END
         """
 

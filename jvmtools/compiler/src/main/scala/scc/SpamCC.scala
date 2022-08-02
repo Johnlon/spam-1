@@ -91,7 +91,7 @@ object SpamCC {
   }
 
   def split(s: String): List[String] = {
-    s.split("\\|").map(_.stripTrailing().stripLeading()).filterNot(_.isEmpty).toList
+    s.split("\\|").map(_.trim()).filterNot(_.isEmpty).toList
   }
 }
 
