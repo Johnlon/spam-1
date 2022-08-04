@@ -25,11 +25,11 @@ class AssemblerTest {
         |HALT=123
         |""".stripMargin
 
-    FileUtils.write(new File("include.file"), include)
+    FileUtils.write(new File("build/include.file"), include)
 
     val prog =
       """
-        |.include include.file
+        |.include build/include.file
         |END
         """
 
