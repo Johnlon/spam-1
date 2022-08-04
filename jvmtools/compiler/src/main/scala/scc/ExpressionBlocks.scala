@@ -441,12 +441,19 @@ case class BlkCompoundAluExpr(leftExpr: Block, otherExpr: List[AluExpr])
               // https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
               List(
 
-                s"; DIVIDE OPERATION     quotient = dividend / divisor    << but this algo accumulates the quotient in the dividend location",
+                s"; DIVIDE OPERATION     quotient = dividend / divisor    <<  this algo accumulates the quotient in the dividend location",
+                s";                      dividend input is in $temporaryVarLabel",
+                s";                      divisor is from registers lo:$WORKLO and hi:$WORKHI",
+                s";                      quotient result overwrites the dividend var $dividendLo",
+                s";                      remainder (mod) is written to the var $remainderLo",
+                s";                      trashes registers $WORKLO, $WORKHI, $TMP1, $TMP2",
                 s"; setup input params",
+                s"    ; load dividend lo and hi var from var $temporaryVarLabel",
                 s"    $TMP1 = [:$temporaryVarLabel]",
                 s"    [$dividendLo] = $TMP1",
                 s"    $TMP1 = [:$temporaryVarLabel+1]",
                 s"    [$dividendHi] = $TMP1",
+                s"    ; load divisor lo and hi var from registers $WORKLO and $WORKHI respectively",
                 s"    [$divisorLo] = $WORKLO",
                 s"    [$divisorHi] = $WORKHI _S", // NOTE !! sets Z f the top byte of divisor is 0; Z used n 8 bit optimisation below
 

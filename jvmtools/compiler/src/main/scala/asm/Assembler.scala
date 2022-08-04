@@ -114,23 +114,66 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
 
   case class AsmMacro(name: String, args: List[String], text: List[String])
 
-  def preprocess(lines: String): Seq[String] = {
+  def includeFile(newIncludedLines: ListBuffer[String], name: String): Unit = {
+    val src = Source.fromFile(name)
+    src.getLines().foreach(l =>
+      newIncludedLines.append(l)
+    )
+    src.close()
+  }
 
-    val split = lines.split("(\n|\r\n)")
+  def preprocessInclude(split: Array[String]): ListBuffer[String] = {
+    val includedLines = ListBuffer[String]()
+    includedLines.addAll(split)
 
+    var included = false
+    do {
+      included = false
+      val newIncludedLines = ListBuffer[String]()
+      includedLines.foreach {
+        l =>
+          val trimmed = l.trim
+
+          if (trimmed.startsWith(".include")) {
+            included = true
+            val words = trimmed.split("\\s+").toBuffer
+            if (words.size < 2) {
+              throw new RuntimeException("found .include without file name")
+            }
+            words.remove(0)
+            val fileName = words(0)
+
+            includeFile(newIncludedLines, fileName)
+          } else {
+            newIncludedLines.append(l)
+          }
+      }
+
+      includedLines.clear()
+      includedLines.addAll(newIncludedLines)
+
+    } while (included)
+    includedLines
+  }
+
+  def preprocessMacros(includedLines: ListBuffer[String]): ListBuffer[String] = {
     val macros = mutable.HashMap[String, AsmMacro]()
 
     var name = ""
     var args = List[String]()
+
     val macroLines = ListBuffer[String]()
     val nonMacroLines = ListBuffer[String]()
 
-    split.foreach {
+    includedLines.foreach {
       l =>
         val trimmed = l.trim
 
         if (trimmed.startsWith(".macro")) {
           val words = trimmed.split("\\s+").toBuffer
+          if (words.size < 2) {
+            throw new RuntimeException("found .macro without name")
+          }
           words.remove(0)
           name = words(0)
           words.remove(0)
@@ -148,7 +191,6 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
           }
         }
     }
-
     val productLines = ListBuffer[String]()
 
     nonMacroLines.foreach { l =>
@@ -188,8 +230,18 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
         }
       }
     }
+    productLines
+  }
 
-    productLines.toSeq
+  def preprocess(lines: String): Seq[String] = {
+
+    val split = lines.split("(\n|\r\n)")
+
+    val includedLines = preprocessInclude(split)
+
+    val macrodLines = preprocessMacros(includedLines)
+
+    macrodLines.toSeq
 
   }
 

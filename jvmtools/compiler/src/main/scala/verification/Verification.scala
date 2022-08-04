@@ -220,7 +220,7 @@ case class HaltCode private(mar: Short, alu: Byte) {
   override def toString: String = {
     val str = "00000000" + alu.toBinaryString
     val bin = str.substring(str.length - 8)
-    f"HaltCode(mar:${mar & 0xffff}%-5d (0x${mar & 0xffff}%04x), alu:$alu%-3d (b$bin, 0x${alu & 0xff}%02x))"
+    f"HaltCode(mar:${mar & 0xffff}%-5d (0x${mar & 0xffff}%04x),  alu:$alu%-3d (0x${alu & 0xff}%02x, b$bin))"
   }
 }
 object HaltCode {

@@ -4,15 +4,57 @@ import asm.AddressMode._
 import asm.AluOp.PASS_B
 import asm.ConditionMode.STANDARD
 import asm.Control._A
+import org.apache.commons.io.FileUtils
 import org.junit.jupiter.api.Assertions.{assertEquals, fail}
 import org.junit.jupiter.api.Test
 import verification.HaltCode
 import verification.Verification.verifyRoms
 
+import java.io.File
+
 // FIXME - check if any initialised or uninitialised ranges overlap
 // TODO review logic where datalocn pointer is reset by a prev statement
 
 class AssemblerTest {
+
+  @Test
+  def includeTest(): Unit = {
+    // test the injection of the jmp macro
+    val include =
+      """
+        |HALT=123
+        |""".stripMargin
+
+    FileUtils.write(new File("include.file"), include)
+
+    val prog =
+      """
+        |.include include.file
+        |END
+        """
+
+    val code = prog.split("\\|").map(x => x.trim).filter(_.length > 0)
+
+    val asm = new Assembler()
+
+    val roms = assemble(code, asm)
+
+    roms.zipWithIndex.foreach {
+      c => {
+        print(c._2.toString + "\t : " + c._1 + "\t " + asm.decode(c._1))
+      }
+    }
+
+    verifyRoms(
+      verbose = false,
+      uartDataIn = List(),
+      outputCheck = (output: List[String]) => {},
+      checkHalt = Some(HaltCode(0, 123)),
+      timeout = 200,
+      roms = roms);
+
+
+  }
 
   @Test
   def macroTest(): Unit = {
@@ -364,6 +406,102 @@ class AssemblerTest {
       inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 13, 2), // byte = length of "PP" via LENPP
       inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 14, 'B'.toByte)
     ), actual)
+  }
+
+
+  @Test
+  def multiply16Bit(): Unit = {
+    val algorithm =
+      """|; multiply 8 bit reg by fixed point VAR
+         |.macro fp_multiply REGX VAR
+         |   REGC               = REGX *LO [ :VAR ]
+         |   [ :MULT_TMP ]      = REGC
+         |
+         |   REGC               = REGX *HI [ :VAR ]
+         |   [ :MULT_TMP + 1 ]  = REGC
+         |
+         |   REGC               = REGX *LO [ :VAR + 1 ]
+         |   REGC               = REGC A_PLUS_B [ :MULT_TMP + 1 ]
+         |   [ :MULT_TMP + 1 ]  = REGC
+         |
+         |   REGC               = REGX *HI [ :VAR + 1 ]
+         |   [ :MULT_TMP + 2 ]  = REGC
+         |
+         |.endmacro
+         |"""
+
+
+    multTest(
+      """
+        |MULT_TMP: BYTES [ 0, 0, 0 ]
+        |x: BYTES [ 1, 1 ]
+        |REGA = 10
+        |
+        |fp_multiply REGA x
+        |
+        |MARLO = [ :MULT_TMP ]
+        |MARHI = [ :MULT_TMP + 1 ]
+        |HALT  = [ :MULT_TMP + 2 ]
+        |END
+        |
+        """ + algorithm + """
+        |
+        """, HaltCode(0x0a0a, 0));
+
+    multTest(
+      """
+        |MULT_TMP: BYTES [ 0, 0, 0 ] ; LO/HI/OVERFLOW
+        |x: BYTES [ 17, 17 ]
+        |REGA = 21
+        |
+        |fp_multiply REGA x
+        |
+        |MARLO = [ :MULT_TMP ]
+        |MARHI = [ :MULT_TMP + 1 ]
+        |HALT  = [ :MULT_TMP + 2 ]
+        |END
+        |
+        """ + algorithm + """
+        |
+        """, HaltCode(0x6665, 1)); // $16665 is full answer
+
+    multTest(
+      """
+        |MULT_TMP: BYTES [ 0, 0, 0 ] ; LO/HI/OVERFLOW
+        |x: BYTES [ $fe, $ff ]   ; -2 FFFE
+        |REGA = 21
+        |
+        |fp_multiply REGA x
+        |
+        |MARLO = [ :MULT_TMP ]
+        |MARHI = [ :MULT_TMP + 1 ]
+        |HALT  = [ :MULT_TMP + 2 ]
+        |END
+        |
+        |
+        """ + algorithm + """
+        |
+        """, HaltCode(0xFFD6, 0x14)); // -2 * 21 = -42,     $FFFE*21=14FFD^ but this is overflowed garbage as 14 would imply a sign change - sign extended value should have been FFFFD6
+
+  }
+
+  private def multTest(cmpEq: String, expectedResult: HaltCode) = {
+    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.length > 0)
+    val asm = new Assembler()
+    val roms = assemble(code, asm)
+    roms.zipWithIndex.foreach {
+      c => {
+        print(c._2.toString + "\t : " + c._1 + "\t " + asm.decode(c._1))
+      }
+    }
+
+    verifyRoms(
+      verbose = true,
+      uartDataIn = List(),
+      outputCheck = (output: List[String]) => {},
+      checkHalt = Some(expectedResult),
+      timeout = 200,
+      roms = roms)
   }
 
   @Test
