@@ -193,13 +193,18 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     }
     val productLines = ListBuffer[String]()
 
+    var macroUsage = 0
+
     nonMacroLines.foreach { l =>
+
       val words = l.trim.split("\\s+")
       if (words.nonEmpty) {
         val firstWord = words(0)
         val m = macros.get(firstWord)
 
         if (m.isDefined) {
+          macroUsage += 1
+
           // macro match
           val matchedMacro = m.get
           if (words.size - 1 != matchedMacro.args.size) {
@@ -212,7 +217,9 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
               val aKey = nv._1
               val aVal = nv._2
               (aKey, aVal)
-          }
+          }.toBuffer
+
+          argsMap.addOne("__#__" -> macroUsage.toString)
 
           matchedMacro.text.foreach {
             mLine =>
@@ -230,7 +237,10 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
         }
       }
     }
-    productLines
+    productLines.zipWithIndex.map(
+      l =>
+          l._1.replaceAll("__LINE__", l._2.toString )
+    )
   }
 
   def preprocess(lines: String): Seq[String] = {
@@ -241,8 +251,10 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
 
     val macrodLines = preprocessMacros(includedLines)
 
-    macrodLines.toSeq
-
+    macrodLines.toSeq.map {
+          // eliminate empty comments as the wrap lines and cause havoc
+      l => l.replaceFirst(";\\s*$","")
+    }
   }
 
   def assemble(raw: String, stripComments: Boolean = false): Seq[List[String]] = {

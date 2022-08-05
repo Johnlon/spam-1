@@ -91,6 +91,13 @@ class AssemblerTest {
         |
         |X '\n'
         |
+        |.macro LTEST
+        |  REGA = __#__
+        |  REGB = __LINE__
+        |.endmacro
+        |
+        |LTEST
+        |LTEST
         |; some ending asm
         |END
         """
@@ -122,6 +129,56 @@ class AssemblerTest {
         (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 48),
         (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 6),
         (PASS_B, TDevice.REGA,  ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 10),
+        (PASS_B, TDevice.REGA,  ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 5),
+        (PASS_B, TDevice.REGB,  ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 11), // lineno
+        (PASS_B, TDevice.REGA,  ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 6),
+        (PASS_B, TDevice.REGB,  ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 13), // lineno
+
+      )
+    )
+  }
+
+  @Test
+  def comments(): Unit = {
+    // test the injection of the jmp macro
+    val prog =
+      """
+        |;foo
+        |MARHI = 1 ; foo
+        |;foo
+        |MARHI = 2 ; foo
+        |;foo
+        |MARHI = 3 ;
+        |;
+        |MARHI = 4 ;
+        |
+        |END
+        """
+
+    val code = prog.split("\\|").map(x => x.trim).filter(_.length > 0)
+
+    val asm = new Assembler()
+
+    val roms = assemble(code, asm)
+
+    roms.zipWithIndex.foreach {
+      c => {
+        print(c._2.toString + "\t : " + c._1 + "\t " + asm.decode(c._1))
+      }
+    }
+
+    val d = roms.map {
+      c => asm.decode(c)
+    }
+
+    import asm._
+    assertEquals(
+      d,
+      List(
+        (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 1),
+        (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 2),
+        (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 3),
+        (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 4),
 
       )
     )

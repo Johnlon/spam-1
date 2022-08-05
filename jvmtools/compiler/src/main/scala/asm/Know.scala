@@ -104,6 +104,8 @@ trait Knowing {
 
     def |(knownInt: KnownInt) = KnownInt(value | knownInt.value)
 
+    def ^(knownInt: KnownInt) = KnownInt(value ^ knownInt.value)
+
     override def toString = s"$value"
   }
 

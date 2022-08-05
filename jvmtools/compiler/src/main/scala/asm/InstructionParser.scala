@@ -149,7 +149,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
   def factor: Parser[IsKnowable[KnownInt]] = labelLen | char | pcref | dec | hex | bin | oct | "(" ~> expr <~ ")" | hiByte | loByte | labelAddr
 
   // picks up literal numeric expressions where both sides are expr
-  def expr: Parser[IsKnowable[KnownInt]] = factor ~ rep("*" ~ factor | "/" ~ factor | "&" ~ factor | "|" ~ factor | "+" ~ factor | "-" ~ factor) ^^ {
+  def expr: Parser[IsKnowable[KnownInt]] = factor ~ rep("*" ~ factor | "/" ~ factor | "&" ~ factor | "|" ~ factor | "+" ~ factor | "-" ~ factor | "^" ~ factor) ^^ {
     case number ~ list =>
       val value = list.foldLeft(number) {
         case (x, "*" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ * _, "*")
@@ -158,6 +158,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
         case (x, "-" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ - _, "-")
         case (x, "&" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ & _, "&")
         case (x, "|" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ | _, "|")
+        case (x, "^" ~ y) => BiKnowable[KnownInt, KnownInt, KnownInt](() => x, () => y, _ ^ _, "^")
         case (x, op ~ y) => sys.error(s"sw error : missing handler for op '$op' for operand $x and $y")
       }
       value
