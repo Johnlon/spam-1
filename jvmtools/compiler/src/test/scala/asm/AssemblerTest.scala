@@ -198,6 +198,35 @@ class AssemblerTest {
       roms = roms);
   }
 
+
+  @Test
+  def dataTypes(): Unit = {
+    val code = Seq(
+      "S1:  STR \"AB\"",
+      "B1:  BYTES [ 1, 2 ]",
+      "W1:  WORDS [ $1234, $5678 ]",
+      "W2:  WORD $9ABC",
+      "END"
+    )
+
+    val asm = new Assembler()
+    import asm._
+
+    val actual = instructions(code, asm)
+    assertEqualsList(Seq(
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 0, 'A'.toByte), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 1, 'B'.toByte), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 2, 1), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 3, 2), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 4, 0x34 ), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 5, 0x12 ), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 6, 0x78 ), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 7, 0x56 ), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 8, 0xBC.toByte ), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 9, 0x9A.toByte ), // A
+    ), actual)
+  }
+
   @Test
   def bytes(): Unit = {
     // test the injection of the jmp macro
@@ -410,7 +439,7 @@ class AssemblerTest {
 
 
   @Test
-  def multiply16Bit(): Unit = {
+  def multiplyMacroRegVar(): Unit = {
     val algorithm =
       """|; multiply 8 bit reg by fixed point VAR
          |.macro fp_multiply REGX VAR
@@ -464,24 +493,6 @@ class AssemblerTest {
         """ + algorithm + """
         |
         """, HaltCode(0x6665, 1)); // $16665 is full answer
-
-    multTest(
-      """
-        |MULT_TMP: BYTES [ 0, 0, 0 ] ; LO/HI/OVERFLOW
-        |x: BYTES [ $fe, $ff ]   ; -2 FFFE
-        |REGA = 21
-        |
-        |fp_multiply REGA x
-        |
-        |MARLO = [ :MULT_TMP ]
-        |MARHI = [ :MULT_TMP + 1 ]
-        |HALT  = [ :MULT_TMP + 2 ]
-        |END
-        |
-        |
-        """ + algorithm + """
-        |
-        """, HaltCode(0xFFD6, 0x14)); // -2 * 21 = -42,     $FFFE*21=14FFD^ but this is overflowed garbage as 14 would imply a sign change - sign extended value should have been FFFFD6
 
   }
 

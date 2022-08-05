@@ -208,6 +208,40 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       EquInstruction(n, renamed)
   }
 
+  def wordData = "WORD" ~> expr <~ opt(comment) ^^ { expr =>
+    val exprs: Know[KnownInt] = expr
+
+    val intVal: (String, Int) = (exprs.name, exprs.getVal.get.value)
+
+    if( intVal._2 < Short.MinValue || intVal._2 > 0xffff ) {
+      sys.error(s"asm error: $intVal (0x${intVal._2.toHexString}) evaluates as out of range for a short 0x0000 to 0xffff")
+    }
+
+    // flatten   WORD $1234   to   List( (">1234", 34)  ("<1234", 12) )
+    List(
+      (">" + exprs.name, (intVal._2 & 0xff).toByte), // lo
+      ("<" + exprs.name, ((intVal._2& 0xff00)>>8).toByte) //hi
+    )
+  }
+
+
+  def wordsData = ("WORDS" ~ "[") ~> repsep(expr, ",") <~ "]" ~ opt(comment) ^^ { expr =>
+    val exprs: List[Know[KnownInt]] = expr
+
+    val ints: List[(String, Int)] = exprs.map(x => (x.name, x.getVal.get.value))
+
+    ints.filter { x =>
+      x._2 < Short.MinValue || x._2 > 0xffff
+    }.foreach(x => sys.error(s"asm error: $x (0x${x._2.toHexString}) evaluates as out of range for a short 0x0000 to 0xffff"))
+
+    // flatten   WORDS [ 1234, 5678 ] to   List( (">1234", 34)  ("<1234", 12)  (">5678", 78)  ("<5678", 56) )
+    exprs.flatMap(x => List(
+      (">" + x.name, x.getVal.get.value & 0xff), // lo
+      ("<" + x.name, (x.getVal.get.value & 0xff00)>>8) //hi
+      )
+    ).map(x => (x._1, x._2.toByte))
+  }
+
   def byteData = ("BYTES" ~ "[") ~> repsep(expr, ",") <~ "]" ~ opt(comment) ^^ { expr =>
     val exprs: List[Know[KnownInt]] = expr
 
@@ -232,7 +266,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     str.iterator.map(_.toString).zip(bytes).toList
   }
 
-  def dataInstruction: Parser[RamInitialisation] = name ~ ":" ~ rep1(byteData | strData) ^^ {
+  def dataInstruction: Parser[RamInitialisation] = name ~ ":" ~ rep1(byteData | strData | wordsData | wordData) ^^ {
     case labelName ~ _ ~ expr =>
       val data = expr.flatten
 
