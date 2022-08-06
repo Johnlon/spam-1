@@ -1,7 +1,7 @@
 #!/bin/bash
 echo running $0
 
-set -x
+# set -x
 
 echo ARGS "$@"
 
