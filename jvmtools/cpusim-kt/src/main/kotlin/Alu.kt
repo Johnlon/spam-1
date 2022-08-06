@@ -1,4 +1,4 @@
-fun alu(rom: MutableList<Int>?, aluOp: Op, carryIn: Boolean, a: Int, b: Int): Tuple5<Int, MutableList<Cond>, Op, Int, Int> {
+fun alu(rom: MutableList<Int>?, aluOp: Op, carryIn: Boolean, a: Int, b: Int): Tuple5<Int, List<Cond>, Op, Int, Int> {
     var effectiveOp = aluOp
 
     if (aluOp == Op.A_PLUS_B_PLUS_C && !carryIn)

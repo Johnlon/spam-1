@@ -75,13 +75,11 @@ fun main(_args: Array<String>) {
     val (rom, inst) = loadProgram(prog.path)
     program.addAll(inst)
 
-    simUI()
 
-    while (debugger.get() == null) {
-        Thread.sleep(100)
-    }
+    val slow = false
 
-    val cpu = CPU(debugger = debugger.get(), rom = rom, instructions = inst)
+    val cpu = if (slow) CPU(debugger = simUI(), rom = rom, instructions = inst)
+    else CPU(rom = rom, instructions = inst)
 
     val showGraphics = false
     if (showGraphics) {
@@ -89,11 +87,29 @@ fun main(_args: Array<String>) {
         t.main(_args)
         cpu.run(t::handleLine)
     } else {
-        var n=0
+        var n = 0
         cpu.run { s: String ->
             // TERMINAL
             val c: Char = Integer.parseInt(s, 16).toChar()
-            print( c )
+
+            val colourise = false
+            if (!colourise) {
+                print(c)
+            } else {
+                if (c == '\n') {
+                    print("\n")
+                } else {
+                    var hex = 15
+                    if (c != ' ') {
+                        hex = Integer.parseInt("" + c, 16) - 1
+                    }
+                    val cl = hex
+                    val n = "0$cl".takeLast(2)
+
+                    //print("\u001b[48;05;${cl}m${n}\u001b[0m")
+                    print("\u001b[48;05;${cl}m  \u001b[0m")
+                }
+            }
             //print(" " + s )
             System.out.flush()
 
@@ -102,5 +118,6 @@ fun main(_args: Array<String>) {
             //if (s == "0a") println("")
         }
     }
+
 }
 

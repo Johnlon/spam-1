@@ -18,16 +18,15 @@ import javax.swing.event.TableModelListener
 import javax.swing.plaf.metal.MetalScrollBarUI
 import javax.swing.table.*
 
-val enableMemIllustration = false
-val enableRamTable = false
-val enableRegTable = false
-val enableProgTable = false
+val enableMemIllustration = true
+val enableRamTable = true
+val enableRegTable = true
+val enableProgTable = true
 
 val RamSize = 65536
 
 val recentUpdates = ObservableSet<Int>(HashSet())
 
-val ramIllustration = createRamIllustration()
 
 // hack for testing ...
 //val foo = (1..65535).forEach{ idx ->
@@ -43,6 +42,8 @@ var currentInstView: JTable? = null
 var progTable: ScrollableJTable? = null
 var buttonsView: Component? = null
 var ramTable: ScrollableJTable? = null
+
+var ramIllustration : Pair<TableModel, JFrame>? = null
 
 fun mkExecModel(): DefaultTableModel {
     val dtm = DefaultTableModel()
@@ -89,15 +90,14 @@ interface ColWidth {
     fun getWidth(col: Int): Int
 }
 
-val debugger = AtomicReference<Debugger>()
 
-fun simUI() {
-    createAndShowGUI()
+fun simUI(): Debugger {
+    return createAndShowGUI()
 }
 
 val clksRemaining = Semaphore(0)
 
-private fun createAndShowGUI() {
+private fun createAndShowGUI(): Debugger {
 
     val mainframe = MainFrame("SPAM-1 Simulator")
     mainframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -120,6 +120,7 @@ private fun createAndShowGUI() {
     progTable = createProgView()
     currentInstView = createCurrentInstView()
     buttonsView = createButtonsView()
+    ramIllustration = createRamIllustration()
 
     if (ramTable != null) {
         mainPain.add(ramTable, WEST)
@@ -183,8 +184,8 @@ private fun createAndShowGUI() {
     mainframe.repaint()
 //    mainframe.hide()
 
-    debugger.set(dbg)
 
+    return dbg
 //    val mmView = MainFrame("Memory Map")
 //    mmView.contentPane.add(memoryGrid.second, CENTER)
 //    mmView.config()
@@ -303,7 +304,7 @@ fun createButtonsView(): Component {
         recentUpdates.clear()
         ramTable?.repaint()
         if (ramIllustration != null) {
-            ramIllustration.second.repaint()
+            ramIllustration!!.second.repaint()
         }
     }
 
@@ -407,9 +408,10 @@ fun createCurrentInstView(): JTable {
                     i.amode.name
                 }
                 "cond" -> {
+                    val flagsIn = currentExec.flagsIn
                     "<html>%s<br/>%s</html>".format(
                         if (i.condition == Cond.A) "*" else i.condition.name,
-                        currentExec.flagsIn.filter { it != Cond.A }.joinToString(" ")
+                        flagsIn.filter { it != Cond.A }.joinToString(" ")
                     )
                 }
                 "inv" -> {

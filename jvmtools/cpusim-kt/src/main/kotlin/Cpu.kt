@@ -73,7 +73,7 @@ class CPU(
 
     var portsel = 0
 
-    var flags = mutableListOf(Cond.A)
+    @Volatile var flags = listOf(Cond.A)
 
     fun hex(i: Int) = i.toString(16).padStart(2, '0')
 
@@ -219,15 +219,8 @@ class CPU(
 
                 lastOp = effectiveOp
 
-                if (i.setFlags == Flag.Set) {
-                    flags = newFlags
-                }
-
-                // TODO - for now always set data out enabled
-                if (!flags.contains(Cond.DO)) flags.add(Cond.DO)
-
-                // TODO - for now randomly set date in available
-                if (!flags.contains(Cond.DI) and (rnd == 1)) flags.add(Cond.DI)
+                // UPDATE FLAGS IN A THREAD SAFE MANNER TO AVOID CONCURRENT MOD EXCEPTION
+                updateFlags(i, newFlags, rnd)
 
                 when (i.t) {
                     TDev.rega -> rega = aluVal
@@ -282,6 +275,22 @@ class CPU(
 
         // slow down
         delay()
+    }
+
+    private fun updateFlags(i: Instruction, newFlags: List<Cond>, rnd: Int) {
+        if (i.setFlags == Flag.Set) {
+            flags = newFlags
+        }
+
+        var f = flags.toMutableList()
+
+        // TODO - for now always set data out enabled
+        if (!flags.contains(Cond.DO)) f.add(Cond.DO)
+
+        // TODO - for now randomly set date in available
+        if (!flags.contains(Cond.DI) and (rnd == 1)) f.add(Cond.DI)
+
+        flags = f
     }
 
 
@@ -352,7 +361,7 @@ class CPU(
         val start = System.currentTimeMillis()
         while (!halted) {
             cycle(terminalHandler)
-            if (cycles % 1000000 == 0) printRate(start)
+//            if (cycles % 1000000 == 0) printRate(start)
 //            Thread.sleep(1)
         }
         printRate(start)
@@ -361,6 +370,7 @@ class CPU(
     private fun printRate(start: Long) {
         val took = System.currentTimeMillis() - start
         println("RUNTIME ${took} ms")
+        println("CYLES " + cycles)
         println("RATE ${(1000L * cycles) / (took + 1)} inst/s")
     }
 
@@ -368,6 +378,7 @@ class CPU(
         haltVal = aluValue
         println("==========================================")
         println("HALTING....")
+        println("CYCLES " + cycles)
         println("HALTCODE MAR ${marhi.toString(16)}:${marlo.toString(16)}  ALUCODE ${aluValue.toString(16)}")
         println("==========================================")
         halted = true
