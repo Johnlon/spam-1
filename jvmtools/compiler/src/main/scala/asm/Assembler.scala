@@ -112,156 +112,9 @@ object Assembler {
 
 class Assembler extends InstructionParser with Knowing with Lines with Devices {
 
-  case class AsmMacro(name: String, args: List[String], text: List[String])
-
-  def includeFile(newIncludedLines: ListBuffer[String], name: String): Unit = {
-    val src = Source.fromFile(name)
-    src.getLines().foreach(l =>
-      newIncludedLines.append(l)
-    )
-    src.close()
-  }
-
-  def preprocessInclude(split: Array[String]): ListBuffer[String] = {
-    val includedLines = ListBuffer[String]()
-    includedLines.addAll(split)
-
-    var included = false
-    do {
-      included = false
-      val newIncludedLines = ListBuffer[String]()
-      includedLines.foreach {
-        l =>
-          val trimmed = l.trim
-
-          if (trimmed.startsWith(".include")) {
-            included = true
-            val words = trimmed.split("\\s+").toBuffer
-            if (words.size < 2) {
-              throw new RuntimeException("found .include without file name")
-            }
-            words.remove(0)
-            val fileName = words(0)
-
-            includeFile(newIncludedLines, fileName)
-          } else {
-            newIncludedLines.append(l)
-          }
-      }
-
-      includedLines.clear()
-      includedLines.addAll(newIncludedLines)
-
-    } while (included)
-    includedLines
-  }
-
-  def preprocessMacros(includedLines: ListBuffer[String]): ListBuffer[String] = {
-    val macros = mutable.HashMap[String, AsmMacro]()
-
-    var name = ""
-    var args = List[String]()
-
-    val macroLines = ListBuffer[String]()
-    val nonMacroLines = ListBuffer[String]()
-
-    includedLines.foreach {
-      l =>
-        val trimmed = l.trim
-
-        if (trimmed.startsWith(".macro")) {
-          val words = trimmed.split("\\s+").toBuffer
-          if (words.size < 2) {
-            throw new RuntimeException("found .macro without name")
-          }
-          words.remove(0)
-          name = words(0)
-          words.remove(0)
-          args = words.toList
-        } else if (trimmed.startsWith(".endmacro")) {
-          macros.put(name, AsmMacro(name, args, macroLines.toList))
-          name = ""
-          args = List[String]()
-          macroLines.clear()
-        } else {
-          if (name.isEmpty) {
-            nonMacroLines.append(l)
-          } else {
-            macroLines.append(l)
-          }
-        }
-    }
-    val productLines = ListBuffer[String]()
-
-    var macroUsage = 0
-
-    nonMacroLines.foreach { l =>
-
-      val words = l.trim.split("\\s+")
-      if (words.nonEmpty) {
-        val firstWord = words(0)
-        val m = macros.get(firstWord)
-
-        if (m.isDefined) {
-          macroUsage += 1
-
-          // macro match
-          val matchedMacro = m.get
-          if (words.size - 1 != matchedMacro.args.size) {
-            throw new AssertionError(s"macro ${matchedMacro.name} expected ${matchedMacro.args.size} args but got ${words.size - 1}")
-          }
-
-          val argVals = words.takeRight(words.size - 1)
-          val argsMap = matchedMacro.args.zip(argVals).map {
-            nv =>
-              val aKey = nv._1
-              val aVal = nv._2
-              (aKey, aVal)
-          }.toBuffer
-
-          argsMap.addOne("__#__" -> macroUsage.toString)
-
-          matchedMacro.text.foreach {
-            mLine =>
-              var l = mLine
-              argsMap.foreach { kv =>
-                val k = kv._1
-                val v = kv._2
-                l = l.replace(k, v)
-              }
-              productLines.append(l)
-          }
-
-        } else {
-          productLines.append(l)
-        }
-      }
-    }
-    productLines.zipWithIndex.map(
-      l =>
-          l._1.replaceAll("__LINE__", l._2.toString )
-    )
-  }
-
-  def preprocess(lines: String): Seq[String] = {
-
-    val split = lines.split("(\n|\r\n)")
-
-    val includedLines = preprocessInclude(split)
-
-    val macrodLines = preprocessMacros(includedLines)
-
-    macrodLines.toSeq.map {
-          // eliminate empty comments as the wrap lines and cause havoc
-      l => l.replaceFirst(";\\s*$","")
-    }
-  }
-
   def assemble(raw: String, stripComments: Boolean = false): Seq[List[String]] = {
 
-    val code = preprocess(raw)
-
-    //val code = cpp(raw)
+    val code = Preprocessor.preprocess(raw)
 
     val constantsRd = ReadPort.values.map(
       p => s"${p.asmPortName}: EQU ${p.id}"
@@ -272,7 +125,6 @@ class Assembler extends InstructionParser with Knowing with Lines with Devices {
     ).toList
 
     val product = constantsWr.mkString("\n", "\n", "\n") + constantsRd.mkString("\n", "\n", "\n") + code.mkString("\n")
-
 
     parse(lines, product) match {
       case Success(theCode, _) =>

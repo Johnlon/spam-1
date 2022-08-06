@@ -63,8 +63,8 @@ class AssemblerTest {
       """
         |; some leading asm
         |.macro FOO_0
-        | MARHI = <12345
-        | MARLO = >12345
+        | MARHI = <$1234
+        | MARLO = >$1234
         |.endmacro
         |
         |.macro FOO_1 arg1
@@ -81,7 +81,7 @@ class AssemblerTest {
         |
         |FOO_0
         |FOO_1 label
-        |FOO_2 12345 label
+        |FOO_2 $1234 label
         |
         |label:
         |
@@ -91,9 +91,11 @@ class AssemblerTest {
         |
         |X '\n'
         |
+        |var_LTEST: WORD 0
         |.macro LTEST
         |  REGA = __#__
         |  REGB = __LINE__
+        |  [:var___NAME__] = __LINE__
         |.endmacro
         |
         |LTEST
@@ -120,21 +122,24 @@ class AssemblerTest {
 
     import asm._
     assertEquals(
-      d,
       List(
-        (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 48),
-        (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 57),
+        (PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, _A, DIRECT, STANDARD, 0, 0),
+        (PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, _A, DIRECT, STANDARD, 1, 0),
+        (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 18),
+        (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 52),
         (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 0),
-        (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 6),
-        (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 48),
-        (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 6),
-        (PASS_B, TDevice.REGA,  ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 10),
-        (PASS_B, TDevice.REGA,  ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 5),
-        (PASS_B, TDevice.REGB,  ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 11), // lineno
-        (PASS_B, TDevice.REGA,  ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 6),
-        (PASS_B, TDevice.REGB,  ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 13), // lineno
-
-      )
+        (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 8),
+        (PASS_B, TDevice.MARHI, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 18),
+        (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 8),
+        (PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 10),
+        (PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 5),
+        (PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 12), // lineno
+        (PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, _A, DIRECT, STANDARD, 0, 13),
+        (PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 6),
+        (PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 15), // lineno
+        (PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, _A, DIRECT, STANDARD, 0, 16),
+      ),
+      d
     )
   }
 
@@ -275,12 +280,12 @@ class AssemblerTest {
       inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 1, 'B'.toByte), // A
       inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 2, 1), // A
       inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 3, 2), // A
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 4, 0x34 ), // A
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 5, 0x12 ), // A
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 6, 0x78 ), // A
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 7, 0x56 ), // A
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 8, 0xBC.toByte ), // A
-      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 9, 0x9A.toByte ), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 4, 0x34), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 5, 0x12), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 6, 0x78), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 7, 0x56), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 8, 0xBC.toByte), // A
+      inst(AluOp.PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, Control._A, DIRECT, ConditionMode.STANDARD, 9, 0x9A.toByte), // A
     ), actual)
   }
 
@@ -530,7 +535,8 @@ class AssemblerTest {
         |HALT  = [ :MULT_TMP + 2 ]
         |END
         |
-        """ + algorithm + """
+        """ + algorithm +
+        """
         |
         """, HaltCode(0x0a0a, 0));
 
@@ -547,7 +553,8 @@ class AssemblerTest {
         |HALT  = [ :MULT_TMP + 2 ]
         |END
         |
-        """ + algorithm + """
+        """ + algorithm +
+        """
         |
         """, HaltCode(0x6665, 1)); // $16665 is full answer
 
