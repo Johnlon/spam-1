@@ -15,7 +15,7 @@ l
 **/uart.out
 
 **/*.asm.rom*
-**/*.scc.asm
+**/*.scc.asm*
 
 **/.old
 /verilog/_old/
