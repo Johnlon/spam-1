@@ -1,3 +1,14 @@
+
+; needed for verilog sim
+MARLO=0
+MARHI=0
+REGA=0
+REGB=0
+REGC=0
+REGD=0
+
+; =============================
+
 MAND_WIDTH: EQU 32
 MAND_HEIGHT: EQU 22
 
@@ -29,10 +40,8 @@ loop:
   MAR_INDEX color_codes REGC
   REGC=RAM
 
-
   SEND_UART REGC
   
-
   ; inc X
   REGA = REGA + 1
 
@@ -57,6 +66,8 @@ next_loop:
   JMP loop
 
 prog_end:
+  MARLO=[:V_QUOTIENT]
+  MARHI=[:V_QUOTIENT+1]
   HALT = 0
 
 
@@ -84,15 +95,14 @@ mand_get:
   FP_C:          BYTES [ 0, 0 ]
   FP_R:          BYTES [ 0, 0 ]
 
+  STASHA:        BYTES [ 0 ]
+  STASHB:        BYTES [ 0 ]
+
   ;MULT_TMP:      BYTES [ 0, 0 , 0 ] ; LO HI OVERFLOW
 
 
-
-  ; B = MAND_XMAX
-  var_eq_const FP_B MAND_XMAX
-
   ; C = x * MAND_MAX
-  fp_multiply_8_16  REGA FP_B
+  fp_multiply_8_16  FP_C REGA MAND_XMAX
 
   ; A = C
   var_cp FP_A FP_C
@@ -100,41 +110,41 @@ mand_get:
   ; B = MAND_WIDTH
   var_eq_const FP_B MAND_WIDTH
 
-  ; C = A/B
-  fp_divide_16_16  FP_A FB_B
+  ; A = A/B ---- NEEDS SHORT OR SOMETING??? NO COS RIGHT IS 8BIT
+  fp_divide_16_16  FP_A FP_A FP_B a_over_b
+
+  ; C =  A+ min scaled X
+  var_eq_var_plus_const FP_C FP_A MAND_XMIN
+  
 
   [:mand_value] = 2
   JMP mand_get_ret
 
+.include division.asm
+.include fp_multiply.asm
+
+
 END
+.macro var_eq_var_plus_var RESULT V1 V2
+  REGC      = [:V1]
+  REGC      = REGC A_PLUS_B [:V2] _S
+  [:RESULT] = REGC
 
-; C = multiply 8 bit register by fixed point VAR with overflow into FP_R (scrambled)
-;
-; FP_R scrambled cos .. $FFFE*21=14FFD but this is overflowed garbage as 14 would imply a sign change - sign extended value into 12 bits should have been FFFFD6
-; So FP_R if useful should only be an equality check
-; 8_16 special function avoids need to shift >> 8
-.macro fp_multiply_8_16 REGX VAR
-   REGC           = REGX *LO [ :VAR + 0 ]
-   [ :FP_C + 0 ]  = REGC
-
-   REGC           = REGX *HI [ :VAR + 0 ]
-   [ :FP_C + 1 ]  = REGC
-   
-   REGC           = REGX *LO [ :VAR + 1 ]
-   REGC           = REGC A_PLUS_B [ :FP_C + 1 ]
-   [ :FP_C + 1 ]  = REGC
-
-   ; NOT NEEDED ....
-   REGC           = REGX *HI [ :VAR + 1 ]
-   [ :FP_R + 0 ]  = REGC
-   [ :FP_R + 1 ]  = 0
-
+  REGC      = [:V1+1]
+  REGC      = REGC A_PLUS_B_PLUS_C [:V2+1] 
+  [:RESULT+1] = REGC
 .endmacro
 
-; C = dividend / divisor
-.macro fp_divide_16_16 dividend divisor
+.macro var_eq_var_plus_const RESULT V K
+  REGC      = [:V]
+  REGC      = REGC A_PLUS_B >:K _S
+  [:RESULT] = REGC
 
+  REGC      = [:V+1]
+  REGC      = REGC A_PLUS_B_PLUS_C <:K
+  [:RESULT+1] = REGC
 .endmacro
+
 
 .macro var_cp to from
    REGC = [ :from ]
