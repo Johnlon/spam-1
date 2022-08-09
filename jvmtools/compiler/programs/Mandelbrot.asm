@@ -1,3 +1,4 @@
+; https://youtu.be/BWQDAKTLFXk?t=815
 
 ; needed for verilog sim
 MARLO=0
