@@ -1,0 +1,29 @@
+# 4 rotate, 5 left, 6 right, 7 drop
+
+unset DISPLAY
+
+HERE=$(readlink -f $(dirname $0))
+echo $HERE
+
+set -e
+
+echo 't100000' >  $HERE/../../../verilog/cpu/uart.control
+echo >  $HERE/../../../verilog/cpu/uart.out
+
+export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
+
+set -x
+$JAVA_HOME/bin/java -classpath $HERE/../build/libs/compiler.jar  asm/Assembler "$@"
+if [ $? -ne 0 ]; then
+    echo error
+    exit 1
+fi
+
+
+$JAVA_HOME/bin/java -jar /mnt/c/Users/johnl/work/simplecpu/jvmtools/cpusim-kt/build/libs/cpusim-kt-1.0.jar  ../../../verilog/alu/roms/alu-hex.rom $1.rom   
+if [ $? -ne 0 ]; then
+    echo error
+    exit 1
+fi
+
+
