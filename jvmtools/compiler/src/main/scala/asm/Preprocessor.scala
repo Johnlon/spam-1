@@ -89,52 +89,68 @@ object Preprocessor {
   }
 
   private def applyMacros(nonMacroLines: ListBuffer[String], macros: mutable.HashMap[String, AsmMacro]) = {
-    val productLines = ListBuffer[String]()
+    val workingSet = ListBuffer[String]()
+    workingSet.addAll(nonMacroLines)
+
+    var included = false
+
     var macroUsage = 0
-    nonMacroLines.foreach { l =>
 
-      val words = l.trim.split("\\s+")
-      if (words.nonEmpty) {
-        val firstWord = words(0)
-        val m = macros.get(firstWord)
+    do {
+      val productLines = ListBuffer[String]()
+      included = false
+      workingSet.foreach { l =>
 
-        if (m.isDefined) {
-          macroUsage += 1
+        val words = l.trim.split("\\s+")
+        if (words.nonEmpty) {
+          val firstWord = words(0)
+          val m = macros.get(firstWord)
 
-          // macro match
-          val matchedMacro = m.get
-          if (words.size - 1 != matchedMacro.args.size) {
-            throw new AssertionError(s"macro ${matchedMacro.name} expected ${matchedMacro.args.size} args but got ${words.size - 1}")
+          if (m.isDefined) {
+            included = true
+            macroUsage += 1
+
+            // macro match
+            val matchedMacro = m.get
+            if (words.size - 1 != matchedMacro.args.size) {
+              throw new AssertionError(s"macro ${matchedMacro.name} expected ${matchedMacro.args.size} args but got ${words.size - 1} : " + words)
+            }
+
+            val argVals = words.takeRight(words.size - 1)
+            val argsMap = matchedMacro.args.zip(argVals).map {
+              nv =>
+                val aKey = nv._1
+                val aVal = nv._2
+                (aKey, aVal)
+            }.toBuffer
+
+            argsMap.addOne("__#__" -> macroUsage.toString)
+            argsMap.addOne("__NAME__" -> m.get.name)
+            argsMap.addOne("__LOCAL__" -> (m.get.name+macroUsage))
+
+            matchedMacro.text.foreach {
+              mLine =>
+                var l = mLine
+                argsMap.foreach { kv =>
+                  val k = kv._1
+                  val v = kv._2
+                  l = l.replace(k, v)
+                }
+                productLines.append(l)
+            }
+
+          } else {
+            productLines.append(l)
           }
-
-          val argVals = words.takeRight(words.size - 1)
-          val argsMap = matchedMacro.args.zip(argVals).map {
-            nv =>
-              val aKey = nv._1
-              val aVal = nv._2
-              (aKey, aVal)
-          }.toBuffer
-
-          argsMap.addOne("__#__" -> macroUsage.toString)
-          argsMap.addOne("__NAME__" -> m.get.name)
-
-          matchedMacro.text.foreach {
-            mLine =>
-              var l = mLine
-              argsMap.foreach { kv =>
-                val k = kv._1
-                val v = kv._2
-                l = l.replace(k, v)
-              }
-              productLines.append(l)
-          }
-
-        } else {
-          productLines.append(l)
         }
       }
-    }
-    productLines
+
+      workingSet.clear()
+      workingSet.addAll(productLines)
+      productLines.clear()
+    } while (included);
+
+    workingSet
   }
 
   private def preprocessMacros(includedLines: ListBuffer[String]): ListBuffer[String] = {
@@ -155,9 +171,13 @@ object Preprocessor {
 
     val macrodLines = preprocessMacros(includedLines)
 
-    macrodLines.toSeq.map {
+    var ret = macrodLines.toSeq.map {
       // eliminate empty comments as the wrap lines and cause havoc
       l => l.replaceFirst(";\\s*$", "")
     }
+
+    ret.zipWithIndex.filter(!_._1.isBlank).foreach(x => println(s"${x._2}\t:${x._1}"))
+
+    ret
   }
 }

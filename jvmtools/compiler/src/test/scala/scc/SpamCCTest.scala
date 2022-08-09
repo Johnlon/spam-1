@@ -1812,6 +1812,38 @@ class SpamCCTest {
   @Nested
   class Multiply {
     @Test
+    def negMathsXPosPosMult(): Unit = {
+
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = 2*256+128; // 2.5
+          | uint16 b = 3;
+          | uint16 c = a * b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(0x0780, 0x80)), stripComments = true)
+    }
+
+    @Test
+    def negMathsYPosPosMult(): Unit = {
+
+      val lines =
+        """
+          |fun main() {
+          | uint16 a = 2*256+128; // 2.5
+          | uint16 b = 2*256+128; // 2.5
+          | uint16 c = a * b;
+          | halt(c, c)
+          |}
+          |""".stripMargin
+
+      compile(lines, timeout = 50, checkHalt = Some(HaltCode(0x0640, 0x40)), stripComments = true)
+    }
+
+    @Test
     def negMathsPosPosMult(): Unit = {
 
       val lines =
