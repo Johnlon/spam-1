@@ -427,7 +427,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
       throw new MatchError(x + " is not a Line or Seq[Line] but is type " + x.getClass)
   }
 
-  def lines: Parser[Seq[Line]] = line ~ (line *) <~ "END" ^^ {
+  def lines: Parser[Seq[Line]] = line ~ (line *) <~ "^END$".r ^^ {
     case a ~ b =>
       val allLines: List[Seq[Line]] = a :: b
 
