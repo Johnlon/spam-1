@@ -88,18 +88,29 @@ class AssemblerTest {
         |.macro X Y
         |  REGA = Y
         |.endmacro
-        |
         |X '\n'
         |
         |var_LTEST: WORD 0
         |.macro LTEST
+        |; LTEST state
         |  REGA = __#__
         |  REGB = __LINE__
         |  [:var___NAME__] = __LINE__
+        |; LTEST end
         |.endmacro
         |
         |LTEST
         |LTEST
+        |
+        |.macro NESTED_MACRO
+        |; begin nesting
+        |LTEST
+        |LTEST
+        |; end nesting
+        .endmacro
+        |
+        |NESTED_MACRO
+        |
         |; some ending asm
         |END
         """
@@ -133,11 +144,17 @@ class AssemblerTest {
         (PASS_B, TDevice.MARLO, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 8),
         (PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 10),
         (PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 5),
-        (PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 12), // lineno
-        (PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, _A, DIRECT, STANDARD, 0, 13),
+        (PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 13), // lineno
+        (PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, _A, DIRECT, STANDARD, 0, 14),
         (PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 6),
-        (PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 15), // lineno
-        (PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, _A, DIRECT, STANDARD, 0, 16),
+        (PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 18), // lineno
+        (PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, _A, DIRECT, STANDARD, 0, 19),
+        (PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 8),
+        (PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 24),
+        (PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, _A, DIRECT, STANDARD, 0, 25),
+        (PASS_B, TDevice.REGA, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 9),
+        (PASS_B, TDevice.REGB, ADevice.REGA, BDevice.IMMED, _A, REGISTER, STANDARD, 0, 29),
+        (PASS_B, TDevice.RAM, ADevice.REGA, BDevice.IMMED, _A, DIRECT, STANDARD, 0, 30)
       ),
       d
     )
@@ -533,11 +550,11 @@ class AssemblerTest {
         |MARLO = [ :MULT_TMP ]
         |MARHI = [ :MULT_TMP + 1 ]
         |HALT  = [ :MULT_TMP + 2 ]
-        |END
         |
         """ + algorithm +
         """
         |
+        |END
         """, HaltCode(0x0a0a, 0));
 
     multTest(
@@ -551,11 +568,11 @@ class AssemblerTest {
         |MARLO = [ :MULT_TMP ]
         |MARHI = [ :MULT_TMP + 1 ]
         |HALT  = [ :MULT_TMP + 2 ]
-        |END
         |
         """ + algorithm +
         """
         |
+        |END
         """, HaltCode(0x6665, 1)); // $16665 is full answer
 
   }

@@ -85,7 +85,11 @@ trait Devices {
 
   sealed trait TExpression
 
-  sealed class TDevice private(val id: Int) extends TExpression with E
+  sealed class TDevice private(val id: Int) extends TExpression with E {
+    if (id >= 32) {
+      sys.error("Too big")
+    }
+  }
 
   object TDevice {
 

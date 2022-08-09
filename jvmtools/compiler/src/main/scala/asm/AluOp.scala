@@ -1,6 +1,10 @@
 package asm
 
 sealed class AluOp private(val id: Int, val abbrev: String = null) extends E {
+  if (id >= 32) {
+    throw new AssertionError(s"value $id is too big for an ALU op for op '$abbrev''")
+  }
+
   def isAbbreviated: Boolean = abbrev != null
 
   def preferredName: String =  {
@@ -42,7 +46,7 @@ object AluOp  {
     object NOT_B extends AluOp(29, "~")
     object A_PLUS_B_BCD extends AluOp(20)
     object A_MINUS_B_BCD extends AluOp(31)
-    object A_TIMES_B extends AluOp(100, "*") // synthesised as 16 bit
+//    object A_TIMES_B extends AluOp(100, "*") // synthesised as 16 bit
 
     def valueOf(id: Int) : AluOp = {
         values.find(c => c.id == id).getOrElse(throw new RuntimeException("unknown AluOp " + id))
@@ -84,6 +88,6 @@ object AluOp  {
           NOT_B ,
           A_PLUS_B_BCD ,
           A_MINUS_B_BCD,
-          A_TIMES_B
+//          A_TIMES_B
       )
 }
