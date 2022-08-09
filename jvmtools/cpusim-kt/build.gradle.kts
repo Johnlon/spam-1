@@ -29,6 +29,18 @@ dependencies {
     implementation(files( "${projectDir}/../compiler/build/libs/compiler.jar"))
 }
 
+val jar by tasks.getting(Jar::class) {
+    exclude("module-info.class", "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.MF")
+
+    manifest {
+        attributes["Main-Class"] = "MainKt"
+    }
+
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    from(configurations.runtimeClasspath.get().map({ if (it.isDirectory) it else zipTree(it) }))
+}
+
+
 tasks.test {
     useJUnitPlatform()
 }
