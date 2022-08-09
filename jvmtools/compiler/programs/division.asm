@@ -2,6 +2,8 @@
 ;
 ; DIVISION FUNCTION AND CALLING MACRO
 ;
+STASHA:        BYTES [ 0 ]
+STASHB:        BYTES [ 0 ]
 
 divide_return: BYTES [0,0]
 V_DIVIDEND: BYTES [$80,$ff]
@@ -220,7 +222,8 @@ division_16_16:
 
 ; wraps divide function with calling convention and return location
 ; Q = dividend / divisor
-.macro fp_divide_16_16 quotient dividend divisor HERE_LABEL
+; vvk - var var const
+.macro fp_divide_16_16_vvc quotient dividend divisor 
   ; stash x and y registers
   [:STASHA] = REGA
   [:STASHB] = REGB
@@ -231,19 +234,56 @@ division_16_16:
   REGA = [:dividend+1]
   [:V_DIVIDEND+1] = REGA
 
-  REGA = [:divisor]
+  REGA = >:divisor
   [:V_DIVISOR] = REGA
-  REGA = [:divisor+1]
+  REGA = <:divisor
   [:V_DIVISOR+1] = REGA
 
   ; return address
-  [:divide_return+0] = >:HERE_LABEL_after_division
-  [:divide_return+1] = <:HERE_LABEL_after_division
+  [:divide_return+0] = >:after_division__LOCAL__
+  [:divide_return+1] = <:after_division__LOCAL__
 
   ; call
   PCHITMP = < :division_16_16
   PC      = > :division_16_16 
-  HERE_LABEL_after_division:
+  after_division__LOCAL__:
+
+  ; get result
+  REGA = [:V_QUOTIENT]
+  [:quotient] = REGA
+
+  REGA = [:V_QUOTIENT+1]
+  [:quotient+1] = REGA
+
+  ; restore registers
+  REGA = [:STASHA]
+  REGB = [:STASHB]
+
+.endmacro
+
+.macro fp_divide_16_8_vvc quotient dividend divisor 
+  ; stash x and y registers
+  [:STASHA] = REGA
+  [:STASHB] = REGB
+
+  ; set up args
+  REGA = [:dividend]
+  [:V_DIVIDEND] = REGA
+  REGA = [:dividend+1]
+  [:V_DIVIDEND+1] = REGA
+
+  REGA = >:divisor
+  [:V_DIVISOR] = REGA
+  [:V_DIVISOR+1] = 0
+
+  ; return address
+  [:divide_return+0] = >:after_division__LOCAL__
+  [:divide_return+1] = <:after_division__LOCAL__
+
+  ; call
+  PCHITMP = < :division_16_16
+  PC      = > :division_16_16 
+  after_division__LOCAL__:
 
   ; get result
   REGA = [:V_QUOTIENT]

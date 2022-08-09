@@ -20,20 +20,24 @@ object NoOpDebugger : Debugger {
     }
 }
 
-fun loadAlu(aluRom: MutableList<Int>) {
-    val romFile = File("../../../simplecpu/verilog/alu/roms/alu-hex.rom")
-    println("ALU rom: " + romFile.absolutePath)
-    romFile.forEachLine { line ->
+fun loadAlu(aluRomFile: File): MutableList<Int> {
+
+    val aluRom= mutableListOf<Int>()
+
+    println("ALU rom: " + aluRomFile.absolutePath)
+    aluRomFile.forEachLine { line ->
         val words = line.trim().split(" ")
         words.forEach { word ->
             aluRom.add(word.toInt(16))
         }
     }
+
+    return aluRom
 }
 
 class CPU(
     val debugger: Debugger = NoOpDebugger,
-    val rom: List<Long>,
+    val aluRomFile: File,
     val instructions: List<Instruction>,
 ) {
 
@@ -42,8 +46,7 @@ class CPU(
     val countFreq = 50
     val countIntervalMs = ((1.0 / countFreq) * 1000).toLong()
 
-    private val aluRom = mutableListOf<Int>()
-
+    private var aluRom = mutableListOf<Int>()
 
     lateinit var lastOp: Op
 
@@ -111,7 +114,7 @@ class CPU(
 //    var intervalNs : Long = 1 // approx same as 600 instructions per second
 
     init {
-        loadAlu(aluRom)
+        aluRom.addAll(loadAlu(aluRomFile))
         debugger.observeRam(ram)
 
         thread(isDaemon = true, start = true) {

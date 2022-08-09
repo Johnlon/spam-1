@@ -1,13 +1,14 @@
 import org.junit.jupiter.api.Test
+import java.io.File
 import kotlin.test.assertEquals
 
 internal class AluTest {
 
+    var romFile = File("../../verilog/alu/roms/alu-hex.rom")
+
     @Test
     fun compare() {
-        val aluRom = mutableListOf<Int>()
-
-        loadAlu(aluRom)
+        val aluRom = loadAlu(romFile)
 
         (Op.values()).forEach { op ->
             listOf(true, false).forEach { cin ->
