@@ -86,7 +86,7 @@ fun main(_args: Array<String>) {
     val (programRom, inst) = loadProgram(progRomFile.path)
     program.addAll(inst)
 
-    val slow = false
+    val slow = true
 
     val cpu = if (slow) CPU(debugger = simUI(), aluRomFile = aluRomFile, instructions = inst)
     else CPU(aluRomFile = aluRomFile, instructions = inst)
@@ -123,6 +123,9 @@ fun main(_args: Array<String>) {
                         } else if (lastC == 'a') { // ansi
                             val colour = mapColour(ci)
                             print(String.format("\u001b[48;05;%dm%02x\u001b[0m", colour, ci))
+                        } else if (lastC == 'A') { // not ansi cos it's mapped
+                            val colour = mapColour(ci)
+                            print(String.format("\u001b[48;05;%dm  \u001b[0m", colour)) // ensu nonum
                         } else {
                             println("\nprotocol - unexpected ctrl code '0x$lastS' ($lastC) prior to '0x$s' ($c)\n")
                         }
