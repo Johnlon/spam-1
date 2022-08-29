@@ -19,9 +19,9 @@
    [ :RESULT + 1 ]  = REGC
 
    ; NOT NEEDED ....
-   REGC             = REGD *HI <CONST
-   [ :FP_R + 0 ]    = REGC
-   [ :FP_R + 1 ]    = 0
+   ;REGC             = REGD *HI <CONST
+   ;[ :FP_R + 0 ]    = REGC
+   ;[ :FP_R + 1 ]    = 0
 
 .endmacro
 
@@ -44,9 +44,9 @@
    [ :RESULT + 1 ]  = REGC
 
    ; NOT NEEDED ....
-   REGC             = REGD *HI [ :V2 + 1 ]
-   [ :FP_R + 0 ]    = REGC
-   [ :FP_R + 1 ]    = 0
+   ;REGC             = REGD *HI [ :V2 + 1 ]
+   ;[ :FP_R + 0 ]    = REGC
+   ;[ :FP_R + 1 ]    = 0
 
 .endmacro
 
