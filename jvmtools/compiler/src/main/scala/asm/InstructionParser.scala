@@ -225,6 +225,21 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     )
   }
 
+  def byteData = "BYTE" ~> expr <~ opt(comment) ^^ { expr =>
+    val exprs: Know[KnownInt] = expr
+
+    val intVal: (String, Byte) = (exprs.name, exprs.getVal.get.value.toByte)
+
+    if (intVal._2 < Byte.MinValue || intVal._2 > 0xff) {
+      sys.error(s"asm error: $intVal (0x${intVal._2.toHexString}) evaluates as out of range for a byte 0x00 to 0xff")
+    }
+
+    // flatten   WORD $1234   to   List( (">1234", 34)  ("<1234", 12) )
+    List(
+      (exprs.name, (intVal._2 & 0xff).toByte), // lo
+    )
+  }
+
 
   def wordsData = ("WORDS" ~ "[") ~> repsep(expr, ",") <~ "]" ~ opt(comment) ^^ { expr =>
     val exprs: List[Know[KnownInt]] = expr
@@ -243,7 +258,7 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     ).map(x => (x._1, x._2.toByte))
   }
 
-  def byteData = ("BYTES" ~ "[") ~> repsep(expr, ",") <~ "]" ~ opt(comment) ^^ { expr =>
+  def bytesData = ("BYTES" ~ "[") ~> repsep(expr, ",") <~ "]" ~ opt(comment) ^^ { expr =>
     val exprs: List[Know[KnownInt]] = expr
 
     val ints: List[(String, Int)] = exprs.map(x => (x.name, x.getVal.get.value))
@@ -267,12 +282,12 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     str.iterator.map(_.toString).zip(bytes).toList
   }
 
-  def dataInstruction: Parser[RamInitialisation] = name ~ ":" ~ rep1(byteData | strData | wordsData | wordData) ^^ {
+  def dataInstruction: Parser[RamInitialisation] = name ~ ":" ~ rep1(bytesData | byteData | strData | wordsData | wordData) ^^ {
     case labelName ~ _ ~ expr =>
       val data = expr.flatten
 
       if (data.isEmpty) {
-        sys.error(s"asm error: BYTES or String expression with label '$labelName' must have at least one byte but none were defined, or use an EQU instead")
+        sys.error(s"asm error: BYTES or WORD or String expression with label '$labelName' must have at least one byte but none were defined, or use an EQU instead")
       }
       val bytes = data.map(_._2)
 
