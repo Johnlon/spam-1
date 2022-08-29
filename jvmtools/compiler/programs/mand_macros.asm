@@ -93,6 +93,7 @@
 .endmacro
 
 
+; logging functions
 .macro putc V
 ;  SEND_UART 'c'
 ;  SEND_UART V
@@ -108,6 +109,7 @@
 ;  SEND_UART V
 .endmacro
 
+; 'i' versions are needed to draw the plot
 .macro putic V
   SEND_UART 'c'
   SEND_UART V
