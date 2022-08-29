@@ -2,21 +2,21 @@
 ;
 ; DIVISION FUNCTION AND CALLING MACRO
 ;
-STASHA:        BYTES [ 0 ]
-STASHB:        BYTES [ 0 ]
+STASHA:        BYTE 0
+STASHB:        BYTE 0
 
-divide_return: BYTES [0,0]
-V_DIVIDEND: BYTES [$80,$ff]
-V_DIVISOR: BYTES [3]
-V_QUOTIENT: BYTES [0,0]
-tmpDividendLo: BYTES [0]
-tmpDividendHi: BYTES [0]
-tmpDivisorLo: BYTES [0]
-tmpDivisorHi: BYTES [0]
-tmpRemainderLo: BYTES [0]
-tmpRemainderHi: BYTES [0]
-divideSign: BYTES [0]
-divideLoopVar: BYTES [0]
+divide_return: WORD 0
+V_DIVIDEND:    WORD $ff80
+V_DIVISOR:     BYTE 3
+V_QUOTIENT:    WORD 0
+tmpDividendLo: BYTE 0
+tmpDividendHi: BYTE 0
+tmpDivisorLo:  BYTE 0
+tmpDivisorHi:  BYTE 0
+tmpRemainderLo:BYTE 0
+tmpRemainderHi:BYTE 0
+divideSign:    BYTE 0
+divideLoopVar: BYTE 0
 
 ; ==================================================================================
 
