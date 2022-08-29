@@ -6,7 +6,6 @@ trait IsStandaloneVarExpr {
   def variableName: String
 }
 
-
 trait ExpressionParser {
   self: SpamCC =>
 

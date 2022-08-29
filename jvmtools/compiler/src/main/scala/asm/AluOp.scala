@@ -6,11 +6,6 @@ sealed class AluOp private(val id: Int, val abbrev: String = null) extends E {
   }
 
   def isAbbreviated: Boolean = abbrev != null
-
-  def preferredName: String =  {
-    if (isAbbreviated) abbrev
-    else enumName
-  }
 }
 
 object AluOp  {
@@ -46,7 +41,9 @@ object AluOp  {
     object NOT_B extends AluOp(29, "~")
     object A_PLUS_B_BCD extends AluOp(20)
     object A_MINUS_B_BCD extends AluOp(31)
-//    object A_TIMES_B extends AluOp(100, "*") // synthesised as 16 bit
+
+    // messes up the decompiler - can't recall how
+    //object A_TIMES_B extends AluOp(100, "*") // synthesised as 16 bit
 
     def valueOf(id: Int) : AluOp = {
         values.find(c => c.id == id).getOrElse(throw new RuntimeException("unknown AluOp " + id))
@@ -55,7 +52,7 @@ object AluOp  {
           values.find(c => c.abbrev.equals(abbrev)).getOrElse(throw new RuntimeException("unknown AluOp abbrev '" + abbrev + "'"))
     }
 
-    def values: Seq[AluOp ] = Seq(
+    def values: Seq[AluOp] = Seq(
           ZERO ,
           PASS_A ,
           PASS_B ,

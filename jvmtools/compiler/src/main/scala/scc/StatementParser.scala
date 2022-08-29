@@ -351,8 +351,6 @@ class StatementParser {
     }
   }
 
-
-
   def statementWritePort: Parser[Block] = positioned {
     "writeport" ~ "(" ~> writePort ~ "," ~ blkExpr <~ ")" ^^ {
       case port ~ _ ~ value => BlkWritePort(port, value)
@@ -466,21 +464,6 @@ class StatementParser {
 
   def program: Parser[Program] = "program" ~ "{" ~> ((statementUInt16EqExpr | statementVarDatasource | statementVarLocatedDatasource | lineComment | blockComment | functionDef) +) <~ "}" ^^ {
     fns => Program(fns)
-  }
-
-  def aluOp: Parser[String] = {
-    val shortAluOps : Parser[AluOp] = {
-      // reverse sorted to put longer operators ahead of shorter ones otherwise shorter ones gobble
-      val reverseSorted = AluOp.values.filter(_.isAbbreviated).sortBy(x => x.abbrev).reverse.toList
-      reverseSorted map {
-        m =>
-          literal(m.abbrev) ^^^ m
-      } reduceLeft {
-        _ | _
-      }
-    }
-    val longAluOps = enumToParser(AluOp.values)
-    (longAluOps | shortAluOps).map(_.preferredName)
   }
 
   def readPortName: Parser[String] = {

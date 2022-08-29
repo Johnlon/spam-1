@@ -214,14 +214,14 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
 
     val intVal: (String, Int) = (exprs.name, exprs.getVal.get.value)
 
-    if( intVal._2 < Short.MinValue || intVal._2 > 0xffff ) {
+    if (intVal._2 < Short.MinValue || intVal._2 > 0xffff) {
       sys.error(s"asm error: $intVal (0x${intVal._2.toHexString}) evaluates as out of range for a short 0x0000 to 0xffff")
     }
 
     // flatten   WORD $1234   to   List( (">1234", 34)  ("<1234", 12) )
     List(
       (">" + exprs.name, (intVal._2 & 0xff).toByte), // lo
-      ("<" + exprs.name, ((intVal._2& 0xff00)>>8).toByte) //hi
+      ("<" + exprs.name, ((intVal._2 & 0xff00) >> 8).toByte) //hi
     )
   }
 
@@ -238,8 +238,8 @@ trait InstructionParser extends EnumParserOps with JavaTokenParsers {
     // flatten   WORDS [ 1234, 5678 ] to   List( (">1234", 34)  ("<1234", 12)  (">5678", 78)  ("<5678", 56) )
     exprs.flatMap(x => List(
       (">" + x.name, x.getVal.get.value & 0xff), // lo
-      ("<" + x.name, (x.getVal.get.value & 0xff00)>>8) //hi
-      )
+      ("<" + x.name, (x.getVal.get.value & 0xff00) >> 8) //hi
+    )
     ).map(x => (x._1, x._2.toByte))
   }
 
