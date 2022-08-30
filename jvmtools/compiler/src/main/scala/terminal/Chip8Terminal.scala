@@ -9,7 +9,7 @@ import scala.swing.ScrollPane.BarPolicy
 import scala.swing._
 import scala.swing.event._
 
-object TerminalStates {
+object Chip8TerminalStates {
 
   // valid in NONE_STATE
   val GOTO_INIT_STATE: Char = 0
@@ -32,7 +32,7 @@ object TerminalStates {
 
 }
 
-import terminal.TerminalStates._
+import terminal.Chip8TerminalStates._
 
 sealed trait TerminalIOState
 
@@ -60,7 +60,7 @@ object STATE_LOG_STRING_START extends TerminalIOState
 
 object STATE_LOG_STRING_WRITE extends TerminalIOState
 
-abstract class Terminal extends SimpleSwingApplication {
+abstract class Chip8Terminal extends SimpleSwingApplication {
 
   var uiapp = new MainFrame()
 

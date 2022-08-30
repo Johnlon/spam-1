@@ -4,6 +4,12 @@ import org.apache.commons.io.input.{Tailer, TailerListener}
 
 import java.io.{File, FileOutputStream, PrintStream}
 
+/** A terminal that does comms with the simulated verilog SPAM-1.
+ * Sends bytes from a Windows app to a file,
+ * paints draw instructions arriving in a different file to the console.
+ * Uses a set of drawing rules defined for the Chip 8 emulation.
+ * */
+
 object VerilogUARTTerminal extends UARTTerminal {
 
   val replay = true

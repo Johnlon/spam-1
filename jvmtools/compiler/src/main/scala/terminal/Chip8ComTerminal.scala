@@ -7,6 +7,81 @@ import java.io._
 import scala.swing._
 import scala.swing.event.{ButtonClicked, SelectionChanged}
 
+/** A terminal that does comms with the real SPAM-1 hardware.
+ * Sends bytes from a Windows app to a serial port,
+ * paints draw instructions arriving from the serial port to the console.
+ * Uses a set of drawing rules defined for the Chip 8 emulation.
+ */
+object Chip8ComTerminal extends Chip8Terminal {
+
+  val comAdapter = new ComAdapter
+
+  def run(): Unit = {
+
+    def portSelections = {
+      val portsList = ComAdapter.portsNames
+      PortName("", "select port") +: portsList
+    }
+
+    val comboPorts = new ComboBox(portSelections)
+    val cbRefresh = new Button("Refresh")
+    val btnTest = new Button("Test")
+
+    reactions += {
+      case ButtonClicked(`cbRefresh`) =>
+        comboPorts.peer.setModel(ComboBox.newConstantModel(portSelections))
+
+      case ButtonClicked(`btnTest`) =>
+        if (comAdapter.isOpen) {
+//          send('J')
+//          send('\n')
+//          send('\r')
+          // send something
+        }
+
+      case SelectionChanged(`comboPorts`) =>
+
+        val comPortName: String = comboPorts.selection.item.name
+        if (comPortName == "")
+          comAdapter.close()
+        else
+          comAdapter.open(comPortName)
+    }
+    listenTo(cbRefresh, comboPorts.selection, btnTest)
+
+    val ports = new BoxPanel(Orientation.Horizontal) {
+      contents ++= Seq(new Label("Ports"), new Label("  "), comboPorts)
+    }
+
+    val buttons = new BoxPanel(Orientation.Horizontal) {
+      contents ++= Seq(brefresh, bpaint, bstop, bnext, bclk, btnTest)
+    }
+
+    val label = new BoxPanel(Orientation.Horizontal) {
+      contents ++= Seq(labelChar)
+    }
+
+    val head = new BoxPanel(Orientation.Vertical) {
+      contents ++= Seq(ports, buttons, label, textArea, logLine, scrText)
+    }
+    uiapp.contents = head
+
+    comAdapter.startReader(handleLine)
+  }
+
+  override def doReplay(): Unit = {
+    Dialog.showMessage(uiapp, "Not supported")
+  }
+
+  override def outputStream(): PrintStream = {
+    comAdapter.getOutputStream
+  }
+
+  override def gamepadStream(): PrintStream = {
+    ???
+  }
+}
+
 case class PortName(name: String, desc: String) {
   override def toString: String = {
     if (name.nonEmpty)
@@ -121,76 +196,5 @@ class ComAdapter {
     } else {
       output
     }
-  }
-}
-
-
-object ComTerminal extends Terminal {
-
-  val comAdapter = new ComAdapter
-
-  def run(): Unit = {
-
-    def portSelections = {
-      val portsList = ComAdapter.portsNames
-      PortName("", "select port") +: portsList
-    }
-
-    val comboPorts = new ComboBox(portSelections)
-    val cbRefresh = new Button("Refresh")
-    val btnTest = new Button("Test")
-
-    reactions += {
-      case ButtonClicked(`cbRefresh`) =>
-        comboPorts.peer.setModel(ComboBox.newConstantModel(portSelections))
-
-      case ButtonClicked(`btnTest`) =>
-        if (comAdapter.isOpen) {
-//          send('J')
-//          send('\n')
-//          send('\r')
-          // send something
-        }
-
-      case SelectionChanged(`comboPorts`) =>
-
-        val comPortName: String = comboPorts.selection.item.name
-        if (comPortName == "")
-          comAdapter.close()
-        else
-          comAdapter.open(comPortName)
-    }
-    listenTo(cbRefresh, comboPorts.selection, btnTest)
-
-    val ports = new BoxPanel(Orientation.Horizontal) {
-      contents ++= Seq(new Label("Ports"), new Label("  "), comboPorts)
-    }
-
-    val buttons = new BoxPanel(Orientation.Horizontal) {
-      contents ++= Seq(brefresh, bpaint, bstop, bnext, bclk, btnTest)
-    }
-
-    val label = new BoxPanel(Orientation.Horizontal) {
-      contents ++= Seq(labelChar)
-    }
-
-    val head = new BoxPanel(Orientation.Vertical) {
-      contents ++= Seq(ports, buttons, label, textArea, logLine, scrText)
-    }
-    uiapp.contents = head
-
-    comAdapter.startReader(handleLine)
-  }
-
-  override def doReplay(): Unit = {
-    Dialog.showMessage(uiapp, "Not supported")
-  }
-
-  override def outputStream(): PrintStream = {
-    comAdapter.getOutputStream
-  }
-
-  override def gamepadStream(): PrintStream = {
-    ???
   }
 }

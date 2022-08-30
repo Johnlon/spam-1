@@ -2,7 +2,8 @@ package terminal
 
 import scala.swing._
 
-abstract class UARTTerminal extends Terminal {
+/* includes button for controlling the sim - but also configures the verilog uart to transmit lots  */
+abstract class UARTTerminal extends Chip8Terminal {
 
   def run(): Unit = {
 

@@ -5,7 +5,6 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.junit.jupiter.api.Assertions.{assertEquals, assertThrows}
 import org.junit.jupiter.api.MethodOrderer.MethodName
 import org.junit.jupiter.api.{Nested, Test, TestMethodOrder}
-import terminal.TerminalStates._
 import verification.Checks._
 import verification.HaltCode
 import verification.Verification._
@@ -1733,60 +1732,6 @@ class SpamCCTest {
       checkTransmittedChar(str, 'C')
       checkTransmittedChar(str, 'D')
     })
-  }
-
-  @Test
-  def snake(): Unit = {
-
-    val lines =
-      s"""fun main() {
-         | uint16 loop = 0;
-         | while ( loop <= 2) {
-         |  uint16 a = 33 + loop;
-         |
-         |  uint16 b = 2;
-         |  while ( b > 0 ) {
-         |   putuart(${DO_RIGHT.toInt})
-         |   putuart( a )
-         |   b = b - 1;
-         |  }
-         |  b = 2;
-         |  while ( b > 0 ) {
-         |   putuart(${DO_DOWN.toInt})
-         |   putuart( a )
-         |   b = b - 1;
-         |  }
-         |  b = 2;
-         |  while ( b > 0 ) {
-         |   putuart(${DO_LEFT.toInt})
-         |   putuart( a )
-         |   b = b - 1;
-         |  }
-         |
-         |  b = 2;
-         |  while ( b > 0 ) {
-         |   putuart(${DO_UP.toInt})
-         |   putuart( a )
-         |   b = b - 1;
-         |  }
-         |  putuart(${DO_RIGHT.toInt})
-         |  putuart(${DO_DOWN.toInt})
-         |
-         |  loop = loop + 1;
-         | }
-         |
-         |}
-         |
-         |// END  COMMAND
-         |""".stripMargin
-
-    compile(lines, verbose = true, stripComments = true, outputCheck = str => {
-      checkTransmittedDec(str, DO_RIGHT)
-      checkTransmittedDec(str, DO_DOWN)
-      checkTransmittedDec(str, DO_LEFT)
-      checkTransmittedDec(str, DO_UP)
-    })
-
   }
 
   @Test

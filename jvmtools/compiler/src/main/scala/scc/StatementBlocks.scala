@@ -29,7 +29,7 @@ import asm.Ports.ReadPort
 import org.apache.commons.text.StringEscapeUtils
 import scc.Program.RootEndLabel
 import scc.SpamCC.{MAIN_LABEL, TWO_BYTE_STORAGE, intTo2xBytes, split}
-import terminal.TerminalStates
+import terminal.Chip8TerminalStates
 
 import scala.collection.mutable
 import scala.language.postfixOps
@@ -520,9 +520,9 @@ case class PutfuartConst(code: Char, konst: Int) extends Block(nestedName = "put
 
     // see
     val uartTerminalCtrl = code match {
-      case 'X' => TerminalStates.GOTO_LOG_BYTE_STATE
-      case 'C' => TerminalStates.GOTO_LOG_CHAR_STATE
-      case 'B' => TerminalStates.GOTO_LOG_BIN_STATE
+      case 'X' => Chip8TerminalStates.GOTO_LOG_BYTE_STATE
+      case 'C' => Chip8TerminalStates.GOTO_LOG_CHAR_STATE
+      case 'B' => Chip8TerminalStates.GOTO_LOG_BIN_STATE
     }
 
     split(
@@ -552,9 +552,9 @@ case class Putfuart(code: Char, block: Block) extends Block(nestedName = "putfua
 
     // see
     val uartTerminalCtrl = code match {
-      case 'X' => TerminalStates.GOTO_LOG_BYTE_STATE
-      case 'C' => TerminalStates.GOTO_LOG_CHAR_STATE
-      case 'B' => TerminalStates.GOTO_LOG_BIN_STATE
+      case 'X' => Chip8TerminalStates.GOTO_LOG_BYTE_STATE
+      case 'C' => Chip8TerminalStates.GOTO_LOG_CHAR_STATE
+      case 'B' => Chip8TerminalStates.GOTO_LOG_BIN_STATE
     }
 
     stmts ++ split(
