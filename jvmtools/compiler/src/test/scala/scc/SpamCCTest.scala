@@ -833,7 +833,7 @@ class SpamCCTest {
   }
 
   @Test
-  def varEqSimpleTwoArgExprNOTIMPL(): Unit = {
+  def varEqSimpleTwoArgExpr(): Unit = {
 
     val lines =
       """
@@ -868,7 +868,7 @@ class SpamCCTest {
         |  // should shift left twice to become the '@' char
         |  a = %00010000;
         |  b = 2;
-        |  uint16 at = a A_LSL_B b;
+        |  uint16 at = a << b;
         |  // should print '@'
         |  putuart(at)
         |}
@@ -1231,6 +1231,8 @@ class SpamCCTest {
         |   fun3()
         | }
         |fun main() {
+        |   uint16 gg=-99;
+        |   halt(gg, 99)
         |   putuart(g>>8)
         |   putuart(g)
         |   g = g + $101;

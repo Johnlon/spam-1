@@ -9,23 +9,23 @@ program {
 //fe ff 
 //ff fe
 
-  uint16 xmul = $ffc7;
-  uint16 xmul6 = xmul >>> 6;
+  short xmul = $ffc7;
+  short xmul6 = xmul >>> 6;
   putuart(xmul6>>8)
   putuart(xmul6)
-  uint16 xmul61 = xmul6 << 1;
+  short xmul61 = xmul6 << 1;
   putuart(xmul61>>8)
   putuart(xmul61)
-  uint16 xmul6t = xmul6 *2;
+  short xmul6t = xmul6 *2;
   putuart(xmul6t>>8)
   putuart(xmul6t)
   halt(1,1)
 */
 
 /*
-      uint16   s1 = $ffbc;
-      uint16   s2 = s1 << 1;
-      uint16   s3 = s1 * 2;
+      short   s1 = $ffbc;
+      short   s2 = s1 << 1;
+      short   s3 = s1 * 2;
 
 putuart(s2>>8)
 putuart(s2)
@@ -35,34 +35,34 @@ halt(9,9)
 */
 
 
-        uint16 logFrom=26;
-        uint16 log=0;
+        short logFrom=26;
+        short log=0;
 
-        uint16 X1=$00e0;
-        uint16 X2=$0090;
-        uint16 Y1=$00c0;
-        uint16 Y2=$0060;
-        uint16 LIMIT=$0100;
+        short X1=$00e0;
+        short X2=$0090;
+        short Y1=$00c0;
+        short Y2=$0060;
+        short LIMIT=$0100;
 
         //var Chr = [ ".:-=X$#@ " ];
         var Chr = [ "123456789ABCD " ];
-        uint16 ITERS = 14; // number of chars in Chr
+        short ITERS = 14; // number of chars in Chr
 
-        uint16 py=0;
+        short py=0;
         while (py <= 21) {
-          uint16 px=0;
+          short px=0;
 
           while (px <= 31) {
-            uint16 x0 = ((px * X1) >>> 5) - X2;
-            uint16 y0 = ((py * Y1) / 22) - Y2;
+            short x0 = ((px * X1) >>> 5) - X2;
+            short y0 = ((py * Y1) / 22) - Y2;
 
 
-            uint16 x=0;
-            uint16 y=0;
+            short x=0;
+            short y=0;
             
-            uint16 i=0;
-            uint16 xSqr = 0;
-            uint16 ySqr = 0;
+            short i=0;
+            short xSqr = 0;
+            short ySqr = 0;
 
 /*if (log >= logFrom) {
   putuart($aa)
@@ -89,14 +89,14 @@ if (log >= logFrom) {
   putuart(ySqr>>8)
   putuart(ySqr)
 
-  uint16 p = (xSqr + ySqr);
+  short p = (xSqr + ySqr);
   putuart(p>>8)
   putuart(p)
 
 }
 */
 
-              uint16 sum = xSqr + ySqr;
+              short sum = xSqr + ySqr;
               if (sum >= LIMIT) {
                 break
               }
@@ -104,10 +104,10 @@ if (log >= logFrom) {
                 break
               }
 
-              uint16 xt = xSqr - ySqr + x0;
+              short xt = xSqr - ySqr + x0;
 /*
 if (log >= logFrom) {
-  uint16 diff = xSqr - ySqr;
+  short diff = xSqr - ySqr;
   putuart($33)
   putuart(i)
 
@@ -121,17 +121,17 @@ if (log >= logFrom) {
   putuart(y>>8)
   putuart(y)
 
-  uint16 mul = x * y;
+  short mul = x * y;
   putuart(mul>>8)
   putuart(mul)
-  uint16 mul6 = mul >>> 6;
+  short mul6 = mul >>> 6;
   putuart(mul6>>8)
   putuart(mul6)
-  uint16 mul61 = mul6 << 1;
+  short mul61 = mul6 << 1;
   putuart(mul61>>8)
   putuart(mul61)
 
-  uint16 mul61y = mul61 + y0;
+  short mul61y = mul61 + y0;
   putuart(mul61y>>8)
   putuart(mul61y)
 }
@@ -159,7 +159,7 @@ if (log == logFrom) {
             i = i - 1;
 
 
-            uint16 c = Chr[i];
+            short c = Chr[i];
             putuart(c)
 
             px = px + 1;

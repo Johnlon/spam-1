@@ -156,7 +156,7 @@ class StatementParser {
 
   // general purpose
   def statementUInt16EqExpr: Parser[DefUint16EqExpr] = positioned {
-    "uint16" ~> name ~ "=" ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
+    ("uint16"|"short") ~> name ~ "=" ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ block =>
         DefUint16EqExpr(targetVar, block)
     }
@@ -164,7 +164,7 @@ class StatementParser {
 
   // special purpose
   def statementUInt16EqCondition: Parser[DefUint16EqCondition] = positioned {
-    "uint16" ~> name ~ "=" ~ conditionWithExpr <~ SEMICOLON ^^ {
+    ("short"|"uint16") ~> name ~ "=" ~ conditionWithExpr <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ condition =>
         DefUint16EqCondition(targetVar, condition)
     }

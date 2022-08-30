@@ -136,7 +136,7 @@ case class DefConst(constName: String, konst: Int) extends Block {
 
 case class DefUint16EqExpr(targetVar: String, block: Block) extends Block {
 
-  override def toString = s"uint16 $targetVar = block"
+  override def toString = s"short $targetVar = block"
 
   override def gen(depth: Int, parent: Scope): Seq[String] = {
     val stmts: Seq[String] = block.expr(depth + 1, parent)
