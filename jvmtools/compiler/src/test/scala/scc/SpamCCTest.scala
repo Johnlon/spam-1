@@ -165,17 +165,17 @@ class SpamCCTest {
     val lines =
       """fun main() {
         | var s = [file("src/test/resources/LotOfData.txt")];
-        | uint16 a0 = s[0];
-        | uint16 a1= s[1];
-        | uint16 a15= s[15];
-        | uint16 a16= s[16];
-        | uint16 a99= s[99];
-        | uint16 a100= s[100];
-        | uint16 a200= s[200];
-        | uint16 a254= s[254];
-        | uint16 a255= s[255];
-        | uint16 a256 = s[256];
-        | uint16 a338 = s[337];
+        | short a0 = s[0];
+        | short a1= s[1];
+        | short a15= s[15];
+        | short a16= s[16];
+        | short a99= s[99];
+        | short a100= s[100];
+        | short a200= s[200];
+        | short a254= s[254];
+        | short a255= s[255];
+        | short a256 = s[256];
+        | short a338 = s[337];
         | putuart(a0)
         | putuart(a1)
         | putuart(a15)
@@ -294,7 +294,7 @@ class SpamCCTest {
 
     val lines =
       """fun main() {
-        | uint16 a=1;
+        | short a=1;
         |}
         |""".stripMargin
 
@@ -337,13 +337,13 @@ class SpamCCTest {
         |
         | // $42 = 66 dev
         | // $41 = 65 dec
-        | uint16 a = $4142;
+        | short a = $4142;
         |
         | // $4142 >> 1 => 20A1
         | // $A1 = 161 dec
         | putuart(a >> 1)
         |
-        | uint16 b = a >> 1;
+        | short b = a >> 1;
         | putuart(b) // 161
         |
         | // $4142 & $ff => 42 => 66 dec
@@ -374,7 +374,7 @@ class SpamCCTest {
         |
         |fun main(x) {
         |
-        | uint16 a = %0100000101000010;
+        | short a = %0100000101000010;
         |
         | putuart(a)
         | putuart(a >> 0)
@@ -413,7 +413,7 @@ class SpamCCTest {
         |
         |fun main(x) {
         |
-        | uint16 positive = %0100000101000010;
+        | short positive = %0100000101000010;
         |
         | putuart(positive)
         | putuart(positive >>> 0)
@@ -424,7 +424,7 @@ class SpamCCTest {
         | putuart(positive >>> 9)
         | putuart(positive >>> 16)
         |
-        | uint16 negative = %1100000101000010;
+        | short negative = %1100000101000010;
         |
         | putuart(negative)
         | putuart(negative >>> 0)
@@ -473,7 +473,7 @@ class SpamCCTest {
         |
         |fun main(x) {
         |
-        | uint16 b = %1001;
+        | short b = %1001;
         |
         | putuart( b << 0 )
         | putuart( b << 1 )
@@ -488,10 +488,10 @@ class SpamCCTest {
         |
         | // bug noticed in mandelbrot work << is broken for 16 bits and this number happens to illustrate the issue
         |foo: {
-        | uint16 init = $ffbc;
-        | uint16 expected =$ff78;
-        | uint16 actual = init << 1;
-        | uint16 mult = init * 2;
+        | short init = $ffbc;
+        | short expected =$ff78;
+        | short actual = init << 1;
+        | short mult = init * 2;
         |
         | if (actual != expected) {
         |   halt(actual, 99)
@@ -503,12 +503,12 @@ class SpamCCTest {
         |}
         |
         |bar: {
-        | uint16 i = $ffc7;
-        | uint16 init = i >>> 6;
-        | uint16 actual = init << 1;
-        | uint16 mult = init * 2;
+        | short i = $ffc7;
+        | short init = i >>> 6;
+        | short actual = init << 1;
+        | short mult = init * 2;
         |
-        | uint16 expected =$fffe;
+        | short expected =$fffe;
         | if (actual != expected) {
         |   halt(actual, 91)
         | }
@@ -538,7 +538,7 @@ class SpamCCTest {
         |
         |fun main(x) {
         |
-        | uint16 a = $ABCD;
+        | short a = $ABCD;
         |
         | putuart(a & $f0)
         | putuart(a & $0f)
@@ -573,7 +573,7 @@ class SpamCCTest {
       """
         |
         |fun main(x) {
-        | uint16 a = 2;
+        | short a = 2;
         |
         | if (a>2) {
         |   putuart(1)
@@ -613,7 +613,7 @@ class SpamCCTest {
         |fun main(x) {
         |
         | // = 1110
-        | uint16 a = $0100;
+        | short a = $0100;
         | a = a + $1010;
         |
         | if (a>$1110) {
@@ -668,7 +668,7 @@ class SpamCCTest {
         | }
         |
         | // compare
-        | uint16 b=$1000;
+        | short b=$1000;
         |
         | if ( a == (b+$110) ) {
         |  putuart('=')
@@ -698,12 +698,12 @@ class SpamCCTest {
     val lines =
       """
         |fun main(x) {
-        | uint16 a = 0;
+        | short a = 0;
         | if (a == 0) {
-        |     uint16 thevar = 0;
+        |     short thevar = 0;
         | }
         | else if (a == 1) {
-        |     uint16 thevar = 1;
+        |     short thevar = 1;
         | }
         |}
         |""".stripMargin
@@ -717,8 +717,8 @@ class SpamCCTest {
 
     val lines =
       """fun main() {
-        | uint16 a=1;
-        | uint16 b=a;
+        | short a=1;
+        | short b=a;
         |}
         |""".stripMargin
 
@@ -764,8 +764,8 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 a=1;
-        | uint16 b=64+1;
+        | short a=1;
+        | short b=64+1;
         |}
         |""".stripMargin
 
@@ -811,14 +811,14 @@ class SpamCCTest {
     val lines =
       """
         |fun other() {
-        | uint16 a=100;
-        | uint16 b=200;
+        | short a=100;
+        | short b=200;
         | putuart(a)
         | putuart(b)
         |}
         |fun main() {
-        | uint16 a=1;
-        | uint16 b=2;
+        | short a=1;
+        | short b=2;
         | other()
         | putuart(a)
         | putuart(b)
@@ -839,20 +839,20 @@ class SpamCCTest {
       """
         |fun main() {
         |  // a = 63 + 2 = 'A'
-        |  uint16 a = 63 + 2;
+        |  short a = 63 + 2;
         |
         |  // b = a + 1 = 'B'
-        |  uint16 b = a + 1;
+        |  short b = a + 1;
         |
         |  // c = 1 + b = 'C'
-        |  uint16 c = 1 + b;
+        |  short c = 1 + b;
         |
         |  // d = c the d++
-        |  uint16 d = c;
+        |  short d = c;
         |  d = d + 1;
         |
         |  // e = a + (b/2) = 'b'
-        |  uint16 e = a + (b/2);
+        |  short e = a + (b/2);
         |
         |  // should print 'A'
         |  putuart(a)
@@ -868,7 +868,7 @@ class SpamCCTest {
         |  // should shift left twice to become the '@' char
         |  a = %00010000;
         |  b = 2;
-        |  uint16 at = a << b;
+        |  short at = a << b;
         |  // should print '@'
         |  putuart(at)
         |}
@@ -889,8 +889,8 @@ class SpamCCTest {
 
     val lines =
       """fun main() {
-        |  uint16 a = 64;
-        |  uint16 b = 1 + (a + 3);
+        |  short a = 64;
+        |  short b = 1 + (a + 3);
         |  putuart(b)
         |}
         |""".stripMargin
@@ -969,7 +969,7 @@ class SpamCCTest {
         |fun main() {
         |  putuart(65)
         |  putuart('B')
-        |  uint16 c=67;
+        |  short c=67;
         |  putuart(c)
         |  putuart(c+1)
         |}
@@ -1003,7 +1003,7 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        |  uint16 g = waituart();
+        |  short g = waituart();
         |  putuart(g)
         |}
         |""".stripMargin
@@ -1021,7 +1021,7 @@ class SpamCCTest {
       """
         |fun main() {
         |  writeport(Parallel, 123) // this code assumes that the parallel out is looped back to parallel in
-        |  uint16 g = readport(Parallel);
+        |  short g = readport(Parallel);
         |  halt(g, 0)
         |}
         |""".stripMargin
@@ -1043,7 +1043,7 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        |  uint16 g = readport(Gamepad1);
+        |  short g = readport(Gamepad1);
         |  halt(g, 0)
         |}
         |""".stripMargin
@@ -1065,7 +1065,7 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        |  uint16 g = random();
+        |  short g = random();
         |  halt(g, 0)
         |}
         |""".stripMargin
@@ -1079,23 +1079,23 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 b=1024;
+        | short b=1024;
         |
-        | uint16 a1 = b>1;
+        | short a1 = b>1;
         | putuart(a1) // true
         |
-        | uint16 a2= b==0;
+        | short a2= b==0;
         | putuart(a2) // false
         |
-        | uint16 a3= b==1;
+        | short a3= b==1;
         | putuart(a3) // false
         |
-        | uint16 a4= b==1024;
+        | short a4= b==1024;
         | putuart(a4) // true
         |
         | // compare b==(a+24)
-        | uint16 a5=1000;
-        | uint16 a6= b==(a5+24);
+        | short a5=1000;
+        | short a6= b==(a5+24);
         | putuart(a6) // true
         |
         |}
@@ -1113,8 +1113,8 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 a='a';
-        | uint16 c = a + 2;
+        | short a='a';
+        | short c = a + 2;
         | putuart(c)
         |}
         |""".stripMargin
@@ -1150,8 +1150,8 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 c='c';
-        | uint16 a = c - 2;
+        | short c='c';
+        | short a = c - 2;
         | putuart(a)
         |}
         |""".stripMargin
@@ -1168,8 +1168,8 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 s = 503;
-        | uint16 a = s * 2; // alu expr
+        | short s = 503;
+        | short a = s * 2; // alu expr
         | putuart(a>>8)
         | putuart(a)
         |}
@@ -1191,9 +1191,9 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 x = 503;
-        | uint16 y = 2;
-        | uint16 a = x * y; // alu expr
+        | short x = 503;
+        | short y = 2;
+        | short a = x * y; // alu expr
         | putuart(a>>8)
         | putuart(a)
         |}
@@ -1214,7 +1214,7 @@ class SpamCCTest {
 
     val lines =
       """
-        |uint16 g = $1234;
+        |short g = $1234;
         |// FIXME - "g" never gets initialised as the initialisation code sits between the top of the program and the beginning of main and it jumps straight to main.
         |// WORKAROUND = can initialise in main() if it's a primitive value
         |
@@ -1231,7 +1231,7 @@ class SpamCCTest {
         |   fun3()
         | }
         |fun main() {
-        |   uint16 gg=-99;
+        |   short gg=-99;
         |   halt(gg, 99)
         |   putuart(g>>8)
         |   putuart(g)
@@ -1254,9 +1254,9 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 a=8; // const expr
+        | short a=8; // const expr
         |
-        | uint16 res = a / 3; // alu expr
+        | short res = a / 3; // alu expr
         | putuart(res)
         |}
         |""".stripMargin
@@ -1274,18 +1274,18 @@ class SpamCCTest {
     val lines =
       s"""fun main() {
          |
-         | uint16 a1 = 1;
-         | uint16 a2 = a1 / 10;
-         | uint16 a3 = a1 / 10;
+         | short a1 = 1;
+         | short a2 = a1 / 10;
+         | short a3 = a1 / 10;
          |
-         | uint16 x = 123;
+         | short x = 123;
          |
-         | uint16 i100 = x / 100;
-         | uint16 xDiv10 = x / 10;
-         | uint16 i10 = xDiv10 - (10 * i100);
-         | uint16 i1 = x - (10*xDiv10);
+         | short i100 = x / 100;
+         | short xDiv10 = x / 10;
+         | short i10 = xDiv10 - (10 * i100);
+         | short i1 = x - (10*xDiv10);
          |
-         | uint16 bcd = (i100 * 100) + (i10 * 10) + i1;
+         | short bcd = (i100 * 100) + (i10 * 10) + i1;
          | putuart(i100)
          | putuart(i10)
          | putuart(i1)
@@ -1305,7 +1305,7 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 a=1>0;
+        | short a=1>0;
         | putuart(a)
         |
         | a=0>1;
@@ -1337,7 +1337,7 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 a=1260;
+        | short a=1260;
         | while(a>1250) {
         |   a=a-1;
         |   putuart(a-1250)
@@ -1359,8 +1359,8 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 a=3;
-        | uint16 zero=0;
+        | short a=3;
+        | short zero=0;
         | while(a>zero) {
         |   putuart(a)
         |   a=a-1;
@@ -1381,24 +1381,24 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 a = 1;
+        | short a = 1;
         |
         | // block
         | {
-        |   uint16 b = a;
+        |   short b = a;
         |   putuart(b)
         | }
         |
         | // variable at same scope as prev block
         | {
-        |   uint16 b = a + 1;
+        |   short b = a + 1;
         |   putuart(b)
         | }
         |
         | // if referring to outer var
         | {
         |   if (a > 0) {
-        |     uint16 c = a + 2;
+        |     short c = a + 2;
         |     putuart(c)
         |   }
         | }
@@ -1406,8 +1406,8 @@ class SpamCCTest {
         | // labelled if
         | {
         |   labelFoo: if (a > 0) {
-        |     labelBar: uint16 d = a + 3;
-        |     uint16 e = d;
+        |     labelBar: short d = a + 3;
+        |     short e = d;
         |     putuart(e)
         |   }
         | }
@@ -1427,9 +1427,9 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 a = 0;
-        | uint16 b = 0;
-        | uint16 limit = 5;
+        | short a = 0;
+        | short b = 0;
+        | short limit = 5;
         | labelFoo: while(true) {
         |   while(true) {
         |     labelBar: a = a + 1;
@@ -1471,7 +1471,7 @@ class SpamCCTest {
         |
         |fun print(a1 out, a2, a3, a4) {
         | // FN COMMENT
-        | uint16 d = a1;
+        | short d = a1;
         | //d = a2;
         | putuart(d)
         | putuart(a2)
@@ -1484,8 +1484,8 @@ class SpamCCTest {
         |}
         |
         |fun main() {
-        | uint16 arg1 = 'A';
-        | uint16 arg2 = 1;
+        | short arg1 = 'A';
+        | short arg2 = 1;
         |
         | // CALLING PRINT - 63 is '?'
         | print(arg1, arg2+arg1, 63, arg1+4)
@@ -1522,7 +1522,7 @@ class SpamCCTest {
         |}
         |
         |fun main() {
-        | uint16 arg1 = 'A';
+        | short arg1 = 'A';
         | depth1(arg1)
         | putuart(arg1)
         |}
@@ -1543,7 +1543,7 @@ class SpamCCTest {
     val lines =
       """
         |/* top comment */
-        |//  export uint16 s = 'A';
+        |//  export short s = 'A';
         |
         |fun main() {
         | //putuart(a)
@@ -1590,11 +1590,11 @@ class SpamCCTest {
         | // value at 16 bit var ptr becomes address of array odd
         | ref ptr = odd;
         |
-        | uint16 i = 10;
+        | short i = 10;
         | while (i>0) {
         |    System.out.pri
         |        |   i = i - 1;
-        |   uint16 c = i % 2;
+        |   short c = i % 2;
         |   if (c == 0) {
         |       // set pointer to point at even
         |       ptr = even;
@@ -1628,16 +1628,16 @@ class SpamCCTest {
          | var string = ["$data\\0"];
          |
          | // value at 16 bit var ptr becomes address of array odd
-         | uint16 addr16 = string;
-         | uint16 idx = 0;
-         | uint16 c = string[idx];
+         | short addr16 = string;
+         | short idx = 0;
+         | short c = string[idx];
          | ref ptr = string;
          |
-         | uint16 i = 255;
+         | short i = 255;
          | while (i>0) {
-         |   uint16 lo = ptr;
+         |   short lo = ptr;
          |   ptr  = ptr + 1;
-         |   uint16 hi = ptr;
+         |   short hi = ptr;
          |   ptr  = ptr + 1;
          |
          |   i = i - 1;
@@ -1661,14 +1661,14 @@ class SpamCCTest {
         | var string = ["ABCD\0"];
         |
         | // index by literal
-        | uint16 ac = string[0];
+        | short ac = string[0];
         |
         | // index by variable
-        | uint16 b = 1;
-        | uint16 bc = string[b];
+        | short b = 1;
+        | short bc = string[b];
         |
         | // print values so we can test correct values selected
-        | uint16 d = 3;
+        | short d = 3;
         | putuart(ac)
         | putuart(bc)
         | putuart(string[2])
@@ -1718,8 +1718,8 @@ class SpamCCTest {
         | // define string
         | var string = ["ABCD\0"];
         |
-        | uint16 idx = 0;
-        | uint16 c = string[idx];
+        | short idx = 0;
+        | short c = string[idx];
         | while (c != 0) {
         |   putuart(c)
         |   idx = idx + 1;
@@ -1764,9 +1764,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = 2*256+128; // 2.5
-          | uint16 b = 3;
-          | uint16 c = a * b;
+          | short a = 2*256+128; // 2.5
+          | short b = 3;
+          | short c = a * b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -1780,9 +1780,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = 2*256+128; // 2.5
-          | uint16 b = 2*256+128; // 2.5
-          | uint16 c = a * b;
+          | short a = 2*256+128; // 2.5
+          | short b = 2*256+128; // 2.5
+          | short c = a * b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -1796,9 +1796,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = 2;
-          | uint16 b = 3;
-          | uint16 c = a * b;
+          | short a = 2;
+          | short b = 3;
+          | short c = a * b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -1812,9 +1812,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = -2;
-          | uint16 b = 3;
-          | uint16 c = a * b;
+          | short a = -2;
+          | short b = 3;
+          | short c = a * b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -1829,9 +1829,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = 2;
-          | uint16 b = -3;
-          | uint16 c = a * b;
+          | short a = 2;
+          | short b = -3;
+          | short c = a * b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -1845,9 +1845,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = -2;
-          | uint16 b = -3;
-          | uint16 c = a * b;
+          | short a = -2;
+          | short b = -3;
+          | short c = a * b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -1865,9 +1865,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = 2570; // $0a0a
-          | uint16 b = 1025; // $401
-          | uint16 c = a / b;
+          | short a = 2570; // $0a0a
+          | short b = 1025; // $401
+          | short c = a / b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -1880,9 +1880,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = 2570; // $0a0a
-          | uint16 b = -1025; // $401
-          | uint16 c = a / b;
+          | short a = 2570; // $0a0a
+          | short b = -1025; // $401
+          | short c = a / b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -1895,9 +1895,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = -2570; // $0a0a
-          | uint16 b = 1025; // $401
-          | uint16 c = a / b;
+          | short a = -2570; // $0a0a
+          | short b = 1025; // $401
+          | short c = a / b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -1911,9 +1911,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = -2570; // $0a0a
-          | uint16 b = -1025; // $401
-          | uint16 c = a / b;
+          | short a = -2570; // $0a0a
+          | short b = -1025; // $401
+          | short c = a / b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -1929,9 +1929,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = 8;
-          | uint16 b = 2;
-          | uint16 c = a / b;
+          | short a = 8;
+          | short b = 2;
+          | short c = a / b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -1946,9 +1946,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = -8;
-          | uint16 b = -2;
-          | uint16 c = a / b;
+          | short a = -8;
+          | short b = -2;
+          | short c = a / b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -1963,9 +1963,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = -8;
-          | uint16 b = 2;
-          | uint16 c = a / b;
+          | short a = -8;
+          | short b = 2;
+          | short c = a / b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -1980,9 +1980,9 @@ class SpamCCTest {
       val lines =
         """
           |fun main() {
-          | uint16 a = 8;
-          | uint16 b = -2;
-          | uint16 c = a / b;
+          | short a = 8;
+          | short b = -2;
+          | short c = a / b;
           | halt(c, c)
           |}
           |""".stripMargin
@@ -2010,7 +2010,7 @@ class SpamCCTest {
     val lines =
       """
         |fun main() {
-        | uint16 a = 65432;
+        | short a = 65432;
         | halt(a, 123)
         |}
         |""".stripMargin

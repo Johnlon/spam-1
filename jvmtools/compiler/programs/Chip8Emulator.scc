@@ -6,33 +6,33 @@ program {
 // Consider psuedo random using .. https://codebase64.org/doku.php?id=base:16bit_xorshift_random_generator
     fun main() {
 
-        uint16 SCREEN_BUF_BOT = $F00;
-        uint16 SCREEN_BUF_TOP = $FFF;
+        short SCREEN_BUF_BOT = $F00;
+        short SCREEN_BUF_TOP = $FFF;
 
-        uint16 FONT_ADDR = $50;
-        uint16 PC_INIT = $200;
+        short FONT_ADDR = $50;
+        short PC_INIT = $200;
 
-        uint16 GOTO_INIT_STATE = 0;
-        uint16 GOTO_SETX_STATE = 1;  // switch state
-        uint16 GOTO_SETY_STATE = 2;  // switch state
-        uint16 GOTO_DRAW_PIXEL_STATE = 3; // switch state
-        uint16 GOTO_DRAW_BYTE_STATE = 4; // switch state
-        uint16 GOTO_LOG_CHAR_STATE = 5; // switch state
-        uint16 GOTO_LOG_BYTE_STATE = 6; // switch state
-        uint16 DO_CLEAR = 8;
-        uint16 DO_UP = 11;
-        uint16 DO_DOWN = 12;
-        uint16 DO_LEFT = 13;
-        uint16 DO_RIGHT = 14;
-        uint16 DO_ORIGIN = 15;
-        uint16 DO_CENTRE = 16;
-        uint16 GOTO_LOG_OPCODE = 17;
-        uint16 GOTO_LOG_STRING = 18;
+        short GOTO_INIT_STATE = 0;
+        short GOTO_SETX_STATE = 1;  // switch state
+        short GOTO_SETY_STATE = 2;  // switch state
+        short GOTO_DRAW_PIXEL_STATE = 3; // switch state
+        short GOTO_DRAW_BYTE_STATE = 4; // switch state
+        short GOTO_LOG_CHAR_STATE = 5; // switch state
+        short GOTO_LOG_BYTE_STATE = 6; // switch state
+        short DO_CLEAR = 8;
+        short DO_UP = 11;
+        short DO_DOWN = 12;
+        short DO_LEFT = 13;
+        short DO_RIGHT = 14;
+        short DO_ORIGIN = 15;
+        short DO_CENTRE = 16;
+        short GOTO_LOG_OPCODE = 17;
+        short GOTO_LOG_STRING = 18;
 
-        uint16 SCREEN_HEIGHT = 32;
-        uint16 SCREEN_WIDTH = 64;
+        short SCREEN_HEIGHT = 32;
+        short SCREEN_WIDTH = 64;
 
-        // 32*64=screen size
+        // 32*64=screen size - each mem location represents a pixel
         // = [ datasource ]
         // = an array that is 0-2048 index where the byte at 2048 is 0
         var screen = [32 * 64: [0]];
@@ -47,8 +47,8 @@ program {
         // 16 x 2 bytes - two per locn
         var stack = [32: [0]];
 
-        uint16 FontMemAddress = $50;
-        uint16 FontCharWidth = 5;
+        short FontMemAddress = $50;
+        short FontCharWidth = 5;
 
         var memory = [
                 // fonts : 10 rows = 10 digits, each row of 5 bytes defines the 5 rows of 8 pixels wide
@@ -76,14 +76,16 @@ program {
                 //$200 : [hexfile(systemProp("CHIP8_FILENAME"))]
                 $200 : [file(systemProp("CHIP8_FILENAME"))]
 
-                // memory limit - put a zero explicitly at posn - this has same effect as as "$FFF=[]"
-                //$0FFF: [0] // 4k - no need to populate with zeros - program will fill if needed
+                // reserve 4k memory - put a zero explicitly at posn - this has same effect as as "$FFF=[]"
+                $0FFF: [0] // 4k - no need to populate with zeros - compiler will fill gaps if needed
+
+                // TODO PROGRAM WOULD BE SMALLER AND START QUICKER IF COMPILER DIDNT INITIALISE WITH 0
         ];
 
-        uint16 pc = PC_INIT;
-        uint16 index = 0;
-        uint16 stackPtr = 0;
-        uint16 countI = 0;
+        short pc = PC_INIT;
+        short index = 0;
+        short stackPtr = 0;
+        short countI = 0;
 
         // reset by sending this twice
         putuart(GOTO_INIT_STATE)
@@ -95,11 +97,11 @@ program {
         putuart('O')
         putuart('\n')
 
-        uint16 keyDown = $100; // 32 = no key pressed
-        uint16 DT = 0;
+        short keyDown = $100; // 32 = no key pressed
+        short DT = 0;
 
-        uint16 hackCount = 0;
-        uint16 LOG = 0;
+        short hackCount = 0;
+        short LOG = 0;
         
         while (true) {
             putuart(GOTO_INIT_STATE)
@@ -107,11 +109,11 @@ program {
 
             countI = countI + 1;
 
-            uint16 opcodehi = memory[pc];
-            uint16 opcodelo = memory[pc + 1];
-            uint16 opcode = (opcodehi << 8) + opcodelo;
+            short opcodehi = memory[pc];
+            short opcodelo = memory[pc + 1];
+            short opcode = (opcodehi << 8) + opcodelo;
 
-            uint16 control = readport(Gamepad1);
+            short control = readport(Gamepad1);
             if (control == 0) {
                 keyDown = $100; // no key pressed
             } else if (control == 1) { // nes-up=1
@@ -130,7 +132,7 @@ program {
 
 
 /*
-            uint16 keyLast = getuart(); // no key = x100 otherwise 0-255
+            short keyLast = getuart(); // no key = x100 otherwise 0-255
             if (keyLast == $100) {
                 // no change
             } else if (keyLast == 32) {
@@ -240,15 +242,15 @@ program {
 
             }
 
-            uint16 N___ = opcode & $f000;
-            uint16 _NNN = opcode & $0fff;
-            uint16 _X__ = opcodehi & $0f;
-            uint16 __Y_ = opcodelo >> 4;
-            uint16 __NN = opcodelo;
-            uint16 ___N = opcodelo & $0f;
+            short N___ = opcode & $f000;
+            short _NNN = opcode & $0fff;
+            short _X__ = opcodehi & $0f;
+            short __Y_ = opcodelo >> 4;
+            short __NN = opcodelo;
+            short ___N = opcodelo & $0f;
 
-            uint16 x = registers[_X__];
-            uint16 y = registers[__Y_];
+            short x = registers[_X__];
+            short y = registers[__Y_];
 
             if (opcode == $00e0) {
                 // draw
@@ -262,9 +264,9 @@ program {
                 // ReturnSub
                 // return by pulling address off stack
                 stackPtr = stackPtr - 1;
-                uint16 addrLo = stack[stackPtr];
+                short addrLo = stack[stackPtr];
                 stackPtr = stackPtr - 1;
-                uint16 addrHi = stack[stackPtr];
+                short addrHi = stack[stackPtr];
                 pc = (addrHi << 8) + addrLo;
                 if (LOG == 1) {
                     putfuart(C, 'R')
@@ -461,7 +463,7 @@ program {
                     registers[_X__] = x ^ y;
                 } else if (___N == 4) {
                     //AddXPlusYCarry
-                    uint16 result = x + y;
+                    short result = x + y;
                     registers[_X__] = result;
                     if (LOG == 1) {
                         putfuart(C, 'V')
@@ -559,8 +561,8 @@ program {
                 }
             } else if (N___ == $B000) { // DONE
                 // In the original COSMAC VIP interpreter, this instruction jumped to the address NNN plus the value in the register V0
-                uint16 v0 = registers[0];
-                uint16 jumpAddress = _NNN + v0; 
+                short v0 = registers[0];
+                short jumpAddress = _NNN + v0; 
 
                 if (LOG == 1) {
                     putfuart(C, 'J')
@@ -580,7 +582,7 @@ program {
 
                 // Vx = Random AND __NN
 
-                uint16 rand = random();
+                short rand = random();
 
                 registers[_X__] = rand & __NN;
 
@@ -643,11 +645,14 @@ program {
                 // no collision yet
                 registers[15] = 0;
 
-                uint16 xpos = x;
-                uint16 ypos = y;
-                uint16 ycount = 0;
+                short xpos = x;
+                short ypos = y;
+                short ycount = 0;
 
-                while (true) { // TODO - make while take an expr
+putfuart(C, '\n')
+
+                // print each row of the glyph
+                while (true) { 
 
 /*
         putfuart(C, '\n')
@@ -660,37 +665,44 @@ program {
                         break
                     }
 
-                    uint16 spriteY = ypos + ycount;
+                    short spriteY = ypos + ycount;
 
                     if (spriteY < SCREEN_HEIGHT) {
 
-                        uint16 rowStart = (ycount + ypos) * 64; // SCREEN_WIDTH;
-                        uint16 pixelPos = rowStart + xpos;
-                        uint16 rowLimit = rowStart + SCREEN_WIDTH;
+                        // work out indexes into pixel memory
+                        short rowStart = (ycount + ypos) * 64; // SCREEN_WIDTH;
+                        short pixelPos = rowStart + xpos;
+                        short rowLimit = rowStart + SCREEN_WIDTH;
 
-                        uint16 glyphRow = memory[index + ycount];
+                        // load glyph row needing to be displayed - "index" has been set to the memory location to pull the glyph from (typically $50++)
+                        short glyphRow = memory[index + ycount];
 
-                        // g0 is leftmost on screen
-                        uint16 s7 = screen[pixelPos];
-                        uint16 s6 = screen[pixelPos + 1];
-                        uint16 s5 = screen[pixelPos + 2];
-                        uint16 s4 = screen[pixelPos + 3];
-                        uint16 s3 = screen[pixelPos + 4];
-                        uint16 s2 = screen[pixelPos + 5];
-                        uint16 s1 = screen[pixelPos + 6];
-                        uint16 s0 = screen[pixelPos + 7];
+                        // get all the pixels currently on dsplay - g0 is leftmost on screen
+                        short s7 = screen[pixelPos];
+                        short s6 = screen[pixelPos + 1];
+                        short s5 = screen[pixelPos + 2];
+                        short s4 = screen[pixelPos + 3];
+                        short s3 = screen[pixelPos + 4];
+                        short s2 = screen[pixelPos + 5];
+                        short s1 = screen[pixelPos + 6];
+                        short s0 = screen[pixelPos + 7];
 
-                        uint16 screenRow = (s7 << 7) | (s6 << 6) | (s5 << 5) | (s4 << 4) | (s3 << 3) | (s2 << 2) | (s1 << 1) | s0;
+                        // assemble a line of the 8 pixels into a byte
+                        short screenRow = (s7 << 7) | (s6 << 6) | (s5 << 5) | (s4 << 4) | (s3 << 3) | (s2 << 2) | (s1 << 1) | s0;
 
-                        uint16 newScreen = screenRow ^ glyphRow;
-                        uint16 impact = screenRow & glyphRow;
+                        // xor the glyph row with whatever's currently on the screen 
+                        short newScreenRow = screenRow ^ glyphRow;
+        
+                        // record if any pixels were reset
+                        short impact = screenRow & glyphRow;
 
+                        // send glyph row to screen to draw it
                         putuart(GOTO_SETX_STATE)
                         putuart(xpos)
                         putuart(GOTO_SETY_STATE)
                         putuart(spriteY)
                         putuart(GOTO_DRAW_BYTE_STATE)
-                        putuart(newScreen)
+                        putuart(newScreenRow)
 
 /*
         putfuart(X, spriteY)
@@ -699,25 +711,27 @@ program {
         putfuart(C, 32)
         putfuart(B, screenRow)
         putfuart(C, 32)
-        putfuart(B, newScreen)
+        putfuart(B, newScreenRow)
 */
 
+                        // update local screen copy
+
                         if (pixelPos < rowLimit) {
-                            screen[pixelPos + 0] = (newScreen & 128) >> 7;
+                            screen[pixelPos + 0] = (newScreenRow & 128) >> 7;
                             if ((pixelPos + 1) < rowLimit) {
-                                screen[pixelPos + 1] = (newScreen & 64) >> 6;
+                                screen[pixelPos + 1] = (newScreenRow & 64) >> 6;
                                 if ((pixelPos + 2) < rowLimit) {
-                                    screen[pixelPos + 2] = (newScreen & 32) >> 5;
+                                    screen[pixelPos + 2] = (newScreenRow & 32) >> 5;
                                     if ((pixelPos + 3) < rowLimit) {
-                                        screen[pixelPos + 3] = (newScreen & 16) >> 4;
+                                        screen[pixelPos + 3] = (newScreenRow & 16) >> 4;
                                         if ((pixelPos + 4) < rowLimit) {
-                                            screen[pixelPos + 4] = (newScreen & 8) >> 3;
+                                            screen[pixelPos + 4] = (newScreenRow & 8) >> 3;
                                             if ((pixelPos + 5) < rowLimit) {
-                                                screen[pixelPos + 5] = (newScreen & 4) >> 2;
+                                                screen[pixelPos + 5] = (newScreenRow & 4) >> 2;
                                                 if ((pixelPos + 6) < rowLimit) {
-                                                    screen[pixelPos + 6] = (newScreen & 2) >> 1;
+                                                    screen[pixelPos + 6] = (newScreenRow & 2) >> 1;
                                                     if ((pixelPos + 7) < rowLimit) {
-                                                        screen[pixelPos + 7] = (newScreen & 1);
+                                                        screen[pixelPos + 7] = (newScreenRow & 1);
                                                     }
                                                 }
                                             }
@@ -727,11 +741,13 @@ program {
                             }
                         }
 
+                        // if any screen bit was cleared then record this "contact" in reg 15
                         if (impact != 0) {
                             registers[15] = 1;
                         }
                     }
 
+                    // next glyph row
                     ycount = ycount + 1;
                 }
 
@@ -743,7 +759,7 @@ program {
                     Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
                     */
                     // TODO IMPL KEYPRESS IO FROM UART??? GETCHAR?
-                    uint16 key = x;
+                    short key = x;
 
                     if (LOG == 1) {
                         putfuart(C, 'S')
@@ -765,7 +781,7 @@ program {
                     }
                 } else if (__NN == $9E) {
                     // skip; if key x is pressed
-                    uint16 key = x;
+                    short key = x;
 
                     if (LOG == 1) {
                         putfuart(C, 'S')
@@ -828,12 +844,12 @@ program {
                     // SET SOUND TIMER
                     // TODO WORK OUT HOW MANY CYCLES FOR 60 Hz
                     // http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#Fx18
-                    uint16 ST = registers[_X__];
+                    short ST = registers[_X__];
 
                 } else if (__NN == $1E) {
                     // INDEX += REG[X]
                     // set carry if index exceeds mem size of 4096
-                    uint16 oldI = index;
+                    short oldI = index;
                     index = index + x;
                     if (index > 4095) {
                         registers[15] = 1;
@@ -859,10 +875,10 @@ program {
                         putfuart(X, registers[15])
                     }
                 } else if (__NN == $29) {
-                    uint16 ch = registers[_X__];
-                    uint16 offset = ch * FontCharWidth;
+                    short ch = registers[_X__];
+                    short offset = ch * FontCharWidth;
 
-                    uint16 locn = FontMemAddress + offset;
+                    short locn = FontMemAddress + offset;
                     index = locn;
 
                     if (LOG == 1) {
@@ -878,10 +894,10 @@ program {
                     }
                 } else if (__NN == $33) {
                     // BCD conversion
-                    uint16 i100 = x / 100;
-                    uint16 xDiv10 = x / 10;
-                    uint16 i10 = xDiv10 - (10 * i100);
-                    uint16 i1 = x - (10 * xDiv10);
+                    short i100 = x / 100;
+                    short xDiv10 = x / 10;
+                    short i10 = xDiv10 - (10 * i100);
+                    short i1 = x - (10 * xDiv10);
 
                     memory[index] = i100;
                     memory[index + 1] = i10;
@@ -903,7 +919,7 @@ program {
                         putfuart(C, 32)
                         putfuart(X, _X__)
                     }
-                    uint16 i = 0;
+                    short i = 0;
                     while (true) {
                         memory[index + i] = registers[i];
 
@@ -923,7 +939,7 @@ program {
                         putfuart(X, _X__)
                     }
 
-                    uint16 i = 0;
+                    short i = 0;
                     while (true) {
                         registers[i] = memory[index + i];
 
@@ -949,7 +965,7 @@ program {
                         putfuart(X, _X__)
                     }
 
-                    uint16 i = 0;
+                    short i = 0;
                     while (i <= _X__) {
                         rplUserFlags[i] = registers[i];
                         i = i + 1;
@@ -964,7 +980,7 @@ program {
                         putfuart(X, _X__)
                     }
 
-                    uint16 i = 0;
+                    short i = 0;
                     while (i <= _X__) {
                         registers[i] = rplUserFlags[i];
                         i = i + 1;
