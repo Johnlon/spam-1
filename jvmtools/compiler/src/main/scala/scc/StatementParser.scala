@@ -48,8 +48,8 @@ class StatementParser {
       blockComment | lineComment |
       //statementUInt8Eq |
       statementConst |
-      statementUInt16EqExpr |
-      statementUInt16EqCondition |
+      statementInt16EqExpr |
+      statementInt16EqCondition |
       statementVarLocatedDatasource |
       statementVarDatasource |
       //      statementVarEqVarOpVar |
@@ -155,7 +155,7 @@ class StatementParser {
   //  }
 
   // general purpose
-  def statementUInt16EqExpr: Parser[DefUint16EqExpr] = positioned {
+  def statementInt16EqExpr: Parser[DefUint16EqExpr] = positioned {
     ("uint16"|"short") ~> name ~ "=" ~ blkCompoundAluExpr <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ block =>
         DefUint16EqExpr(targetVar, block)
@@ -163,7 +163,7 @@ class StatementParser {
   }
 
   // special purpose
-  def statementUInt16EqCondition: Parser[DefUint16EqCondition] = positioned {
+  def statementInt16EqCondition: Parser[DefUint16EqCondition] = positioned {
     ("short"|"uint16") ~> name ~ "=" ~ conditionWithExpr <~ SEMICOLON ^^ {
       case targetVar ~ _ ~ condition =>
         DefUint16EqCondition(targetVar, condition)
@@ -462,7 +462,7 @@ class StatementParser {
     }
   }
 
-  def program: Parser[Program] = "program" ~ "{" ~> ((statementUInt16EqExpr | statementVarDatasource | statementVarLocatedDatasource | lineComment | blockComment | functionDef) +) <~ "}" ^^ {
+  def program: Parser[Program] = "program" ~ "{" ~> ((statementInt16EqExpr | statementVarDatasource | statementVarLocatedDatasource | lineComment | blockComment | functionDef) +) <~ "}" ^^ {
     fns => Program(fns)
   }
 
