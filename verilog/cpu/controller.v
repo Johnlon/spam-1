@@ -6,32 +6,58 @@
 // verilator lint_off MULTITOP
 
 /*
-TODO - use an unused istruction bit to invert the condition so "do if DO ready" becomes "do if DO not ready"
+x aluop   
+x aluop
+x aluop
+x aluop
+x aluop
+x tdev3
+x tdev2
+x tdev1
 
-take the do_exec through a XOR gate to optionally invert the do_exec signal
+x tdev0
+x srca2
+x srca1
+x srca0
+x srcb2
+x srcb1
+x srcb0
+x cond
 
-use spare gates: (a or b) and (a nand b)  = a XOR b
-https://en.wikipedia.org/wiki/XOR_gate see diagram three mxed gates
+x cond
+x cond
+x cond
+x flag_ctl
+x cmode invert
+x srcb3
+x tdev4
+x amode
 
-better logic ...
+x address
+x
+x
+x
+x
+x
+x
+x
 
-    loop:
-        pchitmp = loop
-        pc = loop !DO
-        uart = X
+x address
+xx
+x
+x
+x
+x
+x
 
-existing logic ...
-
-    loop:
-        pchitmp = prt
-        pc = prt DO
-        pchitmp = loop
-        pc = loop
-    prt:
-        uart = X
-
-
-
+x immed
+x
+x
+x
+x
+x
+x
+x
 */
 
 
