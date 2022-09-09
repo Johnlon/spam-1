@@ -3,12 +3,12 @@ package terminal
 import scala.swing._
 
 /* includes button for controlling the sim - but also configures the verilog uart to transmit lots  */
-abstract class UARTTerminal extends Chip8Terminal {
+abstract class UARTTerminal extends Terminal {
 
   def run(): Unit = {
 
     val buttons = new BoxPanel(Orientation.Horizontal) {
-      contents ++= Seq(brefresh, bpaint, bstop, bnext, breplay)
+      contents ++= Seq(brefresh, bpaint, bstepMode, bstep, breplay)
     }
 
     val label = new BoxPanel(Orientation.Horizontal) {

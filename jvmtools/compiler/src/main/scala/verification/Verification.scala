@@ -3,7 +3,7 @@ package verification
 import asm.Assembler
 import org.junit.jupiter.api.Assertions.assertEquals
 import scc.SpamCC
-import terminal.VerilogUARTTerminal
+import terminal.VerilogUARTTerminalApp
 
 import java.io.{File, PrintWriter}
 import java.util.concurrent.atomic.AtomicReference
@@ -98,7 +98,7 @@ object Verification {
 
     val tmpFileRom = new File("build", "spammcc-test.rom")
 
-    val tmpUartControl = new File(VerilogUARTTerminal.uartControl)
+    val tmpUartControl = new File(VerilogUARTTerminalApp.uartControl)
 
     println("WRITING ROM TO :\n" + tmpFileRom.getAbsolutePath)
     writeFile(roms, tmpFileRom)

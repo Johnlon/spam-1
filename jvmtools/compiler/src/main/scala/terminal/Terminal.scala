@@ -1,6 +1,6 @@
 package terminal
 
-import terminal.Chip8TerminalStates._
+import terminal.TerminalStates._
 
 import java.awt.Color
 import java.io.PrintStream
@@ -11,7 +11,7 @@ import scala.swing.ScrollPane.BarPolicy
 import scala.swing._
 import scala.swing.event._
 
-abstract class Chip8Terminal extends SimpleSwingApplication {
+abstract class Terminal extends SimpleSwingApplication {
 
   var uiapp = new MainFrame()
 
@@ -23,34 +23,34 @@ abstract class Chip8Terminal extends SimpleSwingApplication {
 
   def gamepadStream(): PrintStream
 
-  @volatile protected var stopped = true
+  @volatile protected var stepMode = true
+  @volatile var gotCR = false
 
-  var nextInst = new AtomicInteger(0)
-
+  var stepsToExec = new AtomicInteger(0)
   val C8_SCREEN_HEIGHT = 32
-  val C8_SCREEN_WIDTH = 64
 
+  val C8_SCREEN_WIDTH = 64
   val width = C8_SCREEN_WIDTH; //50
   val height = C8_SCREEN_HEIGHT; // 40
 
   val BLANKCHAR = ' '
   val BLANK = BLANKCHAR.toString
   val BLOCKCHAR = 0x2588.toChar // '#'
+
+
   val BACKGROUND_CHAR = " "
-
-
   var x = new AtomicInteger(0)
-  var y = new AtomicInteger(0)
 
+  var y = new AtomicInteger(0)
   val K_UP: Char = 'U'
   val K_DOWN: Char = 'D'
   val K_LEFT: Char = 'L'
+
   val K_RIGHT: Char = 'R'
 
   var state: TerminalIOState = STATE_INIT
 
   var data: mutable.Seq[mutable.Buffer[Char]] = fill()
-
   val textArea = new TextArea("Java Version: " + util.Properties.javaVersion + "\n" + "john")
   textArea.border = BorderFactory.createLineBorder(Color.BLUE)
   textArea.background = Color.BLACK
@@ -73,32 +73,36 @@ abstract class Chip8Terminal extends SimpleSwingApplication {
 
   // one char per line in hex
   def handleLine(hexCharLine: String): Unit = {
+    if (hexCharLine.trim == "") {
+      // allow blank lines for debug and testing
+      return
+    }
+
     try {
       var wasStopped = false
 
       //      if (hexCharLine == "ff")
       //        println("STOP")
 
-      while (stopped && nextInst.get() == 0) {
+      while (stepMode && stepsToExec.get() == 0) {
         wasStopped = true
         Thread.sleep(10)
       }
 
-      var gotCR = false
       if (hexCharLine.trim.nonEmpty) {
         lineCount += 1
         val c = Integer.parseInt(hexCharLine, 16)
         val char = c.toChar
-        if (char == '\n') gotCR = true
-        if (char == '\r') gotCR = true
         plot(char)
       }
 
       if (gotCR) {
-        if (nextInst.get() > 0) nextInst.decrementAndGet()
-        while (stopped && nextInst.get() == 0) {
+        // if LOGGED a CR then check if in step mode mode and whether I need to wait for a step
+        if (stepsToExec.get() > 0) stepsToExec.decrementAndGet()
+        while (stepMode && stepsToExec.get() == 0) {
           Thread.sleep(100)
         }
+        gotCR = false
       }
 
       if (wasStopped) {
@@ -118,8 +122,8 @@ abstract class Chip8Terminal extends SimpleSwingApplication {
 
   val brefresh = new Button("Reset")
   val bpaint = new Button("Paint")
-  val bstop = new Button("Stop")
-  val bnext = new Button("Next")
+  val bstepMode = new Button("StepMode")
+  val bstep = new Button("Step") // steps to next "LOGGED" cr or nl - must be logged CR
   val bclk = new Button("Clk")
   val breplay = new Button("Replay")
 
@@ -148,13 +152,13 @@ abstract class Chip8Terminal extends SimpleSwingApplication {
 
     //plot(DO_CENTRE)
 
-    listenTo(textArea.keys, brefresh, bpaint, bstop, bnext, bclk, breplay)
+    listenTo(textArea.keys, brefresh, bpaint, bstepMode, bstep, bclk, breplay)
 
     def updateStopButton() = {
-      if (stopped) {
-        bstop.background = Color.RED
+      if (stepMode) {
+        bstepMode.background = Color.RED
       } else {
-        bstop.background = Color.WHITE
+        bstepMode.background = Color.WHITE
       }
     }
 
@@ -217,12 +221,12 @@ abstract class Chip8Terminal extends SimpleSwingApplication {
         data = fill()
         doRepaint()
 
-      case ButtonClicked(b) if b == bnext =>
-        nextInst.incrementAndGet()
+      case ButtonClicked(b) if b == bstep =>
+        stepsToExec.incrementAndGet()
       case ButtonClicked(b) if b == bpaint =>
         doRepaint()
-      case ButtonClicked(b) if b == bstop =>
-        stopped = !stopped
+      case ButtonClicked(b) if b == bstepMode =>
+        stepMode = !stepMode
         updateStopButton()
       case ButtonClicked(b) if b == breplay =>
         doReplay()
@@ -347,13 +351,17 @@ abstract class Chip8Terminal extends SimpleSwingApplication {
           bits.zipWithIndex foreach {
             case (bit, bitIndex) =>
               val pixelX = xi + bitIndex
-              drawPixel(pixelX, yi, bit, true)
+              val bitAsNum = Integer.valueOf("" + bit, 2).toChar
+              drawPixel(pixelX, yi, bitAsNum, true)
           }
           state = STATE_INIT
         case STATE_LOG_CHAR =>
           report(s"LOG CHAR", c)
           log(c)
           state = STATE_INIT
+          if (c == '\n' || c == '\r') {
+            gotCR = true
+          }
         case STATE_LOG_BYTE =>
           report(s"LOG BYTE", c)
           logByte(c)
@@ -459,7 +467,7 @@ abstract class Chip8Terminal extends SimpleSwingApplication {
     }
     catch {
       case ex: MatchError =>
-        Dialog.showMessage(uiapp, s"PROTOCOL ERROR : current state : ${state},  this code int:${c.toInt}")
+        Dialog.showMessage(uiapp, s"PROTOCOL ERROR : current state : ${state},  this code decimal:${c.toInt} (0x${c.toHexString}")
     }
 
   }
@@ -471,11 +479,11 @@ abstract class Chip8Terminal extends SimpleSwingApplication {
     */
     if (x < width) {
 
-      if (bit != '0' && bit != '1') {
+      if (bit != 0 && bit != 1) {
         sys.error("bit must be 0 or 1 but was '" + bit + "'")
       }
 
-      val char = if (bit == '1') BLOCKCHAR else BLANKCHAR
+      val char = if (bit == 1) BLOCKCHAR else BLANKCHAR
 
       data(y % C8_SCREEN_HEIGHT)(x % C8_SCREEN_WIDTH) = char
     }
@@ -493,7 +501,7 @@ abstract class Chip8Terminal extends SimpleSwingApplication {
 }
 
 
-object Chip8TerminalStates {
+object TerminalStates {
 
   // valid in NONE_STATE
   val GOTO_INIT_STATE: Char = 0
@@ -515,8 +523,6 @@ object Chip8TerminalStates {
   val GOTO_LOG_BIN_STATE: Char = 19 // switch state
 
 }
-
-import terminal.Chip8TerminalStates._
 
 sealed trait TerminalIOState
 
