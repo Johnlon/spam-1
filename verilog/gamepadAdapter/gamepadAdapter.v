@@ -40,13 +40,15 @@ module gamepadAdapter #(parameter CONTROL_FILE="gamepad.control") (
     int tDelta;
     string strInput = "";
     string controlFile;
+    reg [1024:0] errStr;
+    integer errno;
     integer iController;
     integer iControllerValue;
     reg [7:0] iController1Value;
     reg [7:0] iController2Value;
     reg [7:0] iRandomValue;
     reg randomValueSet=1'b0;
-    localparam MAX_LINE_LENGTH=255;
+    localparam MAX_LINE_LENGTH=4096;
     reg [8*MAX_LINE_LENGTH:0] line; /* Line of text read from file */ 
 
 
@@ -85,6 +87,12 @@ module gamepadAdapter #(parameter CONTROL_FILE="gamepad.control") (
                 begin 
                     line="";
                     r = $fgets(line, fControl); 
+                    if (r == 0) begin
+                        errno = $ferror(fControl, errStr);
+                        $display("%9t ", $time, "GAMECONTROLLER: CANT READ LINE: $s", errStr);
+                    end
+                    $display("%9t ", $time, "GAMECONTROLLER: LINE: // %-s", line);
+                
                     strInput = strip(line);
                     $display("%9t ", $time, "GAMECONTROLLER: CONTROL RX: // %-s", strInput);
                 end
@@ -92,6 +100,10 @@ module gamepadAdapter #(parameter CONTROL_FILE="gamepad.control") (
                 begin 
                     line="";
                     r = $fgets(line, fControl); 
+                    if (r == 0) begin
+                        errno = $ferror(fControl, errStr);
+                        $display("%9t ", $time, "GAMECONTROLLER: CANT READ LINE: $s", errStr);
+                    end
                     strInput = strip(line);
 
                     r = $sscanf(strInput, "%1d=%02x", iController, iControllerValue);
@@ -117,6 +129,10 @@ module gamepadAdapter #(parameter CONTROL_FILE="gamepad.control") (
 
                     line="";
                     r = $fgets(line, fControl); 
+                    if (r == 0) begin
+                        errno = $ferror(fControl, errStr);
+                        $display("%9t ", $time, "GAMECONTROLLER: CANT READ LINE: $s", errStr);
+                    end
                     strInput = strip(line);
 
                     r = $sscanf(strInput, "=%02x", iRandomValue);
@@ -131,6 +147,10 @@ module gamepadAdapter #(parameter CONTROL_FILE="gamepad.control") (
                     tDelta=0;
                     line="";
                     r = $fgets(line, fControl);  // consumes the line ending and space chars 
+                    if (r == 0) begin
+                        errno = $ferror(fControl, errStr);
+                        $display("%9t ", $time, "GAMECONTROLLER: CANT READ LINE: $s", errStr);
+                    end
                     strInput = strip(line);
 
                     r = $sscanf(line,"%d\n", tDelta); 
@@ -138,6 +158,12 @@ module gamepadAdapter #(parameter CONTROL_FILE="gamepad.control") (
                     $display("%9t ", $time, "GAMECONTROLLER: CONTROL RX: '#%s' :  slept for %d", strInput, tDelta);
                     
                 end
+            end
+            else
+            begin
+              // otherwise chews the CPU and verilog runs like a pig
+              #1000000
+              $display("%9t ", $time, "GAMECONTROLLER: NO INPUT - slept");
             end
         end
     end
