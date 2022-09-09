@@ -1,5 +1,7 @@
 package terminal
 
+import terminal.Chip8TerminalStates._
+
 import java.awt.Color
 import java.io.PrintStream
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
@@ -8,57 +10,6 @@ import scala.collection.mutable
 import scala.swing.ScrollPane.BarPolicy
 import scala.swing._
 import scala.swing.event._
-
-object Chip8TerminalStates {
-
-  // valid in NONE_STATE
-  val GOTO_INIT_STATE: Char = 0
-  val GOTO_SETX_STATE: Char = 1 // switch state
-  val GOTO_SETY_STATE: Char = 2 // switch state
-  val GOTO_DRAW_PIXEL_STATE: Char = 3 // switch state
-  val GOTO_DRAW_BYTE_STATE: Char = 4 // switch state
-  val GOTO_LOG_CHAR_STATE: Char = 5 // switch state
-  val GOTO_LOG_BYTE_STATE: Char = 6 // switch state
-  val DO_CLEAR: Char = 8
-  val DO_UP: Char = 11
-  val DO_DOWN: Char = 12
-  val DO_LEFT: Char = 13
-  val DO_RIGHT: Char = 14
-  val DO_ORIGIN: Char = 15
-  val DO_CENTRE: Char = 16
-  val GOTO_LOG_OPCODE: Char = 17
-  val GOTO_LOG_STRING: Char = 18
-  val GOTO_LOG_BIN_STATE: Char = 19 // switch state
-
-}
-
-import terminal.Chip8TerminalStates._
-
-sealed trait TerminalIOState
-
-object STATE_INIT extends TerminalIOState // next is a direct op like "RIGHT", or a signal to start a two byte binary value op like DRAW
-
-object STATE_SETX extends TerminalIOState
-
-object STATE_SETY extends TerminalIOState
-
-object STATE_DRAW_PIXEL extends TerminalIOState
-
-object STATE_DRAW_BYTE extends TerminalIOState
-
-object STATE_LOG_CHAR extends TerminalIOState
-
-object STATE_LOG_BIN extends TerminalIOState
-
-object STATE_LOG_BYTE extends TerminalIOState
-
-object STATE_LOG_OPCODE1 extends TerminalIOState
-
-object STATE_LOG_OPCODE2 extends TerminalIOState
-
-object STATE_LOG_STRING_START extends TerminalIOState
-
-object STATE_LOG_STRING_WRITE extends TerminalIOState
 
 abstract class Chip8Terminal extends SimpleSwingApplication {
 
@@ -539,6 +490,56 @@ abstract class Chip8Terminal extends SimpleSwingApplication {
         (BACKGROUND_CHAR * width).toBuffer
     }.toBuffer
   }
+}
 
+
+object Chip8TerminalStates {
+
+  // valid in NONE_STATE
+  val GOTO_INIT_STATE: Char = 0
+  val GOTO_SETX_STATE: Char = 1 // switch state
+  val GOTO_SETY_STATE: Char = 2 // switch state
+  val GOTO_DRAW_PIXEL_STATE: Char = 3 // switch state
+  val GOTO_DRAW_BYTE_STATE: Char = 4 // switch state
+  val GOTO_LOG_CHAR_STATE: Char = 5 // switch state
+  val GOTO_LOG_BYTE_STATE: Char = 6 // switch state
+  val DO_CLEAR: Char = 8
+  val DO_UP: Char = 11
+  val DO_DOWN: Char = 12
+  val DO_LEFT: Char = 13
+  val DO_RIGHT: Char = 14
+  val DO_ORIGIN: Char = 15
+  val DO_CENTRE: Char = 16
+  val GOTO_LOG_OPCODE: Char = 17
+  val GOTO_LOG_STRING: Char = 18
+  val GOTO_LOG_BIN_STATE: Char = 19 // switch state
 
 }
+
+import terminal.Chip8TerminalStates._
+
+sealed trait TerminalIOState
+
+object STATE_INIT extends TerminalIOState // next is a direct op like "RIGHT", or a signal to start a two byte binary value op like DRAW
+
+object STATE_SETX extends TerminalIOState
+
+object STATE_SETY extends TerminalIOState
+
+object STATE_DRAW_PIXEL extends TerminalIOState
+
+object STATE_DRAW_BYTE extends TerminalIOState
+
+object STATE_LOG_CHAR extends TerminalIOState
+
+object STATE_LOG_BIN extends TerminalIOState
+
+object STATE_LOG_BYTE extends TerminalIOState
+
+object STATE_LOG_OPCODE1 extends TerminalIOState
+
+object STATE_LOG_OPCODE2 extends TerminalIOState
+
+object STATE_LOG_STRING_START extends TerminalIOState
+
+object STATE_LOG_STRING_WRITE extends TerminalIOState

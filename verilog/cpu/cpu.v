@@ -320,7 +320,7 @@ module cpu(
 
     wire [7:0] uart_d;
 
-    um245r #(.LOG(0))  uart ( // DONE
+    um245r #(.LOG(2))  uart ( // DONE
         .D(uart_d),
         .WR(_gated_uart_wr),// Writes data on -ve edge
         ._RD(_adev_uart),	// When goes from high to low then the FIFO data is placed onto D (equates to _OE)
@@ -339,10 +339,12 @@ module cpu(
             $error("CPU : ERROR - UNKNOWN PC %4h", pc_addr); 
             `FINISH_AND_RETURN(1);
         end
+        // not a problem unless we're out of RESET
         if ($isunknown(ctrl.rom_6.Mem[pc_addr][7])) begin // just check leftmost but as this is part of the op and is mandatory
             $display ("%9t ", $time,  "CPU ERROR");
             $error("CPU : END OF PROGRAM - NO CODE FOUND AT PC %4h = %8b", pc_addr, ctrl.rom_6.Mem[pc_addr][7]); 
 //            `FINISH_AND_RETURN(1);
+// FIXME = add finish and return but only fail of _RESET=1 ie out of reset and still not got program
         end
     end
     always @(negedge system_clk) begin

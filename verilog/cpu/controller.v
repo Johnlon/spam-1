@@ -107,15 +107,13 @@ module controller(
     wire conditionTopBit         = instruction_5[0]; // DONE
     wire [2:0] bbus_dev_2_0      = instruction_5[3:1]; // DONE
     assign abus_dev              = instruction_5[6:4]; // DONE
-    wire [3:0] targ_dev_3_0          ={instruction_6[2:0],instruction_5[7]}; // DONE
+    wire [3:0] targ_dev_3_0      ={instruction_6[2:0],instruction_5[7]}; // DONE
     assign alu_op                ={instruction_6[7:3]}; // DONE 
 
     wire [3:0] condition        = { conditionTopBit, conditionBot};
 
     assign bbus_dev              = {bbus_dev_3, bbus_dev_2_0};
-    //assign targ_dev              = {targ_dev_4, targ_dev_3_0};
-    //assign targ_dev              = {1'b0, targ_dev_3_0};
-    assign targ_dev              = {targ_dev_4, targ_dev_3_0};  // NOTE !! top bit of targ dev isn't needed unless > 16 one cycle targ devices,  but the port sel approach gives plenty of extension ports
+    assign targ_dev              = {targ_dev_4, targ_dev_3_0};  // NOTE !! top bit of targ dev isn't really needed unless > 16 fast one-cycle targ devices,  but the port sel approach gives plenty of extension ports !!! SO to could use for something else?????
 
     //----------------------------------------------------------------------------------
     // condition logic
@@ -138,7 +136,6 @@ module controller(
             _flags_czonENGL[7], // Carry
             1'b0}; // Always
 
-
     // need inverse of this signal so select the other mux
     wire _conditionTopBit;
     nand #(8) ic7400_c(_conditionTopBit, conditionTopBit, conditionTopBit); // as inverter - DONE
@@ -147,14 +144,14 @@ module controller(
     hct74151 #(.LOG(0)) condition_mux_lo(._E(conditionTopBit),  .S(conditionBot), .I(_flags_lo)); // DONE
     hct74151 #(.LOG(0)) condition_mux_hi(._E(_conditionTopBit), .S(conditionBot), .I(_flags_hi)); // DONE
 
-    // We are using _Y so the _Y will go high if the selected flag input is low (ie flat is set).
+
+    // We are using _Y so the _Y will go high if the selected flag input is low (ie flag is set).
     // Also, at any moment one of the two mux's is disabled and its _Y will be high.
     // So the result state is always determined by whether active mux.
     // If the selected flag is set (ie low) then both mux's will be emitting a high and therefore the result will be a low.
     // On the other hand if the selected flag is unset (high) then the active mux will be emitting a low and the nand will return a high
     wire _condition_met; // set to low when the execution condition is met
     nand #(9) ic7400_d(_condition_met, condition_mux_lo._Y, condition_mux_hi._Y);  // DONE
-
 
     //----------------------------------------------------------------------------------
     // execution control logic
@@ -219,6 +216,14 @@ module controller(
     
     // apply the functions to the lines
     `CONTROL_WIRES(HOOKUP, `SEMICOLON);
+
+    always @(*) begin
+      if (_uart_in == 0 && condition == CONDITION_DO)
+      begin
+        $display("BAD PRACTICE !! DONT WRITE TO UART WHEN INCLUDING A CONDITION ON 'DO' AS THIS CAUSES AN OSCILLATION IN THE UART AND CONTROL LOGIC");
+        $finish_and_return(1);
+      end
+    end
 
 
 endmodule

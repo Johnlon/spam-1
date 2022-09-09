@@ -113,9 +113,9 @@
                     adevname(i_srca), \
                     bdevname((i_srcb_hi << 3) + i_srcb_lo), \
                     condname(i_cond), \
-                    (i_flag "NOSET" : "SET"), \
-                    (i_cmode "INV" : "STD"), \
-                    (i_amode  "DIR": "REG"), \
+                    (i_flag ? "NOSET" : "SET"), \
+                    (i_cmode ? "INV" : "STD"), \
+                    (i_amode  ? "DIR": "REG"), \
                     i_addr, \
                     i_immed); \
     }
@@ -174,12 +174,12 @@
 // !!!!!!!! PCHITMP MUST ALWAYS BE UNCONDITIONAL OTHERWISE RISK THAT CONTROL LINE LIKE DI/DO MIGHT GO HIGH BETWEEN THE PCHITMP AND PC INSTRUCTIONS...
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 `define JMP_IMMED16(INST, ADDRESS_LONG)       \
-        `INSTRUCTION(INST, B, pchitmp, not_used, immed, A, `KEEP_FLAGS, `NA_AMODE, `CM_STD, 'z, (ADDRESS_LONG>>8));  \
-        `INSTRUCTION(INST, B, pc,      not_used, immed, A, `KEEP_FLAGS, `NA_AMODE, `CM_STD, 'z, (ADDRESS_LONG)); 
+        `INSTRUCTION(INST, B, pchitmp, not_used, immed, A, `KEEP_FLAGS, 'CM_STD, `NA_AMODE, 'z, (ADDRESS_LONG>>8));  \
+        `INSTRUCTION(INST, B, pc,      not_used, immed, A, `KEEP_FLAGS, 'CM_STD, `NA_AMODE, 'z, (ADDRESS_LONG)); 
 
 `define JMP_IMMED_COND(INST, ADDRESS_LONG, COND)       \
-        `INSTRUCTION(INST, B, pchitmp, not_used, immed, A, `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, (ADDRESS_LONG>>8));  \
-        `INSTRUCTION(INST, B, pc,      not_used, immed, COND, `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, (ADDRESS_LONG)); 
+        `INSTRUCTION(INST, B, pchitmp, not_used, immed, A, `SET_FLAGS,    'CM_STD, `NA_AMODE, 'z, (ADDRESS_LONG>>8));  \
+        `INSTRUCTION(INST, B, pc,      not_used, immed, COND, `SET_FLAGS, 'CM_STD, `NA_AMODE, 'z, (ADDRESS_LONG)); 
 
 
 //  `JMP_UNCONDITIONAL_PCHITMP_IMMED(INST, ADDRESS_LONG >>  8) \

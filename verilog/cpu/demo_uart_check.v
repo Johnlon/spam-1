@@ -1,6 +1,8 @@
 // License: Mozilla Public License : Version 2.0
 // Author : John Lonergan
 
+// waits for DO to go active then writes character 66
+
 
 //// RUN  and grep for OK to see counter incrementing
 /*
@@ -74,13 +76,13 @@ module test();
         icount = 0;
 
         `DEV_EQ_IMMED8(icount, rega, 64); 
-        `INSTRUCTION(icount, B, pchitmp, not_used, immed, A,  `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, `WRITE_UART>>8); 
-        `INSTRUCTION(icount, B, pc     , not_used, immed, DO, `SET_FLAGS, `NA_AMODE,`CM_STD,  'z, `WRITE_UART); 
+        `INSTRUCTION(icount, B, pchitmp, not_used, immed, A,  `SET_FLAGS, 'CM_STD, `NA_AMODE, 'z, `WRITE_UART>>8); 
+        `INSTRUCTION(icount, B, pc     , not_used, immed, DO, `SET_FLAGS, 'CM_STD, `NA_AMODE, 'z, `WRITE_UART); 
         `JMP_IMMED16(icount, 0); 
 
 icount = `WRITE_UART;
-        `INSTRUCTION(icount, B, uart,   not_used, immed, A,  `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, 66);
-        `INSTRUCTION(icount, B, halt,   not_used, immed, A,  `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, 66);
+        `INSTRUCTION(icount, B, uart,   not_used, immed, A,  `SET_FLAGS, 'CM_STD, `NA_AMODE, 'z, 66);
+        `INSTRUCTION(icount, B, halt,   not_used, immed, A,  `SET_FLAGS, 'CM_STD, `NA_AMODE, 'z, 66);
 
 
     end

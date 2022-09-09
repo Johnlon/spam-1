@@ -1,12 +1,22 @@
 // License: Mozilla Public License : Version 2.0
 // Author : John Lonergan
 
-//////////////// TO RUN TEST ... RUN AND GREP FOR  "OK" TO SEE COUNTER
+//////////////// ECHOS RECEIVED BYTES BACK OUT
 
-// ADDRESSING TERMINOLOGY
-//  IMMEDIATE ADDRESSING = INSTRUCTION CONTAINS THE CONSTANT VALUE DATA TO USE
-//  DIRECT ADDRESSING = INSTRUCTION CONTAINS THE ADDRESS IN MEMORY OF THE DATA TO USE
-//  REGISTER ADDRESSING = INSTRUCTION CONTAINS THE NAME OF THE REGISTER FROM WHICH TO FETCH THE DATA
+//////////////// TO RUN TEST ... RUN AND GREP FOR  TRANSMITTING
+
+/* NEED A uart.control that does soem recieves and sends like this
+t100000
+r1
+r2
+r3
+r4
+/ Sleep for a bit to give cpu time to run then quit
+#100000000
+q
+*/
+
+
 
 //#!/usr/bin/iverilog -Ttyp -Wall -g2012 -gspecify -o test.vvp 
 //`include "../control/controller.v"
@@ -66,10 +76,8 @@ module test();
     string hello = "Hello!";
     string bye = "Hello!";
     int idx;
-
-    `define READ 20
-    `define READ_LOOP (`READ+1)
-    `define WRITE_HELLO 128
+    int read_loop;
+    int write_loop;
 
     // SETUP ROM
     task INIT_ROM;
@@ -77,25 +85,17 @@ module test();
 
         counter=0;
 
-        `DEV_EQ_IMMED8(counter, rega, 1); 
-        `DEV_EQ_IMMED8(counter, regb, 2);
-        
-        `JMP_IMMED16(counter, `READ_LOOP); 
-
-
         // do while DI 
-        counter=`READ_LOOP;
-        `INSTRUCTION(counter, B, pchitmp, not_used, immed,    A,  `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, (`READ_LOOP>>8)); 
-        `INSTRUCTION(counter, B, pc,      not_used, immed,    DI, `SET_FLAGS, `NA_AMODE, `CM_INV, 'z, (`READ_LOOP)); 
-        `INSTRUCTION(counter, A, rega,    uart,     not_used, A,  `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, 'z); 
-        `JMP_IMMED16(counter, `WRITE_HELLO); 
-
-
-        counter=`WRITE_HELLO;
-        for (idx=0; idx<hello.len(); idx++) begin
-            `INSTRUCTION(counter, B, uart,     not_used, immed, DO,  `SET_FLAGS, `NA_AMODE, `CM_STD, 'z, hello[idx]);
+        for (idx=0; idx<100; idx++) begin
+          read_loop = counter;
+          `INSTRUCTION(counter, B, pchitmp, not_used, immed,    A,  `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, (read_loop>>8)); 
+          `INSTRUCTION(counter, B, pc,      not_used, immed,    DI, `SET_FLAGS, `CM_INV, `NA_AMODE, 'z, (read_loop)); 
+          `INSTRUCTION(counter, A, rega,    uart,     not_used, A,  `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, 'z); 
+          write_loop = counter;
+          `INSTRUCTION(counter, B, pchitmp, not_used, immed,    A,  `SET_FLAGS, `CM_STD, `NA_AMODE, 'z, (write_loop>>8)); 
+          `INSTRUCTION(counter, B, pc,      not_used, immed,    DO, `SET_FLAGS, `CM_INV, `NA_AMODE, 'z, (write_loop)); 
+          `INSTRUCTION(counter, A, uart,    rega, immed,    A,  `SET_FLAGS,`CM_STD, `NA_AMODE, 'z, 'z);
         end
-        `JMP_IMMED16(counter, 0); 
 
     end
     endtask : INIT_ROM
@@ -116,8 +116,8 @@ module test();
     task CLK_DN; 
     begin
         $display("\n%9t", $time, " CLK GOING LOW  -----------------------------------------------------------------------"); 
-        $display("\n%9t", $time, " EXECUTING ..."); 
         DUMP; 
+        $display("\n%9t", $time, " EXECUTING ..."); 
         clk = 0;
     end
     endtask
@@ -224,15 +224,9 @@ module test();
           label="";
     endtask
 
-    always @* begin
-            `DD " sig=%1d", CPU.ctrl._do_exec);
-    end
 
     task DUMP;
-            DUMP_OP;
-            `DD " sig=%1d", CPU.ctrl._do_exec);
-/*
-
+            `DD " _do_exec=%1d", CPU.ctrl._do_exec);
             DUMP_OP;
             `DD " phase_exec=%1d", CPU.phase_exec);
             `DD " PC=%01d (0x%4h) PCHItmp=%0d (%2x)", CPU.pc_addr, CPU.pc_addr, CPU.PC.PCHITMP, CPU.PC.PCHITMP);
@@ -249,7 +243,8 @@ module test();
             );            
             `DD " abus=%8b bbus=%8b alu_result_bus=%8b", CPU.abus, CPU.bbus, CPU.alu_result_bus);
             `DD " condition=%02d(%1s) _do_exec=%b", CPU.ctrl.condition, control::condname(CPU.ctrl.condition), CPU.ctrl._do_exec);
-            `DD " FLAGS czonGLEN=%8b gated_flags_clk=%1b", CPU.status_register_czonGLEN.Q, CPU.gated_flags_clk);
+            `DD " FLAGS czonENGL=%8b gated_flags_clk=%1b", CPU.status_register_czonENGL.Q, CPU.gated_flags_clk);
+            `DD " FLAGS I/O  _flagdo=%1b _flags_di=%1b", CPU._flag_do, CPU._flag_di);
             `DD " MAR=%8b:%8b (0x%2x:%2x)", CPU.MARHI.Q, CPU.MARLO.Q, CPU.MARHI.Q, CPU.MARLO.Q);
             `DD "  REGA:%08b", CPU.regFile.get(0),
                 "  REGB:%08b", CPU.regFile.get(1),
@@ -260,7 +255,6 @@ module test();
             `define LOG_BDEV_SEL(DNAME) " _bdev_``DNAME``=%1b", CPU._bdev_``DNAME``
             `define LOG_TDEV_SEL(DNAME) " _``DNAME``_in=%1b",  CPU._``DNAME``_in
             `DD " WIRES ", `CONTROL_WIRES(LOG, `COMMA));
-*/
     endtask 
 
     always @* 

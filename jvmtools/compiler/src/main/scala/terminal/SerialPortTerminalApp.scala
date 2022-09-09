@@ -1,7 +1,7 @@
 package terminal
 
 import com.fazecast.jSerialComm.{SerialPort, SerialPortTimeoutException}
-import terminal.VerilogUARTTerminal.uiapp
+import terminal.VerilogUARTTerminalApp.uiapp
 
 import java.io._
 import scala.swing._
@@ -12,7 +12,7 @@ import scala.swing.event.{ButtonClicked, SelectionChanged}
  * paints draw instructions arriving from the serial port to the console.
  * Uses a set of drawing rules defined for the Chip 8 emulation.
  */
-object Chip8ComTerminal extends Chip8Terminal {
+object SerialPortTerminalApp extends Terminal {
 
   val comAdapter = new ComAdapter
 
@@ -54,7 +54,7 @@ object Chip8ComTerminal extends Chip8Terminal {
     }
 
     val buttons = new BoxPanel(Orientation.Horizontal) {
-      contents ++= Seq(brefresh, bpaint, bstop, bnext, bclk, btnTest)
+      contents ++= Seq(brefresh, bpaint, bstepMode, bstep, bclk, btnTest)
     }
 
     val label = new BoxPanel(Orientation.Horizontal) {

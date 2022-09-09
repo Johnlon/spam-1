@@ -10,7 +10,7 @@ import java.io.{File, FileOutputStream, PrintStream}
  * Uses a set of drawing rules defined for the Chip 8 emulation.
  * */
 
-object VerilogUARTTerminal extends UARTTerminal {
+object VerilogUARTTerminalApp extends UARTTerminal {
 
   val replay = true
 
