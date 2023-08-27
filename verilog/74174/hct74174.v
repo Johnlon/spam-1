@@ -3,6 +3,7 @@
 `ifndef hct74174
 `define hct74174
 
+
 /* Timings from https://assets.nexperia.com/documents/data-sheet/74HC_HCT174.pdf
  * */
 `timescale 1ns/1ns
