@@ -12,7 +12,7 @@ It's now months later and the challence is still brewing, which is a bit of a di
 
 The original design is shown below but see also the [Original design branch for more info](https://github.com/Johnlon/spam-1/blob/OriginalDesign/README.md)
 
-<img src="blocks-orig.png" alt="Block diagram" width="50%"/>
+<img src="blocks-orig.png" alt="Block diagram" width="1555"/>
 
 I spent a couple of weeks building the Logism simulator for this CPU. 
 It was 8 bit and based on ideas from various places but kind of grew by itself with a little planning. 
