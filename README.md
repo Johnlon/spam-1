@@ -175,7 +175,7 @@ Every instruction is of the form `T = A OP B [optional control flag]` . BTW If y
 
 The instruction encodes the source and target devices, the ALU operation, the addressing mode, the optional immediate value and direct address, plus the condition flags as shown below.
 
-![Instruction Encoding](docs/instruction_bits.png)
+![Instruction Encoding](docs/instruction_bits.svg)
 
 The devices on the ALU input busees A and B, as well as the devices on the ALU result bus are identified using the id's shown below.
 

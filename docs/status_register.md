@@ -14,7 +14,7 @@ Whether or not a given instruction atually updates the status register depends o
 
 The SPAM-1 instruction is encoded as shown below.
 
-![Instruction bits](instruction_bits.png)
+![Instruction bits](instruction_bits.svg)
 
 The _condition selection_ part of the instruction defines whether or not an instruction execution is dependendent on the the value of a flag held in the status register. The special condition value '0' indicates _Always_ and is used to make the instruction execution unconditional.
 

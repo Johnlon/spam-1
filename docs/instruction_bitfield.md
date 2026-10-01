@@ -1,3 +1,5 @@
+# Instruction bitfield
 
-WAVEDROM BUG - DOESN'T OBEY CONFIG
-![signal step4](https://svg.wavedrom.com/github/johnlon/spam-1/master/docs/instruction-bits.json5)
+![Instruction bits](instruction_bits.svg)
+
+See [Control Logic](control_logic.md) for how each field is decoded.

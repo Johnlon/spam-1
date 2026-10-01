@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 270" width="1200" height="270" font-family="Arial, Helvetica, sans-serif" font-size="12">
+<rect width="1200" height="270" fill="#ffffff"/>
+<rect x="24" y="40" width="240" height="26" fill="#f8cecc" stroke="#333"/>
+<text x="144.0" y="57" text-anchor="middle">alu op</text>
+<text x="28" y="34" font-size="11">47</text>
+<text x="260" y="34" text-anchor="end" font-size="11">43</text>
+<text x="144.0" y="82" text-anchor="middle" font-size="10" fill="#444">operation</text>
+<rect x="264" y="40" width="192" height="26" fill="#dae8fc" stroke="#333"/>
+<text x="360.0" y="57" text-anchor="middle">target [3:0]</text>
+<text x="268" y="34" font-size="11">42</text>
+<text x="452" y="34" text-anchor="end" font-size="11">39</text>
+<text x="360.0" y="82" text-anchor="middle" font-size="10" fill="#444">devices 0-15</text>
+<text x="360.0" y="95" text-anchor="middle" font-size="10" fill="#444">reg a/b/c/d, marlo/hi, uart, ram,</text>
+<text x="360.0" y="108" text-anchor="middle" font-size="10" fill="#444">halt, vram, port, portsel,</text>
+<text x="360.0" y="121" text-anchor="middle" font-size="10" fill="#444">pchitmp, pclo, pc</text>
+<rect x="456" y="40" width="144" height="26" fill="#d5e8d4" stroke="#333"/>
+<text x="528.0" y="57" text-anchor="middle">source A</text>
+<text x="460" y="34" font-size="11">38</text>
+<text x="596" y="34" text-anchor="end" font-size="11">36</text>
+<text x="528.0" y="82" text-anchor="middle" font-size="10" fill="#444">devices 0-7</text>
+<text x="528.0" y="95" text-anchor="middle" font-size="10" fill="#444">reg a/b/c/d,</text>
+<text x="528.0" y="108" text-anchor="middle" font-size="10" fill="#444">marlo/hi, uart</text>
+<rect x="600" y="40" width="144" height="26" fill="#d5e8d4" stroke="#333"/>
+<text x="672.0" y="57" text-anchor="middle">source B [2:0]</text>
+<text x="604" y="34" font-size="11">35</text>
+<text x="740" y="34" text-anchor="end" font-size="11">33</text>
+<text x="672.0" y="82" text-anchor="middle" font-size="10" fill="#444">devices 0-15 (with bit 26)</text>
+<text x="672.0" y="95" text-anchor="middle" font-size="10" fill="#444">reg a/b/c/d, marlo/hi,</text>
+<text x="672.0" y="108" text-anchor="middle" font-size="10" fill="#444">immed, ram, vram, port</text>
+<rect x="744" y="40" width="192" height="26" fill="#fff2cc" stroke="#333"/>
+<text x="840.0" y="57" text-anchor="middle">condition</text>
+<text x="748" y="34" font-size="11">32</text>
+<text x="932" y="34" text-anchor="end" font-size="11">29</text>
+<text x="840.0" y="82" text-anchor="middle" font-size="10" fill="#444">A, C, Z, O, N, EQ,</text>
+<text x="840.0" y="95" text-anchor="middle" font-size="10" fill="#444">NE, GT, LT, DI, DO</text>
+<rect x="936" y="40" width="48" height="26" fill="#f8cecc" stroke="#333"/>
+<text x="960.0" y="57" text-anchor="middle">flags</text>
+<text x="960.0" y="34" text-anchor="middle" font-size="11">28</text>
+<text x="960.0" y="82" text-anchor="middle" font-size="10" fill="#444">update</text>
+<text x="960.0" y="95" text-anchor="middle" font-size="10" fill="#444">flags</text>
+<rect x="984" y="40" width="48" height="26" fill="#fff2cc" stroke="#333"/>
+<text x="1008.0" y="57" text-anchor="middle">inv</text>
+<text x="1008.0" y="34" text-anchor="middle" font-size="11">27</text>
+<text x="1008.0" y="82" text-anchor="middle" font-size="10" fill="#444">invert</text>
+<text x="1008.0" y="95" text-anchor="middle" font-size="10" fill="#444">cond</text>
+<rect x="1032" y="40" width="48" height="26" fill="#d5e8d4" stroke="#333"/>
+<text x="1056.0" y="57" text-anchor="middle">B3</text>
+<text x="1056.0" y="34" text-anchor="middle" font-size="11">26</text>
+<text x="1056.0" y="82" text-anchor="middle" font-size="10" fill="#444">source B</text>
+<text x="1056.0" y="95" text-anchor="middle" font-size="10" fill="#444">bit 3</text>
+<rect x="1080" y="40" width="48" height="26" fill="#dae8fc" stroke="#333"/>
+<text x="1104.0" y="57" text-anchor="middle">T4</text>
+<text x="1104.0" y="34" text-anchor="middle" font-size="11">25</text>
+<text x="1104.0" y="82" text-anchor="middle" font-size="10" fill="#444">target</text>
+<text x="1104.0" y="95" text-anchor="middle" font-size="10" fill="#444">bit 4</text>
+<text x="1104.0" y="108" text-anchor="middle" font-size="10" fill="#444">(spare)</text>
+<rect x="1128" y="40" width="48" height="26" fill="#e1d5e7" stroke="#333"/>
+<text x="1152.0" y="57" text-anchor="middle">mode</text>
+<text x="1152.0" y="34" text-anchor="middle" font-size="11">24</text>
+<text x="1152.0" y="82" text-anchor="middle" font-size="10" fill="#444">0 register</text>
+<text x="1152.0" y="95" text-anchor="middle" font-size="10" fill="#444">1 direct</text>
+<rect x="24" y="170" width="768" height="26" fill="#fff2cc" stroke="#333"/>
+<text x="408.0" y="187" text-anchor="middle">direct address</text>
+<text x="28" y="164" font-size="11">23</text>
+<text x="788" y="164" text-anchor="end" font-size="11">8</text>
+<text x="408.0" y="212" text-anchor="middle" font-size="10" fill="#444">direct RAM address</text>
+<text x="408.0" y="225" text-anchor="middle" font-size="10" fill="#444">used when address mode is DIRECT, otherwise redundant</text>
+<rect x="792" y="170" width="384" height="26" fill="#d5e8d4" stroke="#333"/>
+<text x="984.0" y="187" text-anchor="middle">immediate value</text>
+<text x="796" y="164" font-size="11">7</text>
+<text x="1172" y="164" text-anchor="end" font-size="11">0</text>
+<text x="984.0" y="212" text-anchor="middle" font-size="10" fill="#444">immediate operand to ALU</text>
+<text x="984.0" y="225" text-anchor="middle" font-size="10" fill="#444">used by source B device IMMED, otherwise redundant</text>
+</svg>

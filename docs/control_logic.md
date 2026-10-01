@@ -4,6 +4,12 @@ The control logic decodes the 48 bit instruction coming out of the [Program ROM]
 
 There is no microcode and no instruction register. The decode is purely combinational: the program counter addresses the six ROMs, and the ROM outputs feed the decoders directly.
 
+![Control logic](control_logic.svg)
+
+The control logic is the set of "control logic" arrows on the block diagram.
+
+![Block Diagram](final-block-diagram.png)
+
 ## What it does
 
 - Selects which device drives ALU input bus A
@@ -15,7 +21,13 @@ There is no microcode and no instruction register. The decode is purely combinat
 - Selects the RAM addressing mode
 - Drives the immediate value and the direct address out of the ROM
 
+## Instruction form
+
+![Operation form](operation_form.png)
+
 ## Instruction fields
+
+![Instruction bits](instruction_bits.svg)
 
 ROM 6 holds the top byte, ROM 1 the bottom byte.
 
