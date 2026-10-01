@@ -37,3 +37,6 @@ verilog/assembler/bin
 verilog/assembler/antlr
 verilog/assembler/.vscode
 *.out
+
+# generated from README.md by .github/workflows/pages.yml
+/docs/index.md

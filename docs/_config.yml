@@ -1,3 +1,5 @@
 theme: jekyll-theme-hacker
 title: SPAM-1
 description: Simple Programmable and Massive - an 8 bit home brew CPU built from 1970's logic chips
+plugins:
+  - jemoji

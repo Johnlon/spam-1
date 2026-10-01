@@ -1,0 +1,50 @@
+# Publishes README.md as the home page of https://johnlon.github.io/spam-1/
+# docs/index.md is generated here from README.md - do not add one to the repo.
+name: pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - README.md
+      - docs/**
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate docs/index.md from README.md
+        run: |
+          sed -E \
+            -e 's#\]\(docs/#](#g' \
+            -e 's#src="docs/#src="#g' \
+            -e 's#\]\(verilog/#](https://github.com/${{ github.repository }}/blob/master/verilog/#g' \
+            README.md > docs/index.md
+      - uses: actions/configure-pages@v5
+      - uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site
+      - uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
