@@ -221,8 +221,6 @@ Links to individual pages:
 
 - [Program ROM](docs/program_rom.md)
 
-- [Control Logic](docs/control_logic.md)
-
 - [CPU verilog model](verilog/cpu/cpu.v)
 
 - [Control Logic verilog model](verilog/cpu/controller.v)
