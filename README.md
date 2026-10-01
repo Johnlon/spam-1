@@ -290,3 +290,4 @@ The following links take you to documentation covering my research and also desi
  - [Research and References](docs/references.md)
  - [Hardware Components](docs/components.md)
  - [Digital Simulators](docs/digital-simulators.md)
+ - [How this site is published](docs/site_publishing.md)
