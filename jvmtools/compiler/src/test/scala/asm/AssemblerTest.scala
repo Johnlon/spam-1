@@ -4,13 +4,12 @@ import asm.AddressMode._
 import asm.AluOp.PASS_B
 import asm.ConditionMode.STANDARD
 import asm.Control._A
-import org.apache.commons.io.FileUtils
 import org.junit.jupiter.api.Assertions.{assertEquals, fail}
 import org.junit.jupiter.api.Test
 import verification.HaltCode
 import verification.Verification.verifyRoms
 
-import java.io.File
+import java.nio.file.{Files, Paths, StandardOpenOption}
 
 // FIXME - check if any initialised or uninitialised ranges overlap
 // TODO review logic where datalocn pointer is reset by a prev statement
@@ -25,7 +24,7 @@ class AssemblerTest {
         |HALT=123
         |""".stripMargin
 
-    FileUtils.write(new File("build/include.file"), include)
+    Files.write(Paths.get("build/include.file"), include.getBytes, StandardOpenOption.CREATE)
 
     val prog =
       """
@@ -33,7 +32,7 @@ class AssemblerTest {
         |END
         """
 
-    val code = prog.split("\\|").map(x => x.trim).filter(_.length > 0)
+    val code = prog.split("\\|").map(x => x.trim).filter(_.nonEmpty)
 
     val asm = new Assembler()
 
@@ -48,10 +47,10 @@ class AssemblerTest {
     verifyRoms(
       verbose = false,
       uartDataIn = List(),
-      outputCheck = (output: List[String]) => {},
+      outputCheck = (_: List[String]) => {},
       checkHalt = Some(HaltCode(0, 123)),
       timeout = 200,
-      roms = roms);
+      roms = roms)
 
 
   }
@@ -115,7 +114,7 @@ class AssemblerTest {
         |END
         """
 
-    val code = prog.split("\\|").map(x => x.trim).filter(_.length > 0)
+    val code = prog.split("\\|").map(x => x.trim).filter(_.nonEmpty)
 
     val asm = new Assembler()
 
@@ -177,7 +176,7 @@ class AssemblerTest {
         |END
         """
 
-    val code = prog.split("\\|").map(x => x.trim).filter(_.length > 0)
+    val code = prog.split("\\|").map(x => x.trim).filter(_.nonEmpty)
 
     val asm = new Assembler()
 
@@ -256,7 +255,7 @@ class AssemblerTest {
         |END
         """
 
-    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.length > 0)
+    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.nonEmpty)
 
     val asm = new Assembler()
 
@@ -271,10 +270,10 @@ class AssemblerTest {
     verifyRoms(
       verbose = true,
       uartDataIn = List(),
-      outputCheck = (output: List[String]) => {},
+      outputCheck = (_: List[String]) => {},
       checkHalt = Some(HaltCode(0, 0xaa)),
       timeout = 200,
-      roms = roms);
+      roms = roms)
   }
 
 
@@ -323,7 +322,7 @@ class AssemblerTest {
         |END
         """
 
-    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.length > 0)
+    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.nonEmpty)
 
     val asm = new Assembler()
 
@@ -338,10 +337,10 @@ class AssemblerTest {
     verifyRoms(
       verbose = true,
       uartDataIn = List(),
-      outputCheck = (output: List[String]) => {},
+      outputCheck = (_: List[String]) => {},
       checkHalt = Some(HaltCode(0, '£')),
       timeout = 200,
-      roms = roms);
+      roms = roms)
   }
 
   @Test
@@ -388,7 +387,7 @@ class AssemblerTest {
         |END
         """
 
-    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.length > 0)
+    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.nonEmpty)
 
     val asm = new Assembler()
 
@@ -403,10 +402,10 @@ class AssemblerTest {
     verifyRoms(
       verbose = true,
       uartDataIn = List(),
-      outputCheck = (output: List[String]) => {},
+      outputCheck = (_: List[String]) => {},
       checkHalt = Some(HaltCode(0, 1 | 4)),
       timeout = 200,
-      roms = roms);
+      roms = roms)
   }
 
   @Test
@@ -450,7 +449,7 @@ class AssemblerTest {
         |END
         |"""
 
-    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.length > 0)
+    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.nonEmpty)
 
     val asm = new Assembler()
 
@@ -459,10 +458,10 @@ class AssemblerTest {
     verifyRoms(
       verbose = true,
       uartDataIn = List(),
-      outputCheck = (output: List[String]) => {},
+      outputCheck = (_: List[String]) => {},
       checkHalt = Some(HaltCode(0, 1 | 4)),
       timeout = 200,
-      roms = roms);
+      roms = roms)
   }
   /*
     @Test
@@ -555,7 +554,7 @@ class AssemblerTest {
         """
         |
         |END
-        """, HaltCode(0x0a0a, 0));
+        """, HaltCode(0x0a0a, 0))
 
     multTest(
       """
@@ -577,8 +576,8 @@ class AssemblerTest {
 
   }
 
-  private def multTest(cmpEq: String, expectedResult: HaltCode) = {
-    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.length > 0)
+  private def multTest(cmpEq: String, expectedResult: HaltCode): Unit = {
+    val code = cmpEq.split("\\|").map(x => x.trim).filter(_.nonEmpty)
     val asm = new Assembler()
     val roms = assemble(code, asm)
     roms.zipWithIndex.foreach {
@@ -590,7 +589,7 @@ class AssemblerTest {
     verifyRoms(
       verbose = true,
       uartDataIn = List(),
-      outputCheck = (output: List[String]) => {},
+      outputCheck = (_: List[String]) => {},
       checkHalt = Some(expectedResult),
       timeout = 200,
       roms = roms)
@@ -598,7 +597,7 @@ class AssemblerTest {
 
   @Test
   def `LEN_and_EQU_arith`(): Unit = {
-    val codeTuples = Seq[(String, java.lang.Integer)](
+    val codeTuples = IndexedSeq[(String, java.lang.Integer)](
       ("A0: EQU 0             ", 0),
       ("A1: EQU 1             ", 1),
       ("A2: EQU 255           ", 255),
@@ -735,7 +734,7 @@ class AssemblerTest {
 
   @Test
   def `REGA_eq_REGB`(): Unit = {
-    val code = List(
+    val code = Seq(
       "REGA=REGB",
       "END")
 
@@ -749,7 +748,7 @@ class AssemblerTest {
 
   @Test
   def `REGA_eq_REGA__PASS_A__NU`(): Unit = {
-    val code = List(
+    val code = Seq(
       "REGA=REGA PASS_A NU",
       "END")
 
@@ -996,7 +995,7 @@ class AssemblerTest {
 
   @Test
   def `ram_direct_eq_ram_direct_illegal`(): Unit = {
-    val code = List(
+    val code = Seq(
       "[1000]=[1]",
       "END")
 
@@ -1015,7 +1014,7 @@ class AssemblerTest {
   @Test
   def `REGA_eq_PORT_ID_CONST`(): Unit = {
     // these two lines are equivalent
-    val code = List(
+    val code = Seq(
       "REGA = :PORT_RD_Gamepad2",
       "END")
 
@@ -1032,7 +1031,7 @@ class AssemblerTest {
   @Test
   def `PORTSEL_AND_PORT_EQ_REGA`(): Unit = {
     // these two lines are equivalent
-    val code = List(
+    val code = Seq(
       "PORTSEL = REGA",
       "PORT = REGA",
       "END")
@@ -1048,7 +1047,7 @@ class AssemblerTest {
     ), assembled)
   }
 
-  private def instructions(code: Seq[String], asm: Assembler): Seq[(AluOp, Any, Any, Any, Control, AddressMode, ConditionMode, Int, Byte)] = {
+  private def instructions(code: Iterable[String], asm: Assembler): Seq[(AluOp, Any, Any, Any, Control, AddressMode, ConditionMode, Int, Byte)] = {
     val roms: Seq[List[String]] = assemble(code, asm)
     decode(roms, asm)
   }
@@ -1059,7 +1058,7 @@ class AssemblerTest {
     )
   }
 
-  private def assemble(code: Seq[String], asm: Assembler) = {
+  private def assemble(code: Iterable[String], asm: Assembler) = {
     // comments run to end of line
     asm.assemble(code.mkString("\n"))
   }

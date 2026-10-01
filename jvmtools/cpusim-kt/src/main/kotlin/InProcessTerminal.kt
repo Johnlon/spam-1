@@ -12,7 +12,7 @@ import javax.swing.border.TitledBorder
 class InProcessTerminal(val gamepadHandler: (String) -> Unit) : UARTTerminal() {
 
     init {
-        `stopped_$eq`(false)
+//        `stopped_$eq`(false)
     }
 
     class NullOS : OutputStream() {

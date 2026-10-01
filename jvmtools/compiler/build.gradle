@@ -1,23 +1,23 @@
 
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
 //project.buildDir=System.getProperty("java.io.tmpdir") + File.separator + "gradlebuild" + File.separator + project.name
+plugins {
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+
+    id "maven-publish" // ./gradlew publishToMavenLocal
+}
 
 repositories {
     mavenCentral()
 }
 
-buildscript {
-    repositories {
-        jcenter()
-    }
-    dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
-    }
-}
-
 apply plugin: 'java'
-apply plugin: 'maven'
 apply plugin: 'scala'
-apply plugin: 'com.github.johnrengelman.shadow'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
@@ -33,17 +33,17 @@ dependencies {
 
     implementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
 
-    implementation 'org.scala-lang:scala-library:2.13.3'
+    implementation 'org.scala-lang:scala-library:2.13.9'
 
     implementation group: "org.scala-lang.modules", name: "scala-parser-combinators_2.13", version: "1.1.2"
 
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.32'
     implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.32'
-    implementation group: 'org.apache.commons', name: 'commons-text', version: '1.9'
+    implementation group: 'org.apache.commons', name: 'commons-text', version: '1.10.0'
     implementation group: 'org.scala-lang.modules', name: 'scala-swing_2.13', version: '3.0.0'
 
     // tailer
-    implementation group: 'commons-io', name: 'commons-io', version: '2.6'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.14.0'
 
     implementation 'com.fazecast:jSerialComm:[2.0.0,3.0.0)'
 
@@ -51,20 +51,29 @@ dependencies {
 
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
+jar {
     from sourceSets.main.allSource
 }
+//java {
+//    withSourcesJar()
+//    withJavadocJar()
+//    // and/or analogously use “withJavadocJar()” to get a “javadocJar” task
+//}
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-}
+//task sourcesJar(type: Jar, dependsOn: classes) {
+//    classifier = 'sources'
+//    from sourceSets.main.allSource
+//}
+//
+//task javadocJar(type: Jar, dependsOn: javadoc) {
+//    classifier = 'javadoc'
+//    from javadoc.destinationDir
+//}
 
-artifacts {
-    archives sourcesJar
-    archives javadocJar
-}
+//artifacts {
+//    archives sourcesJar
+//    archives javadocJar
+//}
 
 jar {
     manifest {
@@ -74,8 +83,9 @@ jar {
     from {
         configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
-}
 
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+}
 /*
 task fatJar(type: Jar) {
     manifest {
